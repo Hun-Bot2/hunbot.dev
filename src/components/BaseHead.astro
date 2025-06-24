@@ -30,9 +30,18 @@ const { title, description, image = FallbackImage } = Astro.props;
 />
 <meta name="generator" content={Astro.generator} />
 
-<!-- Font preloads -->
-<link rel="preload" href="/fonts/atkinson-regular.woff" as="font" type="font/woff" crossorigin />
-<link rel="preload" href="/fonts/atkinson-bold.woff" as="font" type="font/woff" crossorigin />
+<!-- 다국어 폰트 preload -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap" />
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" />
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap" />
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" />
+
+<!-- 다국어 및 지역 설정 -->
+<meta name="language" content="Korean" />
+<meta name="geo.region" content="KR" />
+<meta name="geo.placename" content="South Korea" />
 
 <!-- Canonical URL -->
 <link rel="canonical" href={canonicalURL} />
@@ -41,6 +50,8 @@ const { title, description, image = FallbackImage } = Astro.props;
 <title>{title}</title>
 <meta name="title" content={title} />
 <meta name="description" content={description} />
+<meta name="author" content="Hun-Bot" />
+<meta name="keywords" content="뇌공학, AI, 인공지능, 수학, 통계, 개발, 블로그, 기술, Brain Engineering, Mathematics, Statistics, Development" />
 
 <!-- Open Graph / Facebook -->
 <meta property="og:type" content="website" />
@@ -48,6 +59,12 @@ const { title, description, image = FallbackImage } = Astro.props;
 <meta property="og:title" content={title} />
 <meta property="og:description" content={description} />
 <meta property="og:image" content={new URL(image.src, Astro.url)} />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:site_name" content={SITE_TITLE} />
+<meta property="og:locale" content="ko_KR" />
+<meta property="og:locale:alternate" content="en_US" />
+<meta property="og:locale:alternate" content="ja_JP" />
 
 <!-- Twitter -->
 <meta property="twitter:card" content="summary_large_image" />
@@ -55,3 +72,43 @@ const { title, description, image = FallbackImage } = Astro.props;
 <meta property="twitter:title" content={title} />
 <meta property="twitter:description" content={description} />
 <meta property="twitter:image" content={new URL(image.src, Astro.url)} />
+<meta property="twitter:creator" content="@Hun-Bot" />
+
+<!-- 추가 SEO 최적화 -->
+<meta name="robots" content="index, follow" />
+<meta name="googlebot" content="index, follow" />
+<meta name="theme-color" content="#2337ff" />
+<meta name="msapplication-TileColor" content="#2337ff" />
+
+<!-- RSS 및 JSON Feed -->
+<link rel="alternate" type="application/json" title={`${SITE_TITLE} JSON Feed`} href={new URL('feed.json', Astro.site)} />
+
+<!-- Performance optimizations -->
+<link rel="dns-prefetch" href="//fonts.googleapis.com" />
+<link rel="dns-prefetch" href="//fonts.gstatic.com" />
+
+<!-- Structured Data for Blog -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Blog",
+  "name": "Hun-Bot.dev",
+  "description": "뇌공학, AI, 수학, 그리고 개발자의 삶을 기록하는 공간",
+  "url": "https://hunbot.dev",
+  "author": {
+    "@type": "Person",
+    "name": "Hun-Bot"
+  },
+  "blogPost": {
+    "@type": "BlogPosting",
+    "headline": title,
+    "description": description,
+    "url": canonicalURL.href,
+    "datePublished": new Date().toISOString(),
+    "author": {
+      "@type": "Person",
+      "name": "Hun-Bot"
+    }
+  }
+}
+</script>

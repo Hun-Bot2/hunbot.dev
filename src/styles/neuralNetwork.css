@@ -1,0 +1,109 @@
+/* Neural Network 3D Visualization Styles */
+
+/* ========== 테마 기본 설정 ========== */
+body {
+  margin: 0;
+  padding: 0;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* 다크 테마 */
+body.dark-theme {
+  background-color: #000000;
+  color: #ffffff;
+}
+
+/* 라이트 테마 */
+body.light-theme {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+/* ========== 메인 컨테이너 ========== */
+.hero-section {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  position: relative;
+  overflow: hidden;
+  background: inherit;
+}
+
+.neural-container {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.neural-canvas {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+/* ========== 툴팁 스타일 ========== */
+.network-tooltip {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 0.75rem 1.25rem;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 500;
+  pointer-events: none;
+  z-index: 1000;
+  transform: translate(-50%, -100%);
+  margin-top: -15px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  max-width: 300px;
+  text-align: center;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.network-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 8px solid transparent;
+  border-top-color: rgba(0, 0, 0, 0.9);
+}
+
+/* 라이트 테마 툴팁 */
+body.light-theme .network-tooltip {
+  background: rgba(255, 255, 255, 0.95);
+  color: black;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+}
+
+body.light-theme .network-tooltip::after {
+  border-top-color: rgba(255, 255, 255, 0.95);
+}
+
+/* ========== 반응형 디자인 ========== */
+@media (max-width: 768px) {
+  .network-tooltip {
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+    max-width: 250px;
+  }
+}
+
+@media (max-width: 480px) {
+  .network-tooltip {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+    max-width: 200px;
+  }
+}
