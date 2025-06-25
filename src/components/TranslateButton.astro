@@ -1,0 +1,368 @@
+---
+// 번역 버튼 컴포넌트
+---
+
+<div class="translate-container">
+  <button id="translateBtn" class="translate-btn" title="번역하기">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="translate-icon">
+      <path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.01-4.65.77-6.99l2.16 2.16c.28.28.72.28 1 0l2.16-2.16c1.74 1.94 2.01 4.65.77 6.99l.03.03-2.54 2.51c-.28.28-.72.28-1 0z"/>
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+    </svg>
+    <span class="translate-text">번역</span>
+  </button>
+  
+  <!-- 언어 선택 드롭다운 -->
+  <div id="languageDropdown" class="language-dropdown hidden">
+    <div class="language-option" data-lang="ko">한국어</div>
+    <div class="language-option" data-lang="en">English</div>
+    <div class="language-option" data-lang="ja">日本語</div>
+    <div class="language-divider"></div>
+    <div class="language-option browser-translate">브라우저 번역 사용</div>
+  </div>
+</div>
+
+<style>
+  .translate-container {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .translate-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.2) 0%, rgba(236, 72, 153, 0.2) 100%);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(168, 85, 247, 0.3);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  
+  .translate-btn:hover {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.3) 0%, rgba(236, 72, 153, 0.3) 100%);
+    transform: scale(1.05);
+    box-shadow: 0 4px 16px rgba(168, 85, 247, 0.2);
+  }
+  
+  .translate-icon {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .language-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 8px;
+    background: rgba(0, 0, 0, 0.9);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 8px 0;
+    min-width: 140px;
+    z-index: 1000;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+  
+  .language-option {
+    padding: 8px 16px;
+    color: white;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    font-size: 14px;
+  }
+  
+  .language-option:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  .language-option.active {
+    background: rgba(168, 85, 247, 0.3);
+    color: #c084fc;
+  }
+  
+  .language-option.browser-translate {
+    color: #10b981;
+    font-weight: 500;
+  }
+  
+  .language-option.browser-translate:hover {
+    background: rgba(16, 185, 129, 0.2);
+  }
+  
+  .language-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.2);
+    margin: 8px 0;
+  }
+  
+  .hidden {
+    display: none;
+  }
+  
+  /* 라이트 테마 */
+  body.light-theme .translate-btn {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(236, 72, 153, 0.1) 100%);
+    color: #7c3aed;
+    border: 1px solid rgba(168, 85, 247, 0.2);
+  }
+  
+  body.light-theme .translate-btn:hover {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(236, 72, 153, 0.15) 100%);
+    box-shadow: 0 4px 16px rgba(168, 85, 247, 0.15);
+  }
+  
+  body.light-theme .language-dropdown {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+  }
+  
+  body.light-theme .language-option {
+    color: #374151;
+  }
+  
+  body.light-theme .language-option:hover {
+    background: rgba(0, 0, 0, 0.1);
+  }
+  
+  body.light-theme .language-option.active {
+    background: rgba(168, 85, 247, 0.2);
+    color: #7c3aed;
+  }
+  
+  body.light-theme .language-option.browser-translate {
+    color: #059669;
+  }
+  
+  body.light-theme .language-option.browser-translate:hover {
+    background: rgba(5, 150, 105, 0.1);
+  }
+  
+  body.light-theme .language-divider {
+    background: rgba(0, 0, 0, 0.2);
+  }
+  
+  /* 반응형 */
+  @media (max-width: 768px) {
+    .translate-btn {
+      padding: 6px 12px;
+      font-size: 13px;
+    }
+    
+    .translate-text {
+      display: none;
+    }
+    
+    .language-dropdown {
+      min-width: 120px;
+    }
+  }
+</style>
+
+<script>
+  // 번역 기능 스크립트
+  document.addEventListener('DOMContentLoaded', function() {
+    const translateBtn = document.getElementById('translateBtn') as HTMLButtonElement | null;
+    const languageDropdown = document.getElementById('languageDropdown') as HTMLDivElement | null;
+    const languageOptions = document.querySelectorAll('.language-option') as NodeListOf<HTMLElement>;
+    
+    let currentLang = 'ko'; // 기본 언어
+    
+    // 번역 버튼 클릭 이벤트
+    if (translateBtn) {
+      translateBtn.addEventListener('click', function(e: Event) {
+        e.stopPropagation();
+        if (languageDropdown) {
+          languageDropdown.classList.toggle('hidden');
+        }
+      });
+    }
+    
+    // 언어 선택 이벤트
+    languageOptions.forEach((option: HTMLElement) => {
+      option.addEventListener('click', function(this: HTMLElement) {
+        if (this.classList.contains('browser-translate')) {
+          // 브라우저 번역 기능 사용
+          useBrowserTranslate();
+        } else {
+          const selectedLang = this.getAttribute('data-lang');
+          if (selectedLang && selectedLang !== currentLang) {
+            currentLang = selectedLang;
+            
+            // 활성 상태 업데이트
+            languageOptions.forEach((opt: HTMLElement) => opt.classList.remove('active'));
+            this.classList.add('active');
+            
+            // 언어 변경 알림
+            showLanguageNotification(selectedLang);
+          }
+        }
+        
+        if (languageDropdown) {
+          languageDropdown.classList.add('hidden');
+        }
+      });
+    });
+    
+    // 외부 클릭 시 드롭다운 닫기
+    document.addEventListener('click', function() {
+      if (languageDropdown) {
+        languageDropdown.classList.add('hidden');
+      }
+    });
+    
+    // 브라우저 번역 기능 사용
+    function useBrowserTranslate(): void {
+      // 브라우저 번역 기능 활성화 시도
+      if (navigator.language && navigator.language !== 'ko') {
+        // 브라우저 언어가 한국어가 아닌 경우 번역 제안
+        const notification = document.createElement('div');
+        notification.className = 'translate-notification';
+        notification.innerHTML = `
+          <div class="notification-content">
+            <p>브라우저의 번역 기능을 사용하세요:</p>
+            <ul>
+              <li>Chrome: 우클릭 → "한국어로 번역"</li>
+              <li>Firefox: 우클릭 → "페이지 번역"</li>
+              <li>Safari: 우클릭 → "번역"</li>
+            </ul>
+            <button class="notification-close">닫기</button>
+          </div>
+        `;
+        
+        // 스타일 추가
+        const style = document.createElement('style');
+        style.textContent = `
+          .translate-notification {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            z-index: 10000;
+            color: white;
+            max-width: 400px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+          }
+          .notification-content p {
+            margin-bottom: 12px;
+            font-weight: 500;
+          }
+          .notification-content ul {
+            margin-bottom: 16px;
+            padding-left: 20px;
+          }
+          .notification-content li {
+            margin-bottom: 4px;
+            font-size: 14px;
+          }
+          .notification-close {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+          }
+          .notification-close:hover {
+            background: #5a67d8;
+          }
+        `;
+        document.head.appendChild(style);
+        
+        document.body.appendChild(notification);
+        
+        // 닫기 버튼 이벤트
+        const closeBtn = notification.querySelector('.notification-close') as HTMLButtonElement | null;
+        if (closeBtn) {
+          closeBtn.addEventListener('click', () => {
+            if (document.body.contains(notification)) {
+              document.body.removeChild(notification);
+            }
+          });
+        }
+        
+        // 5초 후 자동 닫기
+        setTimeout(() => {
+          if (document.body.contains(notification)) {
+            document.body.removeChild(notification);
+          }
+        }, 5000);
+      }
+    }
+    
+    // 언어 변경 알림
+    function showLanguageNotification(lang: string): void {
+      const langNames: Record<string, string> = {
+        'ko': '한국어',
+        'en': 'English',
+        'ja': '日本語'
+      };
+      
+      const notification = document.createElement('div');
+      notification.className = 'lang-notification';
+      notification.textContent = `${langNames[lang] || lang}로 변경되었습니다.`;
+      
+      // 스타일 추가
+      const style = document.createElement('style');
+      style.textContent = `
+        .lang-notification {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          background: rgba(102, 126, 234, 0.9);
+          color: white;
+          padding: 12px 20px;
+          border-radius: 8px;
+          z-index: 10000;
+          font-size: 14px;
+          font-weight: 500;
+          animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+      `;
+      document.head.appendChild(style);
+      
+      document.body.appendChild(notification);
+      
+      // 3초 후 자동 제거
+      setTimeout(() => {
+        if (document.body.contains(notification)) {
+          document.body.removeChild(notification);
+        }
+      }, 3000);
+    }
+    
+    // 초기 활성 언어 설정
+    languageOptions.forEach((option: HTMLElement) => {
+      if (option.getAttribute('data-lang') === currentLang) {
+        option.classList.add('active');
+      }
+    });
+    
+    // 브라우저 언어 감지
+    const browserLang = navigator.language ? navigator.language.split('-')[0] : 'ko';
+    if (browserLang !== 'ko') {
+      // 브라우저 언어가 한국어가 아닌 경우 번역 제안
+      const matchingOption = Array.from(languageOptions).find((option: HTMLElement) => 
+        option.getAttribute('data-lang') === browserLang
+      );
+      if (matchingOption) {
+        matchingOption.classList.add('suggested');
+      }
+    }
+  });
+</script> 

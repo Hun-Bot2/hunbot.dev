@@ -1,18 +1,18 @@
 /* Control Panel & Theme Toggle Styles */
 
-/* ========== 컨트롤 패널 ========== */
+/* ========== 컨트롤 패널 (간소화) ========== */
 .control-panel {
   position: absolute;
   top: 20px;
-  left: 20px;
+  right: 20px;
   z-index: 1000;
   display: flex;
   gap: 10px;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(255, 255, 255, 0.2);
   padding: 10px;
   border-radius: 12px;
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   transition: all 0.3s ease;
 }
 
@@ -20,20 +20,22 @@
   width: 40px;
   height: 40px;
   border: none;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
   color: white;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   position: relative;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .control-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: scale(1.1);
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
 }
 
 .control-btn:active {
@@ -49,69 +51,27 @@
   transform: none;
 }
 
-/* ========== 테마 토글 버튼 ========== */
-.theme-toggle {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  z-index: 1000;
-}
-
-.theme-btn {
-  width: 50px;
-  height: 50px;
-  border: none;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.8);
-  color: white;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
-  border: 2px solid rgba(255, 255, 255, 0.2);
-}
-
-.theme-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  transform: scale(1.1);
-}
-
-.theme-btn:active {
-  transform: scale(0.95);
-}
-
-/* ========== 라이트 테마 버튼 스타일 ========== */
+/* ========== 라이트 테마 컨트롤 패널 ========== */
 body.light-theme .control-panel {
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(0, 0, 0, 0.2);
 }
 
 body.light-theme .control-btn {
   background: rgba(0, 0, 0, 0.1);
-  color: black;
+  color: #374151;
+  border: 1px solid rgba(0, 0, 0, 0.2);
 }
 
 body.light-theme .control-btn:hover {
   background: rgba(0, 0, 0, 0.2);
 }
 
-body.light-theme .theme-btn {
-  background: rgba(255, 255, 255, 0.9);
-  color: black;
-  border: 2px solid rgba(0, 0, 0, 0.2);
-}
-
-body.light-theme .theme-btn:hover {
-  background: rgba(0, 0, 0, 0.1);
-}
-
 /* ========== 반응형 컨트롤 ========== */
 @media (max-width: 768px) {
   .control-panel {
     top: 15px;
-    left: 15px;
+    right: 15px;
     padding: 8px;
     gap: 8px;
   }
@@ -120,22 +80,12 @@ body.light-theme .theme-btn:hover {
     width: 35px;
     height: 35px;
   }
-  
-  .theme-toggle {
-    top: 15px;
-    right: 15px;
-  }
-  
-  .theme-btn {
-    width: 45px;
-    height: 45px;
-  }
 }
 
 @media (max-width: 480px) {
   .control-panel {
     top: 10px;
-    left: 10px;
+    right: 10px;
     padding: 6px;
     gap: 6px;
   }
@@ -143,16 +93,6 @@ body.light-theme .theme-btn:hover {
   .control-btn {
     width: 32px;
     height: 32px;
-  }
-  
-  .theme-toggle {
-    top: 10px;
-    right: 10px;
-  }
-  
-  .theme-btn {
-    width: 40px;
-    height: 40px;
   }
 }
 

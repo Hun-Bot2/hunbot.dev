@@ -4,11 +4,12 @@ import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import FormattedDate from '../components/FormattedDate.astro';
+import TableOfContents from '../components/TableOfContents.astro';
 import { Image } from 'astro:assets';
 
 type Props = CollectionEntry<'blog'>['data'];
 
-const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
+const { title, description, pubDate, updatedDate, heroImage, tags = [] } = Astro.props;
 ---
 
 <html lang="ko">
@@ -22,123 +23,77 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
 		<meta property="og:locale:alternate" content="ja_JP" />
 		
 		<style>
-			main {
-				width: calc(100% - 2em);
-				max-width: 100%;
-				margin: 0;
-			}
-			.hero-image {
-				width: 100%;
-			}
-			.hero-image img {
-				display: block;
-				margin: 0 auto;
-				border-radius: 12px;
-				box-shadow: var(--box-shadow);
-			}
-			.prose {
-				width: 720px;
-				max-width: calc(100% - 2em);
-				margin: auto;
-				padding: 1em;
-				color: rgb(var(--gray-dark));
-				font-family: 'Pretendard', 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
-			}
-			.title {
-				margin-bottom: 1em;
-				padding: 1em 0;
-				text-align: center;
-				line-height: 1;
-			}
-			.title h1 {
-				margin: 0 0 0.5em 0;
-				font-family: 'Pretendard', 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
-				font-weight: 800;
-				letter-spacing: -0.025em;
-				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-				background-clip: text;
-				-webkit-background-clip: text;
-				-webkit-text-fill-color: transparent;
-			}
-			.date {
-				margin-bottom: 0.5em;
-				color: rgb(var(--gray));
-				font-family: 'Pretendard', 'Inter', sans-serif;
-			}
-			.last-updated-on {
-				font-style: italic;
-			}
-			
-			/* 태그 스타일 추가 */
-			.tags {
-				display: flex;
-				flex-wrap: wrap;
-				gap: 0.5rem;
-				margin: 1rem 0;
-				justify-content: center;
-			}
-			
-			.tag {
-				background: var(--accent);
-				color: white;
-				padding: 0.25rem 0.75rem;
-				border-radius: 1rem;
-				font-size: 0.875rem;
-				font-weight: 500;
-				text-decoration: none;
-				transition: background-color 0.2s ease;
-			}
-			
-			.tag:hover {
-				background: var(--accent-dark);
-				color: white;
-			}
-			
-			/* 다국어 텍스트 스타일 */
-			.prose :lang(en) {
-				font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-			}
-			
-			.prose :lang(ja) {
-				font-family: 'Noto Sans JP', 'Pretendard', sans-serif;
-			}
-			
-			/* 수학 공식 스타일 개선 */
+			/* 수학 공식 스타일 - KaTeX 전용 */
 			.prose .katex {
-				font-size: 1.1em;
+				font-size: 1.13em;
 			}
 			
 			.prose .katex-display {
-				margin: 2em 0;
+				margin: 2.5em 0;
 				text-align: center;
 			}
 		</style>
 	</head>
 
-	<body>
+	<body class="bg-gray-50 dark:bg-gray-900">
 		<Header />
-		<main>
+		<main class="w-full max-w-none m-0 p-0">
 			<article>
-				<div class="hero-image">
-					{heroImage && <Image width={1020} height={510} src={heroImage} alt={title} />}
-				</div>
-				<div class="prose">
-					<div class="title">
-						<div class="date">
-							<FormattedDate date={pubDate} />
-							{
-								updatedDate && (
-									<div class="last-updated-on">
+				<!-- Hero Image -->
+				{heroImage && (
+					<div class="w-full mb-10">
+						<Image 
+							width={1020} 
+							height={510} 
+							src={heroImage} 
+							alt={title}
+							class="block mx-auto rounded-2xl shadow-lg shadow-gray-200/50 dark:shadow-gray-800/50"
+						/>
+					</div>
+				)}
+				
+				<!-- Blog Container -->
+				<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+					<!-- Main Content -->
+					<div class="prose w-full max-w-none m-0 py-6 sm:py-8 lg:py-10 px-4 sm:px-6 lg:px-8 bg-white/98 dark:bg-slate-800/98 rounded-xl sm:rounded-2xl lg:rounded-3xl shadow-lg shadow-gray-200/25 dark:shadow-gray-800/25 text-gray-800 dark:text-gray-200">
+						<!-- Title Section -->
+						<div class="mb-6 pb-4 text-center leading-tight">
+							<!-- Date -->
+							<div class="mb-3 text-gray-600 dark:text-gray-400 text-lg">
+								<FormattedDate date={pubDate} />
+								{updatedDate && (
+									<div class="italic text-gray-500 dark:text-gray-500 text-base mt-1">
 										마지막 수정: <FormattedDate date={updatedDate} />
 									</div>
-								)
-							}
+								)}
+							</div>
+							
+							<!-- Title -->
+							<h1 class="m-0 mb-3 font-black text-2xl sm:text-3xl lg:text-4xl xl:text-5xl tracking-tight bg-gradient-to-br from-blue-500 to-blue-800 bg-clip-text text-transparent">
+								{title}
+							</h1>
+							
+							<hr class="border-gray-300 dark:border-gray-600 my-6" />
+							
+							<!-- Tags -->
+							{tags && tags.length > 0 && (
+								<div class="flex flex-wrap gap-3 mt-5 mb-8 justify-center">
+									{tags.map((tag: string) => (
+										<span class="bg-blue-500 text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-blue-600 transition-colors duration-200 shadow-md shadow-blue-500/25">
+											{tag}
+										</span>
+									))}
+								</div>
+							)}
 						</div>
-						<h1>{title}</h1>
-						<hr />
+						
+						<!-- Content Slot -->
+						<slot />
 					</div>
-					<slot />
 				</div>
+				
+				<!-- 플로팅 목차 -->
+				<TableOfContents />
 			</article>
 		</main>
 		<Footer />

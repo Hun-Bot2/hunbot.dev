@@ -112,3 +112,57 @@ const { title, description, image = FallbackImage } = Astro.props;
   }
 }
 </script>
+
+<!-- 전역 테마 관리 스크립트 (모든 페이지에서 작동) -->
+<script is:inline>
+	// 테마 초기화 (페이지 로드 전에 실행)
+	(function() {
+		const savedTheme = sessionStorage.getItem('neural-blog-theme');
+		const isDark = savedTheme ? savedTheme === 'dark' : true;
+		
+		// body 클래스와 html 클래스 모두 설정
+		document.body.classList.add(isDark ? 'dark-theme' : 'light-theme');
+		document.documentElement.classList.toggle('dark', isDark);
+		
+		// 테마 토글 버튼이 있으면 상태 설정
+		document.addEventListener('DOMContentLoaded', function() {
+			const themeBtn = document.getElementById('themeToggleBtn');
+			const sunIcon = document.getElementById('sunIcon');
+			const moonIcon = document.getElementById('moonIcon');
+			
+			if (themeBtn && sunIcon && moonIcon) {
+				themeBtn.setAttribute('data-theme', isDark ? 'dark' : 'light');
+				if (isDark) {
+					sunIcon.style.opacity = '0';
+					moonIcon.style.opacity = '1';
+				} else {
+					sunIcon.style.opacity = '1';
+					moonIcon.style.opacity = '0';
+				}
+				
+				// 테마 토글 이벤트 리스너 추가
+				themeBtn.addEventListener('click', function() {
+					const currentTheme = this.getAttribute('data-theme');
+					const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+					
+					// 클래스 업데이트
+					document.body.className = newTheme === 'dark' ? 'dark-theme' : 'light-theme';
+					document.documentElement.classList.toggle('dark', newTheme === 'dark');
+					
+					// 아이콘 업데이트
+					if (newTheme === 'dark') {
+						sunIcon.style.opacity = '0';
+						moonIcon.style.opacity = '1';
+					} else {
+						sunIcon.style.opacity = '1';
+						moonIcon.style.opacity = '0';
+					}
+					
+					// 상태 저장
+					this.setAttribute('data-theme', newTheme);
+					sessionStorage.setItem('neural-blog-theme', newTheme);
+				});
+			}
+		});
+	})();
+</script>

@@ -2,11 +2,12 @@
 import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import TranslateButton from '../components/TranslateButton.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 import { getCollection } from 'astro:content';
 import FormattedDate from '../components/FormattedDate.astro';
 
-// 최신 포스트 3개 가져오기
+// 최신 포스트 6개 가져오기
 const posts = (await getCollection('blog')).sort(
 	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
 ).slice(0, 6);
@@ -19,534 +20,171 @@ const postsData = posts.map(post => ({
 	tags: post.data.tags || [],
 	description: post.data.description
 }));
+
+// 태그와 카테고리 수집
+const allTags = [...new Set(posts.flatMap(post => post.data.tags || []))];
+const categories = [...new Set(posts.map(post => post.data.category || 'General'))];
 ---
 
 <!doctype html>
 <html lang="ko">
 	<head>
 		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
-		<style>
-			body {
-				margin: 0;
-				padding: 0;
-			}
-			
-			.hero-section {
-				min-height: 80vh;
-				display: flex;
-				flex-direction: column;
-				align-items: center;
-				justify-content: center;
-				padding: 2rem 0;
-				background: linear-gradient(135deg, 
-					rgba(15, 15, 30, 0.05) 0%, 
-					rgba(0, 0, 0, 0.02) 50%,
-					rgba(15, 15, 30, 0.05) 100%);
-				position: relative;
-				overflow: hidden;
-			}
-			
-			.hero-content {
-				text-align: center;
-				z-index: 2;
-				max-width: 800px;
-				margin: 0 auto;
-				padding: 0 2rem;
-			}
-			
-			.hero-title {
-				font-size: 4rem;
-				font-weight: 800;
-				margin-bottom: 1rem;
-				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-				background-clip: text;
-				-webkit-background-clip: text;
-				-webkit-text-fill-color: transparent;
-				line-height: 1.1;
-			}
-			
-			.hero-subtitle {
-				font-size: 1.5rem;
-				color: rgb(var(--gray-dark));
-				font-weight: 400;
-				margin-bottom: 2rem;
-				line-height: 1.4;
-			}
-			
-			.hero-description {
-				font-size: 1.1rem;
-				color: rgb(var(--gray));
-				max-width: 600px;
-				margin: 0 auto 3rem;
-				line-height: 1.6;
-			}
-			
-			.neural-container {
-				width: 100%;
-				max-width: 1000px;
-				margin: 2rem auto;
-				display: flex;
-				justify-content: center;
-				position: relative;
-			}
-			
-			.neural-canvas {
-				border-radius: 20px;
-				box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
-				background: radial-gradient(circle at center, 
-					rgba(15, 15, 30, 0.02) 0%, 
-					rgba(0, 0, 0, 0.05) 100%);
-			}
-			
-			.latest-posts {
-				padding: 4rem 0;
-				max-width: 1200px;
-				margin: 0 auto;
-				padding-left: 2rem;
-				padding-right: 2rem;
-			}
-			
-			.section-title {
-				text-align: center;
-				font-size: 2.5rem;
-				font-weight: 700;
-				margin-bottom: 3rem;
-				color: rgb(var(--black));
-			}
-			
-			.posts-grid {
-				display: grid;
-				grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-				gap: 2rem;
-				margin-bottom: 3rem;
-			}
-			
-			.post-card {
-				background: rgba(var(--gray-light), 0.3);
-				border-radius: 16px;
-				padding: 1.5rem;
-				transition: all 0.3s ease;
-				border: 1px solid rgba(var(--gray-light), 0.5);
-				cursor: pointer;
-				text-decoration: none;
-				color: inherit;
-			}
-			
-			.post-card:hover {
-				transform: translateY(-8px);
-				box-shadow: 0 20px 40px rgba(var(--gray), 0.15);
-				border-color: var(--accent);
-			}
-			
-			.post-title {
-				font-size: 1.25rem;
-				font-weight: 600;
-				margin-bottom: 0.5rem;
-				color: rgb(var(--black));
-				line-height: 1.3;
-			}
-			
-			.post-date {
-				color: rgb(var(--gray));
-				font-size: 0.9rem;
-				margin-bottom: 1rem;
-			}
-			
-			.post-tags {
-				display: flex;
-				flex-wrap: wrap;
-				gap: 0.5rem;
-			}
-			
-			.post-tag {
-				background: var(--accent);
-				color: white;
-				padding: 0.25rem 0.75rem;
-				border-radius: 1rem;
-				font-size: 0.8rem;
-				font-weight: 500;
-			}
-			
-			.cta-section {
-				text-align: center;
-				margin-top: 2rem;
-			}
-			
-			.cta-button {
-				display: inline-block;
-				background: var(--accent);
-				color: white;
-				padding: 1rem 2rem;
-				border-radius: 50px;
-				text-decoration: none;
-				font-weight: 600;
-				font-size: 1.1rem;
-				transition: all 0.3s ease;
-				box-shadow: 0 4px 15px rgba(var(--accent), 0.3);
-			}
-			
-			.cta-button:hover {
-				background: var(--accent-dark);
-				transform: translateY(-2px);
-				box-shadow: 0 8px 25px rgba(var(--accent), 0.4);
-				color: white;
-			}
-			
-			.network-tooltip {
-				position: absolute;
-				background: rgba(0, 0, 0, 0.8);
-				color: white;
-				padding: 0.5rem 1rem;
-				border-radius: 8px;
-				font-size: 0.9rem;
-				pointer-events: none;
-				z-index: 1000;
-				transform: translate(-50%, -100%);
-				margin-top: -10px;
-				opacity: 0;
-				transition: opacity 0.3s ease;
-			}
-			
-			.network-tooltip::after {
-				content: '';
-				position: absolute;
-				top: 100%;
-				left: 50%;
-				transform: translateX(-50%);
-				border: 5px solid transparent;
-				border-top-color: rgba(0, 0, 0, 0.8);
-			}
-			
-			@media (max-width: 768px) {
-				.hero-title {
-					font-size: 2.5rem;
-				}
-				
-				.hero-subtitle {
-					font-size: 1.2rem;
-				}
-				
-				.hero-description {
-					font-size: 1rem;
-				}
-				
-				.neural-canvas {
-					margin: 0 1rem;
-				}
-				
-				.posts-grid {
-					grid-template-columns: 1fr;
-					gap: 1rem;
-				}
-				
-				.latest-posts {
-					padding-left: 1rem;
-					padding-right: 1rem;
-				}
-			}
-		</style>
+		
+		<!-- 모듈화된 스타일시트 임포트 -->
+		<link rel="stylesheet" href="/src/styles/neuralNetwork.css" />
+		<link rel="stylesheet" href="/src/styles/controls.css" />
+	
 	</head>
 	<body>
 		<Header />
 		
 		<!-- 히어로 섹션 with 3D Neural Network -->
-		<section class="hero-section">
-			<div class="neural-container">
-				<div id="neural-network-3d" class="neural-canvas"></div>
-				<div id="tooltip" class="network-tooltip"></div>
+		<section class="relative h-[60vh] lg:h-[70vh] bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 overflow-hidden">
+			<!-- 3D 네트워크 캔버스 (배경) -->
+			<div class="absolute inset-0 z-10 pointer-events-none" id="neural-network-3d">
 			</div>
 		</section>
-		
-		<!-- 최신 포스트 섹션 -->
-		<section class="latest-posts">
-			<h2 class="section-title">Latest Thoughts</h2>
-			<div class="posts-grid">
-				{posts.map((post) => (
-					<a href={`/blog/${post.id}/`} class="post-card">
-						<div class="post-title">{post.data.title}</div>
-						<div class="post-date">
-							<FormattedDate date={post.data.pubDate} />
-						</div>
-						{post.data.tags && (
-							<div class="post-tags">
-								{post.data.tags.map((tag: string) => (
-									<span class="post-tag">{tag}</span>
-								))}
-							</div>
-						)}
-					</a>
-				))}
-			</div>
+
+		<!-- 메인 컨텐츠 섹션 -->
+		<div class="max-w-6xl mx-auto px-6 py-16 space-y-16">
 			
-			<div class="cta-section">
-				<a href="/blog" class="cta-button">
-					모든 글 보기 →
-				</a>
-			</div>
-		</section>
+			<!-- 카테고리 & 태그 섹션 - Fuwari 스타일 -->
+			<section class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+				<div class="space-y-6">
+					<h2 class="text-2xl font-bold text-slate-800 dark:text-slate-200">Categories</h2>
+					<div class="flex flex-wrap gap-3">
+						{categories.map((category) => (
+							<span class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-purple-100 dark:hover:bg-purple-900/30 hover:text-purple-600 dark:hover:text-purple-400 rounded-full transition-all duration-300 cursor-pointer">
+								{category}
+								<span class="text-xs text-slate-500 dark:text-slate-400">
+									{posts.filter(post => post.data.category === category).length}
+								</span>
+							</span>
+						))}
+					</div>
+				</div>
+				<div class="space-y-6">
+					<h2 class="text-2xl font-bold text-slate-800 dark:text-slate-200">Tags</h2>
+					<div class="flex flex-wrap gap-3">
+						{allTags.slice(0, 12).map((tag) => (
+							<span class="px-3 py-1 text-sm font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 hover:bg-cyan-100 dark:hover:bg-cyan-900/30 hover:text-cyan-600 dark:hover:text-cyan-400 rounded-md transition-all duration-300 cursor-pointer">
+								{tag}
+							</span>
+						))}
+					</div>
+				</div>
+			</section>
+
+			<!-- 포스트 목록 - useHooks 스타일 -->
+			<section class="space-y-8">
+				<h2 class="text-3xl font-bold text-slate-800 dark:text-slate-200">Recent Posts</h2>
+				
+				<div class="space-y-4">
+					{posts.map((post) => (
+						<article class="group">
+							<a href={`/blog/${post.id}/`} class="block p-6 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-purple-300 dark:hover:border-purple-600 rounded-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+								<div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+									<div class="flex-1 space-y-3">
+										<div class="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
+											<time class="font-medium">
+												<FormattedDate date={post.data.pubDate} />
+											</time>
+											{post.data.category && (
+												<span class="px-2 py-1 text-xs font-semibold text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-900/30 rounded">
+													{post.data.category}
+												</span>
+											)}
+										</div>
+										
+										<h3 class="text-xl font-bold text-slate-900 dark:text-slate-100 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors duration-300">
+											{post.data.title}
+										</h3>
+										
+										{post.data.description && (
+											<p class="text-slate-600 dark:text-slate-300 leading-relaxed">
+												{post.data.description}
+											</p>
+										)}
+										
+										{post.data.tags && (
+											<div class="flex flex-wrap gap-2">
+												{post.data.tags.slice(0, 4).map((tag: string) => (
+													<span class="px-2 py-1 text-xs font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 rounded group-hover:bg-purple-100 dark:group-hover:bg-purple-900/30 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-all duration-300">
+														{tag}
+													</span>
+												))}
+											</div>
+										)}
+									</div>
+									
+									<div class="flex items-center text-sm font-medium text-purple-600 dark:text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+										Read more
+										<svg class="w-4 h-4 ml-1 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+										</svg>
+									</div>
+								</div>
+							</a>
+						</article>
+					))}
+				</div>
+				
+				<div class="text-center pt-8">
+					<a 
+						href="/blog" 
+						class="inline-flex items-center gap-2 px-6 py-3 text-base font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/40 border border-purple-200 dark:border-purple-700 hover:border-purple-300 dark:hover:border-purple-600 rounded-lg transition-all duration-300"
+					>
+						View all posts
+						<svg class="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
+						</svg>
+					</a>
+				</div>
+			</section>
+		</div>
 		
 		<Footer />
-		
-		<!-- 3D Neural Network Script -->
+
+		<!-- 모듈화된 JavaScript 로드 -->
 		<script type="module" define:vars={{ postsData }}>
+			// THREE.js 라이브러리 로드
 			import * as THREE from 'https://cdn.skypack.dev/three@0.132.2';
 			
-			// ========== 데이터 준비 ==========
-			// 블로그 포스트 데이터를 JavaScript에서 사용할 수 있도록 변환
-			console.log('Neural network script starting...');
-			console.log('Posts data:', postsData);
-			console.log('Container element:', document.getElementById('neural-network-3d'));
-			// 3D 씬, 카메라, 렌더러 생성
-			const scene = new THREE.Scene();
-			const camera = new THREE.PerspectiveCamera(75, 1000 / 600, 0.1, 1000);
-			const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+			// 커스텀 모듈들 로드
+			import { NeuralNetwork3D } from '/src/scripts/neuralNetwork.js';
 			
-			// 캔버스 크기 및 투명 배경 설정
-			renderer.setSize(1000, 600);
-			renderer.setClearColor(0x000000, 0); // 투명 배경
+			// 전역 THREE 객체 설정 (모듈에서 사용하기 위해)
+			window.THREE = THREE;
 			
-			// HTML 요소 연결
-			const container = document.getElementById('neural-network-3d');
-			const tooltip = document.getElementById('tooltip');
-			
-			if (container) {
-				container.appendChild(renderer.domElement);
-			}
-			
-			// ========== 뉴럴 네트워크 구조 설정 ==========
-			const nodes = [];        // 모든 노드 저장
-			const connections = [];  // 모든 연결선 저장
-			
-			// 신경망 레이어 구조 정의 (4개 레이어)
-			// count: 각 레이어의 노드 개수
-			// radius: 노드들이 배치될 원의 반지름
-			// z: 레이어의 깊이 (앞뒤 위치)
-			const layers = [
-				{ count: 6, radius: 2.5, z: -3 },   // 입력층
-				{ count: 8, radius: 3.5, z: -1 },   // 은닉층 1
-				{ count: 10, radius: 4, z: 1 },     // 은닉층 2  
-				{ count: 6, radius: 3, z: 3 }       // 출력층
-			];
-			
-			let nodeIndex = 0; // 블로그 포스트 인덱스 추적
-			
-			// ========== 노드 생성 ==========
-			layers.forEach((layer, layerIdx) => {
-				for (let i = 0; i < layer.count; i++) {
-					// 원형으로 노드 배치 (각도 계산)
-					const angle = (i / layer.count) * Math.PI * 2;
-					const x = Math.cos(angle) * layer.radius;
-					const y = Math.sin(angle) * layer.radius;
-					const z = layer.z + (Math.random() - 0.5) * 0.8; // 약간의 랜덤 깊이
+			// Neural Network 초기화
+			document.addEventListener('DOMContentLoaded', async () => {
+				try {
+					const neuralNetwork = new NeuralNetwork3D(postsData);
+					await neuralNetwork.init();
 					
-					// 블로그 포스트 데이터 연결 (있으면 포스트, 없으면 더미 노드)
-					const post = postsData[nodeIndex] || null;
+					// 전역 참조 저장 (디버깅용)
+					window.neuralNetwork = neuralNetwork;
 					
-					// ========== 태그별 색상 설정 (다크모드 최적화) ==========
-					let color = 0x64b5f6; // 기본 밝은 파랑색
-					if (post) {
-						// 태그에 따라 색상 변경 (고대비 색상으로 수정)
-						if (post.tags.includes('뇌공학') || post.tags.includes('AI')) 
-							color = 0xff6b9d; // 밝은 핑크
-						if (post.tags.includes('수학') || post.tags.includes('통계')) 
-							color = 0x66bb6a; // 밝은 초록
-						if (post.tags.includes('공모전') || post.tags.includes('회고')) 
-							color = 0xffa726; // 밝은 주황
-						// 새로운 태그 색상 추가하려면 여기에 추가
-						// if (post.tags.includes('새태그')) color = 0xffffff;
-					} else {
-						color = 0x90a4ae; // 더미 노드는 밝은 회색
+					console.log('🧠 Neural Network Blog initialized!');
+					console.log('💡 단축키: Space(재생/일시정지), Ctrl+R(리셋), 마우스휠/트랙패드(줌)');
+				} catch (error) {
+					console.error('❌ Failed to initialize Neural Network:', error);
+					
+					// 폴백 메시지 표시
+					const container = document.getElementById('neural-network-3d');
+					if (container) {
+						container.innerHTML = `
+							<div class="flex items-center justify-center h-full text-slate-400 text-lg text-center">
+								<div class="space-y-4">
+									<p>🧠 3D Neural Network을 로드하는 중 문제가 발생했습니다.</p>
+									<p>브라우저를 새로고침해 주세요.</p>
+								</div>
+							</div>
+						`;
 					}
-					
-					// ========== 노드 생성 ==========
-					const size = post ? 0.08 : 0.05; // 포스트가 있으면 크게, 없으면 작게
-					const geometry = new THREE.SphereGeometry(size, 16, 16);
-					const material = new THREE.MeshBasicMaterial({ color });
-					const node = new THREE.Mesh(geometry, material);
-					node.position.set(x, y, z);
-					
-					// 노드에 메타데이터 저장 (호버/클릭 시 사용)
-					node.userData = {
-						post: post,
-						originalColor: color,
-						originalSize: size,
-						link: post ? `/blog/${post.id}/` : null,
-						title: post ? post.title : null
-					};
-					
-					// ========== 글로우 이펙트 생성 ==========
-					const glowGeometry = new THREE.SphereGeometry(size * 1.5, 16, 16);
-					const glowMaterial = new THREE.MeshBasicMaterial({
-						color,
-						transparent: true,
-						opacity: post ? 0.3 : 0.1 // 포스트가 있으면 더 밝게
-					});
-					const glow = new THREE.Mesh(glowGeometry, glowMaterial);
-					glow.position.copy(node.position);
-					
-					// 씬에 추가
-					scene.add(node);
-					scene.add(glow);
-					nodes.push({ mesh: node, glow });
-					
-					if (post) nodeIndex++; // 포스트가 있을 때만 인덱스 증가
 				}
 			});
-			
-			// ========== 노드 간 연결선 생성 ==========
-			for (let i = 0; i < nodes.length; i++) {
-				for (let j = i + 1; j < nodes.length; j++) {
-					const distance = nodes[i].mesh.position.distanceTo(nodes[j].mesh.position);
-					// 거리가 4 이하이고 60% 확률로 연결 (연결 밀도 조절 가능)
-					if (distance < 4 && Math.random() > 0.6) {
-						const points = [nodes[i].mesh.position, nodes[j].mesh.position];
-						const geometry = new THREE.BufferGeometry().setFromPoints(points);
-						const material = new THREE.LineBasicMaterial({ 
-							color: 0x333333,      // 연결선 색상 (여기서 변경 가능)
-							transparent: true,
-							opacity: 0.15         // 연결선 투명도 (여기서 변경 가능)
-						});
-						const line = new THREE.Line(geometry, material);
-						scene.add(line);
-						connections.push({ line, material });
-					}
-				}
-			}
-			
-			// ========== 배경 파티클 생성 ==========
-			const particleGeometry = new THREE.BufferGeometry();
-			const particleCount = 150; // 파티클 개수 (여기서 조절 가능)
-			const positions = new Float32Array(particleCount * 3);
-			
-			// 랜덤 위치에 파티클 배치
-			for (let i = 0; i < particleCount * 3; i += 3) {
-				positions[i] = (Math.random() - 0.5) * 20;     // X 좌표
-				positions[i + 1] = (Math.random() - 0.5) * 20; // Y 좌표  
-				positions[i + 2] = (Math.random() - 0.5) * 20; // Z 좌표
-			}
-			
-			particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-			const particleMaterial = new THREE.PointsMaterial({
-				color: 0x888888,    // 파티클 색상 (여기서 변경 가능)
-				size: 0.02,         // 파티클 크기 (여기서 변경 가능)
-				transparent: true,
-				opacity: 0.3        // 파티클 투명도 (여기서 변경 가능)
-			});
-			const particles = new THREE.Points(particleGeometry, particleMaterial);
-			scene.add(particles);
-			
-			// ========== 카메라 위치 설정 ==========
-			camera.position.set(0, 0, 10); // 카메라 위치 (여기서 조절 가능)
-			camera.lookAt(0, 0, 0);         // 카메라가 바라보는 지점
-			
-			// ========== 마우스 인터랙션 설정 ==========
-			const raycaster = new THREE.Raycaster(); // 마우스 ray casting용
-			const mouse = new THREE.Vector2();       // 마우스 좌표 저장
-			let hoveredNode = null;                  // 현재 호버된 노드
-			
-			// 마우스 움직임 처리
-			function onMouseMove(event) {
-				const rect = renderer.domElement.getBoundingClientRect();
-				// 마우스 좌표를 WebGL 좌표계로 변환 (-1 ~ 1)
-				mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-				mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-				
-				// 마우스 위치에서 3D 오브젝트와의 교차점 계산
-				raycaster.setFromCamera(mouse, camera);
-				const intersects = raycaster.intersectObjects(nodes.map(n => n.mesh));
-				
-				// 이전 호버 상태 초기화
-				if (hoveredNode) {
-					hoveredNode.material.color.setHex(hoveredNode.userData.originalColor);
-					hoveredNode.scale.setScalar(1);
-					tooltip.style.opacity = '0';
-				}
-				
-				// 새로운 노드 호버 처리 (더 드라마틱한 효과)
-				if (intersects.length > 0) {
-					hoveredNode = intersects[0].object;
-					if (hoveredNode.userData.post) { // 포스트가 연결된 노드만 반응
-						hoveredNode.material.color.setHex(0xffffff); // 흰색으로 변경
-						hoveredNode.scale.setScalar(2.5);            // 크기 더 크게 확대
-						
-						// 툴팁 표시 (개선된 스타일)
-						tooltip.textContent = hoveredNode.userData.title;
-						tooltip.style.left = event.clientX + 'px';
-						tooltip.style.top = event.clientY + 'px';
-						tooltip.style.opacity = '1';
-						
-						document.body.style.cursor = 'pointer';
-					}
-				} else {
-					hoveredNode = null;
-					document.body.style.cursor = 'default';
-				}
-			}
-			
-			// 클릭 처리
-			function onClick(event) {
-				if (hoveredNode && hoveredNode.userData.link) {
-					window.location.href = hoveredNode.userData.link;
-				}
-			}
-			
-			// 이벤트 리스너 등록
-			renderer.domElement.addEventListener('mousemove', onMouseMove);
-			renderer.domElement.addEventListener('click', onClick);
-			
-			// ========== 애니메이션 루프 ==========
-			let time = 0; // 시간 추적용 변수
-			
-			function animate() {
-				time += 0.008; // 애니메이션 속도 (여기서 조절 가능)
-				
-				// ========== 전체 네트워크 회전 ==========
-				scene.rotation.y = time * 0.1;                    // Y축 회전 속도
-				scene.rotation.x = Math.sin(time * 0.3) * 0.05;    // X축 흔들림 정도
-				
-				// ========== 노드 펄스 애니메이션 ==========
-				nodes.forEach((node, index) => {
-					if (node.mesh !== hoveredNode) { // 호버된 노드가 아닐 때만
-						// 사인파를 이용한 펄스 효과
-						const pulse = Math.sin(time * 2 + index * 0.5) * 0.02;
-						node.mesh.scale.setScalar(1 + pulse);
-					}
-					
-					// 글로우 효과 펄스 (모든 노드에 적용)
-					const glowPulse = Math.sin(time * 1.5 + index * 0.3) * 0.1;
-					node.glow.scale.setScalar(1.2 + glowPulse);
-				});
-				
-				// ========== 연결선 깜빡임 효과 ==========
-				connections.forEach((conn, index) => {
-					const opacity = 0.08 + Math.sin(time * 2 + index * 0.2) * 0.05;
-					conn.material.opacity = Math.max(0.03, opacity);
-				});
-				
-				// ========== 배경 파티클 회전 ==========
-				particles.rotation.y = time * 0.02; // Y축 회전 속도
-				particles.rotation.x = time * 0.01; // X축 회전 속도
-				
-				// 렌더링 및 다음 프레임 요청
-				renderer.render(scene, camera);
-				requestAnimationFrame(animate);
-			}
-			
-			animate(); // 애니메이션 시작
-			
-			// ========== 반응형 처리 ==========
-			function handleResize() {
-				// 전체 화면 크기로 캔버스 업데이트
-				const width = window.innerWidth;
-				const height = window.innerHeight;
-				
-				camera.aspect = width / height;
-				camera.updateProjectionMatrix();
-				renderer.setSize(width, height);
-			}
-			
-			window.addEventListener('resize', handleResize);
-			handleResize(); // 초기 크기 설정
 		</script>
 	</body>
 </html>

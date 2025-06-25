@@ -4,6 +4,7 @@ description: 'KOSSDA 대학생 공모전 2025에 참가하면서 느낀 점들�
 pubDate: 'Jun 22 2025'
 heroImage: '../../assets/KOSSDA.png'
 tags: ['공모전', '데이터분석']
+category: '경험'
 ---
 
 # SNU KOSSDA 공모전 참가 후기
