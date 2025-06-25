@@ -80,27 +80,45 @@ import TranslateButton from './TranslateButton.astro';
 </header>
 
 <style>
-	/* 테마별 아이콘 표시 */
+	/* 테마별 아이콘 표시 - BaseHead.astro의 테마 관리와 동기화 */
 	:global(body.light-theme) #sunIcon {
-		opacity: 1;
+		opacity: 1 !important;
 	}
 	
 	:global(body.light-theme) #moonIcon {
-		opacity: 0;
+		opacity: 0 !important;
 	}
 	
 	:global(body.dark-theme) #sunIcon {
-		opacity: 0;
+		opacity: 0 !important;
 	}
 	
 	:global(body.dark-theme) #moonIcon {
-		opacity: 1;
+		opacity: 1 !important;
+	}
+	
+	/* data-theme 속성 기반 아이콘 표시 (fallback) */
+	#themeToggleBtn[data-theme="light"] #sunIcon {
+		opacity: 1 !important;
+	}
+	
+	#themeToggleBtn[data-theme="light"] #moonIcon {
+		opacity: 0 !important;
+	}
+	
+	#themeToggleBtn[data-theme="dark"] #sunIcon {
+		opacity: 0 !important;
+	}
+	
+	#themeToggleBtn[data-theme="dark"] #moonIcon {
+		opacity: 1 !important;
 	}
 </style>
 
 <script>
-	// 모바일 메뉴 토글
+	// 모바일 메뉴 토글 및 테마 버튼 초기화
 	document.addEventListener('DOMContentLoaded', function() {
+		// 모바일 메뉴 토글
 		const mobileMenuBtn = document.getElementById('mobileMenuBtn');
 		const mobileMenu = document.getElementById('mobileMenu');
 		
@@ -108,6 +126,15 @@ import TranslateButton from './TranslateButton.astro';
 			mobileMenuBtn.addEventListener('click', function() {
 				mobileMenu.classList.toggle('hidden');
 			});
+		}
+		
+		// 테마 버튼 초기 상태 설정 (BaseHead.astro와 동기화)
+		const themeBtn = document.getElementById('themeToggleBtn');
+		if (themeBtn) {
+			// BaseHead.astro에서 이미 이벤트 리스너가 등록되므로 여기서는 초기 상태만 확인
+			const savedTheme = sessionStorage.getItem('neural-blog-theme');
+			const isDark = savedTheme ? savedTheme === 'dark' : true;
+			themeBtn.setAttribute('data-theme', isDark ? 'dark' : 'light');
 		}
 	});
 </script>
