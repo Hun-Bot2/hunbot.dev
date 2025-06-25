@@ -32,8 +32,8 @@ const categories = [...new Set(posts.map(post => post.data.category || 'General'
 		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
 		
 		<!-- 모듈화된 스타일시트 임포트 -->
-		<link rel="stylesheet" href="/src/styles/neuralNetwork.css" />
-		<link rel="stylesheet" href="/src/styles/controls.css" />
+		<link rel="stylesheet" href="/styles/neuralNetwork.css" />
+		<link rel="stylesheet" href="/styles/controls.css" />
 	
 	</head>
 	<body>
@@ -152,7 +152,7 @@ const categories = [...new Set(posts.map(post => post.data.category || 'General'
 			import * as THREE from 'https://cdn.skypack.dev/three@0.132.2';
 			
 			// 커스텀 모듈들 로드
-			import { NeuralNetwork3D } from '/src/scripts/neuralNetwork.js';
+			import { NeuralNetwork3D } from '/scripts/neuralNetwork.js';
 			
 			// 전역 THREE 객체 설정 (모듈에서 사용하기 위해)
 			window.THREE = THREE;
