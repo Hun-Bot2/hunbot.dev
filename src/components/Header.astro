@@ -1,7 +1,6 @@
 ---
 import HeaderLink from './HeaderLink.astro';
 import { SITE_TITLE } from '../consts';
-import TranslateButton from './TranslateButton.astro';
 ---
 
 <header class="sticky top-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-b border-purple-200/30 dark:border-purple-500/20 shadow-sm shadow-purple-500/5">
@@ -22,7 +21,6 @@ import TranslateButton from './TranslateButton.astro';
 			<HeaderLink href="/blog">Blog</HeaderLink>
 			<HeaderLink href="/archive">Archive</HeaderLink>
 			<HeaderLink href="/about">About</HeaderLink>
-			<TranslateButton />
 		</div>
 		
 		<!-- 우측 액션 버튼들 -->
@@ -72,9 +70,6 @@ import TranslateButton from './TranslateButton.astro';
 			<HeaderLink href="/blog" class="block">Blog</HeaderLink>
 			<HeaderLink href="/archive" class="block">Archive</HeaderLink>
 			<HeaderLink href="/about" class="block">About</HeaderLink>
-			<div class="pt-2">
-				<TranslateButton />
-			</div>
 		</div>
 	</div>
 </header>

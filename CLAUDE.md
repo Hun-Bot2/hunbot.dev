@@ -85,7 +85,7 @@ npm run astro        # Run Astro CLI commands
 ### Search Engine Optimization Features
 - **Comprehensive Meta Tags**: Open Graph, Twitter Cards, article-specific tags
 - **Structured Data**: JSON-LD schemas for WebSite, Person, BlogPosting, and BreadcrumbList
-- **Multilingual Support**: Korean primary with English/Japanese alternates
+- **Korean Language Optimization**: Proper lang attributes and Korean-specific meta tags
 - **Performance Optimization**: Font preloading, DNS prefetch, canonical URLs
 - **Technical SEO**: Sitemap generation, robots.txt, proper heading hierarchy
 
