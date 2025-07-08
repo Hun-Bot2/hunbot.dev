@@ -172,11 +172,11 @@ export class ControlsManager {
     
     // 트랙패드와 마우스휠 구분 (대략적)
     if (Math.abs(delta) < 100) {
-      // 트랙패드 - 더 세밀한 조작
-      delta = delta * 0.01;
+      // 트랙패드 - 더 빠른 조작
+      delta = delta * 0.03;
     } else {
       // 마우스휠 - 더 큰 단위로 조작
-      delta = delta > 0 ? 0.5 : -0.5;
+      delta = delta > 0 ? 1.0 : -1.0;
     }
     
     const newZ = Math.max(

@@ -1,71 +1,60 @@
 ---
-// TableOfContents 컴포넌트
 ---
 
-<div id="table-of-contents" class="fixed top-24 right-5 w-72 bg-white/95 dark:bg-slate-800/95 backdrop-blur-lg border border-slate-200 dark:border-slate-600 rounded-xl p-6 shadow-lg shadow-slate-900/10 dark:shadow-slate-900/30 max-h-[calc(100vh-12rem)] overflow-y-auto z-30 transition-all duration-300 opacity-0 translate-x-full lg:opacity-100 lg:translate-x-0 select-none">
-	<div id="toc-header" class="flex items-center justify-between mb-4 pb-3 border-b border-slate-200 dark:border-slate-600 cursor-move">
-		<h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100 m-0 flex items-center gap-2">
-			<svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
-			</svg>
-			목차
+<div id="table-of-contents" class="fixed top-24 right-6 w-72 bg-white/90 dark:bg-black/80 backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-xl p-5 shadow-2xl shadow-black/10 dark:shadow-black/40 max-h-[calc(100vh-12rem)] overflow-y-auto z-30 transition-all duration-300 opacity-0 translate-x-full lg:opacity-100 lg:translate-x-0 select-none">
+	<div id="toc-header" class="flex items-center justify-between mb-4 pb-3 border-b border-black/10 dark:border-white/10 cursor-move">
+		<h3 class="text-base font-semibold text-black dark:text-white m-0">
+			Table of Contents
 		</h3>
-		<button id="toc-toggle" class="p-1 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-all duration-200" aria-label="목차 토글">
+		<button id="toc-toggle" class="p-1.5 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-md transition-all duration-200" aria-label="Toggle table of contents">
 			<svg class="w-4 h-4 transition-transform duration-200" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 				<polyline points="6,9 12,15 18,9"></polyline>
 			</svg>
 		</button>
 	</div>
 	<nav id="toc-nav" class="transition-all duration-300 overflow-hidden">
-		<ul id="toc-list" class="list-none p-0 m-0 space-y-2">
-			<!-- 목차 항목들이 JavaScript로 동적 생성됩니다 -->
+		<ul id="toc-list" class="list-none p-0 m-0 space-y-1">
 		</ul>
 	</nav>
 </div>
 
 <style>
-	/* 드래그 상태 스타일 */
 	.dragging {
-		@apply cursor-grabbing shadow-2xl shadow-purple-500/40 scale-105;
+		@apply cursor-grabbing shadow-2xl shadow-black/30 dark:shadow-black/60 scale-105;
 		transition: none !important;
 		z-index: 9999 !important;
 	}
 	
 	.drag-handle:hover {
-		@apply bg-slate-100 dark:bg-slate-700;
+		@apply bg-black/5 dark:bg-white/10;
 	}
 	
-	/* 토글 상태 스타일 */
 	.collapsed svg {
-		transform: rotate(-90deg);
+		@apply -rotate-90;
 	}
 	
 	.collapsed nav {
-		max-height: 0;
-		opacity: 0;
+		@apply max-h-0 opacity-0;
 	}
 	
-	/* 활성 링크 스타일 */
 	.toc-link {
-		@apply block text-slate-600 dark:text-slate-400 no-underline px-3 py-1.5 rounded-md text-sm leading-5 transition-all duration-200 border-l-2 border-transparent;
+		@apply block text-black/70 dark:text-white/70 no-underline px-3 py-2 rounded-lg text-sm leading-5 transition-all duration-200;
 	}
 	
 	.toc-link:hover {
-		@apply bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border-l-purple-500;
+		@apply bg-black/5 dark:bg-white/10 text-black dark:text-white;
 	}
 	
 	.toc-link.active {
-		@apply bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium border-l-purple-500 shadow-lg shadow-purple-500/30;
+		@apply bg-black/10 dark:bg-white/15 text-black dark:text-white font-medium;
 	}
 	
-	/* 헤딩 레벨별 들여쓰기 */
-	.toc-h2 { @apply pl-3; }
-	.toc-h3 { @apply pl-6; }
-	.toc-h4 { @apply pl-9; }
-	.toc-h5 { @apply pl-12; }
-	/* .toc-h6 { @apply pl-13; } */
+	.toc-h2 { @apply pl-4; }
+	.toc-h3 { @apply pl-8; }
+	.toc-h4 { @apply pl-12; }
+	.toc-h5 { @apply pl-16; }
+	.toc-h6 { @apply pl-20; }
 	
-	/* 모바일 반응형 */
 	@media (max-width: 1023px) {
 		#table-of-contents {
 			@apply translate-x-full opacity-0;
@@ -78,7 +67,7 @@
 	
 	@media (max-width: 768px) {
 		#table-of-contents {
-			@apply w-[calc(100vw-2.5rem)] right-5 left-5 max-h-[60vh];
+			@apply w-[calc(100vw-3rem)] right-6 left-6 max-h-[60vh];
 		}
 	}
 </style>
@@ -314,8 +303,8 @@
 				// 모바일 토글 버튼이 없으면 생성
 				if (!document.querySelector('.mobile-toc-toggle')) {
 					const tocToggleBtn = document.createElement('button');
-					tocToggleBtn.innerHTML = '📋 목차';
-					tocToggleBtn.className = 'mobile-toc-toggle fixed top-20 right-5 z-50 bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 px-4 py-2 rounded-lg text-sm font-medium cursor-pointer shadow-lg shadow-purple-500/30 transition-all duration-200 hover:shadow-xl hover:scale-105';
+					tocToggleBtn.innerHTML = '<svg class="w-4 h-4 mr-1.5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>Contents';
+					tocToggleBtn.className = 'mobile-toc-toggle fixed top-20 right-6 z-50 bg-black/90 dark:bg-white/90 hover:bg-black dark:hover:bg-white text-white dark:text-black border-0 px-4 py-2.5 rounded-xl text-sm font-medium cursor-pointer shadow-lg backdrop-blur-xl transition-all duration-200';
 					
 					tocToggleBtn.addEventListener('click', function() {
 						if (tocContainer) {

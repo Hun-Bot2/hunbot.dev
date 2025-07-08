@@ -88,57 +88,77 @@ export class ThemeManager {
   getThemeColors() {
     if (this.isDarkTheme) {
       return {
-        background: 0x000000,
-        connections: 0xffffff,
-        connectionOpacity: 0.4,
-        particles: 0xcccccc,
+        background: 0x000000,    // Pure black for elegance
+        connections: 0x666666,   // Subtle gray connections
+        connectionOpacity: 0.3,  // More subtle
+        particles: 0x444444,     // Very subtle particles
         nodeColors: {
-          default: 0x00d4ff,    // 사이버 블루
-          brain: 0xff0080,      // 네온 핑크
-          math: 0x00ff88,       // 네온 그린
-          contest: 0xff8c00,    // 네온 오렌지
-          dummy: 0x888888       // 회색
+          default: 0x007AFF,     // Apple Blue
+          brain: 0x007AFF,       // Apple Blue  
+          math: 0x34C759,        // Apple Green
+          contest: 0xFF9500,     // Apple Orange
+          dummy: 0x8E8E93,       // Apple Gray
+          ai: 0x5856D6,          // Apple Purple
+          dev: 0x32D74B,         // Apple Mint Green
+          viz: 0xFF9F0A,         // Apple Yellow
+          memory: 0xFF2D92       // Apple Pink
         }
       };
     } else {
+      // Light mode - Apple's sophisticated palette
       return {
-        background: 0xffffff,
-        connections: 0x333333,
-        connectionOpacity: 0.3,
-        particles: 0x666666,
+        background: 0xF2F2F7,    // Apple Light Gray background
+        connections: 0xC7C7CC,   // Apple separator color
+        connectionOpacity: 0.4,
+        particles: 0xAEAEB2,     // Apple secondary label
         nodeColors: {
-          default: 0x0066cc,    // 진한 파랑
-          brain: 0xcc0066,      // 진한 핑크
-          math: 0x009944,       // 진한 그린
-          contest: 0xcc6600,    // 진한 오렌지
-          dummy: 0x666666       // 회색
+          default: 0x007AFF,     // Apple Blue
+          brain: 0x007AFF,       // Apple Blue
+          math: 0x34C759,        // Apple Green
+          contest: 0xFF9500,     // Apple Orange
+          dummy: 0x8E8E93,       // Apple Gray
+          ai: 0x5856D6,          // Apple Purple
+          dev: 0x32D74B,         // Apple Mint Green
+          viz: 0xFF9F0A,         // Apple Yellow
+          memory: 0xFF2D92       // Apple Pink
         }
       };
     }
   }
 
   /**
-   * 특정 태그에 따른 색상 반환
+   * 특정 태그에 따른 색상 반환 - 뇌 영역별 색상 매핑
    */
   getColorByTags(tags) {
     const colors = this.getThemeColors().nodeColors;
     
     if (!tags || tags.length === 0) {
-      return colors.dummy;
+      return colors.memory; // 기본값을 memory 색상으로
     }
     
-    // 태그 우선순위에 따른 색상 결정
-    if (tags.includes('뇌공학') || tags.includes('AI')) {
-      return colors.brain;
+    // 뇌 영역별 태그 매핑
+    // Frontal (AI/ML) - 보라색
+    if (tags.some(tag => ['AI', '인공지능', 'ML', 'Deep Learning', '딥러닝', 'Machine Learning'].includes(tag))) {
+      return colors.ai;
     }
-    if (tags.includes('수학') || tags.includes('통계')) {
+    
+    // Parietal (Math/Statistics) - 그린
+    if (tags.some(tag => ['수학', '통계', 'Statistics', 'Math', '확률', '미적분'].includes(tag))) {
       return colors.math;
     }
-    if (tags.includes('공모전') || tags.includes('회고')) {
-      return colors.contest;
+    
+    // Temporal (Development) - 청록색
+    if (tags.some(tag => ['개발', 'Development', '코딩', 'Programming', 'JavaScript', 'Python', 'React', 'Node'].includes(tag))) {
+      return colors.dev;
     }
     
-    return colors.default;
+    // Occipital (Visualization) - 주황색
+    if (tags.some(tag => ['시각화', 'Visualization', 'Design', 'Three.js', 'Canvas', 'Graphics'].includes(tag))) {
+      return colors.viz;
+    }
+    
+    // Memory (기타) - 분홍색
+    return colors.memory;
   }
 
   /**
