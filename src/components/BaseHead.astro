@@ -87,29 +87,60 @@ const { title, description, image = FallbackImage } = Astro.props;
 <link rel="dns-prefetch" href="//fonts.googleapis.com" />
 <link rel="dns-prefetch" href="//fonts.gstatic.com" />
 
-<!-- Structured Data for Blog -->
+<!-- Structured Data for Website -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "Blog",
+  "@type": "WebSite",
   "name": "Hun-Bot.dev",
   "description": "뇌공학, AI, 수학, 그리고 개발자의 삶을 기록하는 공간",
   "url": "https://hunbot.dev",
   "author": {
     "@type": "Person",
-    "name": "Hun-Bot"
+    "name": "Hun-Bot",
+    "url": "https://hunbot.dev",
+    "sameAs": [
+      "https://github.com/Hun-Bot2"
+    ]
   },
-  "blogPost": {
-    "@type": "BlogPosting",
-    "headline": title,
-    "description": description,
-    "url": canonicalURL.href,
-    "datePublished": new Date().toISOString(),
-    "author": {
-      "@type": "Person",
-      "name": "Hun-Bot"
-    }
+  "publisher": {
+    "@type": "Person",
+    "name": "Hun-Bot",
+    "url": "https://hunbot.dev"
+  },
+  "inLanguage": "ko-KR",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": {
+      "@type": "EntryPoint",
+      "urlTemplate": "https://hunbot.dev/search?q={search_term_string}"
+    },
+    "query-input": "required name=search_term_string"
   }
+}
+</script>
+
+<!-- Organization/Person Schema -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "Hun-Bot",
+  "url": "https://hunbot.dev",
+  "sameAs": [
+    "https://github.com/Hun-Bot2"
+  ],
+  "jobTitle": "개발자",
+  "description": "뇌공학, AI, 수학 분야의 개발자이자 블로거",
+  "knowsAbout": [
+    "뇌공학",
+    "인공지능",
+    "Machine Learning",
+    "수학",
+    "통계학",
+    "웹 개발",
+    "데이터 사이언스"
+  ]
 }
 </script>
 

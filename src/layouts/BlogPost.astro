@@ -5,6 +5,7 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import FormattedDate from '../components/FormattedDate.astro';
 import TableOfContents from '../components/TableOfContents.astro';
+import Breadcrumb from '../components/Breadcrumb.astro';
 import { Image } from 'astro:assets';
 
 type Props = CollectionEntry<'blog'>['data'];
@@ -22,6 +23,85 @@ const { title, description, pubDate, updatedDate, heroImage, tags = [] } = Astro
 		<meta property="og:locale:alternate" content="en_US" />
 		<meta property="og:locale:alternate" content="ja_JP" />
 		
+		<!-- SEO 메타 태그 개선 -->
+		<meta name="article:author" content="Hun-Bot" />
+		<meta name="article:published_time" content={pubDate.toISOString()} />
+		{updatedDate && <meta name="article:modified_time" content={updatedDate.toISOString()} />}
+		{tags && tags.map(tag => <meta name="article:tag" content={tag} />)}
+		
+		<!-- 추가 Open Graph 메타 태그 -->
+		<meta property="og:type" content="article" />
+		<meta property="article:author" content="Hun-Bot" />
+		<meta property="article:published_time" content={pubDate.toISOString()} />
+		{updatedDate && <meta property="article:modified_time" content={updatedDate.toISOString()} />}
+		{tags && tags.map(tag => <meta property="article:tag" content={tag} />)}
+		
+		<!-- 블로그 포스트 구조화 데이터 -->
+		<script type="application/ld+json">
+		{
+			"@context": "https://schema.org",
+			"@type": "BlogPosting",
+			"headline": title,
+			"description": description,
+			"image": heroImage ? new URL(heroImage.src, Astro.url).href : undefined,
+			"author": {
+				"@type": "Person",
+				"name": "Hun-Bot",
+				"url": "https://hunbot.dev",
+				"sameAs": ["https://github.com/Hun-Bot2"]
+			},
+			"publisher": {
+				"@type": "Person",
+				"name": "Hun-Bot",
+				"url": "https://hunbot.dev"
+			},
+			"datePublished": pubDate.toISOString(),
+			"dateModified": updatedDate ? updatedDate.toISOString() : pubDate.toISOString(),
+			"mainEntityOfPage": {
+				"@type": "WebPage",
+				"@id": new URL(Astro.url.pathname, Astro.site).href
+			},
+			"url": new URL(Astro.url.pathname, Astro.site).href,
+			"keywords": tags ? tags.join(", ") : undefined,
+			"wordCount": undefined,
+			"inLanguage": "ko-KR",
+			"isAccessibleForFree": true,
+			"genre": "기술 블로그",
+			"about": tags ? tags.map(tag => ({
+				"@type": "Thing",
+				"name": tag
+			})) : undefined
+		}
+		</script>
+		
+		<!-- 빵부스러기 네비게이션 구조화 데이터 -->
+		<script type="application/ld+json">
+		{
+			"@context": "https://schema.org",
+			"@type": "BreadcrumbList",
+			"itemListElement": [
+				{
+					"@type": "ListItem",
+					"position": 1,
+					"name": "Home",
+					"item": "https://hunbot.dev"
+				},
+				{
+					"@type": "ListItem",
+					"position": 2,
+					"name": "Blog",
+					"item": "https://hunbot.dev/blog"
+				},
+				{
+					"@type": "ListItem",
+					"position": 3,
+					"name": title,
+					"item": new URL(Astro.url.pathname, Astro.site).href
+				}
+			]
+		}
+		</script>
+
 		<style>
 			/* 수학 공식 스타일 - KaTeX 전용 */
 			.prose .katex {
@@ -54,6 +134,13 @@ const { title, description, pubDate, updatedDate, heroImage, tags = [] } = Astro
 				
 				<!-- Blog Container -->
 				<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+					<!-- Breadcrumb Navigation -->
+					<Breadcrumb items={[
+						{ name: "Home", href: "/" },
+						{ name: "Blog", href: "/blog" },
+						{ name: title }
+					]} />
+					
 					<!-- Main Content -->
 					<div class="prose w-full max-w-none m-0 py-6 sm:py-8 lg:py-10 px-4 sm:px-6 lg:px-8 bg-white/98 dark:bg-slate-800/98 rounded-xl sm:rounded-2xl lg:rounded-3xl shadow-lg shadow-gray-200/25 dark:shadow-gray-800/25 text-gray-800 dark:text-gray-200">
 						<!-- Title Section -->
