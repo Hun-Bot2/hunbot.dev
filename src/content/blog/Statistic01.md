@@ -1,7 +1,7 @@
 ---
 title: '통계학 기초: 기술통계와 추론통계'
 description: '공부하면서 느낀 통계지식의 부족함을 채워가는 과정'
-pubDate: 'Jun 25 2025'
+pubDate: '2025-06-25'
 # heroImage: '../../assets/statistics.jpg'
 tags: ['통계', '공부', '수학']
 category: '학습'

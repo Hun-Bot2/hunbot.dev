@@ -2,24 +2,11 @@
 import BaseHead from '../../components/BaseHead.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
+import BlogCard from '../../components/BlogCard.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
-import { getCollection } from 'astro:content';
-import FormattedDate from '../../components/FormattedDate.astro';
-import { Image } from 'astro:assets';
+import { getAllPosts } from '../../utils/blog.ts';
 
-const posts = (await getCollection('blog')).sort(
-	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
-);
-
-// 단어 수 계산 함수 (간단한 추정)
-function estimateWordCount(content: string): number {
-	return Math.floor(content.length / 5); // 대략적인 추정
-}
-
-// 읽기 시간 계산 (분당 200단어 기준)
-function estimateReadTime(wordCount: number): number {
-	return Math.max(1, Math.ceil(wordCount / 200));
-}
+const posts = await getAllPosts();
 ---
 
 <!doctype html>
@@ -57,74 +44,9 @@ function estimateReadTime(wordCount: number): number {
 		<main class="max-w-5xl mx-auto px-6 pb-20">
 				<!-- Blog Posts List -->
 				<div class="space-y-8">
-					{posts.map((post) => {
-						const wordCount = estimateWordCount(post.data.description || post.data.title);
-						const readTime = estimateReadTime(wordCount);
-						
-						return (
-							<article class="group">
-								<a 
-									href={`/blog/${post.id}/`}
-									class="block bg-white dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600 rounded-2xl transition-all duration-200 overflow-hidden shadow-sm hover:shadow-lg hover:shadow-slate-200/50 dark:hover:shadow-slate-900/50"
-								>
-												<div class="p-8">
-										<div class="flex flex-wrap items-center gap-3 mb-4 text-sm">
-											<div class="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
-												<svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-													<path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"></path>
-												</svg>
-												<FormattedDate date={post.data.pubDate} />
-											</div>
-											
-											{post.data.category && (
-												<span class="px-2.5 py-1 text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30 rounded-full border border-blue-200 dark:border-blue-800">
-													{post.data.category}
-												</span>
-											)}
-										</div>
-										
-										<h2 class="text-lg font-bold text-slate-900 dark:text-slate-100 mb-3 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300 line-clamp-2 leading-tight">
-											{post.data.title}
-										</h2>
-										
-										{post.data.description && (
-											<p class="text-slate-600 dark:text-slate-300 mb-4 line-clamp-4 leading-relaxed text-sm flex-1">
-												{post.data.description}
-											</p>
-										)}
-										
-										<div class="mt-auto">
-											<div class="flex items-center justify-between">
-												<div class="flex items-center gap-3">
-													{post.data.tags && post.data.tags.length > 0 && (
-														<div class="flex gap-2">
-															{post.data.tags.slice(0, 2).map((tag) => (
-																<span class="text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 px-2.5 py-1 rounded-md border border-blue-200 dark:border-blue-800">
-																	#{tag}
-																</span>
-															))}
-														</div>
-													)}
-													
-													<div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-														<span>{wordCount} words</span>
-														<span>•</span>
-														<span>{readTime} min</span>
-													</div>
-												</div>
-												
-												<div class="flex items-center justify-center w-8 h-8 rounded-full bg-blue-500/10 dark:bg-blue-500/20 group-hover:bg-blue-500 transition-all duration-300">
-													<svg class="w-4 h-4 text-blue-600 dark:text-blue-400 group-hover:text-white transition-colors duration-300 transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-													</svg>
-												</div>
-											</div>
-										</div>
-									</div>
-								</a>
-							</article>
-						);
-					})}
+					{posts.map((post) => (
+						<BlogCard post={post} />
+					))}
 				</div>
 				
 				<!-- 빈 상태 -->
@@ -146,29 +68,5 @@ function estimateReadTime(wordCount: number): number {
 		</main>
 		
 		<Footer />
-		
-		<style>
-			/* 라인 클램프 유틸리티 */
-			.line-clamp-2 {
-				display: -webkit-box;
-				-webkit-line-clamp: 2;
-				-webkit-box-orient: vertical;
-				overflow: hidden;
-			}
-			
-			.line-clamp-3 {
-				display: -webkit-box;
-				-webkit-line-clamp: 3;
-				-webkit-box-orient: vertical;
-				overflow: hidden;
-			}
-			
-			.line-clamp-4 {
-				display: -webkit-box;
-				-webkit-line-clamp: 4;
-				-webkit-box-orient: vertical;
-				overflow: hidden;
-			}
-		</style>
 	</body>
 </html>

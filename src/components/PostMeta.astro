@@ -1,0 +1,35 @@
+---
+import FormattedDate from './FormattedDate.astro';
+import { estimateWordCount, estimateReadTime } from '../utils/blog.ts';
+
+export interface Props {
+  pubDate: Date;
+  category?: string;
+  description?: string;
+  tags?: string[];
+}
+
+const { pubDate, category, description, tags } = Astro.props;
+
+const wordCount = estimateWordCount(description || '');
+const readTime = estimateReadTime(wordCount);
+---
+
+<div class="flex flex-wrap items-center gap-3 mb-4 text-sm">
+  <div class="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
+    <svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"></path>
+    </svg>
+    <FormattedDate date={pubDate} />
+  </div>
+  
+  {category && (
+    <slot name="category-badge" />
+  )}
+
+  <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+    <span>{wordCount} words</span>
+    <span>•</span>
+    <span>{readTime} min</span>
+  </div>
+</div>

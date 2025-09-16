@@ -5,6 +5,8 @@ import Footer from '../components/Footer.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 import { getCollection } from 'astro:content';
 import FormattedDate from '../components/FormattedDate.astro';
+import '../styles/neuralNetwork.css';
+import '../styles/controls.css';
 
 // 최신 포스트 6개 가져오기
 const posts = (await getCollection('blog')).sort(
@@ -35,9 +37,7 @@ const categories = [...new Set(posts.map(post => post.data.category || 'General'
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 		<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
 		
-		<!-- 모듈화된 스타일시트 임포트 -->
-		<link rel="stylesheet" href="/styles/neuralNetwork.css" />
-		<link rel="stylesheet" href="/styles/controls.css" />
+		
 	
 	</head>
 	<body>
