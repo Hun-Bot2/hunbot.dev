@@ -64,10 +64,29 @@ export function getPostUrl(post: BlogPost): string {
 }
 
 /**
- * Estimate word count from content (rough estimation)
+ * Estimate word count from markdown content
  */
 export function estimateWordCount(content: string): number {
-  return Math.floor(content.length / 5);
+  if (!content) return 0;
+  
+  // Remove markdown formatting and HTML tags
+  const plainText = content
+    .replace(/#{1,6}\s+/g, '') // Remove headers
+    .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
+    .replace(/\*(.*?)\*/g, '$1') // Remove italic
+    .replace(/`(.*?)`/g, '$1') // Remove inline code
+    .replace(/```[\s\S]*?```/g, '') // Remove code blocks
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1') // Remove links but keep text
+    .replace(/<[^>]*>/g, '') // Remove HTML tags
+    .replace(/[^\w\s가-힣]/g, ' ') // Keep only words and Korean characters
+    .replace(/\s+/g, ' ') // Normalize whitespace
+    .trim();
+  
+  if (!plainText) return 0;
+  
+  // Count words (split by whitespace)
+  const words = plainText.split(/\s+/).filter(word => word.length > 0);
+  return words.length;
 }
 
 /**

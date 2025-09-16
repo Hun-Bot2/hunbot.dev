@@ -5,13 +5,16 @@ import { estimateWordCount, estimateReadTime } from '../utils/blog.ts';
 export interface Props {
   pubDate: Date;
   category?: string;
-  description?: string;
+  content?: string; // Full post content for accurate word counting
+  description?: string; // Fallback if content not available
   tags?: string[];
 }
 
-const { pubDate, category, description, tags } = Astro.props;
+const { pubDate, category, content, description, tags } = Astro.props;
 
-const wordCount = estimateWordCount(description || '');
+// Use actual content for word count, fallback to description
+const textToCount = content || description || '';
+const wordCount = estimateWordCount(textToCount);
 const readTime = estimateReadTime(wordCount);
 ---
 
