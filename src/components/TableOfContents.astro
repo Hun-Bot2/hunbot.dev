@@ -1,99 +1,235 @@
 ---
 ---
 
-<div id="table-of-contents" class="fixed top-24 right-6 w-72 bg-white/90 dark:bg-black/80 backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-xl p-5 shadow-2xl shadow-black/10 dark:shadow-black/40 max-h-[calc(100vh-12rem)] overflow-y-auto z-30 transition-all duration-300 opacity-0 translate-x-full lg:opacity-100 lg:translate-x-0 select-none">
-	<div id="toc-header" class="flex items-center justify-between mb-4 pb-3 border-b border-black/10 dark:border-white/10 cursor-move">
-		<h3 class="text-base font-semibold text-black dark:text-white m-0">
-			Table of Contents
-		</h3>
-		<button id="toc-toggle" class="p-1.5 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-md transition-all duration-200" aria-label="Toggle table of contents">
-			<svg class="w-4 h-4 transition-transform duration-200" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-				<polyline points="6,9 12,15 18,9"></polyline>
+<!-- Compact TOC Button -->
+<button id="toc-trigger" class="fixed top-28 right-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 z-[60] flex items-center gap-2 px-4 py-3 group hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer select-none">
+	<svg class="w-4 h-4 text-slate-700 dark:text-slate-300 group-hover:text-blue-600 dark:group-hover:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+		<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/>
+	</svg>
+	<span class="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 hidden sm:block">
+		Contents
+	</span>
+	<span class="text-xs text-slate-500 dark:text-slate-400 block sm:hidden">
+		TOC
+	</span>
+	<!-- Animated Arrow Icon -->
+	<svg id="toc-arrow" class="w-3 h-3 text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+		<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+	</svg>
+</button>
+
+<!-- Compact TOC Panel -->
+<div id="table-of-contents" class="fixed top-28 right-20 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl max-h-[calc(100vh-8rem)] overflow-hidden z-[55] transition-all duration-300 opacity-0 scale-95 pointer-events-none">
+	<div class="p-4 border-b border-slate-200 dark:border-slate-700">
+		<h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+			<svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/>
 			</svg>
-		</button>
+			Contents
+		</h3>
 	</div>
-	<nav id="toc-nav" class="transition-all duration-300 overflow-hidden">
-		<ul id="toc-list" class="list-none p-0 m-0 space-y-1">
+	<nav class="p-3 max-h-96 overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600">
+		<ul id="toc-list" class="space-y-1">
 		</ul>
 	</nav>
 </div>
 
 <style>
-	.dragging {
-		@apply cursor-grabbing shadow-2xl shadow-black/30 dark:shadow-black/60 scale-105;
+	/* TOC Panel States */
+	#table-of-contents.visible {
+		@apply opacity-100 scale-100 pointer-events-auto;
+	}
+	
+	/* Arrow Animation */
+	#toc-trigger.active #toc-arrow {
+		@apply rotate-180;
+	}
+	
+	/* Dragging States */
+	#toc-trigger.dragging {
+		@apply cursor-grabbing shadow-2xl scale-105 z-50;
 		transition: none !important;
-		z-index: 9999 !important;
 	}
 	
-	.drag-handle:hover {
-		@apply bg-black/5 dark:bg-white/10;
+	#toc-trigger:active {
+		@apply cursor-grabbing;
 	}
 	
-	.collapsed svg {
-		@apply -rotate-90;
-	}
-	
-	.collapsed nav {
-		@apply max-h-0 opacity-0;
-	}
-	
+	/* TOC Links */
 	.toc-link {
-		@apply block text-black/70 dark:text-white/70 no-underline px-3 py-2 rounded-lg text-sm leading-5 transition-all duration-200;
-	}
-	
-	.toc-link:hover {
-		@apply bg-black/5 dark:bg-white/10 text-black dark:text-white;
+		@apply block text-slate-600 dark:text-slate-400 no-underline px-3 py-1.5 rounded-lg text-xs leading-relaxed transition-all duration-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100;
 	}
 	
 	.toc-link.active {
-		@apply bg-black/10 dark:bg-white/15 text-black dark:text-white font-medium;
+		@apply bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium border-l-2 border-blue-500 pl-2;
 	}
 	
-	.toc-h2 { @apply pl-4; }
-	.toc-h3 { @apply pl-8; }
-	.toc-h4 { @apply pl-12; }
-	.toc-h5 { @apply pl-16; }
-	.toc-h6 { @apply pl-20; }
+	/* Heading Levels */
+	.toc-h1 { @apply font-medium; }
+	.toc-h2 { @apply pl-3; }
+	.toc-h3 { @apply pl-6 text-[11px]; }
+	.toc-h4 { @apply pl-9 text-[11px]; }
+	.toc-h5 { @apply pl-12 text-[10px]; }
+	.toc-h6 { @apply pl-14 text-[10px]; }
 	
+	/* Mobile Responsive */
 	@media (max-width: 1023px) {
 		#table-of-contents {
-			@apply translate-x-full opacity-0;
-		}
-		
-		#table-of-contents.mobile-visible {
-			@apply translate-x-0 opacity-100;
+			@apply w-80 right-6 top-28;
 		}
 	}
 	
-	@media (max-width: 768px) {
-		#table-of-contents {
-			@apply w-[calc(100vw-3rem)] right-6 left-6 max-h-[60vh];
+	@media (max-width: 640px) {
+		#toc-trigger {
+			@apply px-3 py-2 top-24;
 		}
+		
+		#table-of-contents {
+			@apply w-[calc(100vw-3rem)] right-6 left-6 top-20;
+		}
+	}
+	
+	/* Custom Scrollbar */
+	.scrollbar-thin::-webkit-scrollbar {
+		width: 4px;
+	}
+	
+	.scrollbar-thin::-webkit-scrollbar-track {
+		background: transparent;
+	}
+	
+	.scrollbar-thin::-webkit-scrollbar-thumb {
+		@apply bg-slate-300 dark:bg-slate-600 rounded-full;
+	}
+	
+	.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+		@apply bg-slate-400 dark:bg-slate-500;
 	}
 </style>
 
 <script>
 	document.addEventListener('DOMContentLoaded', function() {
+		const tocTrigger = document.getElementById('toc-trigger');
 		const tocContainer = document.getElementById('table-of-contents');
 		const tocList = document.getElementById('toc-list');
-		const tocToggle = document.getElementById('toc-toggle');
-		const tocNav = document.getElementById('toc-nav');
-		const tocHeader = document.getElementById('toc-header');
 		
-		if (!tocContainer || !tocList || !tocHeader) return;
+		if (!tocTrigger || !tocContainer || !tocList) return;
 		
-		// 헤딩 요소들 수집
+		// Drag state
+		let isDragging = false;
+		let dragOffset = { x: 0, y: 0 };
+		let currentPosition = { x: 0, y: 0 };
+		let dragStarted = false;
+		
+		function updateTriggerPosition() {
+			if (tocTrigger) {
+				console.log('Updating TOC position:', currentPosition);
+				tocTrigger.style.transform = `translate(${currentPosition.x}px, ${currentPosition.y}px)`;
+			}
+		}
+		
+		function constrainToViewport() {
+			if (!tocTrigger) return;
+			
+			// Get viewport bounds
+			const maxX = window.innerWidth - tocTrigger.offsetWidth - 24; // 24px margin
+			const maxY = window.innerHeight - tocTrigger.offsetHeight - 24; // 24px margin
+			
+			// Constrain to viewport
+			currentPosition.x = Math.max(0, Math.min(maxX, currentPosition.x));
+			currentPosition.y = Math.max(0, Math.min(maxY, currentPosition.y));
+		}
+		
+		// Load saved position with viewport bounds checking
+		// TEMPORARY FIX: Clear any saved position to prevent off-screen issues
+		localStorage.removeItem('toc-position');
+		currentPosition = { x: 0, y: 0 };
+		
+		// const savedPosition = localStorage.getItem('toc-position');
+		// if (savedPosition) {
+		// 	try {
+		// 		const parsed = JSON.parse(savedPosition);
+		// 		currentPosition = parsed;
+		// 		
+		// 		// Wait for DOM to be ready before constraining position
+		// 		setTimeout(() => {
+		// 			constrainToViewport();
+		// 			updateTriggerPosition();
+		// 		}, 100);
+		// 	} catch (e) {
+		// 		console.warn('Failed to load TOC position:', e);
+		// 		currentPosition = { x: 0, y: 0 };
+		// 		localStorage.removeItem('toc-position'); // Clear bad data
+		// 	}
+		// }
+		
+		// Drag functionality
+		function startDrag(e) {
+			if (!tocTrigger) return;
+			
+			dragStarted = false;
+			isDragging = true;
+			
+			const rect = tocTrigger.getBoundingClientRect();
+			dragOffset.x = e.clientX - rect.left;
+			dragOffset.y = e.clientY - rect.top;
+			
+			tocTrigger.classList.add('dragging');
+			document.addEventListener('mousemove', handleDrag);
+			document.addEventListener('mouseup', endDrag);
+			e.preventDefault();
+		}
+		
+		function handleDrag(e) {
+			if (!tocTrigger || !isDragging) return;
+			
+			dragStarted = true; // Mark that we actually started dragging
+			
+			const newX = e.clientX - dragOffset.x;
+			const newY = e.clientY - dragOffset.y;
+			
+			// Update position
+			currentPosition.x = newX;
+			currentPosition.y = newY;
+			
+			// Constrain to viewport
+			constrainToViewport();
+			
+			updateTriggerPosition();
+		}
+		
+		function endDrag() {
+			if (!tocTrigger) return;
+			
+			tocTrigger.classList.remove('dragging');
+			document.removeEventListener('mousemove', handleDrag);
+			document.removeEventListener('mouseup', endDrag);
+			
+			// Save position if we actually dragged
+			if (dragStarted) {
+				localStorage.setItem('toc-position', JSON.stringify(currentPosition));
+			}
+			
+			// Reset drag state after a short delay
+			setTimeout(() => {
+				isDragging = false;
+				dragStarted = false;
+			}, 100);
+		}
+		
+		// Collect headings
 		const headings = document.querySelectorAll('.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6');
 		
 		if (headings.length === 0) {
-			tocContainer.style.display = 'none';
+			tocTrigger.style.display = 'none';
 			return;
 		}
 		
-		// 목차 생성
+		// Generate TOC
 		headings.forEach((heading, index) => {
-			const headingElement = heading as HTMLElement;
-			// ID가 없으면 생성
+			const headingElement = heading;
+			
+			// Generate ID if not exists
 			if (!headingElement.id) {
 				headingElement.id = `heading-${index}`;
 			}
@@ -106,164 +242,84 @@
 			a.className = `toc-link toc-${headingElement.tagName.toLowerCase()}`;
 			
 			li.appendChild(a);
-			if (tocList) {
-				tocList.appendChild(li);
+			tocList.appendChild(li);
+		});
+		
+		// Toggle TOC visibility
+		let isVisible = false;
+		
+		// Click handler for toggle
+		tocTrigger.addEventListener('click', function(e) {
+			e.stopPropagation();
+			
+			// Don't toggle if we just finished dragging
+			if (dragStarted) return;
+			
+			isVisible = !isVisible;
+			
+			if (isVisible) {
+				tocContainer.classList.add('visible');
+				tocTrigger.classList.add('active');
+			} else {
+				tocContainer.classList.remove('visible');
+				tocTrigger.classList.remove('active');
 			}
 		});
 		
-		// 토글 기능
-		if (tocToggle) {
-			tocToggle.addEventListener('click', function() {
-				tocContainer.classList.toggle('collapsed');
-			});
-		}
+		// Add drag event listener - TEMPORARILY DISABLED FOR DEBUGGING
+		// tocTrigger.addEventListener('mousedown', startDrag);
 		
-		// 드래그 기능 구현
-		let isDragging = false;
-		let dragOffset = { x: 0, y: 0 };
-		let currentPosition = { x: 0, y: 0 };
-		
-		// 마우스 다운 이벤트 (드래그 시작)
-		tocHeader.addEventListener('mousedown', function(e) {
-			// 토글 버튼 클릭은 드래그하지 않음
-			if (tocToggle && (e.target === tocToggle || tocToggle.contains(e.target as Node))) {
-				return;
+		// Close TOC when clicking outside
+		document.addEventListener('click', function(e) {
+			const target = e.target;
+			if (target && target instanceof Node && !tocContainer.contains(target) && !tocTrigger.contains(target)) {
+				isVisible = false;
+				tocContainer.classList.remove('visible');
+				tocTrigger.classList.remove('active');
 			}
-			
-			isDragging = true;
-			tocContainer.classList.add('dragging');
-			
-			const rect = tocContainer.getBoundingClientRect();
-			dragOffset.x = e.clientX - rect.left;
-			dragOffset.y = e.clientY - rect.top;
-			
-			// 현재 위치 저장
-			currentPosition.x = rect.left;
-			currentPosition.y = rect.top;
-			
-			// 마우스 커서 변경
-			document.body.style.cursor = 'grabbing';
-			
-			e.preventDefault();
 		});
 		
-		// 마우스 이동 이벤트 (드래그 중)
-		document.addEventListener('mousemove', function(e) {
-			if (!isDragging) return;
-			
-			const newX = e.clientX - dragOffset.x;
-			const newY = e.clientY - dragOffset.y;
-			
-			// 화면 경계 체크
-			const maxX = window.innerWidth - tocContainer.offsetWidth;
-			const maxY = window.innerHeight - tocContainer.offsetHeight;
-			
-			currentPosition.x = Math.max(0, Math.min(newX, maxX));
-			currentPosition.y = Math.max(0, Math.min(newY, maxY));
-			
-			// 위치 업데이트
-			tocContainer.style.left = currentPosition.x + 'px';
-			tocContainer.style.top = currentPosition.y + 'px';
-			tocContainer.style.right = 'auto';
-			tocContainer.style.transform = 'none';
-			
-			e.preventDefault();
+		// Prevent TOC from closing when clicking inside
+		tocContainer.addEventListener('click', function(e) {
+			e.stopPropagation();
 		});
 		
-		// 마우스 업 이벤트 (드래그 종료)
-		document.addEventListener('mouseup', function() {
-			if (!isDragging) return;
-			
-			isDragging = false;
-			tocContainer.classList.remove('dragging');
-			document.body.style.cursor = '';
-			
-			// 위치를 localStorage에 저장
-			localStorage.setItem('toc-position', JSON.stringify(currentPosition));
-		});
-		
-		// 저장된 위치 복원
-		function restorePosition() {
-			if (!tocContainer) return;
-			
-			const savedPosition = localStorage.getItem('toc-position');
-			if (savedPosition) {
-				try {
-					const position = JSON.parse(savedPosition);
-					
-					// 화면 크기가 변경되었을 수 있으므로 경계 체크
-					const maxX = window.innerWidth - tocContainer.offsetWidth;
-					const maxY = window.innerHeight - tocContainer.offsetHeight;
-					
-					currentPosition.x = Math.max(0, Math.min(position.x, maxX));
-					currentPosition.y = Math.max(0, Math.min(position.y, maxY));
-					
-					tocContainer.style.left = currentPosition.x + 'px';
-					tocContainer.style.top = currentPosition.y + 'px';
-					tocContainer.style.right = 'auto';
-					tocContainer.style.transform = 'none';
-				} catch (e) {
-					console.warn('Failed to restore TOC position:', e);
-				}
-			}
-		}
-		
-		// 위치 초기화 함수
-		function resetPosition() {
-			if (!tocContainer) return;
-			
-			tocContainer.style.left = '';
-			tocContainer.style.top = '';
-			tocContainer.style.right = '';
-			tocContainer.style.transform = '';
-			localStorage.removeItem('toc-position');
-		}
-		
-		// 더블클릭으로 위치 초기화
-		tocHeader.addEventListener('dblclick', function() {
-			resetPosition();
-		});
-		
-		// 현재 위치 하이라이트
+		// Active link highlighting
 		const tocLinks = tocList.querySelectorAll('a');
 		
 		function updateActiveLink() {
-			let currentHeading: Element | null = null;
-			const scrollTop = window.pageYOffset;
+			let currentHeading = null;
 			
 			headings.forEach(heading => {
 				const rect = heading.getBoundingClientRect();
-				if (rect.top <= 100) {
+				if (rect.top <= 120) {
 					currentHeading = heading;
 				}
 			});
 			
 			tocLinks.forEach(link => link.classList.remove('active'));
 			
-			if (currentHeading && (currentHeading as HTMLElement).id) {
-				const activeLink = tocList?.querySelector(`a[href="#${(currentHeading as HTMLElement).id}"]`);
+			if (currentHeading && currentHeading.id && tocList) {
+				const activeLink = tocList.querySelector(`a[href="#${currentHeading.id}"]`);
 				if (activeLink) {
 					activeLink.classList.add('active');
 				}
 			}
 		}
 		
-		// 스크롤 이벤트 리스너
-		let ticking = false;
+		// Throttled scroll listener
+		let scrollTicking = false;
 		window.addEventListener('scroll', function() {
-			if (!ticking) {
+			if (!scrollTicking) {
 				requestAnimationFrame(function() {
 					updateActiveLink();
-					ticking = false;
+					scrollTicking = false;
 				});
-				ticking = true;
+				scrollTicking = true;
 			}
 		});
 		
-		// 초기 활성 링크 설정
-		updateActiveLink();
-		
-		// 부드러운 스크롤
+		// Smooth scroll for links
 		tocLinks.forEach(link => {
 			link.addEventListener('click', function(e) {
 				e.preventDefault();
@@ -278,57 +334,41 @@
 							top: offsetTop,
 							behavior: 'smooth'
 						});
+						
+						// Close TOC after navigation on mobile
+						if (window.innerWidth < 1024) {
+							isVisible = false;
+							tocContainer.classList.remove('visible');
+							tocTrigger.classList.remove('active');
+						}
 					}
 				}
 			});
 		});
 		
-		// 화면 크기에 따른 TOC 표시 제어
-		function handleTocVisibility() {
-			if (!tocContainer) return;
-			
-			const isDesktop = window.innerWidth > 1024;
-			
-			if (isDesktop) {
-				// 데스크톱: 자동으로 표시
-				tocContainer.classList.remove('mobile-visible');
-				
-				// 기존 모바일 토글 버튼 제거
-				const existingBtn = document.querySelector('.mobile-toc-toggle');
-				if (existingBtn) {
-					existingBtn.remove();
-				}
-			} else {
-				// 모바일/태블릿: 토글 버튼으로 제어
-				// 모바일 토글 버튼이 없으면 생성
-				if (!document.querySelector('.mobile-toc-toggle')) {
-					const tocToggleBtn = document.createElement('button');
-					tocToggleBtn.innerHTML = '<svg class="w-4 h-4 mr-1.5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>Contents';
-					tocToggleBtn.className = 'mobile-toc-toggle fixed top-20 right-6 z-50 bg-black/90 dark:bg-white/90 hover:bg-black dark:hover:bg-white text-white dark:text-black border-0 px-4 py-2.5 rounded-xl text-sm font-medium cursor-pointer shadow-lg backdrop-blur-xl transition-all duration-200';
-					
-					tocToggleBtn.addEventListener('click', function() {
-						if (tocContainer) {
-							tocContainer.classList.toggle('mobile-visible');
-						}
-					});
-					
-					document.body.appendChild(tocToggleBtn);
-					
-					// 외부 클릭 시 TOC 닫기
-					document.addEventListener('click', function(e) {
-						const target = e.target as Node;
-						if (tocContainer && !tocContainer.contains(target) && !tocToggleBtn.contains(target)) {
-							tocContainer.classList.remove('mobile-visible');
-						}
-					});
-				}
+		// ESC key to close
+		document.addEventListener('keydown', function(e) {
+			if (e.key === 'Escape' && isVisible) {
+				isVisible = false;
+				tocContainer.classList.remove('visible');
+				tocTrigger.classList.remove('active');
 			}
-		}
+		});
 		
-		// 초기 실행
-		handleTocVisibility();
+		// Double-click to reset position
+		tocTrigger.addEventListener('dblclick', function() {
+			currentPosition = { x: 0, y: 0 };
+			updateTriggerPosition();
+			localStorage.removeItem('toc-position');
+		});
 		
-		// 리사이즈 이벤트 리스너
-		window.addEventListener('resize', handleTocVisibility);
+		// Window resize handler to keep button in viewport
+		window.addEventListener('resize', function() {
+			constrainToViewport();
+			updateTriggerPosition();
+		});
+		
+		// Initial active link
+		updateActiveLink();
 	});
 </script> 
