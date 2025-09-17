@@ -2,24 +2,24 @@
 ---
 
 <!-- Compact TOC Button -->
-<button id="toc-trigger" class="fixed top-28 right-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 z-[60] flex items-center gap-2 px-4 py-3 group hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer select-none">
-	<svg class="w-4 h-4 text-slate-700 dark:text-slate-300 group-hover:text-blue-600 dark:group-hover:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<button id="toc-trigger" class="fixed top-20 right-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 z-[60] flex items-center gap-2 px-3 py-2 group hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer select-none">
+	<svg class="w-4 h-4 text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 		<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/>
 	</svg>
-	<span class="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 hidden sm:block">
+	<span class="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white hidden sm:block">
 		Contents
 	</span>
 	<span class="text-xs text-slate-500 dark:text-slate-400 block sm:hidden">
 		TOC
 	</span>
-	<!-- Animated Arrow Icon -->
-	<svg id="toc-arrow" class="w-3 h-3 text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+	<!-- Arrow Icon -->
+	<svg id="toc-arrow" class="w-3 h-3 text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-300 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 		<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
 	</svg>
 </button>
 
 <!-- Compact TOC Panel -->
-<div id="table-of-contents" class="fixed top-28 right-20 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl max-h-[calc(100vh-8rem)] overflow-hidden z-[55] transition-all duration-300 opacity-0 scale-95 pointer-events-none">
+<div id="table-of-contents" class="fixed top-20 right-20 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl max-h-[calc(100vh-6rem)] overflow-hidden z-[55] transition-all duration-300 opacity-0 scale-95 pointer-events-none">
 	<div class="p-4 border-b border-slate-200 dark:border-slate-700">
 		<h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
 			<svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -75,17 +75,17 @@
 	/* Mobile Responsive */
 	@media (max-width: 1023px) {
 		#table-of-contents {
-			@apply w-80 right-6 top-28;
+			@apply w-80 right-6 top-20;
 		}
 	}
 	
 	@media (max-width: 640px) {
 		#toc-trigger {
-			@apply px-3 py-2 top-24;
+			@apply px-2 py-1.5 top-20;
 		}
 		
 		#table-of-contents {
-			@apply w-[calc(100vw-3rem)] right-6 left-6 top-20;
+			@apply w-[calc(100vw-3rem)] right-6 left-6 top-16;
 		}
 	}
 	
@@ -141,27 +141,9 @@
 		}
 		
 		// Load saved position with viewport bounds checking
-		// TEMPORARY FIX: Clear any saved position to prevent off-screen issues
-		localStorage.removeItem('toc-position');
+		// SIMPLIFIED: Always use default position for reliability
 		currentPosition = { x: 0, y: 0 };
-		
-		// const savedPosition = localStorage.getItem('toc-position');
-		// if (savedPosition) {
-		// 	try {
-		// 		const parsed = JSON.parse(savedPosition);
-		// 		currentPosition = parsed;
-		// 		
-		// 		// Wait for DOM to be ready before constraining position
-		// 		setTimeout(() => {
-		// 			constrainToViewport();
-		// 			updateTriggerPosition();
-		// 		}, 100);
-		// 	} catch (e) {
-		// 		console.warn('Failed to load TOC position:', e);
-		// 		currentPosition = { x: 0, y: 0 };
-		// 		localStorage.removeItem('toc-position'); // Clear bad data
-		// 	}
-		// }
+		localStorage.removeItem('toc-position'); // Clear any saved data
 		
 		// Drag functionality
 		function startDrag(e) {
@@ -266,8 +248,8 @@
 			}
 		});
 		
-		// Add drag event listener - TEMPORARILY DISABLED FOR DEBUGGING
-		// tocTrigger.addEventListener('mousedown', startDrag);
+		// SIMPLIFIED: Remove all drag functionality for better reliability
+		// Drag functionality removed to prevent positioning issues
 		
 		// Close TOC when clicking outside
 		document.addEventListener('click', function(e) {
@@ -307,18 +289,6 @@
 			}
 		}
 		
-		// Throttled scroll listener
-		let scrollTicking = false;
-		window.addEventListener('scroll', function() {
-			if (!scrollTicking) {
-				requestAnimationFrame(function() {
-					updateActiveLink();
-					scrollTicking = false;
-				});
-				scrollTicking = true;
-			}
-		});
-		
 		// Smooth scroll for links
 		tocLinks.forEach(link => {
 			link.addEventListener('click', function(e) {
@@ -329,14 +299,14 @@
 					const targetElement = document.getElementById(targetId);
 					
 					if (targetElement) {
-						const offsetTop = targetElement.offsetTop - 100;
+						const offsetTop = targetElement.offsetTop - 80;
 						window.scrollTo({
 							top: offsetTop,
 							behavior: 'smooth'
 						});
 						
 						// Close TOC after navigation on mobile
-						if (window.innerWidth < 1024) {
+						if (window.innerWidth < 768) {
 							isVisible = false;
 							tocContainer.classList.remove('visible');
 							tocTrigger.classList.remove('active');
@@ -355,11 +325,16 @@
 			}
 		});
 		
-		// Double-click to reset position
-		tocTrigger.addEventListener('dblclick', function() {
-			currentPosition = { x: 0, y: 0 };
-			updateTriggerPosition();
-			localStorage.removeItem('toc-position');
+		// Throttled scroll listener
+		let scrollTicking = false;
+		window.addEventListener('scroll', function() {
+			if (!scrollTicking) {
+				requestAnimationFrame(function() {
+					updateActiveLink();
+					scrollTicking = false;
+				});
+				scrollTicking = true;
+			}
 		});
 		
 		// Window resize handler to keep button in viewport

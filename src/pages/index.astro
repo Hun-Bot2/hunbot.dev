@@ -5,26 +5,11 @@ import Footer from '../components/Footer.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 import { getCollection } from 'astro:content';
 import FormattedDate from '../components/FormattedDate.astro';
-import '../styles/neuralNetwork.css';
-import '../styles/controls.css';
 
 // 최신 포스트 6개 가져오기
 const posts = (await getCollection('blog')).sort(
 	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
 ).slice(0, 6);
-
-// 포스트 데이터를 JSON으로 변환 (클라이언트에서 사용)
-const postsData = posts.map(post => ({
-	id: post.id,
-	title: post.data.title,
-	date: post.data.pubDate.toISOString(),
-	tags: post.data.tags || [],
-	description: post.data.description
-}));
-
-// 태그와 카테고리 수집
-const allTags = [...new Set(posts.flatMap(post => post.data.tags || []))];
-const categories = [...new Set(posts.map(post => post.data.category || 'General'))];
 ---
 
 <!doctype html>
@@ -43,136 +28,69 @@ const categories = [...new Set(posts.map(post => post.data.category || 'General'
 	<body>
 		<Header />
 		
-		<!-- 히어로 섹션 with 3D Neural Network - Scientific Professional -->
-		<section class="relative h-[60vh] lg:h-[70vh] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden">
-			<!-- 3D 네트워크 캔버스 (배경) -->
-			<div class="absolute inset-0 z-10" id="neural-network-3d">
-			</div>
-			
-			<!-- Brain Network Info - Apple Design -->
-			<div class="absolute top-6 left-6 z-20 bg-white/85 backdrop-blur-xl rounded-2xl p-4 max-w-64 border border-black/5 shadow-lg">
-				<div class="text-gray-900 text-sm space-y-3">
-					<h3 class="font-semibold text-base mb-3 text-gray-900 tracking-tight">Neural Network</h3>
-					<div class="space-y-2 text-xs">
-						<div class="flex items-center gap-2.5">
-							<div class="w-2.5 h-2.5 rounded-full" style="background: #5856D6;"></div>
-							<span class="text-gray-700">Frontal: AI/ML</span>
-						</div>
-						<div class="flex items-center gap-2.5">
-							<div class="w-2.5 h-2.5 rounded-full" style="background: #34C759;"></div>
-							<span class="text-gray-700">Parietal: Math</span>
-						</div>
-						<div class="flex items-center gap-2.5">
-							<div class="w-2.5 h-2.5 rounded-full" style="background: #32D74B;"></div>
-							<span class="text-gray-700">Temporal: Development</span>
-						</div>
-						<div class="flex items-center gap-2.5">
-							<div class="w-2.5 h-2.5 rounded-full" style="background: #FF9F0A;"></div>
-							<span class="text-gray-700">Occipital: Visualization</span>
-						</div>
-						<div class="flex items-center gap-2.5">
-							<div class="w-2.5 h-2.5 rounded-full" style="background: #FF2D92;"></div>
-							<span class="text-gray-700">Memory: General</span>
-						</div>
-					</div>
-					<p class="text-xs text-gray-500 mt-3 leading-relaxed">
-						Brain-inspired organization of content with intelligent connections.
-					</p>
-				</div>
-			</div>
-			
-			<!-- Interactive Controls - Apple Design -->
-			<div class="absolute bottom-6 right-6 z-20 bg-white/85 backdrop-blur-xl rounded-2xl p-4 border border-black/5 shadow-lg">
-				<div class="text-gray-900 text-sm">
-					<div class="font-semibold text-base mb-3 text-gray-900 tracking-tight">Controls</div>
-					<div class="text-xs space-y-2 text-gray-700">
-						<div class="flex items-center gap-2">
-							<span class="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
-							<span>Click nodes to read</span>
-						</div>
-						<div class="flex items-center gap-2">
-							<span class="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
-							<span>Scroll to zoom</span>
-						</div>
-						<div class="flex items-center gap-2">
-							<span class="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
-							<span>Space to pause</span>
-						</div>
-					</div>
+		<!-- Simplified Hero Section - Clean and Professional -->
+		<section class="relative bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-800 py-20 lg:py-24">
+			<div class="max-w-4xl mx-auto px-6 text-center">
+				<h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-slate-900 dark:text-white mb-6 tracking-tight">
+					AI & Brain Science Research
+				</h1>
+				<p class="text-xl md:text-2xl text-slate-600 dark:text-slate-300 mb-8 max-w-3xl mx-auto leading-relaxed">
+					Exploring the intersection of artificial intelligence and cognitive science through research and practical applications.
+				</p>
+				<div class="flex flex-col sm:flex-row gap-4 justify-center">
+					<a href="/blog" class="btn-primary">
+						📚 Read Blog
+					</a>
+					<a href="/about" class="btn-secondary">
+						👋 About Me
+					</a>
 				</div>
 			</div>
 		</section>
 
 		<!-- Main Content -->
-		<div class="max-w-7xl mx-auto px-6 py-20 space-y-20">
+		<div class="max-w-6xl mx-auto px-6 py-16 space-y-16">
 			
-			<!-- Overview Section -->
-			<section class="text-center space-y-8">
+			<!-- Overview Section - Simplified -->
+			<section class="text-center space-y-12">
 				<div class="space-y-4">
-					<h1 class="text-4xl md:text-5xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-						Technical Blog
-					</h1>
-					<p class="text-xl text-slate-600 dark:text-slate-400 max-w-3xl mx-auto leading-relaxed">
-						Exploring artificial intelligence, machine learning, and computational research through detailed technical analysis and practical applications.
+					<h2 class="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white">
+						Technical Blog & Research
+					</h2>
+					<p class="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
+						Sharing insights on artificial intelligence, machine learning, and brain science through detailed analysis and practical applications.
 					</p>
 				</div>
-				<div class="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
-					<div class="bg-white dark:bg-slate-800/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
-						<div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mb-4">
+				
+				<!-- Focus Areas - Clean Grid -->
+				<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+					<div class="space-y-4">
+						<div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center mx-auto">
 							<svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
 							</svg>
 						</div>
-						<h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">AI Development</h3>
-						<p class="text-sm text-slate-600 dark:text-slate-400">Machine learning implementations, model architectures, and practical AI applications.</p>
+						<h3 class="text-lg font-semibold text-slate-900 dark:text-white">AI Development</h3>
+						<p class="text-sm text-slate-600 dark:text-slate-400">Machine learning implementations and model architectures</p>
 					</div>
-					<div class="bg-white dark:bg-slate-800/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
-						<div class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center mb-4">
+					<div class="space-y-4">
+						<div class="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center mx-auto">
 							<svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
 							</svg>
 						</div>
-						<h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">Data Analysis</h3>
-						<p class="text-sm text-slate-600 dark:text-slate-400">Statistical modeling, data processing techniques, and computational analysis methods.</p>
+						<h3 class="text-lg font-semibold text-slate-900 dark:text-white">Data Analysis</h3>
+						<p class="text-sm text-slate-600 dark:text-slate-400">Statistical modeling and computational methods</p>
 					</div>
-					<div class="bg-white dark:bg-slate-800/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
-						<div class="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center mb-4">
+					<div class="space-y-4">
+						<div class="w-12 h-12 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center mx-auto">
 							<svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
 							</svg>
 						</div>
-						<h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">Visualization</h3>
-						<p class="text-sm text-slate-600 dark:text-slate-400">Interactive data visualization, web development, and user interface design.</p>
-					</div>
-				</div>
-			</section>
-
-			<!-- Topic Areas Section -->
-			<section class="grid grid-cols-1 lg:grid-cols-2 gap-16">
-				<div class="space-y-8">
-					<h2 class="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Topic Areas</h2>
-					<div class="space-y-4">
-						{categories.map((category) => (
-							<div class="flex items-center justify-between p-4 bg-white dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 cursor-pointer group">
-								<span class="text-sm font-medium text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-									{category}
-								</span>
-								<span class="text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded-md">
-									{posts.filter(post => post.data.category === category).length} posts
-								</span>
-							</div>
-						))}
-					</div>
-				</div>
-				<div class="space-y-8">
-					<h2 class="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Key Topics</h2>
-					<div class="flex flex-wrap gap-3">
-						{allTags.slice(0, 15).map((tag) => (
-							<span class="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/50 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-all duration-200 cursor-pointer border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600">
-								{tag}
-							</span>
-						))}
+						<h3 class="text-lg font-semibold text-slate-900 dark:text-white">Brain Science</h3>
+						<p class="text-sm text-slate-600 dark:text-slate-400">Cognitive science and neuroscience research</p>
 					</div>
 				</div>
 			</section>
@@ -180,7 +98,7 @@ const categories = [...new Set(posts.map(post => post.data.category || 'General'
 			<!-- Recent Posts -->
 			<section class="space-y-10">
 				<div class="text-center space-y-4">
-					<h2 class="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Recent Posts</h2>
+					<h2 class="text-3xl font-bold text-slate-900 dark:text-white">Recent Posts</h2>
 					<p class="text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
 						Latest technical insights and practical tutorials covering AI, machine learning, and software development.
 					</p>
@@ -260,34 +178,5 @@ const categories = [...new Set(posts.map(post => post.data.category || 'General'
 		</div>
 		
 		<Footer />
-
-		<!-- Neural Network JavaScript -->
-		<script type="module" define:vars={{ postsData }}>
-			import * as THREE from 'https://cdn.skypack.dev/three@0.132.2';
-			import { NeuralNetwork3D } from '/scripts/neuralNetwork.js';
-			
-			window.THREE = THREE;
-			document.addEventListener('DOMContentLoaded', async () => {
-				try {
-					const neuralNetwork = new NeuralNetwork3D(postsData);
-					await neuralNetwork.init();
-					window.neuralNetwork = neuralNetwork;
-					console.log('Neural Network initialized');
-				} catch (error) {
-					console.error('Failed to initialize Neural Network:', error);
-					const container = document.getElementById('neural-network-3d');
-					if (container) {
-						container.innerHTML = `
-							<div class="flex items-center justify-center h-full text-slate-400 text-lg text-center">
-								<div class="space-y-4">
-									<p>3D Neural Network loading failed</p>
-									<p>Please refresh the page</p>
-								</div>
-							</div>
-						`;
-					}
-				}
-			});
-		</script>
 	</body>
 </html>

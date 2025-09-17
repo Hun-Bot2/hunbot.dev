@@ -16,41 +16,45 @@ const category = normalizeCategory(post.data.category);
 <article class="group">
   <a 
     href={postUrl}
-    class="card-base card-hover card-dark"
+    class="block bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-lg transition-all duration-200 overflow-hidden"
   >
-    <div class="p-8">
-      <PostMeta 
-        pubDate={post.data.pubDate} 
-        category={category}
-        content={post.body}
-        description={post.data.description}
-      >
-        <CategoryBadge category={category} slot="category-badge" />
-      </PostMeta>
+    <div class="p-6">
+      <!-- Category and Read Time -->
+      <div class="flex items-center gap-3 mb-3">
+        <CategoryBadge category={category} />
+        <PostMeta 
+          pubDate={post.data.pubDate} 
+          category={category}
+          content={post.body}
+          description={post.data.description}
+        />
+      </div>
       
-      <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100 mb-3 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300 line-clamp-2 leading-tight">
+      <!-- Title -->
+      <h2 class="text-xl font-semibold text-slate-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200 line-clamp-2">
         {post.data.title}
       </h2>
       
+      <!-- Description -->
       {post.data.description && (
-        <p class="text-slate-600 dark:text-slate-300 mb-4 line-clamp-4 leading-relaxed text-sm flex-1">
+        <p class="text-slate-600 dark:text-slate-300 mb-4 line-clamp-2 leading-relaxed">
           {post.data.description}
         </p>
       )}
       
-      <div class="mt-auto">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            {post.data.tags && post.data.tags.length > 0 && (
-              <TagList tags={post.data.tags} maxTags={2} />
-            )}
-          </div>
-          
-          <div class="flex items-center justify-center w-8 h-8 rounded-full bg-blue-500/10 dark:bg-blue-500/20 group-hover:bg-blue-500 transition-all duration-300">
-            <svg class="w-4 h-4 text-blue-600 dark:text-blue-400 group-hover:text-white transition-colors duration-300 transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-            </svg>
-          </div>
+      <!-- Footer with tags and arrow -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          {post.data.tags && post.data.tags.length > 0 && (
+            <TagList tags={post.data.tags} maxTags={3} />
+          )}
+        </div>
+        
+        <div class="flex items-center text-sm text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200">
+          <span class="mr-1">Read more</span>
+          <svg class="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
         </div>
       </div>
     </div>
