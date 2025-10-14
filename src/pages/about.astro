@@ -1,12 +1,17 @@
 ---
 import Layout from '../layouts/BlogPost.astro';
 import AboutHeroImage from '../assets/my_photo.jpeg';
+
+const SITE_TITLE = 'Hun-Bot Blog';
+const SITE_DESCRIPTION = 'Hun-Bot의 소개 페이지입니다.';
+const currentDate = new Date();
+
 ---
 
 <Layout
 	title="About Me"
-	description="개발자 Hun의 소개 페이지입니다."
-	pubDate={new Date('2025-06-25')}
+	description="Hun-Bot의 소개 페이지입니다."
+	pubDate={currentDate}
 >
 	<div class="max-w-5xl mx-auto px-6 py-12 space-y-16">
 		<!-- 프로필 섹션 - 박스 제거, 더 자연스러운 레이아웃 -->
@@ -19,19 +24,19 @@ import AboutHeroImage from '../assets/my_photo.jpeg';
 				/>
 			</div>
 			<div class="text-center lg:text-left space-y-4">
-				<h1 class="text-4xl lg:text-5xl font-bold text-purple-600 dark:text-purple-400">
-					안녕하세요, Hun입니다! 👋
+				<h1 class="text-4xl lg:text-5xl font-bold text-blue-600 dark:text-blue-400">
+					안녕하세요, 남정훈입니다! 👋
 				</h1>
 				<p class="text-xl text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl">
-					성균관대학교에서 컴퓨터교육과 뇌인지과학을 복수전공하며, 
-					AI와 인간의 학습 메커니즘을 연구하는 것을 좋아합니다.
+					AI와 Human-Computer Interaction(HCI)에 관심이 많은 개발자입니다. 
+					Three.js로 인터랙티브한 웹 경험을, Go로 견고한 백엔드를 구축합니다.
 				</p>
 			</div>
 		</section>
 
 		<!-- 소셜 링크 섹션 - 박스 제거, 플랫 디자인 -->
 		<section class="space-y-8">
-			<h2 class="text-3xl font-bold text-purple-800 dark:text-purple-300">Connect with me</h2>
+			<h2 class="text-3xl font-bold text-blue-800 dark:text-blue-300">Connect with me</h2>
 			<div class="flex flex-wrap gap-4">
 				<a 
 					href="https://github.com/Hun-Bot2" 
@@ -70,75 +75,110 @@ import AboutHeroImage from '../assets/my_photo.jpeg';
 
 		<!-- 교육 섹션 - 심플한 카드 디자인 -->
 		<section class="space-y-8">
-			<h2 class="text-3xl font-bold text-purple-800 dark:text-purple-300 flex items-center gap-3">
+			<h2 class="text-3xl font-bold text-blue-800 dark:text-blue-300 flex items-center gap-3">
 				🎓 Education
 			</h2>
-			<div class="border-l-4 border-purple-500 pl-6 space-y-3">
-				<h3 class="text-2xl font-bold text-purple-800 dark:text-purple-300">
+			<div class="border-l-4 border-blue-500 pl-6 space-y-3">
+				<h3 class="text-2xl font-bold text-blue-800 dark:text-blue-300">
 					성균관대학교 (Sungkyunkwan University)
 				</h3>
 				<p class="text-lg font-semibold text-slate-700 dark:text-slate-300">컴퓨터교육과 / 뇌인지과학과 복수전공</p>
 				<p class="text-sm text-slate-500 dark:text-slate-400">재학 중</p>
 				<p class="text-slate-600 dark:text-slate-300 leading-relaxed">
-					컴퓨터교육과 뇌인지과학의 융합적 관점에서 AI와 인간의 학습 메커니즘을 연구하며, 
-					교육 기술과 뇌공학 분야의 전문성을 쌓고 있습니다.
+					컴퓨터교육과에서 소프트웨어 개발 기초를, 뇌인지과학과에서 인간의 인지 과정을 학습하며 
+					AI와 HCI 분야의 융합적 관점을 기르고 있습니다.
 				</p>
 			</div>
 		</section>
 
-		<!-- 관심 분야 섹션 - 그리드 카드 제거, 리스트 형태로 -->
+		<!-- 관심 분야 및 기술 스택 섹션 -->
 		<section class="space-y-8">
-			<h2 class="text-3xl font-bold text-purple-800 dark:text-purple-300 flex items-center gap-3">
-				💡 Interests & Skills
+			<h2 class="text-3xl font-bold text-blue-800 dark:text-blue-300 flex items-center gap-3">
+				💡 Tech Stack & Interests
 			</h2>
 			<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-				<div class="group space-y-3">
+				<!-- Frontend -->
+				<div class="group space-y-4">
+					<h3 class="text-xl font-semibold text-blue-700 dark:text-blue-300 group-hover:text-blue-500 dark:group-hover:text-blue-200 transition-colors duration-300 flex items-center gap-2">
+						🎨 Frontend Development
+					</h3>
+					<div class="pl-6 border-l-2 border-blue-200 dark:border-blue-700 space-y-3">
+						<div class="flex items-center gap-2">
+							<span class="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-sm font-medium rounded-full">Three.js</span>
+							<span class="px-3 py-1 bg-cyan-100 dark:bg-cyan-900 text-cyan-800 dark:text-cyan-200 text-sm font-medium rounded-full">React</span>
+							<span class="px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-sm font-medium rounded-full">TypeScript</span>
+						</div>
+						<p class="text-slate-600 dark:text-slate-300 leading-relaxed">
+							Three.js로 3D 웹 경험을 만들고, React와 TypeScript로 인터랙티브한 사용자 인터페이스를 구축합니다.
+						</p>
+					</div>
+				</div>
+
+				<!-- Backend -->
+				<div class="group space-y-4">
+					<h3 class="text-xl font-semibold text-emerald-700 dark:text-emerald-300 group-hover:text-emerald-500 dark:group-hover:text-emerald-200 transition-colors duration-300 flex items-center gap-2">
+						⚡ Backend Development
+					</h3>
+					<div class="pl-6 border-l-2 border-emerald-200 dark:border-emerald-700 space-y-3">
+						<div class="flex items-center gap-2">
+							<span class="px-3 py-1 bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 text-sm font-medium rounded-full">Go</span>
+							<span class="px-3 py-1 bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-sm font-medium rounded-full">PostgreSQL</span>
+							<span class="px-3 py-1 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 text-sm font-medium rounded-full">Docker</span>
+						</div>
+						<p class="text-slate-600 dark:text-slate-300 leading-relaxed">
+							Go를 사용해 고성능 API 서버를 구축하고, PostgreSQL과 Docker를 활용한 견고한 백엔드 시스템을 설계합니다.
+						</p>
+					</div>
+				</div>
+
+				<!-- AI/ML -->
+				<div class="group space-y-4">
 					<h3 class="text-xl font-semibold text-purple-700 dark:text-purple-300 group-hover:text-purple-500 dark:group-hover:text-purple-200 transition-colors duration-300 flex items-center gap-2">
-						🧠 뇌인지과학 (Brain & Cognitive Science)
-					</h3>
-					<p class="text-slate-600 dark:text-slate-300 leading-relaxed pl-6 border-l-2 border-purple-200 dark:border-purple-700">
-						인간의 학습과 인지 메커니즘을 연구하며, 뇌공학과 AI의 융합을 탐구합니다.
-					</p>
-				</div>
-				<div class="group space-y-3">
-					<h3 class="text-xl font-semibold text-cyan-700 dark:text-cyan-300 group-hover:text-cyan-500 dark:group-hover:text-cyan-200 transition-colors duration-300 flex items-center gap-2">
-						🎓 교육공학 (Educational Technology)
-					</h3>
-					<p class="text-slate-600 dark:text-slate-300 leading-relaxed pl-6 border-l-2 border-cyan-200 dark:border-cyan-700">
-						컴퓨터교육과 디지털 학습 환경 설계를 통한 효과적인 교육 방법을 연구합니다.
-					</p>
-				</div>
-				<div class="group space-y-3">
-					<h3 class="text-xl font-semibold text-pink-700 dark:text-pink-300 group-hover:text-pink-500 dark:group-hover:text-pink-200 transition-colors duration-300 flex items-center gap-2">
 						🤖 AI & Machine Learning
 					</h3>
-					<p class="text-slate-600 dark:text-slate-300 leading-relaxed pl-6 border-l-2 border-pink-200 dark:border-pink-700">
-						딥러닝, 자연어처리, 컴퓨터 비전 분야에 관심이 많으며, 교육과 뇌과학에 응용합니다.
-					</p>
+					<div class="pl-6 border-l-2 border-purple-200 dark:border-purple-700 space-y-3">
+						<div class="flex items-center gap-2">
+							<span class="px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-sm font-medium rounded-full">PyTorch</span>
+							<span class="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-sm font-medium rounded-full">TensorFlow</span>
+							<span class="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-sm font-medium rounded-full">Hugging Face</span>
+						</div>
+						<p class="text-slate-600 dark:text-slate-300 leading-relaxed">
+							딥러닝, 자연어처리, 컴퓨터 비전 기술을 활용해 AI 기반 웹 애플리케이션을 개발합니다.
+						</p>
+					</div>
 				</div>
-				<div class="group space-y-3">
-					<h3 class="text-xl font-semibold text-emerald-700 dark:text-emerald-300 group-hover:text-emerald-500 dark:group-hover:text-emerald-200 transition-colors duration-300 flex items-center gap-2">
-						🌐 Web Development
+
+				<!-- HCI -->
+				<div class="group space-y-4">
+					<h3 class="text-xl font-semibold text-pink-700 dark:text-pink-300 group-hover:text-pink-500 dark:group-hover:text-pink-200 transition-colors duration-300 flex items-center gap-2">
+						👥 Human-Computer Interaction
 					</h3>
-					<p class="text-slate-600 dark:text-slate-300 leading-relaxed pl-6 border-l-2 border-emerald-200 dark:border-emerald-700">
-						React, Astro, Node.js를 활용한 교육용 웹 애플리케이션 개발을 즐깁니다.
-					</p>
+					<div class="pl-6 border-l-2 border-pink-200 dark:border-pink-700 space-y-3">
+						<div class="flex items-center gap-2">
+							<span class="px-3 py-1 bg-pink-100 dark:bg-pink-900 text-pink-800 dark:text-pink-200 text-sm font-medium rounded-full">UX Design</span>
+							<span class="px-3 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 text-sm font-medium rounded-full">Interaction Design</span>
+							<span class="px-3 py-1 bg-teal-100 dark:bg-teal-900 text-teal-800 dark:text-teal-200 text-sm font-medium rounded-full">Usability</span>
+						</div>
+						<p class="text-slate-600 dark:text-slate-300 leading-relaxed">
+							사용자 중심의 인터페이스 설계와 인터랙션 디자인을 통해 직관적이고 효과적인 사용자 경험을 만듭니다.
+						</p>
+					</div>
 				</div>
 			</div>
 		</section>
 
 		<!-- 연락처 섹션 - CTA 버튼만 심플하게 -->
 		<section class="text-center space-y-8 py-16">
-			<h2 class="text-3xl font-bold text-purple-800 dark:text-purple-300">
+			<h2 class="text-3xl font-bold text-blue-800 dark:text-blue-300">
 				📫 Get in Touch
 			</h2>
 			<p class="text-xl text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl mx-auto">
-				새로운 기회나 협업에 대해 이야기하고 싶으시다면 언제든 연락주세요!<br>
-				특히 뇌인지과학, 교육공학, AI 관련 연구나 프로젝트에 관심이 많습니다.
+				AI/HCI 기술이나 Three.js, Go 개발에 대해 이야기하고 싶으시다면 언제든 연락주세요!<br>
+				새로운 프로젝트나 협업 기회를 기다리고 있습니다.
 			</p>
 			<a 
 				href="mailto:surtrcode@gmail.com" 
-				class="inline-flex items-center gap-2 px-8 py-4 text-lg font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-full transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+				class="inline-flex items-center gap-2 px-8 py-4 text-lg font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-full transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
 			>
 				📧 이메일 보내기
 			</a>

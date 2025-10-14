@@ -7,10 +7,10 @@
 		<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/>
 	</svg>
 	<span class="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white hidden sm:block">
-		Contents
+		목차
 	</span>
 	<span class="text-xs text-slate-500 dark:text-slate-400 block sm:hidden">
-		TOC
+		목차
 	</span>
 	<!-- Arrow Icon -->
 	<svg id="toc-arrow" class="w-3 h-3 text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-300 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -25,7 +25,7 @@
 			<svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/>
 			</svg>
-			Contents
+			목차
 		</h3>
 	</div>
 	<nav class="p-3 max-h-96 overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600">
@@ -146,7 +146,7 @@
 		localStorage.removeItem('toc-position'); // Clear any saved data
 		
 		// Drag functionality
-		function startDrag(e) {
+		function startDrag(e: MouseEvent) {
 			if (!tocTrigger) return;
 			
 			dragStarted = false;
@@ -162,7 +162,7 @@
 			e.preventDefault();
 		}
 		
-		function handleDrag(e) {
+		function handleDrag(e: MouseEvent) {
 			if (!tocTrigger || !isDragging) return;
 			
 			dragStarted = true; // Mark that we actually started dragging
@@ -270,21 +270,24 @@
 		const tocLinks = tocList.querySelectorAll('a');
 		
 		function updateActiveLink() {
-			let currentHeading = null;
+			let currentHeading: HTMLElement | null = null;
 			
 			headings.forEach(heading => {
 				const rect = heading.getBoundingClientRect();
 				if (rect.top <= 120) {
-					currentHeading = heading;
+					currentHeading = heading as HTMLElement;
 				}
 			});
 			
 			tocLinks.forEach(link => link.classList.remove('active'));
 			
-			if (currentHeading && currentHeading.id && tocList) {
-				const activeLink = tocList.querySelector(`a[href="#${currentHeading.id}"]`);
-				if (activeLink) {
-					activeLink.classList.add('active');
+			if (currentHeading && tocList) {
+				const headingId = (currentHeading as HTMLElement).id;
+				if (headingId) {
+					const activeLink = tocList.querySelector(`a[href="#${headingId}"]`);
+					if (activeLink) {
+						activeLink.classList.add('active');
+					}
 				}
 			}
 		}
