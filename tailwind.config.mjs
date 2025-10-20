@@ -9,9 +9,9 @@ export default {
 		extend: {
 			colors: {
 				accent: {
-					DEFAULT: '#a855f7',
-					dark: '#7c3aed',
-					light: '#c084fc',
+					DEFAULT: '#f97316',
+					dark: '#ea580c',
+					light: '#fb923c',
 				},
 				neural: {
 					cyan: '#06b6d4',

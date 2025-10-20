@@ -1,138 +1,149 @@
 ---
-import HeaderLink from './HeaderLink.astro';
-import { SITE_TITLE } from '../consts';
+import { SITE_TITLE, SOCIAL_LINKS } from '../consts';
 ---
 
-<header class="sticky top-0 z-50 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm">
-	<nav class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-		<!-- Logo/Title - Simplified -->
-		<div class="flex items-center">
-			<h1 class="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
-				<a href="/" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200">
-					{SITE_TITLE}
-				</a>
-			</h1>
-		</div>
+<header class="header-wrapper">
+	<div class="header-content">
+		<h1 class="site-title">
+			<a href="/" class="no-underline">{SITE_TITLE}</a>
+		</h1>
 		
-		<!-- Main Navigation - Simplified -->
-		<div class="hidden md:flex items-center gap-8">
-			<HeaderLink href="/">홈</HeaderLink>
-			<HeaderLink href="/blog">블로그</HeaderLink>
-			<HeaderLink href="/about">소개</HeaderLink>
-		</div>
-		
-		<!-- Actions - Simplified -->
-		<div class="flex items-center gap-3">
-			<!-- GitHub 링크 -->
-			<a 
-				href="https://github.com/Hun-Bot2" 
-				target="_blank" 
-				title="GitHub Repository" 
-				class="p-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all duration-200"
-			>
-				<svg viewBox="0 0 16 16" class="w-5 h-5" fill="currentColor">
-					<path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+		<div class="header-icons">
+			<!-- Theme Toggle -->
+			<button id="themeToggleBtn" class="icon-button" title="Toggle Dark Mode">
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+					<path id="sunIcon" d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l1.59-1.591a.75.75 0 00-1.061-1.06l-1.59 1.591z"/>
+					<path id="moonIcon" class="hidden" d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.981.98 10.503 10.503 0 01-9.694 6.46c-5.799 0-10.5-4.701-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 01.818.162z"/>
+				</svg>
+			</button>
+			
+			<!-- GitHub Link -->
+			<a href={SOCIAL_LINKS.github} target="_blank" rel="noopener noreferrer" class="icon-button" title="GitHub">
+				<svg viewBox="0 0 16 16" width="20" height="20" fill="currentColor" aria-hidden="true">
+					<path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path>
 				</svg>
 			</a>
 			
-			<!-- Theme Toggle - Simplified -->
-			<button 
-				id="themeToggleBtn" 
-				title="Toggle Dark Mode"
-				class="relative p-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all duration-200"
-			>
-				<div class="relative w-[18px] h-[18px]">
-					<svg id="sunIcon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" class="absolute top-0 left-0 transition-opacity duration-300">
-						<path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l1.59-1.591a.75.75 0 00-1.061-1.06l-1.59 1.591z"/>
-					</svg>
-					<svg id="moonIcon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" class="absolute top-0 left-0 transition-opacity duration-300 opacity-0">
-						<path d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.981.98 10.503 10.503 0 01-9.694 6.46c-5.799 0-10.5-4.701-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 01.818.162z"/>
-					</svg>
-				</div>
-			</button>
+			<!-- LinkedIn Link -->
+			<a href="https://linkedin.com/in/hunbot-dev" target="_blank" rel="noopener noreferrer" class="icon-button" title="LinkedIn">
+				<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+					<path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"></path>
+				</svg>
+			</a>
 			
-			<!-- 모바일 메뉴 버튼 -->
-			<button 
-				id="mobileMenuBtn"
-				class="md:hidden p-2.5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all duration-200"
-			>
-				<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+			<!-- Blog/Tags Icon -->
+			<a href="/blog" class="icon-button" title="Blog">
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+					<line x1="7" y1="7" x2="7.01" y2="7"/>
+				</svg>
+			</a>
+			
+			<!-- RSS Icon -->
+			<a href="/rss.xml" class="icon-button" title="RSS Feed">
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M4 11a9 9 0 0 1 9 9"/>
+					<path d="M4 4a16 16 0 0 1 16 16"/>
+					<circle cx="5" cy="19" r="1"/>
+				</svg>
+			</a>
+			
+			<!-- Search Icon -->
+			<button class="icon-button" title="Search">
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<circle cx="11" cy="11" r="8"/>
+					<path d="m21 21-4.35-4.35"/>
 				</svg>
 			</button>
-		</div>
-	</nav>
-	
-	<!-- 모바일 메뉴 - Scientific Style -->
-	<div id="mobileMenu" class="hidden md:hidden border-t border-slate-200/60 dark:border-slate-700/60 bg-white/98 dark:bg-slate-950/98 backdrop-blur-xl">
-		<div class="px-6 py-6 space-y-2">
-			<HeaderLink href="/" class="block">홈</HeaderLink>
-			<HeaderLink href="/blog" class="block">블로그</HeaderLink>
-			<HeaderLink href="/blog/ai" class="block">AI</HeaderLink>
-			<HeaderLink href="/blog/devlog" class="block">개발로그</HeaderLink>
-			<HeaderLink href="/blog/review" class="block">리뷰</HeaderLink>
-			<HeaderLink href="/blog/misc" class="block">기타</HeaderLink>
-			<HeaderLink href="/about" class="block">소개</HeaderLink>
+			
+			<!-- Menu/Hamburger Icon -->
+			<button class="icon-button" id="menuToggle" title="Menu">
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<line x1="3" y1="12" x2="21" y2="12"/>
+					<line x1="3" y1="6" x2="21" y2="6"/>
+					<line x1="3" y1="18" x2="21" y2="18"/>
+				</svg>
+			</button>
 		</div>
 	</div>
 </header>
 
+
 <style>
-	/* 테마별 아이콘 표시 - BaseHead.astro의 테마 관리와 동기화 */
-	:global(body.light-theme) #sunIcon {
-		opacity: 1 !important;
+	.header-wrapper {
+		position: sticky;
+		top: 0;
+		z-index: 100;
+		width: 100%;
+		background: rgb(40, 40, 40);
+		border-bottom: 1px solid rgba(248, 249, 250, 0.1);
+		padding: 0.75rem 0;
+		backdrop-filter: saturate(120%) blur(8px);
+		-webkit-backdrop-filter: saturate(120%) blur(8px);
 	}
 	
-	:global(body.light-theme) #moonIcon {
-		opacity: 0 !important;
+	.header-content {
+		width: 100%;
+		margin: 0;
+		padding: 0 2rem;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		min-height: 3.5rem;
+	}
+
+	@media (min-width: 640px) {
+		.header-content {
+			padding: 0 3rem;
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.header-content {
+			padding: 0 4rem;
+		}
 	}
 	
-	:global(body.dark-theme) #sunIcon {
-		opacity: 0 !important;
+	.site-title {
+		margin: 0;
+		font-size: 1.5rem;
+		font-weight: bold;
+		font-family: var(--font-heading);
 	}
 	
-	:global(body.dark-theme) #moonIcon {
-		opacity: 1 !important;
+	.site-title a {
+		color: rgb(248, 249, 250);
+		text-decoration: none;
 	}
 	
-	/* data-theme 속성 기반 아이콘 표시 (fallback) */
-	#themeToggleBtn[data-theme="light"] #sunIcon {
-		opacity: 1 !important;
+	.site-title a:hover {
+		color: rgba(248, 249, 250, 0.8);
 	}
 	
-	#themeToggleBtn[data-theme="light"] #moonIcon {
-		opacity: 0 !important;
+	.header-icons {
+		display: flex;
+		gap: 0.75rem;
+		align-items: center;
 	}
 	
-	#themeToggleBtn[data-theme="dark"] #sunIcon {
-		opacity: 0 !important;
+	.icon-button {
+		background: transparent;
+		border: none;
+		color: rgba(248, 249, 250, 0.7);
+		cursor: pointer;
+		padding: 0.5rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: color 0.2s;
+		text-decoration: none;
 	}
 	
-	#themeToggleBtn[data-theme="dark"] #moonIcon {
-		opacity: 1 !important;
+	.icon-button:hover {
+		color: rgb(248, 249, 250);
+	}
+	
+	.hidden {
+		display: none;
 	}
 </style>
-
-<script>
-	// 모바일 메뉴 토글 및 테마 버튼 초기화
-	document.addEventListener('DOMContentLoaded', function() {
-		// 모바일 메뉴 토글
-		const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-		const mobileMenu = document.getElementById('mobileMenu');
-		
-		if (mobileMenuBtn && mobileMenu) {
-			mobileMenuBtn.addEventListener('click', function() {
-				mobileMenu.classList.toggle('hidden');
-			});
-		}
-		
-		// 테마 버튼 초기 상태 설정 (BaseHead.astro와 동기화)
-		const themeBtn = document.getElementById('themeToggleBtn');
-		if (themeBtn) {
-			// BaseHead.astro에서 이미 이벤트 리스너가 등록되므로 여기서는 초기 상태만 확인
-			const savedTheme = sessionStorage.getItem('neural-blog-theme');
-			const isDark = savedTheme ? savedTheme === 'dark' : true;
-			themeBtn.setAttribute('data-theme', isDark ? 'dark' : 'light');
-		}
-	});
-</script>

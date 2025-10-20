@@ -6,177 +6,46 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 import { getCollection } from 'astro:content';
 import FormattedDate from '../components/FormattedDate.astro';
 
-// 최신 포스트 6개 가져오기
+// 최신 포스트 가져오기 (최신순)
 const posts = (await getCollection('blog')).sort(
-	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
-).slice(0, 6);
+  (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+);
 ---
 
 <!doctype html>
 <html lang="ko">
 	<head>
 		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
-		
-		<!-- 한국어 폰트 지원 -->
-		<link rel="preconnect" href="https://fonts.googleapis.com">
-		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-		<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
-		
-		
-	
 	</head>
 	<body>
 		<Header />
-		
-		<!-- Simplified Hero Section - Clean and Professional -->
-		<section class="relative bg-gradient-to-b from-blue-50 to-white dark:from-slate-900 dark:to-slate-800 py-20 lg:py-24">
-			<div class="max-w-4xl mx-auto px-6 text-center">
-				<h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-slate-900 dark:text-white mb-6 tracking-tight">
-					AI & HCI 개발자
-				</h1>
-				<p class="text-xl md:text-2xl text-slate-600 dark:text-slate-300 mb-8 max-w-3xl mx-auto leading-relaxed">
-					Three.js로 인터랙티브한 웹 경험을, Go로 견고한 백엔드를 구축하며 
-					<br>AI와 HCI의 융합을 탐구합니다.
-				</p>
-				<div class="flex flex-col sm:flex-row gap-4 justify-center">
-					<a href="/blog" class="btn-primary">
-						📚 블로그 읽기
-					</a>
-					<a href="/about" class="btn-secondary">
-						👋 소개
-					</a>
-				</div>
-			</div>
-		</section>
-
-		<!-- Main Content -->
-		<div class="max-w-6xl mx-auto px-6 py-16 space-y-16">
-			
-			<!-- Overview Section - Simplified -->
-			<section class="text-center space-y-12">
-				<div class="space-y-4">
-					<h2 class="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white">
-						기술 블로그 & 개발 이야기
-					</h2>
-					<p class="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
-						AI, HCI, 웹 개발 기술에 대한 실무 경험과 인사이트를 공유하며, Three.js와 Go를 활용한 프로젝트 이야기를 담습니다.
-					</p>
-				</div>
-				
-				<!-- Focus Areas - Clean Grid -->
-				<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-					<div class="space-y-4">
-						<div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center mx-auto">
-							<svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-							</svg>
-						</div>
-						<h3 class="text-lg font-semibold text-slate-900 dark:text-white">Three.js 개발</h3>
-						<p class="text-sm text-slate-600 dark:text-slate-400">3D 웹 경험과 인터랙티브 시각화 구현</p>
-					</div>
-					<div class="space-y-4">
-						<div class="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center mx-auto">
-							<svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/>
-							</svg>
-						</div>
-						<h3 class="text-lg font-semibold text-slate-900 dark:text-white">Go 백엔드</h3>
-						<p class="text-sm text-slate-600 dark:text-slate-400">고성능 API 서버와 마이크로서비스 아키텍처</p>
-					</div>
-					<div class="space-y-4">
-						<div class="w-12 h-12 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center mx-auto">
-							<svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-							</svg>
-						</div>
-						<h3 class="text-lg font-semibold text-slate-900 dark:text-white">AI & HCI</h3>
-						<p class="text-sm text-slate-600 dark:text-slate-400">인공지능과 사용자 경험의 융합 연구</p>
-					</div>
-				</div>
-			</section>
-
-			<!-- Recent Posts -->
-			<section class="space-y-10">
-				<div class="text-center space-y-4">
-					<h2 class="text-3xl font-bold text-slate-900 dark:text-white">최근 포스트</h2>
-					<p class="text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-						AI, 웹 개발, HCI에 대한 최신 기술 인사이트와 실무 경험을 공유합니다.
-					</p>
-				</div>
-				
-				<div class="space-y-6">
+		<div class="global-wrapper" data-is-root-path="true">
+			<main>
+				<ol style="list-style: none; padding: 0;">
 					{posts.map((post) => (
-						<article class="group">
-							<a href={`/blog/${post.id}/`} class="block p-8 bg-white dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600 rounded-2xl transition-all duration-200 hover:shadow-lg hover:shadow-slate-200/50 dark:hover:shadow-slate-900/50">
-								<div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
-									<div class="flex-1 space-y-4">
-										<div class="flex items-center gap-6 text-sm text-slate-500 dark:text-slate-400">
-											<time class="font-medium flex items-center gap-2">
-												<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-												</svg>
-												<FormattedDate date={post.data.pubDate} />
-											</time>
-											{post.data.category && (
-												<span class="px-3 py-1 text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30 rounded-full border border-blue-200 dark:border-blue-800">
-													{post.data.category}
-												</span>
-											)}
-										</div>
-										
-										<h3 class="text-xl font-semibold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200 leading-tight">
-											{post.data.title}
-										</h3>
-										
-										{post.data.description && (
-											<p class="text-slate-600 dark:text-slate-300 leading-relaxed text-base">
-												{post.data.description}
-											</p>
-										)}
-										
-										{post.data.tags && (
-											<div class="flex flex-wrap gap-2 pt-2">
-												{post.data.tags.slice(0, 5).map((tag: string) => (
-													<span class="px-3 py-1 text-xs font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 rounded-md hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors duration-200">
-														{tag}
-													</span>
-												))}
-											</div>
-										)}
-									</div>
-									
-									<div class="flex items-center text-sm font-medium text-blue-600 dark:text-blue-400 group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors duration-200">
-										<span class="mr-2">Read Post</span>
-										<svg class="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-										</svg>
-									</div>
-								</div>
-							</a>
-						</article>
+						<li>
+							<article class="post-list-item" itemscope itemtype="http://schema.org/Article">
+								<header>
+									<h2 style="margin-bottom: var(--spacing-2); margin-top: var(--spacing-8);">
+										<a href={`/blog/${post.id}/`} itemprop="url" style="text-decoration: none; color: rgb(248, 249, 250);">
+											<span itemprop="headline">{post.data.title}</span>
+										</a>
+									</h2>
+									<small style="color: rgba(248, 249, 250, 0.6);"><FormattedDate date={post.data.pubDate} /></small>
+								</header>
+								{post.data.description && (
+									<section>
+										<p itemprop="description" style="margin-bottom: 0; margin-top: var(--spacing-2); color: rgba(248, 249, 250, 0.8);">
+											{post.data.description}
+										</p>
+									</section>
+								)}
+							</article>
+						</li>
 					))}
-				</div>
-				
-				<div class="text-center pt-12">
-					<a 
-						href="/blog" 
-						class="inline-flex items-center gap-3 px-8 py-4 text-base font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all duration-200 shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40"
-					>
-						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0l-4 4m4-4l-4-4"/>
-						</svg>
-						View All Posts
-					</a>
-				</div>
-			</section>
+				</ol>
+			</main>
 		</div>
-		
-		<!-- Tooltip for neural network - Apple Design -->
-		<div id="tooltip" class="fixed pointer-events-none z-50 bg-white/90 backdrop-blur-xl text-gray-900 px-3 py-2 rounded-xl text-sm opacity-0 transition-all duration-200 max-w-xs border border-black/5 shadow-lg">
-			<div class="tooltip-title font-semibold mb-1 text-gray-900"></div>
-			<div class="tooltip-tags text-xs text-gray-500"></div>
-		</div>
-		
 		<Footer />
 	</body>
 </html>

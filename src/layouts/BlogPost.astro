@@ -26,7 +26,7 @@ const { title, description, pubDate, updatedDate, heroImage, tags = [] } = Astro
 
 	</head>
 
-	<body class="bg-white dark:bg-gray-900">
+	<body>
 		<Header />
 		<main class="max-w-4xl mx-auto px-6 py-8">
 			<article>
@@ -71,7 +71,7 @@ const { title, description, pubDate, updatedDate, heroImage, tags = [] } = Astro
 					{tags && tags.length > 0 && (
 						<div class="flex flex-wrap gap-2 mt-4">
 							{tags.map((tag: string) => (
-								<span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border border-blue-200 dark:border-blue-800">
+								<span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium border border-slate-600 text-slate-200 bg-transparent">
 									{tag}
 								</span>
 							))}
@@ -80,7 +80,7 @@ const { title, description, pubDate, updatedDate, heroImage, tags = [] } = Astro
 				</div>
 				
 				<!-- Main Content -->
-				<div class="prose prose-slate max-w-none text-slate-700 dark:text-slate-200 leading-relaxed text-base
+				<div class="prose prose-slate max-w-none text-slate-200 leading-relaxed text-base
 					[&>h1]:text-2xl sm:[&>h1]:text-3xl [&>h1]:font-bold [&>h1]:mt-0 [&>h1]:mb-4 [&>h1]:text-slate-900 [&>h1]:dark:text-white [&>h1]:leading-tight [&>h1]:tracking-tight
 					[&>h2]:text-xl sm:[&>h2]:text-2xl [&>h2]:font-semibold [&>h2]:mt-8 [&>h2]:mb-4 [&>h2]:text-slate-800 [&>h2]:dark:text-slate-50 [&>h2]:leading-tight
 					[&>h3]:text-lg sm:[&>h3]:text-xl [&>h3]:font-semibold [&>h3]:mt-6 [&>h3]:mb-3 [&>h3]:text-slate-800 [&>h3]:dark:text-slate-50 [&>h3]:leading-tight
@@ -90,10 +90,10 @@ const { title, description, pubDate, updatedDate, heroImage, tags = [] } = Astro
 					[&>p]:mb-5 [&>p]:text-base [&>p]:leading-relaxed
 					[&>ul]:mb-5 [&>ul]:pl-6 [&>ol]:mb-5 [&>ol]:pl-6
 					[&>li]:mb-2 [&>li]:leading-relaxed
-					[&>pre]:bg-slate-50 [&>pre]:dark:bg-slate-900 [&>pre]:border [&>pre]:border-slate-200 [&>pre]:dark:border-slate-700 [&>pre]:rounded-lg [&>pre]:p-4 [&>pre]:my-6 [&>pre]:overflow-x-auto [&>pre]:text-sm
-					[&>code]:bg-slate-50 [&>code]:dark:bg-slate-900 [&>code]:text-pink-600 [&>code]:dark:text-green-500 [&>code]:border [&>code]:border-slate-200 [&>code]:dark:border-slate-700 [&>code]:rounded [&>code]:px-1 [&>code]:py-0.5 [&>code]:text-sm [&>code]:font-medium
-					[&>a]:text-blue-500 [&>a]:dark:text-blue-400 [&>a]:no-underline [&>a]:border-b [&>a]:border-transparent [&>a]:transition-colors [&>a]:hover:border-blue-500 [&>a]:dark:hover:border-blue-400
-					[&>blockquote]:border-l-4 [&>blockquote]:border-blue-500 [&>blockquote]:my-6 [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:text-slate-600 [&>blockquote]:dark:text-gray-400
+					[&>pre]:bg-[rgba(0,0,0,0.3)] [&>pre]:border [&>pre]:border-slate-700 [&>pre]:rounded-lg [&>pre]:p-4 [&>pre]:my-6 [&>pre]:overflow-x-auto [&>pre]:text-sm
+					[&>code]:bg-[rgba(255,255,255,0.08)] [&>code]:text-slate-100 [&>code]:border [&>code]:border-slate-700 [&>code]:rounded [&>code]:px-1 [&>code]:py-0.5 [&>code]:text-sm [&>code]:font-medium
+					[&>a]:text-[rgb(248,249,250)] [&>a]:no-underline [&>a]:transition-colors [&>a]:hover:text-[rgba(248,249,250,0.8)]
+					[&>blockquote]:border-l-4 [&>blockquote]:border-orange-500 [&>blockquote]:my-6 [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:text-slate-300
 					[&>table]:w-full [&>table]:border-collapse [&>table]:my-6 [&>table]:text-sm [&>table]:overflow-x-auto [&>table]:block sm:[&>table]:table
 					[&>th]:border [&>th]:border-slate-200 [&>th]:dark:border-slate-700 [&>th]:p-3 [&>th]:text-left [&>th]:bg-slate-50 [&>th]:dark:bg-slate-900 [&>th]:font-semibold
 					[&>td]:border [&>td]:border-slate-200 [&>td]:dark:border-slate-700 [&>td]:p-3 [&>td]:text-left
