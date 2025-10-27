@@ -6,10 +6,13 @@
 
 /* 모든 @import는 맨 위에 와야 함 */
 @import "https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;500;600;700;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+
+/* Korean font */
+@import url('https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap');
+/* Japanese font */
+@import url('https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@500&display=swap');
+/* English Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
 
 /* Tailwind CSS 기본 스타일 */
 @tailwind base;
@@ -35,9 +38,11 @@
   --spacing-16: 4rem;
   --spacing-20: 5rem;
   
-  /* Typography - System Fonts */
-  --fontFamily-sans: "Noto Sans KR", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --fontFamily-serif: "Noto Serif KR", "Georgia", "Times New Roman", Times, serif;
+	/* Typography - System Fonts */
+	/* Use Montserrat (Latin) and Gowun Dodum (Korean) as primary sans; keep system fallbacks */
+	--fontFamily-sans: "Montserrat", "Gowun Dodum", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+	/* Serif stack without Noto Serif (not imported) */
+	--fontFamily-serif: "Georgia", "Times New Roman", Times, serif;
   --font-body: var(--fontFamily-serif);
   --font-heading: var(--fontFamily-sans);
   
@@ -184,6 +189,41 @@ body {
 	line-height: var(--lineHeight-relaxed);
 }
 
+/* Korean typography (Gowun Dodum) */
+/* 전체 문서가 한국어일 때 기본 본문 폰트로 Gowun Dodum 사용 */
+html[lang^="ko"] body { 
+	font-family: "Gowun Dodum", "Noto Sans KR", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
+	font-weight: 400;
+}
+
+/* 요소 또는 상위에 lang="ko"가 지정된 경우에도 적용 */
+:lang(ko) { 
+	font-family: "Gowun Dodum", "Noto Sans KR", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
+	font-weight: 400;
+}
+
+	/* English typography (Montserrat) */
+	html[lang^="en"] body {
+		font-family: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+		font-weight: 400;
+	}
+
+	:lang(en) {
+		font-family: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+		font-weight: 400;
+	}
+
+	/* Japanese typography (M PLUS 1p) */
+	html[lang^="ja"] body {
+		font-family: "M PLUS 1p", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+		font-weight: 500;
+	}
+
+	:lang(ja) {
+		font-family: "M PLUS 1p", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+		font-weight: 500;
+	}
+
 /* Dark mode */
 body.dark-theme {
 	background: rgb(40, 40, 40);
@@ -244,6 +284,39 @@ h5 {
 h6 {
 	font-size: var(--fontSize-1);
 	color: rgb(248, 249, 250) !important;
+}
+
+/* 한국어 헤딩에 Yeon Sung 적용 (헤딩 전역 폰트 설정을 덮어씀) */
+h1:lang(ko),
+h2:lang(ko),
+h3:lang(ko),
+h4:lang(ko),
+h5:lang(ko),
+h6:lang(ko) {
+	font-family: "Gowun Dodum", "Noto Sans KR", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+	font-weight: 400;
+}
+
+/* English headings */
+h1:lang(en),
+h2:lang(en),
+h3:lang(en),
+h4:lang(en),
+h5:lang(en),
+h6:lang(en) {
+  font-family: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-weight: 600;
+}
+
+/* Japanese headings */
+h1:lang(ja),
+h2:lang(ja),
+h3:lang(ja),
+h4:lang(ja),
+h5:lang(ja),
+h6:lang(ja) {
+  font-family: "M PLUS 1p", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-weight: 500;
 }
 
 strong, b {
@@ -409,6 +482,8 @@ table td {
 	margin: 0;
 }
 
+/* Duplicate blockquote styles (commented out to avoid redundancy) */
+/*
 blockquote {
 	border-left: var(--spacing-1) solid #f97316;
 	padding: var(--spacing-0) var(--spacing-0) var(--spacing-0) var(--spacing-6);
@@ -419,6 +494,7 @@ blockquote {
 	font-style: italic;
 	color: rgba(248, 249, 250, 0.7);
 }
+*/
 
 hr {
 	height: 1px;
@@ -479,4 +555,32 @@ hr {
 	-webkit-line-clamp: 3;
 	-webkit-box-orient: vertical;
 	overflow: hidden;
+}
+
+/* 수동 적용용 유틸리티 클래스 */
+/* Gowun Dodum utility classes */
+.gowun-dodum-regular {
+	font-family: "Gowun Dodum", system-ui;
+	font-weight: 400;
+	font-style: normal;
+}
+
+/* Backward-compat: map previous class to Gowun Dodum as well */
+.yeon-sung-regular {
+	font-family: "Gowun Dodum", system-ui;
+	font-weight: 400;
+	font-style: normal;
+}
+
+/* Montserrat & M PLUS 1p utility classes */
+.montserrat-regular {
+  font-family: "Montserrat", system-ui;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.mplus1p-regular {
+  font-family: "M PLUS 1p", system-ui;
+  font-weight: 500;
+  font-style: normal;
 }
