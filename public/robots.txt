@@ -3,10 +3,6 @@ Allow: /
 
 # Sitemap
 Sitemap: https://hunbot.dev/sitemap.xml
-Sitemap: https://hunbot.dev/sitemap-index.xml
-
-# Crawl delay
-Crawl-delay: 1
 
 # Specific rules for major search engines
 User-agent: Googlebot
