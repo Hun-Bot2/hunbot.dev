@@ -18,11 +18,11 @@ export function getStaticPaths() {
 const { lang } = Astro.params;
 const t = useTranslations(lang as 'ko' | 'jp' | 'en');
 
-// 최신 포스트 가져오기 (최신순)
-// TODO: 나중에 언어별 필터링 추가
-const posts = (await getCollection('blog')).sort(
-  (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
-);
+// Filter posts by language and get latest posts
+const allPosts = await getCollection('blog');
+const posts = allPosts
+  .filter(post => post.id.startsWith(`${lang}/`))
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
 ---
 
 <!doctype html>
@@ -36,12 +36,15 @@ const posts = (await getCollection('blog')).sort(
 			<main>
 				<h1 class="text-3xl font-bold mb-8">{t('blog.recent-posts')}</h1>
 				<ol style="list-style: none; padding: 0;">
-					{posts.map((post) => (
+					{posts.map((post) => {
+						// Remove language prefix from slug
+						const slug = post.id.replace(`${lang}/`, '');
+						return (
 						<li>
 							<article class="post-list-item" itemscope itemtype="http://schema.org/Article">
 								<header>
 									<h2 style="margin-bottom: var(--spacing-2); margin-top: var(--spacing-8);">
-										<a href={`/${lang}/blog/${post.id}/`} itemprop="url" style="text-decoration: none; color: rgb(248, 249, 250);">
+										<a href={`/${lang}/blog/${slug}/`} itemprop="url" style="text-decoration: none; color: rgb(248, 249, 250);">
 											<span itemprop="headline">{post.data.title}</span>
 										</a>
 									</h2>
@@ -56,7 +59,8 @@ const posts = (await getCollection('blog')).sort(
 								)}
 							</article>
 						</li>
-					))}
+						);
+					})}
 				</ol>
 			</main>
 		</div>
