@@ -2,7 +2,7 @@
 title: 'KOSSDA 대학생 공모전 참가 후기'
 description: 'KOSSDA 대학생 공모전 2025에 참가하면서 느낀 점들과 아쉬웠던 부분들을 솔직하게 정리해봤다.'
 pubDate: '2025-06-25'
-heroImage: '../../assets/KOSSDA.png'
+heroImage: '/KOSSDA.png'
 tags: ['공모전', '데이터분석']
 category: '경험'
 ---
