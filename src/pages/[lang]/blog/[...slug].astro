@@ -7,12 +7,19 @@ export async function getStaticPaths() {
 	const langs = ['ko', 'jp', 'en'];
 	const posts = await getCollection('blog');
 	
-	return langs.flatMap(lang => 
-		posts.map((post) => ({
-			params: { lang, slug: post.id },
-			props: { post, lang },
-		}))
-	);
+	return langs.flatMap(lang => {
+		// Filter posts for the current language
+		const langPosts = posts.filter(post => post.id.startsWith(`${lang}/`));
+		
+		return langPosts.map((post) => {
+			// Remove language prefix from slug
+			const slug = post.id.replace(`${lang}/`, '');
+			return {
+				params: { lang, slug },
+				props: { post, lang },
+			};
+		});
+	});
 }
 
 type Props = {
