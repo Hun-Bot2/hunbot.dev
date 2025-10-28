@@ -1,0 +1,203 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import AboutHeroImage from '../../assets/my_photo.jpeg';
+import { useTranslations } from '../../i18n/ui';
+
+export function getStaticPaths() {
+  return [
+    { params: { lang: 'ko' } },
+    { params: { lang: 'jp' } },
+    { params: { lang: 'en' } },
+  ];
+}
+
+const { lang } = Astro.params;
+const t = useTranslations(lang as 'ko' | 'jp' | 'en');
+
+const SITE_TITLE = `${t('about.title')} - Hun-Bot Blog`;
+const SITE_DESCRIPTION = t('about.description');
+---
+
+<!doctype html>
+<html lang={lang}>
+	<head>
+		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+	</head>
+	<body>
+		<Header />
+
+		<main class="max-w-4xl mx-auto px-4 py-10 space-y-16">
+		<!-- 프로필 섹션 - 박스 제거, 더 자연스러운 레이아웃 -->
+		<section class="flex flex-col lg:flex-row items-center gap-12">
+			<div class="relative group">
+				<img 
+					src={AboutHeroImage.src} 
+					alt="Hun Profile" 
+					class="w-40 h-40 rounded-full object-cover transition-transform duration-300 group-hover:scale-105"
+				/>
+			</div>
+			<div class="text-center lg:text-left space-y-4">
+				<h1 class="text-4xl lg:text-5xl font-bold text-orange-600 dark:text-orange-400">
+					{t('about.greeting')}
+				</h1>
+				<p class="text-xl text-slate-600 dark:text-gray-400 leading-relaxed max-w-2xl">
+					{t('about.intro')}
+				</p>
+			</div>
+		</section>
+
+		<!-- 소셜 링크 섹션 - 박스 제거, 플랫 디자인 -->
+		<section class="space-y-8">
+			<h2 class="text-3xl font-bold text-orange-800 dark:text-orange-300">{t('about.connect')}</h2>
+			<div class="flex flex-wrap gap-4">
+				<a 
+					href="https://github.com/Hun-Bot2" 
+					target="_blank" 
+					class="group flex items-center gap-3 px-6 py-3 text-slate-700 dark:text-gray-300 hover:text-slate-900 dark:hover:text-white transition-all duration-300 hover:-translate-y-1 border-b-2 border-transparent hover:border-slate-800 dark:hover:border-gray-400"
+				>
+					<svg viewBox="0 0 16 16" class="w-5 h-5 transition-transform duration-300 group-hover:scale-110" fill="currentColor">
+						<path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+					</svg>
+					<span class="font-medium">GitHub</span>
+				</a>
+				
+				<a 
+					href="https://linkedin.com/in/hunbot-dev" 
+					target="_blank" 
+					class="group flex items-center gap-3 px-6 py-3 text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100 transition-all duration-300 hover:-translate-y-1 border-b-2 border-transparent hover:border-blue-700 dark:hover:border-blue-300"
+				>
+					<svg viewBox="0 0 24 24" class="w-5 h-5 transition-transform duration-300 group-hover:scale-110" fill="currentColor">
+						<path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+					</svg>
+					<span class="font-medium">LinkedIn</span>
+				</a>
+				
+				<a 
+					href="https://www.instagram.com/hun__bot?igsh=NXowenFtZTExcXc=" 
+					target="_blank" 
+					class="group flex items-center gap-3 px-6 py-3 text-pink-700 dark:text-pink-300 hover:text-pink-900 dark:hover:text-pink-100 transition-all duration-300 hover:-translate-y-1 border-b-2 border-transparent hover:border-pink-700 dark:hover:border-pink-300"
+				>
+					<svg viewBox="0 0 24 24" class="w-5 h-5 transition-transform duration-300 group-hover:scale-110" fill="currentColor">
+						<path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+					</svg>
+					<span class="font-medium">Instagram</span>
+				</a>
+			</div>
+		</section>
+
+		<!-- 교육 섹션 - 심플한 카드 디자인 -->
+		<section class="space-y-8">
+			<h2 class="text-3xl font-bold text-orange-800 dark:text-orange-300 flex items-center gap-3">
+				{t('about.education')}
+			</h2>
+			<div class="border-l-4 border-orange-500 pl-6 space-y-3">
+				<h3 class="text-2xl font-bold text-orange-800 dark:text-orange-300">
+					{t('about.university')}
+				</h3>
+				<p class="text-lg font-semibold text-slate-700 dark:text-gray-300">{t('about.major')}</p>
+				<p class="text-sm text-slate-500 dark:text-gray-500">{t('about.status')}</p>
+				<p class="text-slate-600 dark:text-gray-400 leading-relaxed">
+					{t('about.university-desc')}
+				</p>
+			</div>
+		</section>
+
+		<!-- 관심 분야 및 기술 스택 섹션 -->
+		<section class="space-y-8">
+			<h2 class="text-3xl font-bold text-orange-800 dark:text-orange-300 flex items-center gap-3">
+				{t('about.tech-stack')}
+			</h2>
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+				<!-- Frontend -->
+				<div class="group space-y-4">
+					<h3 class="text-xl font-semibold text-orange-700 dark:text-orange-300 group-hover:text-orange-500 dark:group-hover:text-orange-200 transition-colors duration-300 flex items-center gap-2">
+						{t('about.frontend')}
+					</h3>
+					<div class="pl-6 border-l-2 border-orange-200 dark:border-orange-700 space-y-3">
+						<div class="flex items-center gap-2">
+							<span class="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-sm font-medium rounded-full">Three.js</span>
+							<span class="px-3 py-1 bg-cyan-100 dark:bg-cyan-900 text-cyan-800 dark:text-cyan-200 text-sm font-medium rounded-full">React</span>
+							<span class="px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-sm font-medium rounded-full">TypeScript</span>
+						</div>
+						<p class="text-slate-600 dark:text-gray-400 leading-relaxed">
+							{t('about.frontend-desc')}
+						</p>
+					</div>
+				</div>
+
+				<!-- Backend -->
+				<div class="group space-y-4">
+					<h3 class="text-xl font-semibold text-emerald-700 dark:text-emerald-300 group-hover:text-emerald-500 dark:group-hover:text-emerald-200 transition-colors duration-300 flex items-center gap-2">
+						{t('about.backend')}
+					</h3>
+					<div class="pl-6 border-l-2 border-emerald-200 dark:border-emerald-700 space-y-3">
+						<div class="flex items-center gap-2">
+							<span class="px-3 py-1 bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 text-sm font-medium rounded-full">Go</span>
+							<span class="px-3 py-1 bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-sm font-medium rounded-full">PostgreSQL</span>
+							<span class="px-3 py-1 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 text-sm font-medium rounded-full">Docker</span>
+						</div>
+						<p class="text-slate-600 dark:text-slate-300 leading-relaxed">
+							{t('about.backend-desc')}
+						</p>
+					</div>
+				</div>
+
+				<!-- AI/ML -->
+				<div class="group space-y-4">
+					<h3 class="text-xl font-semibold text-purple-700 dark:text-purple-300 group-hover:text-purple-500 dark:group-hover:text-purple-200 transition-colors duration-300 flex items-center gap-2">
+						{t('about.ai')}
+					</h3>
+					<div class="pl-6 border-l-2 border-purple-200 dark:border-purple-700 space-y-3">
+						<div class="flex items-center gap-2">
+							<span class="px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-sm font-medium rounded-full">PyTorch</span>
+							<span class="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-sm font-medium rounded-full">TensorFlow</span>
+							<span class="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-sm font-medium rounded-full">Hugging Face</span>
+						</div>
+						<p class="text-slate-600 dark:text-slate-300 leading-relaxed">
+							{t('about.ai-desc')}
+						</p>
+					</div>
+				</div>
+
+				<!-- HCI -->
+				<div class="group space-y-4">
+					<h3 class="text-xl font-semibold text-pink-700 dark:text-pink-300 group-hover:text-pink-500 dark:group-hover:text-pink-200 transition-colors duration-300 flex items-center gap-2">
+						{t('about.hci')}
+					</h3>
+					<div class="pl-6 border-l-2 border-pink-200 dark:border-pink-700 space-y-3">
+						<div class="flex items-center gap-2">
+							<span class="px-3 py-1 bg-pink-100 dark:bg-pink-900 text-pink-800 dark:text-pink-200 text-sm font-medium rounded-full">UX Design</span>
+							<span class="px-3 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 text-sm font-medium rounded-full">Interaction Design</span>
+							<span class="px-3 py-1 bg-teal-100 dark:bg-teal-900 text-teal-800 dark:text-teal-200 text-sm font-medium rounded-full">Usability</span>
+						</div>
+						<p class="text-slate-600 dark:text-slate-300 leading-relaxed">
+							{t('about.hci-desc')}
+						</p>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- 연락처 섹션 - CTA 버튼만 심플하게 -->
+		<section class="text-center space-y-8 py-16">
+			<h2 class="text-3xl font-bold text-orange-800 dark:text-orange-300">
+				{t('about.contact')}
+			</h2>
+			<p class="text-xl text-slate-600 dark:text-gray-400 leading-relaxed max-w-2xl mx-auto">
+				{t('about.contact-desc')}<br>
+				{t('about.contact-desc2')}
+			</p>
+			<a 
+				href="mailto:surtrcode@gmail.com" 
+				class="inline-flex items-center gap-2 px-8 py-4 text-lg font-semibold text-white bg-orange-600 hover:bg-orange-700 rounded-full transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+			>
+				{t('about.send-email')}
+			</a>
+		</section>
+		</main>
+
+		<Footer />
+	</body>
+</html>
