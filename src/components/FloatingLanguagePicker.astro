@@ -1,0 +1,94 @@
+---
+import { languages } from '../i18n/ui';
+
+const currentLang = Astro.currentLocale || 'ko';
+const currentPath = Astro.url.pathname;
+
+// Remove language prefix from path to get base path
+function getBasePath(path: string, lang: string) {
+  if (path.startsWith(`/${lang}/`)) {
+    return path.slice(lang.length + 1);
+  }
+  if (path === `/${lang}`) {
+    return '/';
+  }
+  return path;
+}
+
+const basePath = getBasePath(currentPath, currentLang);
+
+// Generate URLs for each language
+const languageUrls = Object.keys(languages).reduce((acc, lang) => {
+  if (lang === 'ko') {
+    // Korean is default, no prefix
+    acc[lang] = basePath;
+  } else {
+    acc[lang] = `/${lang}${basePath}`;
+  }
+  return acc;
+}, {} as Record<string, string>);
+---
+
+<div class="fixed top-32 right-6 md:right-8 lg:right-12 z-[150]">
+  <button 
+    id="floating-lang-toggle" 
+    class="bg-[rgba(40,40,40,0.95)] border border-white/10 rounded-full w-12 h-12 flex items-center justify-center text-white/80 cursor-pointer transition-all duration-300 shadow-[0_4px_12px_rgba(0,0,0,0.3)] backdrop-blur-lg hover:bg-orange-500/95 hover:text-white hover:scale-105 hover:shadow-[0_6px_16px_rgba(249,115,22,0.4)] group"
+    aria-label="언어 선택"
+    title="언어 선택"
+  >
+    <img 
+      src="/images/earth-9-svgrepo-com.svg" 
+      alt="Language" 
+      width="24" 
+      height="24"
+      class="brightness-0 invert opacity-80 group-hover:opacity-100 transition-opacity duration-300"
+    />
+  </button>
+  
+  <div id="floating-lang-menu" class="absolute top-14 right-0 bg-[rgba(40,40,40,0.98)] border border-white/10 rounded-xl p-2 min-w-[10rem] shadow-[0_8px_24px_rgba(0,0,0,0.4)] backdrop-blur-xl z-[200] hidden">
+    {Object.entries(languages).map(([lang, label]) => (
+      <a 
+        href={languageUrls[lang]}
+        class={`flex items-center justify-between gap-3 px-4 py-3 text-white/80 no-underline rounded-lg transition-all duration-200 text-[0.95rem] hover:bg-orange-500/20 hover:text-white ${
+          lang === currentLang ? 'bg-orange-500/30 !text-orange-500 font-semibold' : ''
+        }`}
+        data-lang={lang}
+      >
+        {label}
+        {lang === currentLang && (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        )}
+      </a>
+    ))}
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const toggle = document.getElementById('floating-lang-toggle');
+    const menu = document.getElementById('floating-lang-menu');
+
+    if (toggle && menu) {
+      toggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        menu.classList.toggle('hidden');
+      });
+
+      // Close menu when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!toggle.contains(e.target as Node) && !menu.contains(e.target as Node)) {
+          menu.classList.add('hidden');
+        }
+      });
+
+      // Close menu when pressing Escape
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          menu.classList.add('hidden');
+        }
+      });
+    }
+  });
+</script>
