@@ -1,4 +1,13 @@
----
-// Redirect root to default language (Korean)
-return Astro.redirect('/ko/');
----
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="refresh" content="0;url=/ko/">
+  <link rel="canonical" href="/ko/" />
+  <title>Redirecting...</title>
+</head>
+<body>
+  <p>Redirecting to <a href="/ko/">/ko/</a>...</p>
+  <script>window.location.replace('/ko/');</script>
+</body>
+</html>
