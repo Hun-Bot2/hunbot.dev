@@ -2,7 +2,6 @@
 import BaseHead from '../../components/BaseHead.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
-import AboutHeroImage from '../../assets/my_photo.jpeg';
 import { useTranslations } from '../../i18n/ui';
 
 export function getStaticPaths() {
@@ -33,7 +32,7 @@ const SITE_DESCRIPTION = t('about.description');
 		<section class="flex flex-col lg:flex-row items-center gap-12">
 			<div class="relative group">
 				<img 
-					src={AboutHeroImage.src} 
+					src="/images/my_photo.jpeg" 
 					alt="Hun Profile" 
 					class="w-40 h-40 rounded-full object-cover transition-transform duration-300 group-hover:scale-105"
 				/>
