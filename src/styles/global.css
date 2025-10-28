@@ -217,12 +217,12 @@ html[lang^="ko"] body {
 	}
 
 	/* Japanese typography (M PLUS 1p) */
-	html[lang^="ja"] body {
+	html[lang^="jp"] body {
 		font-family: "M PLUS 1p", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 		font-weight: 500;
 	}
 
-	:lang(ja) {
+	:lang(jp) {
 		font-family: "M PLUS 1p", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 		font-weight: 500;
 	}
@@ -312,12 +312,12 @@ h6:lang(en) {
 }
 
 /* Japanese headings */
-h1:lang(ja),
-h2:lang(ja),
-h3:lang(ja),
-h4:lang(ja),
-h5:lang(ja),
-h6:lang(ja) {
+h1:lang(jp),
+h2:lang(jp),
+h3:lang(jp),
+h4:lang(jp),
+h5:lang(jp),
+h6:lang(jp) {
   font-family: "M PLUS 1p", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   font-weight: 500;
 }

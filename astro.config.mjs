@@ -7,6 +7,13 @@ import rehypeKatex from 'rehype-katex';
 
 export default defineConfig({
   site: 'https://hunbot.dev',
+  i18n: {
+    defaultLocale: 'ko',
+    locales: ['ko', 'jp', 'en'],
+    routing: {
+      prefixDefaultLocale: false,
+    },
+  },
   integrations: [
     mdx({
       remarkPlugins: [remarkMath],

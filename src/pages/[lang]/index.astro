@@ -1,0 +1,65 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
+import { getCollection } from 'astro:content';
+import FormattedDate from '../../components/FormattedDate.astro';
+import { useTranslations } from '../../i18n/ui';
+
+export function getStaticPaths() {
+  return [
+    { params: { lang: 'ko' } },
+    { params: { lang: 'jp' } },
+    { params: { lang: 'en' } },
+  ];
+}
+
+const { lang } = Astro.params;
+const t = useTranslations(lang as 'ko' | 'jp' | 'en');
+
+// 최신 포스트 가져오기 (최신순)
+// TODO: 나중에 언어별 필터링 추가
+const posts = (await getCollection('blog')).sort(
+  (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+);
+---
+
+<!doctype html>
+<html lang={lang}>
+	<head>
+		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+	</head>
+	<body>
+		<Header />
+		<div class="global-wrapper" data-is-root-path="true">
+			<main>
+				<h1 class="text-3xl font-bold mb-8">{t('blog.recent-posts')}</h1>
+				<ol style="list-style: none; padding: 0;">
+					{posts.map((post) => (
+						<li>
+							<article class="post-list-item" itemscope itemtype="http://schema.org/Article">
+								<header>
+									<h2 style="margin-bottom: var(--spacing-2); margin-top: var(--spacing-8);">
+										<a href={`/${lang}/blog/${post.id}/`} itemprop="url" style="text-decoration: none; color: rgb(248, 249, 250);">
+											<span itemprop="headline">{post.data.title}</span>
+										</a>
+									</h2>
+									<small style="color: rgba(248, 249, 250, 0.6);"><FormattedDate date={post.data.pubDate} /></small>
+								</header>
+								{post.data.description && (
+									<section>
+										<p itemprop="description" style="margin-bottom: 0; margin-top: var(--spacing-2); color: rgba(248, 249, 250, 0.8);">
+											{post.data.description}
+										</p>
+									</section>
+								)}
+							</article>
+						</li>
+					))}
+				</ol>
+			</main>
+		</div>
+		<Footer />
+	</body>
+</html>

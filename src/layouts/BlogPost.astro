@@ -9,9 +9,11 @@ import Breadcrumb from '../components/Breadcrumb.astro';
 import { Image } from 'astro:assets';
 import { SITE_TITLE, AUTHOR, AUTHOR_EMAIL, SOCIAL_LINKS } from '../consts';
 
-type Props = CollectionEntry<'blog'>['data'];
+type Props = CollectionEntry<'blog'>['data'] & {
+	lang?: string;
+};
 
-const { title, description, pubDate, updatedDate, heroImage, tags = [] } = Astro.props;
+const { title, description, pubDate, updatedDate, heroImage, tags = [], lang = 'ko' } = Astro.props;
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 
@@ -53,7 +55,7 @@ const schema = {
 };
 ---
 
-<html lang="ko">
+<html lang={lang}>
 	<head>
 				<BaseHead title={title} description={description} canonicalURL={canonicalURL.href} image={resolvedHeroSrc ? ({ src: resolvedHeroSrc } as any) : undefined} />
 		<script type="application/ld+json" set:html={JSON.stringify(schema)} />

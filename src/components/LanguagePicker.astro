@@ -1,0 +1,150 @@
+---
+import { languages } from '../i18n/ui';
+
+const currentLang = Astro.currentLocale || 'ko';
+const currentPath = Astro.url.pathname;
+
+// Remove language prefix from path to get base path
+function getBasePath(path: string, lang: string) {
+  if (path.startsWith(`/${lang}/`)) {
+    return path.slice(lang.length + 1);
+  }
+  if (path === `/${lang}`) {
+    return '/';
+  }
+  return path;
+}
+
+const basePath = getBasePath(currentPath, currentLang);
+
+// Generate URLs for each language
+const languageUrls = Object.keys(languages).reduce((acc, lang) => {
+  if (lang === 'ko') {
+    // Korean is default, no prefix
+    acc[lang] = basePath;
+  } else {
+    acc[lang] = `/${lang}${basePath}`;
+  }
+  return acc;
+}, {} as Record<string, string>);
+---
+
+<div class="language-picker">
+  <button 
+    id="lang-toggle" 
+    class="icon-button flex items-center gap-2"
+    aria-label="언어 선택"
+    title="언어 선택"
+  >
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="10"/>
+      <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+    </svg>
+    <span class="text-sm hidden sm:inline">{languages[currentLang as keyof typeof languages]}</span>
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="lang-arrow">
+      <path d="m6 9 6 6 6-6"/>
+    </svg>
+  </button>
+  
+  <div id="lang-menu" class="language-menu hidden">
+    {Object.entries(languages).map(([lang, label]) => (
+      <a 
+        href={languageUrls[lang]}
+        class:list={['lang-option', { active: lang === currentLang }]}
+        data-lang={lang}
+      >
+        <span class="lang-label">{label}</span>
+        {lang === currentLang && (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        )}
+      </a>
+    ))}
+  </div>
+</div>
+
+<style>
+  .language-picker {
+    position: relative;
+  }
+
+  .language-menu {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    background: rgb(40, 40, 40);
+    border: 1px solid rgba(248, 249, 250, 0.2);
+    border-radius: 8px;
+    padding: 0.5rem;
+    min-width: 150px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+  }
+
+  .language-menu.hidden {
+    display: none;
+  }
+
+  .lang-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    color: rgba(248, 249, 250, 0.8);
+    text-decoration: none;
+    transition: all 0.2s;
+    font-size: 0.875rem;
+  }
+
+  .lang-option:hover {
+    background: rgba(248, 249, 250, 0.1);
+    color: rgb(248, 249, 250);
+  }
+
+  .lang-option.active {
+    background: rgba(249, 115, 22, 0.1);
+    color: #f97316;
+  }
+
+  .lang-arrow {
+    transition: transform 0.2s;
+  }
+
+  #lang-toggle[aria-expanded="true"] .lang-arrow {
+    transform: rotate(180deg);
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const toggle = document.getElementById('lang-toggle');
+    const menu = document.getElementById('lang-menu');
+    
+    if (!toggle || !menu) return;
+    
+    toggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
+      toggle.setAttribute('aria-expanded', String(!isExpanded));
+      menu.classList.toggle('hidden');
+    });
+    
+    // Close menu when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!toggle.contains(e.target as Node) && !menu.contains(e.target as Node)) {
+        toggle.setAttribute('aria-expanded', 'false');
+        menu.classList.add('hidden');
+      }
+    });
+    
+    // Close menu on ESC key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        toggle.setAttribute('aria-expanded', 'false');
+        menu.classList.add('hidden');
+      }
+    });
+  });
+</script>

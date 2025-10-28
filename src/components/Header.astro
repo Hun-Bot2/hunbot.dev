@@ -1,14 +1,23 @@
 ---
 import { SITE_TITLE, SOCIAL_LINKS } from '../consts';
+import LanguagePicker from './LanguagePicker.astro';
+import { getLangFromUrl } from '../i18n/ui';
+
+const lang = getLangFromUrl(Astro.url);
+const homeUrl = lang === 'ko' ? '/' : `/${lang}/`;
+const blogUrl = lang === 'ko' ? '/ko/blog' : `/${lang}/blog`;
 ---
 
 <header class="header-wrapper">
 	<div class="header-content">
 		<h1 class="site-title">
-			<a href="/" class="no-underline">{SITE_TITLE}</a>
+			<a href={homeUrl} class="no-underline">{SITE_TITLE}</a>
 		</h1>
 		
 		<div class="header-icons">
+			<!-- Language Picker -->
+			<LanguagePicker />
+			
 			<!-- Theme Toggle -->
 			<button id="themeToggleBtn" class="icon-button" title="Toggle Dark Mode">
 				<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -32,7 +41,7 @@ import { SITE_TITLE, SOCIAL_LINKS } from '../consts';
 			</a>
 			
 			<!-- Blog/Tags Icon -->
-			<a href="/blog" class="icon-button" title="Blog">
+			<a href={blogUrl} class="icon-button" title="Blog">
 				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 					<path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
 					<line x1="7" y1="7" x2="7.01" y2="7"/>
