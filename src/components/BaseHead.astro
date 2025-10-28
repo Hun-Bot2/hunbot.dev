@@ -29,12 +29,10 @@ const { title, description, image = FallbackImage, canonicalURL = new URL(Astro.
 />
 <meta name="generator" content={Astro.generator} />
 
-<!-- 다국어 폰트 preload -->
+<!-- 다국어 폰트 로드: preconnect + 단일 stylesheet로 통합 (preload 경고 제거) -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap" />
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@500&display=swap" />
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" />
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=M+PLUS+1p:wght@500&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet" />
 
 <!-- 다국어 및 지역 설정 -->
 <meta name="language" content="Korean" />

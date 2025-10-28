@@ -130,6 +130,7 @@
 	/* Line Clamp Utilities */
 	.line-clamp-2 {
 		display: -webkit-box;
+		line-clamp: 2;
 		-webkit-line-clamp: 2;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
@@ -137,6 +138,7 @@
 	
 	.line-clamp-3 {
 		display: -webkit-box;
+		line-clamp: 3;
 		-webkit-line-clamp: 3;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
@@ -144,6 +146,7 @@
 	
 	.line-clamp-4 {
 		display: -webkit-box;
+		line-clamp: 4;
 		-webkit-line-clamp: 4;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
@@ -339,26 +342,12 @@ a:focus {
 }
 
 p {
-	line-height: var(--lineHeight-relaxed);
-	margin: var(--spacing-0) var(--spacing-0) var(--spacing-8) var(--spacing-0);
-	padding: var(--spacing-0);
+		line-height: var(--lineHeight-relaxed);
+		margin: var(--spacing-0) var(--spacing-0) var(--spacing-8) var(--spacing-0);
+		padding: var(--spacing-0);
 }
 
-ul,
-ol {
-	margin-left: var(--spacing-0);
-	margin-right: var(--spacing-0);
-	padding: var(--spacing-0);
-	margin-bottom: var(--spacing-8);
-	list-style-position: outside;
-	list-style-image: none;
-}
-
-ul li,
-ol li {
-	padding-left: var(--spacing-0);
-	margin-bottom: calc(var(--spacing-8) / 2);
-}
+/* Removed aggressive global list reset. Lists are targeted with `.prose` rules instead. */
 
 blockquote {
 	color: rgba(248, 249, 250, 0.7);
@@ -552,6 +541,7 @@ hr {
 /* 라인 클램핑 유틸리티 */
 .line-clamp-3 {
 	display: -webkit-box;
+	line-clamp: 3;
 	-webkit-line-clamp: 3;
 	-webkit-box-orient: vertical;
 	overflow: hidden;
@@ -583,4 +573,27 @@ hr {
   font-family: "M PLUS 1p", system-ui;
   font-weight: 500;
   font-style: normal;
+}
+
+/* Ensure lists inside Tailwind's `prose` content show markers and spacing.
+	 The site previously had global list resets which removed left padding (space
+	 where markers are rendered). Target `.prose` specifically so lists in other
+	 places keep their current behavior. */
+.prose ul,
+.prose ol {
+	padding-left: 1.5rem; /* roughly Tailwind pl-6 */
+	margin-bottom: 1.25rem; /* roughly Tailwind mb-5 */
+	list-style-position: outside;
+}
+
+.prose ul {
+	list-style-type: disc;
+}
+
+.prose ol {
+	list-style-type: decimal;
+}
+
+.prose li {
+	margin-bottom: 0.5rem; /* roughly Tailwind mb-2 */
 }
