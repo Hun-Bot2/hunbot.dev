@@ -34,3 +34,6 @@ category: 'devlog'
 ## Giscus 댓글 추가
 - `src/components/GiscusComments.astro`를 만들어 `BlogPost` 레이아웃 하단에 붙였다. `.env`에 Giscus 환경 변수만 채우면 GitHub Discussions 스레드가 자동으로 생긴다.
 - 환경 변수(`PUBLIC_GISCUS_REPO_ID`, `PUBLIC_GISCUS_CATEGORY_ID` 등)가 비어 있으면 “댓글 비활성화” 안내 박스만 출력되도록 하는 로직을 넣었음.
+
+## TODO
+- 라이트 모드에서 코드 블록 대비가 부족해 내용을 확인하기 어려움. v04에서 스타일 수정 예정.

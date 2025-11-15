@@ -235,6 +235,115 @@ body.dark-theme h6 {
 	color: rgb(248, 249, 250) !important;
 }
 
+body.dark-theme {
+	color-scheme: dark;
+}
+
+body.light-theme {
+	background: #f8fafc;
+	color: #0f172a;
+	color-scheme: light;
+}
+
+body.light-theme .header-wrapper {
+	background: rgba(255, 255, 255, 0.92);
+	border-color: rgba(15, 23, 42, 0.08);
+}
+
+body.light-theme .site-title a {
+	color: #0f172a;
+}
+
+body.light-theme .desktop-nav-link {
+	color: #334155;
+}
+
+body.light-theme .desktop-nav-link:hover {
+	color: #ea580c;
+}
+
+body.light-theme .icon-button {
+	background: rgba(15, 23, 42, 0.06);
+	color: #1f2937;
+	border-color: rgba(15, 23, 42, 0.12);
+}
+
+body.light-theme .icon-button:hover {
+	background: rgba(249, 115, 22, 0.15);
+	color: #9a3412;
+	border-color: rgba(249, 115, 22, 0.4);
+}
+
+body.light-theme .mobile-menu {
+	background: rgba(255, 255, 255, 0.98);
+	border-bottom-color: rgba(15, 23, 42, 0.08);
+}
+
+body.light-theme .mobile-nav-item {
+	color: #0f172a;
+}
+
+body.light-theme .mobile-nav-item:hover {
+	background: rgba(249, 115, 22, 0.1);
+	color: #9a3412;
+}
+
+body.light-theme .mobile-nav-divider {
+	background: rgba(15, 23, 42, 0.08);
+}
+
+body.light-theme :where(h1,h2,h3,h4,h5,h6,p,li,span,small,strong,label,blockquote,figcaption) {
+	color: #0f172a !important;
+}
+
+body.light-theme :where(a) {
+	color: #0f172a !important;
+}
+
+body.light-theme :where(a):hover {
+	color: #c2410c !important;
+}
+
+body.light-theme .border-slate-700,
+body.light-theme .border-slate-800 {
+	border-color: rgba(15, 23, 42, 0.2) !important;
+}
+
+body.light-theme .bg-slate-900\/40,
+body.light-theme .bg-slate-900\/50,
+body.light-theme .bg-slate-800\/50 {
+	background-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+body.light-theme .prose {
+	color: #0f172a;
+}
+
+body.light-theme .prose a {
+	color: #1d4ed8;
+}
+
+body.light-theme .prose code {
+	background: rgba(15, 23, 42, 0.08);
+	color: #0f172a;
+	border-color: rgba(15, 23, 42, 0.2);
+}
+
+body.light-theme .prose pre {
+	background: rgba(15, 23, 42, 0.08);
+	color: #0f172a;
+	border-color: rgba(15, 23, 42, 0.12);
+}
+
+body.light-theme .prose :where(h1,h2,h3,h4,h5,h6,li,blockquote,p,strong) {
+	color: #0f172a !important;
+}
+
+body.light-theme .prose blockquote {
+	border-color: #fb923c !important;
+	color: #475569 !important;
+}
+
 h1,
 h2,
 h3,
