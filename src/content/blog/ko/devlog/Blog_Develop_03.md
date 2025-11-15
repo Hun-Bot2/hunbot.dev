@@ -2,7 +2,7 @@
 title: '블로그 개발일지 03'
 description: '도메인 업데이트 & 블로그 글이 없을 때 나타나는 404에러 수정'
 pubDate: '2025-11-15'
-# heroImage: '/images/blog-placeholder-2.jpg'
+heroImage: '/images/giscus.png'
 tags: ['Devlog', 'Bug Fix']
 category: 'devlog'
 ---
