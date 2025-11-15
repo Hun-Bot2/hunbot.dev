@@ -6,7 +6,7 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 
 export default defineConfig({
-  site: 'https://hunbot.dev',
+  site: 'https://hun-bot.dev',
   i18n: {
     defaultLocale: 'ko',
     locales: ['ko', 'jp', 'en'],

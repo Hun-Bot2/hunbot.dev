@@ -2,7 +2,9 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://hunbot.dev/sitemap.xml
+Sitemap: https://hun-bot.dev/sitemap-index.xml
+Sitemap: https://hun-bot.dev/sitemap.xml
+Host: https://hun-bot.dev
 
 # Specific rules for major search engines
 User-agent: Googlebot
