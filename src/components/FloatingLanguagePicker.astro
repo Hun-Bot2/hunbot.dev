@@ -1,8 +1,17 @@
 ---
 import { languages } from '../i18n/ui';
 
+interface Props {
+	availableLangs?: string[];
+}
+
+const { availableLangs } = Astro.props as Props;
 const currentLang = Astro.currentLocale || 'ko';
 const currentPath = Astro.url.pathname;
+const languageKeys = Object.keys(languages);
+const allowedLangs = availableLangs && availableLangs.length > 0
+	? Array.from(new Set([...availableLangs, currentLang])).filter(lang => languageKeys.includes(lang))
+	: languageKeys;
 
 // Remove language prefix from path to get base path
 function getBasePath(path: string, lang: string) {
@@ -18,7 +27,7 @@ function getBasePath(path: string, lang: string) {
 const basePath = getBasePath(currentPath, currentLang);
 
 // Generate URLs for each language
-const languageUrls = Object.keys(languages).reduce((acc, lang) => {
+const languageUrls = allowedLangs.reduce((acc, lang) => {
   if (lang === 'ko') {
     // Korean is default, no prefix
     acc[lang] = basePath;
@@ -46,7 +55,9 @@ const languageUrls = Object.keys(languages).reduce((acc, lang) => {
   </button>
   
   <div id="floating-lang-menu" class="absolute top-14 right-0 bg-[rgba(40,40,40,0.98)] border border-white/10 rounded-xl p-2 min-w-[10rem] shadow-[0_8px_24px_rgba(0,0,0,0.4)] backdrop-blur-xl z-[200] hidden">
-    {Object.entries(languages).map(([lang, label]) => (
+    {Object.entries(languages)
+      .filter(([lang]) => allowedLangs.includes(lang))
+      .map(([lang, label]) => (
       <a 
         href={languageUrls[lang]}
         class={`flex items-center justify-between gap-3 px-4 py-3 text-white/80 no-underline rounded-lg transition-all duration-200 text-[0.95rem] hover:bg-orange-500/20 hover:text-white ${

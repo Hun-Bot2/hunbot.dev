@@ -2,31 +2,79 @@
 // Import the global.css file here so that it is included on
 // all pages through the use of the <BaseHead /> component.
 import '../styles/global.css';
-import { SITE_TITLE } from '../consts';
+import type { SupportedLanguage } from '../consts';
+import {
+	SITE_TITLE,
+	SITE_DESCRIPTION,
+	SITE_URL,
+	SUPPORTED_LANGUAGES,
+	LANGUAGE_HREF_MAP,
+	GOOGLE_SITE_VERIFICATION,
+} from '../consts';
+import { getLangFromUrl, defaultLang } from '../i18n/ui';
 
 interface Props {
 	title: string;
 	description: string;
 	image?: string;
 	canonicalURL?: string;
+	lang?: string;
 }
 
 const fallbackImageUrl = '/images/blog-placeholder-1.jpg';
-const { title, description, image = fallbackImageUrl, canonicalURL = new URL(Astro.url.pathname, Astro.site).href } = Astro.props;
+const { title, description, image = fallbackImageUrl, canonicalURL, lang: explicitLang } = Astro.props;
+const siteOrigin = Astro.site?.origin ?? SITE_URL;
+const canonicalHref = canonicalURL ?? new URL(Astro.url.pathname, siteOrigin).href;
+const descriptionContent = (description ?? '').trim() || SITE_DESCRIPTION;
+const googleVerification = GOOGLE_SITE_VERIFICATION?.trim();
+const imageUrl = image.startsWith('http') ? image : new URL(image, siteOrigin).href;
+const languageCodes = SUPPORTED_LANGUAGES as readonly SupportedLanguage[];
+const languageMeta = {
+	ko: { language: 'Korean', region: 'KR', place: 'South Korea' },
+	jp: { language: 'Japanese', region: 'JP', place: 'Japan' },
+	en: { language: 'English', region: 'US', place: 'United States' },
+} as const;
+const openGraphLocales = {
+	ko: 'ko_KR',
+	jp: 'ja_JP',
+	en: 'en_US',
+} as const;
+const currentLang = (explicitLang || getLangFromUrl(Astro.url)) as SupportedLanguage;
+const langMeta = languageMeta[currentLang] ?? languageMeta.ko;
+const ogLocale = openGraphLocales[currentLang] ?? openGraphLocales.ko;
+const ogAlternateLocales = Object.entries(openGraphLocales)
+	.filter(([code]) => code !== currentLang)
+	.map(([, locale]) => locale);
+const pathSegments = Astro.url.pathname.split('/').filter(Boolean);
+const hasLocalePrefix =
+	pathSegments.length > 0 && languageCodes.includes(pathSegments[0] as SupportedLanguage);
+const normalizedSegments = hasLocalePrefix ? pathSegments.slice(1) : pathSegments;
+const trailingSlash = Astro.url.pathname.endsWith('/') ? '/' : '';
+const normalizedPath =
+	normalizedSegments.length === 0 ? '/' : `/${normalizedSegments.join('/')}${trailingSlash}`;
+const normalizedPathSuffix = normalizedPath === '/' ? '/' : normalizedPath;
+const alternateLinks = languageCodes.map((code) => {
+	const hrefLang = LANGUAGE_HREF_MAP[code];
+	const prefix = `/${code}`;
+	const href = new URL(`${prefix}${normalizedPathSuffix === '/' ? '/' : normalizedPathSuffix}`, siteOrigin).href;
+	return { code, hrefLang, href };
+});
+const xDefaultHref = alternateLinks.find((link) => link.code === defaultLang)?.href ?? canonicalHref;
 ---
 
 <!-- Global Metadata -->
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-<link rel="sitemap" href="/sitemap-index.xml" />
+<link rel="sitemap" href={new URL('sitemap-index.xml', siteOrigin).href} />
 <link
 	rel="alternate"
 	type="application/rss+xml"
 	title={SITE_TITLE}
-	href={new URL('rss.xml', Astro.site)}
+	href={new URL('rss.xml', siteOrigin).href}
 />
 <meta name="generator" content={Astro.generator} />
+{googleVerification && <meta name="google-site-verification" content={googleVerification} />}
 
 <!-- 다국어 폰트 로드: 최적화된 비동기 로딩 -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -43,39 +91,44 @@ const { title, description, image = fallbackImageUrl, canonicalURL = new URL(Ast
 </noscript>
 
 <!-- 다국어 및 지역 설정 -->
-<meta name="language" content="Korean" />
-<meta name="geo.region" content="KR" />
-<meta name="geo.placename" content="South Korea" />
+<meta name="language" content={langMeta.language} />
+<meta name="geo.region" content={langMeta.region} />
+<meta name="geo.placename" content={langMeta.place} />
 
 <!-- Canonical URL -->
-<link rel="canonical" href={canonicalURL} />
+<link rel="canonical" href={canonicalHref} />
+{alternateLinks.map(({ href, hrefLang }) => (
+	<link rel="alternate" hreflang={hrefLang} href={href} />
+))}
+<link rel="alternate" hreflang="x-default" href={xDefaultHref} />
 
 <!-- Primary Meta Tags -->
 <title>{title}</title>
 <meta name="title" content={title} />
-<meta name="description" content={description} />
+<meta name="description" content={descriptionContent} />
 <meta name="author" content="Hun-Bot" />
 <meta name="keywords" content="뇌공학, AI, 인공지능, 수학, 통계, 개발, 블로그, 기술, Brain Engineering, Mathematics, Statistics, Development" />
 
 <!-- Open Graph / Facebook -->
 <meta property="og:type" content="website" />
-<meta property="og:url" content={Astro.url} />
+<meta property="og:url" content={canonicalHref} />
 <meta property="og:title" content={title} />
-<meta property="og:description" content={description} />
-<meta property="og:image" content={new URL(image, Astro.url)} />
+<meta property="og:description" content={descriptionContent} />
+<meta property="og:image" content={imageUrl} />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta property="og:site_name" content={SITE_TITLE} />
-<meta property="og:locale" content="ko_KR" />
-<meta property="og:locale:alternate" content="en_US" />
-<meta property="og:locale:alternate" content="ja_JP" />
+<meta property="og:locale" content={ogLocale} />
+{ogAlternateLocales.map((locale) => (
+	<meta property="og:locale:alternate" content={locale} />
+))}
 
 <!-- Twitter -->
 <meta property="twitter:card" content="summary_large_image" />
-<meta property="twitter:url" content={Astro.url} />
+<meta property="twitter:url" content={canonicalHref} />
 <meta property="twitter:title" content={title} />
-<meta property="twitter:description" content={description} />
-<meta property="twitter:image" content={new URL(image, Astro.url)} />
+<meta property="twitter:description" content={descriptionContent} />
+<meta property="twitter:image" content={imageUrl} />
 <meta property="twitter:creator" content="@Hun-Bot" />
 
 <!-- 추가 SEO 최적화 -->
@@ -85,7 +138,7 @@ const { title, description, image = fallbackImageUrl, canonicalURL = new URL(Ast
 <meta name="msapplication-TileColor" content="#f97316" />
 
 <!-- RSS 및 JSON Feed -->
-<link rel="alternate" type="application/json" title={`${SITE_TITLE} JSON Feed`} href={new URL('feed.json', Astro.site)} />
+<link rel="alternate" type="application/json" title={`${SITE_TITLE} JSON Feed`} href={new URL('feed.json', siteOrigin).href} />
 
 <!-- Performance optimizations -->
 <link rel="dns-prefetch" href="//fonts.googleapis.com" />
@@ -98,11 +151,11 @@ const { title, description, image = fallbackImageUrl, canonicalURL = new URL(Ast
   "@type": "WebSite",
   "name": "Hun-Bot.dev",
   "description": "뇌공학, AI, 수학, 그리고 개발자의 삶을 기록하는 공간",
-  "url": "https://hunbot.dev",
+  "url": "https://hun-bot.dev",
   "author": {
     "@type": "Person",
     "name": "Hun-Bot",
-    "url": "https://hunbot.dev",
+    "url": "https://hun-bot.dev",
     "sameAs": [
       "https://github.com/Hun-Bot2"
     ]
@@ -110,14 +163,14 @@ const { title, description, image = fallbackImageUrl, canonicalURL = new URL(Ast
   "publisher": {
     "@type": "Person",
     "name": "Hun-Bot",
-    "url": "https://hunbot.dev"
+    "url": "https://hun-bot.dev"
   },
   "inLanguage": "ko-KR",
   "potentialAction": {
     "@type": "SearchAction",
     "target": {
       "@type": "EntryPoint",
-      "urlTemplate": "https://hunbot.dev/search?q={search_term_string}"
+      "urlTemplate": "https://hun-bot.dev/search?q={search_term_string}"
     },
     "query-input": "required name=search_term_string"
   }
@@ -130,7 +183,7 @@ const { title, description, image = fallbackImageUrl, canonicalURL = new URL(Ast
   "@context": "https://schema.org",
   "@type": "Person",
   "name": "Hun-Bot",
-  "url": "https://hunbot.dev",
+  "url": "https://hun-bot.dev",
   "sameAs": [
     "https://github.com/Hun-Bot2"
   ],

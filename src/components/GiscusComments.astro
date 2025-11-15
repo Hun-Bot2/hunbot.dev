@@ -1,0 +1,63 @@
+---
+import type { SupportedLanguage } from '../consts';
+import { GISCUS_CONFIG } from '../consts';
+import { defaultLang } from '../i18n/ui';
+
+interface Props {
+	lang?: SupportedLanguage | string;
+	title?: string;
+}
+
+const { lang = defaultLang } = Astro.props;
+const resolvedLang = (lang as SupportedLanguage) ?? defaultLang;
+const config = GISCUS_CONFIG;
+const repo = config.repo?.trim();
+const isConfigured = Boolean(
+	config.enabled && repo && config.repoId && config.category && config.categoryId
+);
+
+const localeMap: Record<SupportedLanguage, string> = {
+	ko: 'ko',
+	jp: 'ja',
+	en: 'en',
+};
+
+const giscusLang = localeMap[resolvedLang] || config.lang || 'en';
+---
+
+<section id="comments" class="mt-16 border-t border-slate-800 pt-10">
+	<h2 class="text-xl font-semibold text-slate-100 mb-4">댓글</h2>
+	{isConfigured ? (
+		<div class="giscus" data-configured="true">
+			<script
+				src="https://giscus.app/client.js"
+				data-repo={repo}
+				data-repo-id={config.repoId}
+				data-category={config.category}
+				data-category-id={config.categoryId}
+				data-mapping={config.mapping}
+				data-strict={config.strict}
+				data-reactions-enabled={config.reactionsEnabled}
+				data-emit-metadata={config.emitMetadata}
+				data-input-position={config.inputPosition}
+				data-theme={config.theme}
+				data-lang={giscusLang}
+				data-loading={config.loading}
+				crossorigin="anonymous"
+				async
+			>
+			</script>
+			<noscript class="mt-3 block text-sm text-slate-400">
+				GitHub 계정으로 댓글을 남기려면 JavaScript를 활성화해주세요.
+			</noscript>
+		</div>
+	) : (
+		<div class="rounded-lg border border-dashed border-slate-700/80 bg-[rgba(15,23,42,0.35)] p-4 text-sm text-slate-300">
+			<p>Giscus 환경 변수가 설정되지 않아 GitHub 댓글이 숨겨져 있습니다.</p>
+			<p class="mt-2">
+				<code class="rounded bg-black/40 px-1 py-0.5">PUBLIC_GISCUS_*</code> 값을 추가하면 자동으로
+				활성화됩니다.
+			</p>
+		</div>
+	)}
+</section>

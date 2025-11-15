@@ -7,13 +7,15 @@ import FloatingLanguagePicker from '../components/FloatingLanguagePicker.astro';
 import FormattedDate from '../components/FormattedDate.astro';
 import TableOfContents from '../components/TableOfContents.astro';
 import Breadcrumb from '../components/Breadcrumb.astro';
+import GiscusComments from '../components/GiscusComments.astro';
 import { SITE_TITLE, AUTHOR, AUTHOR_EMAIL, SOCIAL_LINKS } from '../consts';
 
 type Props = CollectionEntry<'blog'>['data'] & {
 	lang?: string;
+	availableLangs?: string[];
 };
 
-const { title, description, pubDate, updatedDate, heroImage, tags = [], lang = 'ko' } = Astro.props;
+const { title, description, pubDate, updatedDate, heroImage, tags = [], lang = 'ko', availableLangs } = Astro.props;
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 
@@ -64,7 +66,7 @@ const schema = {
 
 	<body>
 		<Header />
-		<FloatingLanguagePicker />
+		<FloatingLanguagePicker availableLangs={availableLangs} />
 		<main class="max-w-4xl mx-auto px-6 py-8">
 			<article>
 				<!-- Hero Image -->
@@ -139,6 +141,7 @@ const schema = {
 				</div>
 				
 				<TableOfContents />
+				<GiscusComments lang={lang} />
 			</article>
 		</main>
 		<Footer />
