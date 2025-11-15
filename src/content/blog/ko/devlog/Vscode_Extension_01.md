@@ -2,7 +2,7 @@
 title: 'Smart Korean Grammar Assistant: VSCode 한글 맞춤법 검사기 Extension 개발기'
 description: 'Bareun AI API를 활용한 VSCode 한글 맞춤법 검사 Extension 개발 회고 및 기술 공유'
 pubDate: '2025-11-05'
-heroImage: '/images/smart-grammar-hero.jpg'
+heroImage: '/images/Bareun_Market.png'
 tags: ['Devlog', 'VSCode Extension', 'NLP', 'Korean', 'Bareun AI']
 category: 'devlog'
 ---
