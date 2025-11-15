@@ -3,7 +3,7 @@
 
 export const SITE_TITLE = "Hun-Bot's Devlog";
 export const SITE_DESCRIPTION =
-	'개발자 Hun-Bot의 기술 블로그입니다. AI, 소프트웨어 개발, 데이터 분석, 그리고 성장에 대한 인사이트를 기록하고 공유합니다.';
+	'Hun-Bot의 기술 블로그입니다. AI, 소프트웨어 개발, 글쓰기';
 export const SITE_URL = 'https://hun-bot.dev';
 
 export const SUPPORTED_LANGUAGES = ['ko', 'jp', 'en'] as const;

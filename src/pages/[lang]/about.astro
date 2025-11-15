@@ -18,6 +18,46 @@ const t = useTranslations(lang as 'ko' | 'jp' | 'en');
 
 const SITE_TITLE = `${t('about.title')} - Hun-Bot Blog`;
 const SITE_DESCRIPTION = t('about.description');
+
+const stats = [
+	{ label: t('about.stats.role'), value: t('about.stats.role.value') },
+	{ label: t('about.stats.location'), value: t('about.stats.location.value') },
+	{ label: t('about.stats.focus'), value: t('about.stats.focus.value') },
+	{ label: t('about.stats.languages'), value: t('about.stats.languages.value') },
+];
+
+const timelineEntries = [
+	{
+		title: t('about.timeline.0.title'),
+		period: t('about.timeline.0.period'),
+		body: t('about.timeline.0.body'),
+	},
+	{
+		title: t('about.timeline.1.title'),
+		period: t('about.timeline.1.period'),
+		body: t('about.timeline.1.body'),
+	},
+	{
+		title: t('about.timeline.2.title'),
+		period: t('about.timeline.2.period'),
+		body: t('about.timeline.2.body'),
+	},
+];
+
+const featureLinks = [
+	{
+		title: t('about.features.note.title'),
+		description: t('about.features.note.description'),
+		href: 'https://hun-bot2.github.io/study/',
+		badge: 'Journal',
+	},
+	{
+		title: t('about.features.github.title'),
+		description: t('about.features.github.description'),
+		href: 'https://github.com/Hun-Bot2/Hun-Bot2',
+		badge: 'GitHub',
+	},
+];
 ---
 
 <!doctype html>
@@ -51,6 +91,15 @@ const SITE_DESCRIPTION = t('about.description');
 					{t('about.intro')}
 				</p>
 			</div>
+		</section>
+
+		<section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+			{stats.map((stat) => (
+				<div class="rounded-2xl border border-white/10 bg-white/5 dark:bg-white/5 px-5 py-4 text-center shadow-sm hover:shadow-md transition-all duration-200 backdrop-blur">
+					<p class="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">{stat.label}</p>
+					<p class="mt-2 text-xl font-semibold text-slate-900 dark:text-white">{stat.value}</p>
+				</div>
+			))}
 		</section>
 
 		<!-- 소셜 링크 섹션 - 박스 제거, 플랫 디자인 -->
@@ -182,6 +231,38 @@ const SITE_DESCRIPTION = t('about.description');
 						</p>
 					</div>
 				</div>
+			</div>
+		</section>
+
+		<!-- Timeline -->
+		<section class="space-y-6">
+			<h2 class="text-3xl font-bold text-orange-800 dark:text-orange-300">{t('about.timeline.title')}</h2>
+			<div class="space-y-6 border-l border-slate-200 dark:border-slate-700 pl-6">
+				{timelineEntries.map((item) => (
+					<div class="relative pl-4">
+						<span class="absolute -left-5 top-2 h-3 w-3 rounded-full bg-orange-500 shadow shadow-orange-500/30"></span>
+						<p class="text-sm uppercase tracking-wide text-slate-400">{item.period}</p>
+						<h3 class="text-xl font-semibold text-slate-900 dark:text-white mt-1">{item.title}</h3>
+						<p class="text-slate-600 dark:text-slate-300 mt-2 leading-relaxed">{item.body}</p>
+					</div>
+				))}
+			</div>
+		</section>
+
+		<!-- Feature Stories -->
+		<section class="space-y-6">
+			<h2 class="text-3xl font-bold text-orange-800 dark:text-orange-300">{t('about.features.title')}</h2>
+			<div class="grid gap-6 md:grid-cols-2">
+				{featureLinks.map((feature) => (
+					<a href={feature.href} target="_blank" rel="noopener noreferrer" class="group rounded-2xl border border-white/10 bg-white/5 dark:bg-white/5 px-6 py-5 flex flex-col gap-3 transition hover:-translate-y-1 hover:border-orange-400">
+						<span class="text-xs uppercase tracking-wide text-orange-500">{feature.badge}</span>
+						<h3 class="text-xl font-semibold text-slate-900 dark:text-white group-hover:text-orange-500">{feature.title}</h3>
+						<p class="text-slate-600 dark:text-slate-300 leading-relaxed flex-1">{feature.description}</p>
+						<span class="text-sm font-semibold text-orange-500 group-hover:text-orange-400">
+							{t('about.features.view-more')} →
+						</span>
+					</a>
+				))}
 			</div>
 		</section>
 

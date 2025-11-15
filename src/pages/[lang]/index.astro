@@ -7,6 +7,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
 import { getCollection } from 'astro:content';
 import FormattedDate from '../../components/FormattedDate.astro';
 import { useTranslations } from '../../i18n/ui';
+import type { UILanguage } from '../../i18n/ui';
 
 export function getStaticPaths() {
   return [
@@ -17,13 +18,17 @@ export function getStaticPaths() {
 }
 
 const { lang } = Astro.params;
-const t = useTranslations(lang as 'ko' | 'jp' | 'en');
+const currentLang = (lang ?? 'ko') as UILanguage;
+const t = useTranslations(currentLang);
 
 // Filter posts by language and get latest posts
 const allPosts = await getCollection('blog');
 const posts = allPosts
-  .filter(post => post.id.startsWith(`${lang}/`))
+  .filter(post => post.id.startsWith(`${currentLang}/`))
   .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+
+const featured = posts.slice(0, 4);
+const remaining = posts.slice(4);
 ---
 
 <!doctype html>
@@ -35,37 +40,217 @@ const posts = allPosts
 		<Header />
 		<FloatingLanguagePicker />
 		<div class="global-wrapper" data-is-root-path="true">
-			<main>
-				<h1 class="text-3xl font-bold mb-8">{t('blog.recent-posts')}</h1>
-				<ol style="list-style: none; padding: 0;">
-					{posts.map((post) => {
-						// Remove language prefix from slug
-						const slug = post.id.replace(`${lang}/`, '');
-						return (
-						<li>
-							<article class="post-list-item" itemscope itemtype="http://schema.org/Article">
-								<header>
-									<h2 style="margin-bottom: var(--spacing-2); margin-top: var(--spacing-8);">
-										<a href={`/${lang}/blog/${slug}/`} itemprop="url" style="text-decoration: none; color: rgb(248, 249, 250);">
-											<span itemprop="headline">{post.data.title}</span>
+			<main class="max-w-5xl mx-auto px-4 py-10 space-y-16">
+				<section>
+					<h1 class="text-3xl font-bold mb-8 flex items-center justify-between">
+						<span>{t('blog.recent-posts')}</span>
+					</h1>
+					<div class="featured-container">
+						<div class="featured-scroller" role="region" aria-label={t('blog.recent-posts')}>
+							{featured.map((post) => {
+								const slug = post.id.replace(`${currentLang}/`, '');
+								const hero = post.data.heroImage ?? '/images/blog-placeholder-1.jpg';
+								return (
+									<a href={`/${currentLang}/blog/${slug}/`} class="featured-card group">
+										<div class="featured-card__image">
+											<img src={hero} alt={post.data.title} loading="lazy" decoding="async" />
+										</div>
+										<div class="featured-card__body">
+											<p class="featured-card__meta">
+												<FormattedDate date={post.data.pubDate} />
+											</p>
+											<h2 class="featured-card__title">{post.data.title}</h2>
+											<p>{post.data.description}</p>
+										</div>
+									</a>
+								);
+							})}
+							{featured.length === 0 && (
+								<div class="text-slate-500 dark:text-slate-400">{t('blog.no-posts')}</div>
+							)}
+						</div>
+					</div>
+				</section>
+
+				{remaining.length > 0 && (
+					<section>
+						<h2 class="text-2xl font-semibold mb-6 text-slate-900 dark:text-white">{t('blog.all-posts')}</h2>
+						<ol style="list-style: none; padding: 0; margin: 0;">
+							{remaining.map((post) => {
+								const slug = post.id.replace(`${currentLang}/`, '');
+								return (
+									<li class="border-b border-slate-200/40 dark:border-slate-700/40 py-5">
+										<a href={`/${currentLang}/blog/${slug}/`} class="post-list-link">
+											<h3 class="post-list-title">{post.data.title}</h3>
+											<p class="post-list-meta"><FormattedDate date={post.data.pubDate} /></p>
+											{post.data.description && <p class="post-list-desc">{post.data.description}</p>}
 										</a>
-									</h2>
-									<small style="color: rgba(248, 249, 250, 0.6);"><FormattedDate date={post.data.pubDate} /></small>
-								</header>
-								{post.data.description && (
-									<section>
-										<p itemprop="description" style="margin-bottom: 0; margin-top: var(--spacing-2); color: rgba(248, 249, 250, 0.8);">
-											{post.data.description}
-										</p>
-									</section>
-								)}
-							</article>
-						</li>
-						);
-					})}
-				</ol>
+									</li>
+								);
+							})}
+						</ol>
+					</section>
+				)}
 			</main>
 		</div>
 		<Footer />
+		<script is:inline>
+			document.addEventListener('DOMContentLoaded', () => {
+				const scroller = document.querySelector('.featured-scroller');
+				if (!scroller) return;
+
+				let autoScroll;
+				const startAutoScroll = () => {
+					stopAutoScroll();
+					autoScroll = setInterval(() => {
+						const offset = scroller.clientWidth;
+						scroller.scrollBy({ left: offset, behavior: 'smooth' });
+						if (scroller.scrollLeft + scroller.clientWidth >= scroller.scrollWidth - offset) {
+							scroller.scrollTo({ left: 0, behavior: 'smooth' });
+						}
+					}, 5000);
+				};
+
+				const stopAutoScroll = () => {
+					if (autoScroll) clearInterval(autoScroll);
+				};
+
+				scroller.addEventListener('mouseenter', stopAutoScroll);
+				scroller.addEventListener('mouseleave', startAutoScroll);
+				scroller.addEventListener('touchstart', stopAutoScroll, { passive: true });
+				scroller.addEventListener('touchend', startAutoScroll);
+
+				startAutoScroll();
+			});
+		</script>
 	</body>
 </html>
+
+<style>
+	.featured-container {
+		position: relative;
+	}
+
+	.featured-scroller {
+		display: grid;
+		grid-auto-flow: column;
+		grid-auto-columns: minmax(280px, 1fr);
+		gap: 1rem;
+		overflow-x: auto;
+		scroll-snap-type: x mandatory;
+		scroll-behavior: smooth;
+		padding-bottom: 0.25rem;
+	}
+
+	.featured-scroller::-webkit-scrollbar {
+		height: 6px;
+	}
+
+	.featured-scroller::-webkit-scrollbar-thumb {
+		background: rgba(148, 163, 184, 0.4);
+		border-radius: 999px;
+	}
+
+	.featured-card {
+		scroll-snap-align: start;
+		border-radius: 1.75rem;
+		border: 1px solid rgba(248, 249, 250, 0.12);
+		background: rgba(255, 255, 255, 0.05);
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+		text-decoration: none;
+		transition: transform 0.25s ease, box-shadow 0.25s ease;
+		min-width: 260px;
+	}
+
+	.featured-card:hover {
+		transform: translateY(-6px);
+		box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+	}
+
+	.featured-card__image {
+		position: relative;
+		padding-top: 56.25%;
+		overflow: hidden;
+		background: rgba(15, 23, 42, 0.8);
+	}
+
+	.featured-card__image img {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		transition: transform 0.5s ease;
+	}
+
+	.featured-card:hover .featured-card__image img {
+		transform: scale(1.05);
+	}
+
+	.featured-card__body {
+		padding: 1.25rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	.featured-card__meta {
+		font-size: 0.875rem;
+		color: rgba(148, 163, 184, 0.8);
+	}
+
+	.featured-card__title {
+		font-size: 1.35rem;
+		font-weight: 600;
+		color: rgb(248, 249, 250);
+		line-height: 1.4;
+	}
+
+	@media (max-width: 640px) {
+		.featured-scroller {
+			grid-auto-columns: 88%;
+			padding-left: 1rem;
+			margin-left: -1rem;
+		}
+	}
+
+	.post-list-link {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+		color: inherit;
+		text-decoration: none;
+	}
+
+	.post-list-title {
+		font-size: 1.35rem;
+		font-weight: 600;
+		color: rgb(15, 23, 42);
+	}
+
+	.post-list-meta {
+		font-size: 0.95rem;
+		color: rgba(100, 116, 139, 0.9);
+	}
+
+	.post-list-desc {
+		font-size: 1rem;
+		color: rgba(51, 65, 85, 0.95);
+	}
+
+	.dark .post-list-title {
+		color: rgb(248, 249, 250);
+	}
+
+	.dark .post-list-meta {
+		color: rgba(148, 163, 184, 0.9);
+	}
+
+	.dark .post-list-desc {
+		color: rgba(203, 213, 225, 0.9);
+	}
+</style>
+				</section>
