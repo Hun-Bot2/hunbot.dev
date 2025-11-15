@@ -1,0 +1,178 @@
+---
+title: 'Smart Korean Grammar Assistant: VSCode 한글 맞춤법 검사기 Extension 개발기'
+description: 'Bareun AI API를 활용한 VSCode 한글 맞춤법 검사 Extension 개발 회고 및 기술 공유'
+pubDate: '2025-11-05'
+heroImage: '/images/smart-grammar-hero.jpg'
+tags: ['Devlog', 'VSCode Extension', 'NLP', 'Korean', 'Bareun AI']
+category: 'devlog'
+---
+
+# Smart Korean Grammar Assistant: 개발 회고 및 기술 공유
+https://github.com/Hun-Bot2/smart-korean-grammar-assistant
+
+## 개발 동기
+평소에 글을 작성하며 문법을 확인할 때, 바른 한글 [https://nara-speller.co.kr/speller/]을 자주 사용하는데, 매번 alt+tab을 하면서 내용을 복사, 붙여넣기 하다보니까 불편함을 느꼈고, Vscode extension에 vscode-hanspell이라고 하는 게 있었지만, 3년전에 마지막으로 업데이트된 부분이 끝이라 사용하기에 달갑지 않아서, 다른 뭐 좋은 거 없나 찾아보다가 bareun ai에서 제공하는 서비스들을 보게 되었고, 한국어를 인식하는 퀄리티가 좋다고 생각해서 나만의(?) extension으로 만들어 보려고 생각했다.
+
+## Markdown file
+아직은 블로그가 완전히 개발이 완료된게 아니여서 지금은 Vscode를 열어 markdown 파일에서 글을 작성하고 있고, 지금도 해당 방식으로 작성중이다. 그래서 이번에 개발한 extension은 특정 파일 안에 있는 .md파일만을 검사하게 만들려고 했고(이렇게 하지 않으면 다른 파일도 전부 잡아내서 api사용량이 올라가기 때문..) 실시간으로 사용자에게 맞춤법을 알려주는(?) 형태로 제작하려고 했다. 오직 한국어에 한해서만 확실하게 잡아내는 것을 목표로 하고 있고, 개발을 위해서 해당 회사의 이메일로 간단하게 `개발하고 싶은데, 괜찮나요??` 라고 물어봤다.
+[실제 이메일]
+![alt text](/public/images/email.png)
+
+## 회사에서 연락
+다음 날 대표님에게 연락이 와서, 간단한 개발 요구사항과, 미팅을 해서 구체적으로 어떻게 개발하면 좋을지를 잡아보자고 했다!
+11/10일날 미팅이 잡혔고, 당일날 어떤 기능이 추가되면 좋을지나, 어떤 방식으로 개발하면 좋을지를 검토하는 시간을 가지고 미팅을 끝낸 뒤 기존에 개발해 둔 부분을 조금씩 다듬었다.
+
+## 핵심 기술 및 아키텍처
+
+### VSCode Extension API: 핵심적으로 사용한 API들
+이 Extension은 VSCode의 다양한 API를 활용했습니다:
+
+**주요 API:**
+- `vscode.languages.createDiagnosticCollection`: Bareun 응답과 오프라인 휴리스틱을 Diagnostic으로 변환해 편집기에 색깔이 다른 밑줄을 그린다.
+- `vscode.languages.registerCodeActionsProvider`, `registerHoverProvider`: Quick Fix와 Hover에서 Bareun 제안·사용자 사전 정보를 띄운다.
+- `vscode.workspace.onDidChangeTextDocument`: Markdown 문서가 수정될 때마다 350ms 디바운스로 분석 파이프라인을 호출하고, `TextDocument.version`을 비교해 오래된 응답을 버린다.
+- `vscode.commands.registerCommand`: `bkga.fixSelection`, `bkga.syncCustomDictionary`, `bkga.toggleEnabled` 등 사용자 명령을 노출하고 Selection 단위 자동 교정, 사용자 사전 패널 오픈 등을 처리한다.
+- `vscode.window.createStatusBarItem` & `createWebviewPanel`: 상태 표시줄에서 분석 상태/문제 개수를 보여주고, 사용자 사전 패널을 Webview로 렌더링한다.
+
+아래 코드는 '어떤 문서를 분석할지 고르는 필터' & '텍스트가 바뀔 때 일정 시간 뒤 다시 분석하는 디바운스 로직'을 나타핸다.
+
+먼저, markdown언어인지 확인하고, .md파일의 path확인,워크스페이스의 상대 경로에 적용.
+Markdown이면서 includedPaths 조건 만족하는 파일만 분석
+
+모든 텍스트 변경 이벤트 -> 기존 타이머 취소, 새 타이머 350ms로 설정
+```typescript
+function shouldAnalyze(doc: vscode.TextDocument): boolean {
+  if (doc.languageId !== 'markdown') return false;
+  const includePaths = vscode.workspace.getConfiguration('bkga').get<string[]>('includePaths', ['**/*.md']);
+  const workspaceFolder = vscode.workspace.getWorkspaceFolder(doc.uri);
+  if (!workspaceFolder) return false;
+  const relativePath = vscode.workspace.asRelativePath(doc.uri, false);
+  return includePaths.some((pattern) => {
+    const glob = new vscode.RelativePattern(workspaceFolder, pattern);
+    return vscode.languages.match({ pattern: glob, language: 'markdown' }, doc) > 0;
+  });
+}
+
+let debounceTimer: NodeJS.Timeout | undefined;
+vscode.workspace.onDidChangeTextDocument((event) => {
+  if (debounceTimer) clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    if (!shouldAnalyze(event.document)) {
+      diagnosticsManager.clearDiagnostics(event.document.uri);
+      return;
+    }
+    diagnosticsManager.analyzeDocument(event.document);
+  }, 350);
+});
+```
+
+### 프로젝트 구조
+```
+src/
+├── extension.ts             # 엔트리 포인트. 이벤트/명령/데코레이션 등록
+├── bareunClient.ts          # HTTPS Bareun API 호출 및 응답 파싱
+├── diagnostics.ts           # Bareun Issue → Diagnostic, Markdown 휴리스틱
+├── codeActions.ts           # Quick Fix 제공
+├── hoverProvider.ts         # Hover 카드 + diff 하이라이트 + 사용자 사전 링크
+├── decorations.ts           # 오류 유형별 색상 테마 적용
+├── status.ts                # 상태 표시줄 상태 관리
+├── customDictionary.ts      # Bareun Custom Dictionary 동기화/설정 관리
+├── customDictionaryPanel.ts # 사용자 사전 Webview 패널
+└── customDictionaryMeta.ts  # 사전 카테고리 메타데이터
+```
+
+`extension.ts`는 활성화 시 `DiagnosticsManager`를 생성해 Markdown 문서만 검사하고, StatusBar/Decorations와 연동한다. 
+`bareunClient.ts`는 Node HTTPS 모듈을 직접 사용해 Bareun REST API로 POST 요청을 보내고, 응답의 `revisedBlocks`를 순회하며 offset·category를 추출한다. 
+`customDictionary*.ts` 파일은 VSCode `settings.json`과 Bareun Custom Dictionary API 사이에서 사전 데이터를 직렬화/역직렬화하는 역할을 맡는다.
+
+## 개발 과정 및 문제 해결
+
+### 가장 큰 어려움
+
+#### 문제 1: Markdown 특수 구문에서 발생하는 오탐
+Bareun API는 순수 텍스트 offset을 기준으로 오류를 돌려주지만, Markdown 문서에는 인라인 코드, 링크, 단축키 안내 등 다양한 포맷이 섞인다. 그대로 Diagnostic을 찍으면 코드 블록이나 영어 키 조합이 띄어쓰기 오류,맞춤법 오류로 표시되어 화면에 밑줄이 많이 생겨 불편하다
+
+#### 문제 2: API 호출 빈도와 오래된 진단 결과
+`onDidChangeTextDocument` 이벤트는 타이핑 한 글자마다 발생한다. 단순 debounce만 두면 이전 요청이 늦게 돌아와 최신 입력을 덮어쓰는 Race Condition이 생겼다.
+
+### 문제 해결 과정
+
+#### 해결책 1: Markdown 친화적 필터링 휴리스틱
+AST(Abstract Syntax Tree)를 파싱하기보다는 `diagnostics.ts`에서 인라인 코드 범위를 먼저 계산하고, 영어 위주의 문장·URL·단축키 패턴을 감지하면 진단을 제거하도록 했다.
+
+```typescript
+const inlineCodeOffsets = doc.languageId === 'markdown' ? this.computeInlineCodeOffsets(fullText) : [];
+const diagnostics = issues
+  .map((issue) => {
+    if (this.intersectsInlineCode(issue.start, issue.end, inlineCodeOffsets)) {
+      return null;
+    }
+    const snippet = doc.getText(new vscode.Range(doc.positionAt(issue.start), doc.positionAt(issue.end)));
+    if (this.shouldIgnoreSnippet(snippet, category, ignoreEnglishInMarkdown)) {
+      return null;
+    }
+    return new vscode.Diagnostic(range, issue.message, this.mapSeverity(issue.severity));
+  })
+  .filter(Boolean);
+```
+`shouldIgnoreSnippet`은 영어만 있는 문장, `[링크](url)`, `Cmd+K G F`처럼 단축키 조합, `Bareun,API` 같은 한글+콤마 패턴 등을 감지해 Bareun이 반환한 SPACING 경고를 필터링한다. 덕분에 Markdown 특수 구문은 거의 건드리지 않으면서 자연어 문장만 안정적으로 검사할 수 있었다.
+
+#### 해결책 2: 언어 감지 + Debounce + 버전 검증
+`shouldAnalyze` 함수로 Markdown + includePaths만 검사하고, 350ms debounce 뒤에도 `TextDocument.version`을 저장했다가 응답 시점에 비교해 최신 문서가 아니면 결과를 폐기했다. 이렇게 하니 타이핑 도중 API 호출이 중복되지 않고, 결과가 뒤늦게 덮어쓰이는 현상도 사라졌다. Markdown이 아닌 파일은 즉시 `DiagnosticsManager.clearDiagnostics`로 비워 API 요청 자체를 하지 않는다.
+
+### 마음에 든 기능
+가장 마음에 드는 부분은 Hover 카드다. Bareun 진단의 원문/제안을 diff 스타일로 비교하고, 동시에 사용자 사전 상태를 보여 주어 바로 추가/삭제할 수 있다.
+
+```typescript
+const markdown = new vscode.MarkdownString();
+const diff = this.buildDiffHighlight(originalText, suggestion);
+markdown.appendMarkdown(`#🇰🇷 ${categoryInfo.name}\n\n`);
+markdown.appendMarkdown(`**원문**: ${diff.originalHtml}\n\n`);
+markdown.appendMarkdown(`**대치어**: ${diff.suggestionHtml}\n\n`);
+markdown.appendMarkdown(`**도움말**: ${diagnostic.message}\n\n`);
+markdown.appendMarkdown(this.buildCustomDictionarySection(hoveredWord, dictMatches));
+```
+
+HTML을 직접 escape한 뒤 `<code>` 블록에 강조 영역을 덧입히는 방식이라 Markdown에서도 안정적으로 diff를 표현할 수 있었고, Hover에서 곧바로 사용자 사전 명령을 실행할 수 있다는 점이 좋았다.
+Hover크기를 키울까?? 도 생각했지만, 이후 사용자의 피드백을 받고 수정하기로 했다.(사용자가 있다면??)
+
+## 결과 및 향후 계획
+
+### 결과물: 완성된 Extension 사용 후기
+11/15일 시점에서는 아직 나 밖에 사용하지 않았고, 이후 사용자가 생긴다면(?) 새로운 글로 작성해서 공유할 예정이다.
+
+### 향후 계획
+우선 이걸 크롬 익스텐션으로도 만들까 생각중이다.
+피드백을 통해 오류가 있는 기능들이나, 부정확한 부분들을 확실하게 고쳐가면서 보다 좋은 확장 프로그램을 제공하려고 한다.
+
+내가 생각한 부분은 API사용량 절감을 위한 무언가, Bareun AI는 형태소 분석까지 제공하는데 이걸 어떻게 적용해볼 수 없나?? 이런 부분들? 당장 오늘 배포했기도 하고 시험이 얼마 남지 않아 이후에 생각해볼란다.
+
+아래는 AI한테 발전 방향을 모색해보라고 한 결과이다.
+
+#### 단기 계획
+- **SecretStorage 기반 API 키 관리** — 현재는 VSCode 설정에 평문으로 입력하는 구조라, 첫 실행 때 Quick Pick으로 SecretStorage에 저장하고 설정과 연동되는 UI를 만들 예정이다.
+- **includePaths 편의 기능** — 자주 쓰는 블로그 폴더를 빠르게 등록할 수 있도록 명령 팔레트에서 `bkga.includePaths`를 수정하는 UI를 추가하려 한다.
+
+#### 중기 계획
+- **문단 단위 Promise Pool** — 긴 Markdown 문서를 문단 단위로 chunking하고 동시에 여러 Bareun 요청을 보내되 동시성을 제한해 UI 응답성을 유지할 계획이다.
+- **Webview 패널 편집 지원** — 사용자 사전 패널에서 바로 단어를 추가/삭제하고 Sync까지 수행할 수 있는 양방향 UI를 준비 중이다.
+
+#### 장기 계획
+- **고급 교정 모드** — Grammarly처럼 tone/tightening 제안을 제공하는 커스텀 모델과, 교정 전/후 diff를 보여주는 Custom Editor
+- **로컬 프리체커** — wasm 기반 경량 룰셋을 추가해 단순 띄어쓰기/공백 오류는 API 없이도 잡을 수 있도록 확장할 생각이다.
+
+
+### 설치 및 기여 안내
+
+**Extension 설치:**
+- [VSCode Marketplace: Smart Korean Grammar Assistant](https://marketplace.visualstudio.com/items?itemName=hunbot.smart-korean-grammar-assistant)
+- VSCode에서 `Extensions: Install Extensions` → `smart korean grammar` 검색 후 설치. 첫 실행 시 Bareun API 키 설정 안내가 뜹니다.
+- VSIX로 설치하려면 `code --install-extension smart-korean-grammar-assistant-1.0.0.vsix`를 실행하면 됩니다.
+
+**프로젝트 기여:**
+- GitHub 리포지토리: [https://github.com/Hun-Bot2/smart-korean-grammar-assistant](https://github.com/Hun-Bot2/smart-korean-grammar-assistant)
+- `npm install && npm run compile`로 로컬 빌드를 확인하고, VSCode에서 `F5`로 Extension Development Host를 띄운 뒤 PR을 보내주세요.
+- 버그 리포트는 Issues, 아이디어는 Discussions로 구분해 주시면 더 빠르게 확인할 수 있습니다.
+
+## 마치며
+확장을 만들면서 Vscode Extension Market에 내가 만든 무언가를 올린 것이 재밌었고 신기했다. 처음에는 내가 불편함을 느껴 해결하려고 메일을 보냈지만, 이렇게 회사 대표님이랑 미팅을 해서 extension을 만들지 몰랐다. 도움을 주신 Bareun AI 팀과 기회를 제공해주심에 감사드리며, 피드백이 생기면, 개발 업데이트로 돌아오겠다.
