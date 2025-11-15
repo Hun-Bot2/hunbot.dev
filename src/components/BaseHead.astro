@@ -234,90 +234,74 @@ const xDefaultHref = alternateLinks.find((link) => link.code === defaultLang)?.h
 
 <!-- 전역 테마 관리 스크립트 (모든 페이지에서 작동) -->
 <script is:inline>
-	// 테마 초기화 - DOM이 준비되면 실행
-	document.addEventListener('DOMContentLoaded', function() {
-		const savedTheme = sessionStorage.getItem('neural-blog-theme');
-		const isDark = savedTheme ? savedTheme === 'dark' : true;
-		
-		// body와 html 요소가 존재하는지 확인 후 클래스 설정
-		if (document.body) {
-			document.body.classList.remove('dark-theme', 'light-theme');
-			document.body.classList.add(isDark ? 'dark-theme' : 'light-theme');
+	const THEME_STORAGE_KEY = 'neural-blog-theme';
+	const prefersDarkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+	let themeBtn = null;
+
+	function applyTheme(theme) {
+		const isDark = theme === 'dark';
+		const body = document.body;
+
+		if (body) {
+			body.classList.remove('dark-theme', 'light-theme');
+			body.classList.add(isDark ? 'dark-theme' : 'light-theme');
 		}
-		
+
 		if (document.documentElement) {
 			document.documentElement.classList.toggle('dark', isDark);
 		}
-		
-		// 테마 토글 버튼 설정
-		const themeBtn = document.getElementById('themeToggleBtn');
-		const sunIcon = document.getElementById('sunIcon');
-		const moonIcon = document.getElementById('moonIcon');
-		
+
 		if (themeBtn) {
-			themeBtn.setAttribute('data-theme', isDark ? 'dark' : 'light');
-			
-			// 아이콘 초기 상태 설정
-			if (sunIcon && moonIcon) {
-				if (isDark) {
-					sunIcon.style.opacity = '0';
-					moonIcon.style.opacity = '1';
-				} else {
-					sunIcon.style.opacity = '1';
-					moonIcon.style.opacity = '0';
-				}
-			}
-			
-			// 테마 토글 이벤트 리스너 추가 (중복 방지)
-			if (!themeBtn.hasAttribute('data-listener-added')) {
+			themeBtn.setAttribute('data-theme', theme);
+			themeBtn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+		}
+	}
+
+	function resolveInitialTheme(saved) {
+		if (saved === 'dark' || saved === 'light') return saved;
+		return prefersDarkQuery.matches ? 'dark' : 'light';
+	}
+
+	document.addEventListener('DOMContentLoaded', () => {
+		try {
+			themeBtn = document.getElementById('themeToggleBtn');
+			const savedTheme = sessionStorage.getItem(THEME_STORAGE_KEY);
+			const initialTheme = resolveInitialTheme(savedTheme);
+			applyTheme(initialTheme);
+
+			if (themeBtn && !themeBtn.hasAttribute('data-listener-added')) {
 				themeBtn.setAttribute('data-listener-added', 'true');
-				
-				themeBtn.addEventListener('click', function() {
-					const currentTheme = this.getAttribute('data-theme');
-					const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-					
-					// body 클래스 업데이트
-					if (document.body) {
-						document.body.classList.remove('dark-theme', 'light-theme');
-						document.body.classList.add(newTheme === 'dark' ? 'dark-theme' : 'light-theme');
-					}
-					
-					// html 클래스 업데이트
-					if (document.documentElement) {
-						document.documentElement.classList.toggle('dark', newTheme === 'dark');
-					}
-					
-					// 아이콘 업데이트
-					if (sunIcon && moonIcon) {
-						if (newTheme === 'dark') {
-							sunIcon.style.opacity = '0';
-							moonIcon.style.opacity = '1';
-						} else {
-							sunIcon.style.opacity = '1';
-							moonIcon.style.opacity = '0';
-						}
-					}
-					
-					// 상태 저장
-					this.setAttribute('data-theme', newTheme);
-					sessionStorage.setItem('neural-blog-theme', newTheme);
+				themeBtn.addEventListener('click', () => {
+					const current = themeBtn?.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+					const next = current === 'dark' ? 'light' : 'dark';
+					applyTheme(next);
+					sessionStorage.setItem(THEME_STORAGE_KEY, next);
 				});
 			}
+
+			const mediaHandler = (event) => {
+				if (!sessionStorage.getItem(THEME_STORAGE_KEY)) {
+					applyTheme(event.matches ? 'dark' : 'light');
+				}
+			};
+
+			if (prefersDarkQuery.addEventListener) {
+				prefersDarkQuery.addEventListener('change', mediaHandler);
+			} else if (prefersDarkQuery.addListener) {
+				prefersDarkQuery.addListener(mediaHandler);
+			}
+		} catch (err) {
+			console.warn('Theme initialization error:', err);
 		}
 	});
-	
-	// 페이지 로드 전 깜빡임 방지를 위한 즉시 실행 (안전하게)
+
 	(function() {
 		try {
-			const savedTheme = sessionStorage.getItem('neural-blog-theme');
-			const isDark = savedTheme ? savedTheme === 'dark' : true;
-			
-			// html 요소에만 클래스 추가 (body는 아직 없을 수 있음)
-			if (document.documentElement) {
-				document.documentElement.classList.toggle('dark', isDark);
-			}
-		} catch (e) {
-			console.warn('Theme initialization error:', e);
+			const savedTheme = sessionStorage.getItem(THEME_STORAGE_KEY);
+			const initialTheme = resolveInitialTheme(savedTheme);
+			document.documentElement.classList.toggle('dark', initialTheme === 'dark');
+		} catch (err) {
+			console.warn('Theme initialization pre-run error:', err);
 		}
 	})();
 </script>
