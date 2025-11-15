@@ -79,6 +79,9 @@
 
 <script>
 	document.addEventListener('DOMContentLoaded', function() {
+		const idleCallback = (window as typeof window & { requestIdleCallback?: (cb: IdleRequestCallback) => number }).requestIdleCallback;
+
+		const initTOC = () => {
 		const tocTrigger = document.getElementById('toc-trigger');
 		const tocContainer = document.getElementById('table-of-contents');
 		const tocList = document.getElementById('toc-list');
@@ -90,25 +93,42 @@
 		let dragOffset = { x: 0, y: 0 };
 		let currentPosition = { x: 0, y: 0 };
 		let dragStarted = false;
+		let triggerSize = { width: tocTrigger.offsetWidth, height: tocTrigger.offsetHeight };
+		let pendingPosition: { x: number; y: number } | null = null;
+		let rafId: number | null = null;
+		
+		function constrain(position: { x: number; y: number }) {
+			const maxX = Math.max(0, window.innerWidth - triggerSize.width - 24);
+			const maxY = Math.max(0, window.innerHeight - triggerSize.height - 24);
+			
+			return {
+				x: Math.max(0, Math.min(maxX, position.x)),
+				y: Math.max(0, Math.min(maxY, position.y)),
+			};
+		}
 		
 		function updateTriggerPosition() {
-			if (tocTrigger) {
-				console.log('Updating TOC position:', currentPosition);
-				tocTrigger.style.transform = `translate(${currentPosition.x}px, ${currentPosition.y}px)`;
-			}
+			if (!tocTrigger || !pendingPosition) return;
+			
+			const constrained = constrain(pendingPosition);
+			currentPosition = constrained;
+			tocTrigger.style.transform = `translate(${currentPosition.x}px, ${currentPosition.y}px)`;
+			rafId = null;
+			pendingPosition = null;
 		}
 		
-		function constrainToViewport() {
-			if (!tocTrigger) return;
-			
-			// Get viewport bounds
-			const maxX = window.innerWidth - tocTrigger.offsetWidth - 24; // 24px margin
-			const maxY = window.innerHeight - tocTrigger.offsetHeight - 24; // 24px margin
-			
-			// Constrain to viewport
-			currentPosition.x = Math.max(0, Math.min(maxX, currentPosition.x));
-			currentPosition.y = Math.max(0, Math.min(maxY, currentPosition.y));
+		function schedulePositionUpdate(position: { x: number; y: number }) {
+			pendingPosition = position;
+			if (rafId !== null) return;
+			rafId = requestAnimationFrame(updateTriggerPosition);
 		}
+		
+		// Handle viewport resize - recalc bounds without forced sync layouts
+		window.addEventListener('resize', () => {
+			if (!tocTrigger) return;
+			triggerSize = { width: tocTrigger.offsetWidth, height: tocTrigger.offsetHeight };
+			schedulePositionUpdate(currentPosition);
+		});
 		
 		// Load saved position with viewport bounds checking
 		// SIMPLIFIED: Always use default position for reliability
@@ -140,14 +160,7 @@
 			const newX = e.clientX - dragOffset.x;
 			const newY = e.clientY - dragOffset.y;
 			
-			// Update position
-			currentPosition.x = newX;
-			currentPosition.y = newY;
-			
-			// Constrain to viewport
-			constrainToViewport();
-			
-			updateTriggerPosition();
+			schedulePositionUpdate({ x: newX, y: newY });
 		}
 		
 		function endDrag() {
@@ -218,8 +231,8 @@
 			}
 		});
 		
-		// SIMPLIFIED: Remove all drag functionality for better reliability
-		// Drag functionality removed to prevent positioning issues
+		// Enable drag interactions on pointer devices
+		tocTrigger.addEventListener('mousedown', startDrag);
 		
 		// Close TOC when clicking outside
 		document.addEventListener('click', function(e) {
@@ -310,13 +323,14 @@
 			}
 		});
 		
-		// Window resize handler to keep button in viewport
-		window.addEventListener('resize', function() {
-			constrainToViewport();
-			updateTriggerPosition();
-		});
-		
 		// Initial active link
 		updateActiveLink();
+		};
+
+		if (idleCallback) {
+			idleCallback(() => initTOC());
+		} else {
+			setTimeout(initTOC, 120);
+		}
 	});
-</script> 
+</script>

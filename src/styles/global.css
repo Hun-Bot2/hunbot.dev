@@ -5,14 +5,7 @@
  */
 
 /* 모든 @import는 맨 위에 와야 함 */
-@import "https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css";
-
-/* Korean font */
-@import url('https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap');
-/* Japanese font */
-@import url('https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@500&display=swap');
-/* English Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+/* Google Fonts와 KaTeX CSS는 BaseHead에서 비동기로 로드합니다. */
 
 /* Tailwind CSS 기본 스타일 */
 @tailwind base;

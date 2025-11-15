@@ -14,18 +14,22 @@ const aboutUrl = lang === 'ko' ? '/ko/about' : `/${lang}/about`;
 		<h1 class="site-title">
 			<a href={homeUrl} class="no-underline">{SITE_TITLE}</a>
 		</h1>
+		<nav class="desktop-nav" aria-label="Primary">
+			<a href={blogUrl} class="desktop-nav-link">{t('nav.blog')}</a>
+			<a href={aboutUrl} class="desktop-nav-link">{t('nav.about')}</a>
+		</nav>
 		
 		<div class="header-icons">
+			<!-- Theme Toggle (always visible) -->
+			<button id="themeToggleBtn" class="icon-button theme-toggle" title="Toggle Dark Mode" aria-label="Toggle Dark Mode">
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+					<path id="sunIcon" d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l1.59-1.591a.75.75 0 00-1.061-1.06l-1.59 1.591z"/>
+					<path id="moonIcon" class="hidden" d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.981.98 10.503 10.503 0 01-9.694 6.46c-5.799 0-10.5-4.701-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 01.818.162z"/>
+				</svg>
+			</button>
+
 			<!-- Desktop Icons (hidden on mobile) -->
 			<div class="desktop-icons">
-				<!-- Theme Toggle -->
-				<button id="themeToggleBtn" class="icon-button" title="Toggle Dark Mode">
-					<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-						<path id="sunIcon" d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l1.59-1.591a.75.75 0 00-1.061-1.06l-1.59 1.591z"/>
-						<path id="moonIcon" class="hidden" d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.981.98 10.503 10.503 0 01-9.694 6.46c-5.799 0-10.5-4.701-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 01.818.162z"/>
-					</svg>
-				</button>
-				
 				<!-- GitHub Link -->
 				<a href={SOCIAL_LINKS.github} target="_blank" rel="noopener noreferrer" class="icon-button" title="GitHub">
 					<svg viewBox="0 0 16 16" width="20" height="20" fill="currentColor" aria-hidden="true">
@@ -56,18 +60,18 @@ const aboutUrl = lang === 'ko' ? '/ko/about' : `/${lang}/about`;
 						<circle cx="5" cy="19" r="1"/>
 					</svg>
 				</a>
-				
-			<!-- Search Icon -->
-			<button class="icon-button" title="Search">
-				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<circle cx="11" cy="11" r="8"/>
-					<path d="m21 21-4.35-4.35"/>
-				</svg>
-			</button>
-		</div>
-		
-		<!-- Menu/Hamburger Icon (visible on mobile) -->
-		<button class="icon-button mobile-menu-btn" id="menuToggle" title="Menu">
+					
+					<!-- Search Icon -->
+					<button class="icon-button search-button" title="Search" aria-label="검색 열기">
+						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<circle cx="11" cy="11" r="8"/>
+							<path d="m21 21-4.35-4.35"/>
+						</svg>
+					</button>
+				</div>
+			
+			<!-- Menu/Hamburger Icon (visible on mobile) -->
+			<button class="icon-button mobile-menu-btn" id="menuToggle" title="Menu">
 				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 					<line x1="3" y1="12" x2="21" y2="12"/>
 					<line x1="3" y1="6" x2="21" y2="6"/>
@@ -255,20 +259,64 @@ const aboutUrl = lang === 'ko' ? '/ko/about' : `/${lang}/about`;
 	}
 	
 	.icon-button {
-		background: transparent;
-		border: none;
-		color: rgba(248, 249, 250, 0.7);
+		background: rgba(248, 249, 250, 0.06);
+		border: 1px solid rgba(248, 249, 250, 0.15);
+		border-radius: 999px;
+		color: rgba(248, 249, 250, 0.82);
 		cursor: pointer;
-		padding: 0.5rem;
+		padding: 0.45rem;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		transition: color 0.2s;
+		transition: color 0.2s, background 0.2s, border-color 0.2s;
 		text-decoration: none;
 	}
 	
 	.icon-button:hover {
 		color: rgb(248, 249, 250);
+		background: rgba(249, 115, 22, 0.2);
+		border-color: rgba(249, 115, 22, 0.5);
+	}
+
+	.icon-button:focus-visible {
+		outline: 2px solid rgba(249, 115, 22, 0.8);
+		outline-offset: 2px;
+	}
+
+	.theme-toggle {
+		margin-right: 0.25rem;
+	}
+
+	@media (min-width: 768px) {
+		.theme-toggle {
+			margin-right: 0.5rem;
+		}
+	}
+
+	.desktop-nav {
+		display: none;
+		gap: 1.5rem;
+		margin-left: auto;
+		margin-right: 0.5rem;
+		align-items: center;
+	}
+
+	.desktop-nav-link {
+		color: rgba(248, 249, 250, 0.8);
+		text-decoration: none;
+		font-weight: 600;
+		font-size: 0.95rem;
+		transition: color 0.2s ease;
+	}
+
+	.desktop-nav-link:hover {
+		color: rgb(249, 115, 22);
+	}
+
+	@media (min-width: 768px) {
+		.desktop-nav {
+			display: flex;
+		}
 	}
 
 	/* Mobile Menu */

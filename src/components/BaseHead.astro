@@ -39,12 +39,26 @@ const openGraphLocales = {
 	jp: 'ja_JP',
 	en: 'en_US',
 } as const;
+const fontCssConfig: Record<SupportedLanguage, string[]> = {
+	ko: [
+		'https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap',
+		'https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap',
+	],
+	jp: [
+		'https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@500&display=swap',
+		'https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap',
+	],
+	en: [
+		'https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap',
+	],
+};
 const currentLang = (explicitLang || getLangFromUrl(Astro.url)) as SupportedLanguage;
 const langMeta = languageMeta[currentLang] ?? languageMeta.ko;
 const ogLocale = openGraphLocales[currentLang] ?? openGraphLocales.ko;
 const ogAlternateLocales = Object.entries(openGraphLocales)
 	.filter(([code]) => code !== currentLang)
 	.map(([, locale]) => locale);
+const fontCssUrls = fontCssConfig[currentLang] ?? fontCssConfig.ko;
 const pathSegments = Astro.url.pathname.split('/').filter(Boolean);
 const hasLocalePrefix =
 	pathSegments.length > 0 && languageCodes.includes(pathSegments[0] as SupportedLanguage);
@@ -79,15 +93,32 @@ const xDefaultHref = alternateLinks.find((link) => link.code === defaultLang)?.h
 <!-- 다국어 폰트 로드: 최적화된 비동기 로딩 -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<!-- 폰트를 비동기로 로드하여 렌더 블로킹 방지 -->
-<link 
-	href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=M+PLUS+1p:wght@500&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" 
-	rel="stylesheet" 
-	media="print" 
+{fontCssUrls.map((fontUrl) => (
+	<Fragment>
+		<link
+			rel="preload"
+			as="style"
+			href={fontUrl}
+			crossorigin
+			onload="this.onload=null;this.rel='stylesheet'"
+		/>
+		<noscript>
+			<link rel="stylesheet" href={fontUrl} />
+		</noscript>
+	</Fragment>
+))}
+
+<!-- KaTeX styles (lazy) -->
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" as="style" crossorigin />
+<link
+	rel="stylesheet"
+	href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css"
+	media="print"
 	onload="this.media='all'"
+	crossorigin
 />
 <noscript>
-	<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=M+PLUS+1p:wght@500&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet" />
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" />
 </noscript>
 
 <!-- 다국어 및 지역 설정 -->
