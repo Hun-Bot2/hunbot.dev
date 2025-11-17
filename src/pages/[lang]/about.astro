@@ -18,6 +18,7 @@ const t = useTranslations(lang as 'ko' | 'jp' | 'en');
 
 const SITE_TITLE = `${t('about.title')} - Hun-Bot Blog`;
 const SITE_DESCRIPTION = t('about.description');
+const introParagraphs = t('about.intro').split('\n').map((text) => text.trim()).filter(Boolean);
 
 const stats = [
 	{ label: t('about.stats.role'), value: t('about.stats.role.value') },
@@ -87,9 +88,11 @@ const featureLinks = [
 				<h1 class="text-4xl lg:text-5xl font-bold text-orange-600 dark:text-orange-400">
 					{t('about.greeting')}
 				</h1>
-				<p class="text-xl text-slate-600 dark:text-gray-400 leading-relaxed max-w-2xl">
-					{t('about.intro')}
-				</p>
+				<div class="text-xl text-slate-600 dark:text-gray-400 leading-relaxed max-w-2xl space-y-3">
+					{introParagraphs.map((paragraph) => (
+						<p>{paragraph}</p>
+					))}
+				</div>
 			</div>
 		</section>
 
@@ -175,7 +178,7 @@ const featureLinks = [
 							<span class="px-3 py-1 bg-cyan-100 dark:bg-cyan-900 text-cyan-800 dark:text-cyan-200 text-sm font-medium rounded-full">React</span>
 							<span class="px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-sm font-medium rounded-full">TypeScript</span>
 						</div>
-						<p class="text-slate-600 dark:text-gray-400 leading-relaxed">
+						<p class="text-slate-600 dark:text-slate-300 leading-relaxed">
 							{t('about.frontend-desc')}
 						</p>
 					</div>
@@ -255,10 +258,13 @@ const featureLinks = [
 			<div class="grid gap-6 md:grid-cols-2">
 				{featureLinks.map((feature) => (
 					<a href={feature.href} target="_blank" rel="noopener noreferrer" class="group rounded-2xl border border-white/10 bg-white/5 dark:bg-white/5 px-6 py-5 flex flex-col gap-3 transition hover:-translate-y-1 hover:border-orange-400">
-						<span class="text-xs uppercase tracking-wide text-orange-500">{feature.badge}</span>
-						<h3 class="text-xl font-semibold text-slate-900 dark:text-white group-hover:text-orange-500">{feature.title}</h3>
-						<p class="text-slate-600 dark:text-slate-300 leading-relaxed flex-1">{feature.description}</p>
-						<span class="text-sm font-semibold text-orange-500 group-hover:text-orange-400">
+						<div class="flex items-center gap-2 text-orange-500">
+							<span class="text-xs uppercase tracking-[0.3em] font-semibold">{feature.badge}</span>
+							<span class="h-px flex-1 bg-orange-500/20" aria-hidden="true" />
+						</div>
+						<h3 class="text-3xl font-semibold text-slate-900 dark:text-white group-hover:text-orange-400">{feature.title}</h3>
+						<p class="text-base text-slate-600 dark:text-slate-300 leading-relaxed flex-1">{feature.description}</p>
+						<span class="text-sm font-semibold text-orange-500 group-hover:text-orange-300 inline-flex items-center gap-1">
 							{t('about.features.view-more')} →
 						</span>
 					</a>
@@ -276,7 +282,7 @@ const featureLinks = [
 				{t('about.contact-desc2')}
 			</p>
 			<a 
-				href="mailto:surtrcode@gmail.com" 
+				href="mailto:contact@hun-bot.dev" 
 				class="inline-flex items-center gap-2 px-8 py-4 text-lg font-semibold text-white bg-orange-600 hover:bg-orange-700 rounded-full transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
 			>
 				{t('about.send-email')}

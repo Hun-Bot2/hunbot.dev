@@ -32,45 +32,49 @@ export const ui = {
     'toc.title': '목차',
 
     'about.title': '소개',
-    'about.description': 'Hun-Bot의 소개 페이지입니다.',
+    'about.description': 'Hun Bot의 소개 페이지입니다.',
     'about.greeting': '안녕하세요, 남정훈입니다! 👋',
     'about.intro':
-      'LLM, 컴퓨터 비전, 3D Vision을 다루는 AI & 백엔드 개발자입니다. Three.js로 인터랙티브한 3D 웹을 만들고, Go와 Python으로 돌아가는 AI 서비스를 구현합니다.',
+    'LLM 파이프라인, 컴퓨터 비전, Go/Python 기반 백엔드를 다루는 AI & 백엔드 개발자입니다.\n'+ 
+    '최근에는 3D 인터랙티브 포트폴리오, 한국어 문법 교정용 VSCode 확장, 해커톤을 위해 제작한 Go 기반 프로덕션 백엔드, TypeScript 기반 성장 그래프 시각화 도구 등을 만들었습니다.\n'+
+    '새로운 기술을 탐색하는 과정을 즐기며, 단순한 성과나 고소득보다 ‘지속 가능하고 즐거운 개발자 삶’을 더 중요하게 생각합니다.'
+  
+    ,
     'about.connect': 'Connect with me',
 
-    'about.education': '🎓 Education',
+    'about.education': 'Education',
     'about.university': '성균관대학교 (Sungkyunkwan University)',
-    'about.major': '컴퓨터교육과 / 지능정보융합전공(자기설계융합전공)',
+    'about.major': '컴퓨터교육과 / 뇌인지과학(자기설계융합전공)',
     'about.status': '재학 중',
     'about.university-desc':
-      '컴퓨터교육과에서 프로그래밍과 소프트웨어 개발 기초를, 지능정보융합전공에서 AI · 데이터 · 3D Vision을 공부하며 “사람이 쓰는 AI 서비스”를 만드는 관점을 기르고 있습니다.',
+      '컴퓨터교육과에서 프로그래밍과 소프트웨어 개발 기초를, 뇌인지과학에서 AI · 데이터 · 3D Vision을 공부하며 “사람이 쓰는 AI 서비스”를 만드는 관점을 기르고 있습니다.',
 
-    'about.tech-stack': '💡 Tech Stack & Interests',
+    'about.tech-stack': 'Tech Stack & Interests',
 
-    'about.frontend': '🎨 Frontend / 3D Web',
+    'about.frontend': 'Frontend / 3D Web',
     'about.frontend-desc':
       'Three.js로 3D 웹 경험을 만들고, React와 TypeScript로 인터랙티브한 UI와 데이터 시각화를 구현합니다.',
 
-    'about.backend': '⚙️ Backend / Infra',
+    'about.backend': 'Backend / Infra',
     'about.backend-desc':
       'Go와 FastAPI로 웹 API를 만들고, PostgreSQL · Supabase · Docker를 사용해 배포와 운영까지 고려한 백엔드 환경을 구성합니다.',
 
-    'about.ai': '🤖 AI & 3D Vision',
+    'about.ai': 'AI & 3D Vision',
     'about.ai-desc':
       'LLM 파이프라인과 컴퓨터 비전(포즈 추정, 이미지 처리), 3D Vision을 웹 · 백엔드와 연결해, 데모를 넘어서 실제로 쓸 수 있는 AI 기능을 구현합니다.',
 
-    'about.hci': '👁️ Interactive Systems',
+    'about.hci': 'Interactive Systems',
     'about.hci-desc':
       '데이터와 사용자 행동을 바탕으로 3D 인터랙션과 시각화를 설계해, “살아 있는” 인터페이스를 만드는 일을 좋아합니다.',
 
-    'about.contact': '📫 Get in Touch',
+    'about.contact': 'Get in Touch',
     'about.contact-desc':
-      'AI, 컴퓨터 비전, 3D 웹, Go/백엔드 개발에 대해 이야기하고 싶으시다면 언제든 편하게 연락 주세요!',
+      '편하게 연락주세요!',
     'about.contact-desc2': '새로운 프로젝트나 협업 기회를 항상 열어두고 있습니다.',
-    'about.send-email': '📧 이메일 보내기',
+    'about.send-email': '이메일 보내기',
 
     'about.stats.role': '현재 역할',
-    'about.stats.role.value': 'AI · 백엔드 개발자',
+    'about.stats.role.value': '엔지니어를 꿈꾸는 학생',
     'about.stats.location': 'Base',
     'about.stats.location.value': '서울 · 대한민국',
     'about.stats.focus': '관심 주제',
@@ -78,27 +82,28 @@ export const ui = {
     'about.stats.languages': '사용 언어',
     'about.stats.languages.value': '한국어 · 日本語 · English',
 
-    'about.timeline.title': '걸어온 길',
-    'about.timeline.0.title': '성균관대학교 컴퓨터교육 · 지능정보융합전공',
+    'about.timeline.title': 'Path Highlights',
+    'about.timeline.0.title': '성균관대학교 컴퓨터교육 · 뇌인지과학',
     'about.timeline.0.period': '2024 - 현재',
     'about.timeline.0.body':
-      '프로그래밍, 소프트웨어 공학, AI 관련 과목을 들으며 실제 서비스로 이어질 수 있는 프로젝트를 만들고 있습니다.',
+      '소프트웨어 관련 과목을 들으며 실제 서비스로 이어질 수 있는 프로젝트를 만들고 있습니다.',
     'about.timeline.1.title': 'Bareun 기반 VSCode Extension 제작',
     'about.timeline.1.period': '2025-11',
     'about.timeline.1.body':
-      '한국어 문법 검수를 자동화하기 위해 Bareun AI API와 VSCode 확장을 직접 설계하고 출시했습니다. 현재도 제 글쓰기와 개발 워크플로에서 실제로 사용 중입니다.',
+      '한국어 문법 검수를 자동화하기 위해 Bareun AI API와 VSCode 확장을 직접 설계하고 출시했습니다.\n' +
+      '현재도 제 글쓰기와 개발 워크플로에서 실제로 사용 중입니다.',
     'about.timeline.2.title': 'Hun-Bot.dev 다국어 블로그 운영',
     'about.timeline.2.period': '2025- 현재',
     'about.timeline.2.body':
       'AI, 개발 로그,글쓰기 회고를 한국어 · 일본어 · 영어로 정리하며, 코드뿐 아니라 문제 정의와 시행착오까지 함께 공유합니다.',
 
     'about.features.title': '더 읽어보기',
-    'about.features.note.title': 'note: 리서치와 인사이트',
+    'about.features.note.title': 'Study Log',
     'about.features.note.description':
-      'note에는 과정과 생각의 흐름을 이야기 형식으로 정리해, 블로그에서 다루지 못한 배경과 맥락을 공유합니다.',
-    'about.features.github.title': 'GitHub Profile README',
+      '학교에서 배운 내용들 및 스스로 공부하는 내용을 총 정리하기로 마음먹고 시작한 Github Page입니다.',
+    'about.features.github.title': 'Portfolio',
     'about.features.github.description':
-      '사용 중인 스택, AI · 백엔드 · 3D 관련 작업, 자동화 워크플로를 한눈에 볼 수 있는 README입니다.',
+      '개인 프로젝트와 각종 활동들을 정리한 포트폴리오 사이트입니다.',
     'about.features.view-more': '자세히 보기',
   },
 
@@ -129,39 +134,42 @@ export const ui = {
     'about.description': 'Hun-Botの紹介ページです。',
     'about.greeting': 'こんにちは、ナム・ジョンフンです！ 👋',
     'about.intro':
-      'LLM・コンピュータビジョン・3D Vision に関心のある AI × バックエンドエンジニアです。Three.js でインタラクティブな3D Web体験をつくり、Go と Python で AI サービスのバックエンドを開発しています。',
+      'LLM パイプライン、コンピュータビジョン、Go/Python を用いたバックエンド開発に取り組む AI × バックエンドエンジニアです。\n' +
+      '最近は、3D インタラクティブポートフォリオ、韓国語文法を補助する VSCode 拡張、ハッカソン向けの Go 製プロダクションバックエンド、TypeScript で構築した成長グラフ可視化ツールなどを開発してきました。\n' +
+      '新しい技術を探求することを楽しみつつ、高収入を追うだけではなく「継続的で楽しく働けるエンジニアとしての人生」を大切にしています。',
+
     'about.connect': 'つながる',
 
-    'about.education': '🎓 学歴',
+    'about.education': '学歴',
     'about.university': '成均館大学校 (Sungkyunkwan University)',
     'about.major': 'コンピュータ教育学科 / 知能情報融合専攻（自己設計複合専攻）',
     'about.status': '在学中',
     'about.university-desc':
       'コンピュータ教育学科でプログラミングとソフトウェア開発の基礎を学びつつ、知能情報融合専攻で AI・データ・3D Vision を学び、「人が使えるAIサービス」をつくる視点を育てています。',
 
-    'about.tech-stack': '💡 技術スタック & 興味',
+    'about.tech-stack': '技術スタック & 興味',
 
-    'about.frontend': '🎨 フロントエンド / 3D Web',
+    'about.frontend': 'フロントエンド / 3D Web',
     'about.frontend-desc':
       'Three.js で 3D Web 体験をつくり、React と TypeScript でインタラクティブな UI やデータビジュアライゼーションを実装しています。',
 
-    'about.backend': '⚙️ バックエンド / インフラ',
+    'about.backend': 'バックエンド / インフラ',
     'about.backend-desc':
       'Go と FastAPI で Web API を開発し、PostgreSQL・Supabase・Docker を使って、デプロイと運用を意識したバックエンド環境を構築しています。',
 
-    'about.ai': '🤖 AI & 3D Vision',
+    'about.ai': 'AI & 3D Vision',
     'about.ai-desc':
       'LLM パイプラインやコンピュータビジョン（ポーズ推定・画像処理）、3D Vision を Web / バックエンドとつなぎ、「デモで終わらない」AI 機能の実装に取り組んでいます。',
 
-    'about.hci': '👁️ インタラクティブシステム',
+    'about.hci': 'インタラクティブシステム',
     'about.hci-desc':
       'ユーザー行動やデータをもとに 3D インタラクションやビジュアライゼーションを設計し、「生きているように感じる」インターフェースを目指しています。',
 
-    'about.contact': '📫 お問い合わせ',
+    'about.contact': 'お問い合わせ',
     'about.contact-desc':
       'AI、コンピュータビジョン、3D Web、Go / バックエンド開発について話したい方は、ぜひお気軽にご連絡ください！',
     'about.contact-desc2': '新しいプロジェクトやコラボレーションの機会をいつでも歓迎しています。',
-    'about.send-email': '📧 メールを送る',
+    'about.send-email': 'メールを送る',
 
     'about.stats.role': '現在の役割',
     'about.stats.role.value': 'AI × バックエンドエンジニア',
@@ -173,22 +181,19 @@ export const ui = {
     'about.stats.languages.value': '韓国語・日本語・英語',
 
     'about.timeline.title': 'これまでの歩み',
-
-'about.timeline.0.title': '成均館大学 コンピュータ教育学科・知能情報融合専攻',
-'about.timeline.0.period': '2024 - 現在',
-'about.timeline.0.body':
-  'プログラミング、ソフトウェア工学、AI関連科目を学びながら、授業で終わらない実サービス志向のプロジェクトに取り組んでいます。',
-
-'about.timeline.1.title': 'Bareun 連携 VSCode 拡張の開発',
-'about.timeline.1.period': '2025-11',
-'about.timeline.1.body':
-  '韓国語文法チェックを自動化するために Bareun AI API を活用し、VSCode 拡張機能を設計・開発しました。現在も執筆・開発ワークフローで実際に使用しています。',
-
-'about.timeline.2.title': 'Hun-Bot.dev 多言語ブログの運営',
-'about.timeline.2.period': '2025 - 現在',
-'about.timeline.2.body':
-  'AI、開発ログ、文章の振り返りを韓・日・英の3言語でまとめ、コードだけでなく課題設定や試行錯誤のプロセスまで共有しています。',
-
+    'about.timeline.0.title': '成均館大学 コンピュータ教育学科・知能情報融合専攻',
+    'about.timeline.0.period': '2024 - 現在',
+    'about.timeline.0.body':
+      'プログラミング、ソフトウェア工学、AI関連科目を学びながら、授業で終わらない実サービス志向のプロジェクトに取り組んでいます。',
+    'about.timeline.1.title': 'Bareun 連携 VSCode 拡張の開発',
+    'about.timeline.1.period': '2025-11',
+    'about.timeline.1.body':
+      '韓国語文法チェックを自動化するために Bareun AI API を活用し、VSCode 拡張機能を設計・開発しました。\n' +
+      '現在も執筆・開発ワークフローで実際に使用しています。',
+    'about.timeline.2.title': 'Hun-Bot.dev 多言語ブログの運営',
+    'about.timeline.2.period': '2025 - 現在',
+    'about.timeline.2.body':
+      'AI、開発ログ、文章の振り返りを韓・日・英の3言語でまとめ、コードだけでなく課題設定や試行錯誤のプロセスまで共有しています。',
 
     'about.features.title': '関連リンク',
     'about.features.note.title': 'note: リサーチとエッセイ',
@@ -227,39 +232,41 @@ export const ui = {
     'about.description': 'About Hun-Bot',
     'about.greeting': "Hi, I'm Jeonghun Nam! 👋",
     'about.intro':
-      'I’m an AI & backend engineer working with LLMs, computer vision, and 3D vision. I build interactive 3D web experiences with Three.js and ship AI-powered services using Go and Python on the backend.',
+      'I am an AI & Backend Engineer working across LLM pipelines, Computer Vision, and Go/Python backend systems.\n' +
+      'My recent work includes a 3D interactive portfolio, a Korean grammar VSCode extension, a production-ready Go backend for a hackathon, and a TypeScript growth-graph visualizer.\n' +
+      'I enjoy exploring new technologies and value a joyful, sustainable career over simply chasing the highest possible income.',
     'about.connect': 'Connect with me',
 
-    'about.education': '🎓 Education',
+    'about.education': 'Education',
     'about.university': 'Sungkyunkwan University',
     'about.major': 'Computer Education & Intelligent Information Convergence (Interdisciplinary Major)',
     'about.status': 'Currently Enrolled',
     'about.university-desc':
       'Studying programming, software engineering, and AI-related topics while exploring data and 3D vision, with a focus on turning ideas into AI-powered services people can actually use.',
 
-    'about.tech-stack': '💡 Tech Stack & Interests',
+    'about.tech-stack': 'Tech Stack & Interests',
 
-    'about.frontend': '🎨 Frontend / 3D Web',
+    'about.frontend': 'Frontend / 3D Web',
     'about.frontend-desc':
       'Building 3D web experiences with Three.js and crafting interactive UIs and data visualizations with React and TypeScript.',
 
-    'about.backend': '⚙️ Backend / Infrastructure',
+    'about.backend': 'Backend / Infrastructure',
     'about.backend-desc':
       'Building web APIs with Go and FastAPI, and using PostgreSQL, Supabase, and Docker to run them in reliable, production-like environments.',
 
-    'about.ai': '🤖 AI & 3D Vision',
+    'about.ai': 'AI & 3D Vision',
     'about.ai-desc':
       'Connecting LLM pipelines, computer vision (pose estimation, image processing), and 3D vision to real web and backend systems so they become usable products—not just demos.',
 
-    'about.hci': '👁️ Interactive Systems',
+    'about.hci': 'Interactive Systems',
     'about.hci-desc':
       'Designing interfaces that feel “alive” through 3D interaction and data-driven visual feedback, with a focus on how people actually use tools.',
 
-    'about.contact': '📫 Get in Touch',
+    'about.contact': 'Get in Touch',
     'about.contact-desc':
       'Feel free to reach out if you want to talk about AI, computer vision, 3D web, or Go/backend development!',
     'about.contact-desc2': "I'm open to new projects and collaboration opportunities.",
-    'about.send-email': '📧 Send Email',
+    'about.send-email': 'Send Email',
 
     'about.stats.role': 'Current Role',
     'about.stats.role.value': 'AI & Backend Engineer',
@@ -271,22 +278,19 @@ export const ui = {
     'about.stats.languages.value': 'Korean · Japanese · English',
 
     'about.timeline.title': 'Highlights',
-
-'about.timeline.0.title': 'SKKU — Computer Education & Intelligent Information Convergence',
-'about.timeline.0.period': '2024 - Present',
-'about.timeline.0.body':
-  'Studying programming, software engineering, and AI-related courses while working on projects that aim to grow into real, usable services rather than class assignments.',
-
-'about.timeline.1.title': 'Bareun-powered VSCode Extension Development',
-'about.timeline.1.period': '2025-11',
-'about.timeline.1.body':
-  'Designed and built a VSCode extension using the Bareun AI API to automate Korean grammar checking. It is now part of my everyday writing and development workflow.',
-
-'about.timeline.2.title': 'Maintaining Hun-Bot.dev — Multilingual Blog',
-'about.timeline.2.period': '2025 - Present',
-'about.timeline.2.body':
-  'Writing AI experiments, development logs, and writing reflections in Korean, Japanese, and English—sharing not only code but also problem framing and the trial-and-error behind each project.',
-
+    'about.timeline.0.title': 'SKKU — Computer Education & Intelligent Information Convergence',
+    'about.timeline.0.period': '2024 - Present',
+    'about.timeline.0.body':
+      'Studying programming, software engineering, and AI-related courses while working on projects that aim to grow into real, usable services rather than class assignments.',
+    'about.timeline.1.title': 'Bareun-powered VSCode Extension Development',
+    'about.timeline.1.period': '2025-11',
+    'about.timeline.1.body':
+      'Designed and built a VSCode extension using the Bareun AI API to automate Korean grammar checking.\n' +
+      'It is now part of my everyday writing and development workflow.',
+    'about.timeline.2.title': 'Maintaining Hun-Bot.dev — Multilingual Blog',
+    'about.timeline.2.period': '2025 - Present',
+    'about.timeline.2.body':
+      'Writing AI experiments, development logs, and writing reflections in Korean, Japanese, and English—sharing not only code but also problem framing and the trial-and-error behind each project.',
 
     'about.features.title': 'Featured links',
     'about.features.note.title': 'Note: Research & reflections',
