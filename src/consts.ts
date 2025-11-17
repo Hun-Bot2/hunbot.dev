@@ -15,7 +15,7 @@ export const LANGUAGE_HREF_MAP: Record<SupportedLanguage, string> = {
 };
 
 export const AUTHOR = 'Hun-Bot';
-export const AUTHOR_EMAIL = 'surtrcode@gmail.com';
+export const AUTHOR_EMAIL = 'contact@hun-bot.dev';
 export const SOCIAL_LINKS = {
 	github: 'https://github.com/Hun-Bot2',
 	linkedin: 'https://www.linkedin.com/in/hunbot-dev/',
