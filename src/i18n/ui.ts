@@ -26,6 +26,9 @@ export const ui = {
     'blog.tag-count': '글 {count}개',
     'blog.published': '작성일',
     'blog.updated': '수정일',
+    'blog.views': '조회수',
+    'blog.views-loading': '집계 중...',
+    'blog.views-error': '집계 실패',
     'toc.title': '목차',
 
     'about.title': '소개',
@@ -117,6 +120,9 @@ export const ui = {
     'blog.tag-count': '{count}件',
     'blog.published': '公開日',
     'blog.updated': '更新日',
+    'blog.views': '閲覧数',
+    'blog.views-loading': '集計中...',
+    'blog.views-error': '取得失敗',
     'toc.title': '目次',
 
     'about.title': '私について',
@@ -212,6 +218,9 @@ export const ui = {
     'blog.tag-count': '{count} posts',
     'blog.published': 'Published',
     'blog.updated': 'Updated',
+    'blog.views': 'Views',
+    'blog.views-loading': 'Counting...',
+    'blog.views-error': 'Unavailable',
     'toc.title': 'Table of Contents',
 
     'about.title': 'About',

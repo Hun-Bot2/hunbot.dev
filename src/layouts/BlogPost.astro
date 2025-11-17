@@ -9,13 +9,26 @@ import TableOfContents from '../components/TableOfContents.astro';
 import Breadcrumb from '../components/Breadcrumb.astro';
 import GiscusComments from '../components/GiscusComments.astro';
 import { SITE_TITLE, AUTHOR, AUTHOR_EMAIL, SOCIAL_LINKS } from '../consts';
+import type { UILanguage } from '../i18n/ui';
+import ViewCounter from '../components/ViewCounter.astro';
 
 type Props = CollectionEntry<'blog'>['data'] & {
-	lang?: string;
+	lang?: UILanguage;
 	availableLangs?: string[];
+	postId?: string;
 };
 
-const { title, description, pubDate, updatedDate, heroImage, tags = [], lang = 'ko', availableLangs } = Astro.props;
+const {
+	title,
+	description,
+	pubDate,
+	updatedDate,
+	heroImage,
+	tags = [],
+	lang = 'ko',
+	availableLangs,
+	postId,
+} = Astro.props as Props;
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 
@@ -91,14 +104,17 @@ const schema = {
 				
 				<!-- Title Section -->
 				<div class="mb-8 pb-6 border-b border-slate-200 dark:border-slate-700">
-					<!-- Date -->
-					<div class="mb-4 text-slate-600 dark:text-slate-400 text-sm">
-						<FormattedDate date={pubDate} />
-						{updatedDate && (
-							<div class="text-slate-500 dark:text-slate-400 text-xs mt-1">
-								Last updated: <FormattedDate date={updatedDate} />
-							</div>
-						)}
+					<!-- Meta -->
+					<div class="mb-4 flex flex-wrap items-center gap-3 text-slate-600 dark:text-slate-400 text-sm">
+						<div>
+							<FormattedDate date={pubDate} />
+							{updatedDate && (
+								<div class="text-slate-500 dark:text-slate-400 text-xs mt-1">
+									Last updated: <FormattedDate date={updatedDate} />
+								</div>
+							)}
+						</div>
+						<ViewCounter lang={lang} counterKey={postId} />
 					</div>
 					
 					<!-- Title -->

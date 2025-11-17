@@ -2,16 +2,17 @@
 import { type CollectionEntry, getCollection } from 'astro:content';
 import BlogPost from '../../../layouts/BlogPost.astro';
 import { render } from 'astro:content';
+import type { UILanguage } from '../../../i18n/ui';
 
 export async function getStaticPaths() {
-	const langs = ['ko', 'jp', 'en'];
+	const langs: UILanguage[] = ['ko', 'jp', 'en'];
 	const posts = await getCollection('blog');
 
 	const slugMap = new Map<string, string[]>();
 
 	for (const post of posts) {
 		const [lang, ...rest] = post.id.split('/');
-		if (!lang || !langs.includes(lang)) continue;
+		if (lang !== 'ko' && lang !== 'jp' && lang !== 'en') continue;
 		const slug = rest.join('/');
 		if (!slugMap.has(slug)) {
 			slugMap.set(slug, []);
@@ -36,14 +37,14 @@ export async function getStaticPaths() {
 
 type Props = {
 	post: CollectionEntry<'blog'>;
-	lang: string;
+	lang: UILanguage;
 	availableLangs: string[];
 };
 
-const { post, lang, availableLangs } = Astro.props;
+const { post, lang, availableLangs } = Astro.props as Props;
 const { Content } = await render(post);
 ---
 
-<BlogPost {...post.data} lang={lang} availableLangs={availableLangs}>
+<BlogPost {...post.data} lang={lang} availableLangs={availableLangs} postId={post.id}>
 	<Content />
 </BlogPost>
