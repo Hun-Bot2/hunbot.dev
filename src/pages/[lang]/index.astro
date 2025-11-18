@@ -96,31 +96,19 @@ const remaining = posts.slice(4);
 		<Footer />
 		<script is:inline>
 			document.addEventListener('DOMContentLoaded', () => {
-				const scroller = document.querySelector('.featured-scroller');
-				if (!scroller) return;
+				const container = document.querySelector('.featured-container');
+				const scroller = container?.querySelector('.featured-scroller');
+				if (!container || !scroller) return;
 
-				let autoScroll;
-				const startAutoScroll = () => {
-					stopAutoScroll();
-					autoScroll = setInterval(() => {
-						const offset = scroller.clientWidth;
-						scroller.scrollBy({ left: offset, behavior: 'smooth' });
-						if (scroller.scrollLeft + scroller.clientWidth >= scroller.scrollWidth - offset) {
-							scroller.scrollTo({ left: 0, behavior: 'smooth' });
-						}
-					}, 5000);
+				const updateShadow = () => {
+					const hasOverflow = scroller.scrollWidth - scroller.clientWidth > 4;
+					const nearEnd = scroller.scrollLeft + scroller.clientWidth >= scroller.scrollWidth - 4;
+					container.dataset.scrollable = hasOverflow && !nearEnd ? 'true' : 'false';
 				};
 
-				const stopAutoScroll = () => {
-					if (autoScroll) clearInterval(autoScroll);
-				};
-
-				scroller.addEventListener('mouseenter', stopAutoScroll);
-				scroller.addEventListener('mouseleave', startAutoScroll);
-				scroller.addEventListener('touchstart', stopAutoScroll, { passive: true });
-				scroller.addEventListener('touchend', startAutoScroll);
-
-				startAutoScroll();
+				updateShadow();
+				window.addEventListener('resize', updateShadow);
+				scroller.addEventListener('scroll', updateShadow, { passive: true });
 			});
 		</script>
 	</body>
@@ -131,15 +119,41 @@ const remaining = posts.slice(4);
 		position: relative;
 	}
 
+	.featured-container {
+		position: relative;
+		margin-inline: -1rem;
+		padding-inline: 1rem;
+		padding-bottom: 0.35rem;
+	}
+
+	.featured-container::after {
+		content: '';
+		position: absolute;
+		right: 1rem;
+		top: 0.5rem;
+		bottom: 0.85rem;
+		width: 3rem;
+		pointer-events: none;
+		background: linear-gradient(to right, rgba(15, 23, 42, 0) 0%, rgba(15, 23, 42, 0.85) 100%);
+		opacity: 0;
+		transition: opacity 0.2s ease;
+	}
+
+	:global(body.light-theme) .featured-container::after {
+		background: linear-gradient(to right, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.95) 100%);
+	}
+
+	.featured-container[data-scrollable='true']::after {
+		opacity: 1;
+	}
+
 	.featured-scroller {
-		display: grid;
-		grid-auto-flow: column;
-		grid-auto-columns: minmax(280px, 1fr);
+		display: flex;
 		gap: 1rem;
 		overflow-x: auto;
 		scroll-snap-type: x mandatory;
-		scroll-behavior: smooth;
-		padding-bottom: 0.25rem;
+		scroll-padding: 0 1rem;
+		padding-bottom: 0.35rem;
 	}
 
 	.featured-scroller::-webkit-scrollbar {
@@ -153,33 +167,32 @@ const remaining = posts.slice(4);
 
 	.featured-card {
 		scroll-snap-align: start;
-		border-radius: 1.75rem;
-		border: 1px solid rgba(248, 249, 250, 0.12);
-		background: rgba(255, 255, 255, 0.05);
+		border-radius: 1.5rem;
+		border: 1px solid rgba(248, 249, 250, 0.1);
+		background: rgba(255, 255, 255, 0.04);
 		display: flex;
 		flex-direction: column;
-		overflow: hidden;
 		text-decoration: none;
 		transition: transform 0.25s ease, box-shadow 0.25s ease;
-		min-width: 260px;
+		min-width: clamp(260px, 30vw, 320px);
+		padding: 1.2rem;
+		gap: 0.85rem;
 	}
 
 	.featured-card:hover {
 		transform: translateY(-6px);
-		box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+		box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
 	}
 
 	.featured-card__image {
-		position: relative;
-		padding-top: 56.25%;
+		width: 100%;
+		height: 165px;
+		border-radius: 1rem;
 		overflow: hidden;
-		background: rgba(15, 23, 42, 0.8);
+		background: rgba(15, 23, 42, 0.6);
 	}
 
 	.featured-card__image img {
-		position: absolute;
-		top: 0;
-		left: 0;
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
@@ -187,14 +200,18 @@ const remaining = posts.slice(4);
 	}
 
 	.featured-card:hover .featured-card__image img {
-		transform: scale(1.05);
+		transform: scale(1.04);
 	}
 
 	.featured-card__body {
-		padding: 1.25rem;
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
+		gap: 0.65rem;
+		padding-inline: 0.15rem;
+	}
+
+	.featured-card__body > *:last-child {
+		margin-top: auto;
 	}
 
 	.featured-card__meta {

@@ -15,26 +15,33 @@ const allowedLangs = availableLangs && availableLangs.length > 0
 
 // Remove language prefix from path to get base path
 function getBasePath(path: string, lang: string) {
-  if (path.startsWith(`/${lang}/`)) {
-    return path.slice(lang.length + 1);
-  }
-  if (path === `/${lang}`) {
-    return '/';
-  }
-  return path;
+	const prefix = `/${lang}`;
+	if (path === prefix) {
+		return '/';
+	}
+
+	if (path.startsWith(`${prefix}/`)) {
+		const remainder = path.slice(prefix.length);
+		return remainder.startsWith('/') ? remainder : `/${remainder}`;
+	}
+
+	return path;
 }
 
 const basePath = getBasePath(currentPath, currentLang);
 
 // Generate URLs for each language
 const languageUrls = allowedLangs.reduce((acc, lang) => {
-  if (lang === 'ko') {
-    // Korean is default, no prefix
-    acc[lang] = basePath;
-  } else {
-    acc[lang] = `/${lang}${basePath}`;
-  }
-  return acc;
+	if (lang === 'ko') {
+		if (basePath === '/') {
+			acc[lang] = '/ko/';
+		} else {
+			acc[lang] = `/ko${basePath}`;
+		}
+	} else {
+		acc[lang] = basePath === '/' ? `/${lang}/` : `/${lang}${basePath}`;
+	}
+	return acc;
 }, {} as Record<string, string>);
 ---
 
