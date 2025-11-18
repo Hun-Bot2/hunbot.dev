@@ -30,6 +30,7 @@ export const ui = {
     'blog.views-loading': '집계 중...',
     'blog.views-error': '집계 실패',
     'toc.title': '목차',
+    'toc.toggle': '목차 토글',
 
     'about.title': '소개',
     'about.description': 'Hun Bot의 소개 페이지입니다.',
@@ -129,6 +130,7 @@ export const ui = {
     'blog.views-loading': '集計中...',
     'blog.views-error': '取得失敗',
     'toc.title': '目次',
+    'toc.toggle': '目次を開く',
 
     'about.title': '私について',
     'about.description': 'Hun-Botの紹介ページです。',
@@ -227,6 +229,7 @@ export const ui = {
     'blog.views-loading': 'Counting...',
     'blog.views-error': 'Unavailable',
     'toc.title': 'Table of Contents',
+    'toc.toggle': 'Toggle table of contents',
 
     'about.title': 'About',
     'about.description': 'About Hun-Bot',
