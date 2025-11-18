@@ -45,6 +45,7 @@ const timelineEntries = [
 	},
 ];
 
+
 const featureLinks = [
 	{
 		title: t('about.features.note.title'),
@@ -72,16 +73,16 @@ const featureLinks = [
 
 		<main class="max-w-4xl mx-auto px-4 py-10 space-y-16">
 
-		<section class="flex flex-col lg:flex-row items-center gap-12">
-			<div class="relative group">
+		<section class="flex flex-col md:flex-row items-center gap-12">
+			<div class="relative group flex-none">
 				<img 
-					src="/images/my_photo.jpeg" 
+					src="/images/nanawithme.jpeg" 
 					alt="Hun Profile"
 					loading="eager"
 					decoding="async"
-					width="160"
-					height="160"
-					class="w-40 h-40 rounded-full object-cover transition-transform duration-300 group-hover:scale-105"
+					width="192"
+					height="192"
+					class="w-40 h-40 md:w-48 md:h-48 lg:w-64 lg:h-64 object-cover object-center shadow-lg shadow-black/30 border border-white/10 transition-transform duration-300 group-hover:scale-105 rounded-full"
 				/>
 			</div>
 			<div class="text-center lg:text-left space-y-4">
@@ -98,9 +99,11 @@ const featureLinks = [
 
 		<section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 			{stats.map((stat) => (
-				<div class="rounded-2xl border border-white/10 bg-white/5 dark:bg-white/5 px-5 py-4 text-center shadow-sm hover:shadow-md transition-all duration-200 backdrop-blur">
-					<p class="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">{stat.label}</p>
-					<p class="mt-2 text-xl font-semibold text-slate-900 dark:text-white">{stat.value}</p>
+				<div class="rounded-2xl border border-white/10 bg-white/5 dark:bg-white/5 px-5 py-4 flex flex-col text-center shadow-sm hover:shadow-md transition-all duration-200 backdrop-blur min-h-[150px]">
+					<p class="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-2">{stat.label}</p>
+					<div class="flex-1 flex items-center justify-center">
+						<p class="text-base sm:text-lg font-semibold text-slate-900 dark:text-white leading-snug break-words">{stat.value}</p>
+					</div>
 				</div>
 			))}
 		</section>
