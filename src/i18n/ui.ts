@@ -34,9 +34,9 @@ export const ui = {
 
     'about.title': '소개',
     'about.description': 'Hun Bot의 소개 페이지입니다.',
-    'about.greeting': '안녕하세요, 남정훈입니다! 👋',
+    'about.greeting': '안녕하세요, 남정훈입니다!',
     'about.intro':
-    'LLM 파이프라인, 컴퓨터 비전, Go/Python 기반 백엔드를 다루는 AI & 백엔드 개발자입니다.\n'+ 
+    'LLM, 컴퓨터 비전에 관심이 있고, Go/Python 기반 백엔드를 다루는 AI & 백엔드 개발자입니다.\n'+ 
     '최근에는 3D 인터랙티브 포트폴리오, 한국어 문법 교정용 VSCode 확장, 해커톤을 위해 제작한 Go 기반 프로덕션 백엔드, TypeScript 기반 성장 그래프 시각화 도구 등을 만들었습니다.\n'+
     '새로운 기술을 탐색하는 과정을 즐기며, 단순한 성과나 고소득보다 ‘지속 가능하고 즐거운 개발자 삶’을 더 중요하게 생각합니다.'
   
@@ -134,9 +134,9 @@ export const ui = {
 
     'about.title': '私について',
     'about.description': 'Hun-Botの紹介ページです。',
-    'about.greeting': 'こんにちは、ナム・ジョンフンです！ 👋',
+    'about.greeting': 'こんにちは' + '\n' + 'ナム・ジョンフンです！',
     'about.intro':
-      'LLM パイプライン、コンピュータビジョン、Go/Python を用いたバックエンド開発に取り組む AI × バックエンドエンジニアです。\n' +
+      'LLM、コンピュータビジョンに　興味があり、Go/Python を用いたバックエンド開発に取り組む AI × バックエンドエンジニアです。\n' +
       '最近は、3D インタラクティブポートフォリオ、韓国語文法を補助する VSCode 拡張、ハッカソン向けの Go 製プロダクションバックエンド、TypeScript で構築した成長グラフ可視化ツールなどを開発してきました。\n' +
       '新しい技術を探求することを楽しみつつ、高収入を追うだけではなく「継続的で楽しく働けるエンジニアとしての人生」を大切にしています。',
 
@@ -233,9 +233,9 @@ export const ui = {
 
     'about.title': 'About',
     'about.description': 'About Hun-Bot',
-    'about.greeting': "Hi, I'm Jeonghun Nam! 👋",
+    'about.greeting': "Hi, I'm Jeonghun Nam!",
     'about.intro':
-      'I am an AI & Backend Engineer working across LLM pipelines, Computer Vision, and Go/Python backend systems.\n' +
+      'I am an AI & Backend Engineer interested in LLMs, Computer Vision, and Go/Python backend systems.\n' +
       'My recent work includes a 3D interactive portfolio, a Korean grammar VSCode extension, a production-ready Go backend for a hackathon, and a TypeScript growth-graph visualizer.\n' +
       'I enjoy exploring new technologies and value a joyful, sustainable career over simply chasing the highest possible income.',
     'about.connect': 'Connect with me',
