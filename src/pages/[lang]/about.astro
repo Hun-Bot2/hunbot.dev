@@ -45,6 +45,37 @@ const timelineEntries = [
 	},
 ];
 
+const academicSections = [
+  {
+    title: t('about.academics.cs.title'),
+    courses: t('about.academics.cs.courses')
+      .split('\\n')
+      .map((line) => line.trim())
+      .filter(Boolean),
+  },
+  {
+    title: t('about.academics.ai.title'),
+    courses: t('about.academics.ai.courses')
+      .split('\\n')
+      .map((line) => line.trim())
+      .filter(Boolean),
+  },
+  {
+    title: t('about.academics.backend.title'),
+    courses: t('about.academics.backend.courses')
+      .split('\\n')
+      .map((line) => line.trim())
+      .filter(Boolean),
+  },
+  {
+    title: t('about.academics.edu.title'),
+    courses: t('about.academics.edu.courses')
+      .split('\\n')
+      .map((line) => line.trim())
+      .filter(Boolean),
+  },
+];
+
 
 const featureLinks = [
 	{
@@ -99,13 +130,32 @@ const featureLinks = [
 
 		<section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 			{stats.map((stat) => (
-				<div class="rounded-2xl border border-white/10 bg-white/5 dark:bg-white/5 px-5 py-4 flex flex-col text-center shadow-sm hover:shadow-md transition-all duration-200 backdrop-blur min-h-[150px]">
+				<div class="rounded-2xl border border-slate-200 bg-white dark:border-white/10 dark:bg-white/5 px-5 py-4 flex flex-col text-center shadow-sm hover:shadow-md transition-all duration-200 backdrop-blur min-h-[150px]">
 					<p class="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-2">{stat.label}</p>
 					<div class="flex-1 flex items-center justify-center">
 						<p class="text-base sm:text-lg font-semibold text-slate-900 dark:text-white leading-snug break-words">{stat.value}</p>
 					</div>
 				</div>
 			))}
+		</section>
+
+		<section class="space-y-6">
+			<div class="space-y-2 text-center lg:text-left">
+				<h2 class="text-3xl font-bold text-orange-800 dark:text-orange-300">{t('about.academics.title')}</h2>
+				<p class="text-lg text-slate-600 dark:text-slate-300">{t('about.academics.subtitle')}</p>
+			</div>
+			<div class="grid gap-6 md:grid-cols-2">
+				{academicSections.map((section) => (
+					<div class="rounded-2xl border border-slate-200 bg-white dark:border-white/10 dark:bg-white/5 px-6 py-5 space-y-3 shadow-sm hover:shadow-md transition-all duration-200 backdrop-blur">
+						<h3 class="text-xl font-semibold text-slate-900 dark:text-white">{section.title}</h3>
+						<div class="space-y-2 text-base text-slate-600 dark:text-slate-300 leading-relaxed">
+							{section.courses.map((courseLine) => (
+								<p>{courseLine}</p>
+							))}
+						</div>
+					</div>
+				))}
+			</div>
 		</section>
 
 		<!-- 소셜 링크 섹션 - 박스 제거, 플랫 디자인 -->
@@ -260,7 +310,7 @@ const featureLinks = [
 			<h2 class="text-3xl font-bold text-orange-800 dark:text-orange-300">{t('about.features.title')}</h2>
 			<div class="grid gap-6 md:grid-cols-2">
 				{featureLinks.map((feature) => (
-					<a href={feature.href} target="_blank" rel="noopener noreferrer" class="group rounded-2xl border border-white/10 bg-white/5 dark:bg-white/5 px-6 py-5 flex flex-col gap-3 transition hover:-translate-y-1 hover:border-orange-400">
+					<a href={feature.href} target="_blank" rel="noopener noreferrer" class="group rounded-2xl border border-slate-200 bg-white dark:border-white/10 dark:bg-white/5 px-6 py-5 flex flex-col gap-3 transition hover:-translate-y-1 hover:border-orange-400 shadow-sm hover:shadow-md">
 						<div class="flex items-center gap-2 text-orange-500">
 							<span class="text-xs uppercase tracking-[0.3em] font-semibold">{feature.badge}</span>
 							<span class="h-px flex-1 bg-orange-500/20" aria-hidden="true" />
