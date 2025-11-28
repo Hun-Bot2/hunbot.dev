@@ -239,10 +239,24 @@ body.dark-theme {
 	color-scheme: dark;
 }
 
+body.dark-theme pre.astro-code {
+  background-color: var(--shiki-dark-bg) !important;
+  color: var(--shiki-dark) !important;
+}
+
+body.dark-theme pre.astro-code span {
+  color: var(--shiki-dark) !important;
+}
+
+/* light theme */
 body.light-theme {
 	background: #f8fafc;
 	color: #0f172a;
 	color-scheme: light;
+}
+
+body.light-theme pre.astro-code {
+  background-color: #f7f3ed !important; 
 }
 
 body.light-theme .header-wrapper {
@@ -292,8 +306,11 @@ body.light-theme .mobile-nav-divider {
 	background: rgba(15, 23, 42, 0.08);
 }
 
-body.light-theme :where(h1,h2,h3,h4,h5,h6,p,li,span,small,strong,label,blockquote,figcaption) {
-	color: #0f172a !important;
+body.light-theme :where(
+  h1, h2, h3, h4, h5, h6,
+  p, li, small, strong, label, blockquote, figcaption
+) {
+  color: #0f172a;
 }
 
 body.light-theme :where(a) {
@@ -323,16 +340,16 @@ body.light-theme .prose a {
 	color: #1d4ed8;
 }
 
-body.light-theme .prose code {
+body.light-theme .prose :not(pre) > code {
 	background: rgba(15, 23, 42, 0.08);
 	color: #0f172a;
 	border-color: rgba(15, 23, 42, 0.2);
 }
 
-body.light-theme .prose pre {
-	background: rgba(15, 23, 42, 0.08);
-	color: #0f172a;
-	border-color: rgba(15, 23, 42, 0.12);
+body.light-theme .prose pre code {
+	background: transparent !important;
+	border-color: transparent !important;
+	padding: 0 !important;
 }
 
 body.light-theme .prose :where(h1,h2,h3,h4,h5,h6,li,blockquote,p,strong) {
@@ -351,47 +368,15 @@ h4,
 h5,
 h6 {
 	font-family: var(--font-heading);
-	margin-top: var(--spacing-12);
-	margin-bottom: var(--spacing-6);
+	margin-top: var(--spacing-0);
+	margin-bottom: var(--spacing-8);
 	line-height: var(--lineHeight-tight);
 	letter-spacing: -0.025em;
 	font-weight: var(--fontWeight-bold);
-	color: rgb(248, 249, 250);
 	scroll-margin-top: 5rem;
 }
 
-h1 {
-	font-weight: var(--fontWeight-black);
-	font-size: var(--fontSize-6);
-	color: rgb(248, 249, 250) !important;
-}
-
-h2 {
-	font-size: var(--fontSize-5);
-	color: rgb(248, 249, 250) !important;
-}
-
-h3 {
-	font-size: var(--fontSize-4);
-	color: rgb(248, 249, 250) !important;
-}
-
-h4 {
-	font-size: var(--fontSize-3);
-	color: rgb(248, 249, 250) !important;
-}
-
-h5 {
-	font-size: var(--fontSize-2);
-	color: rgb(248, 249, 250) !important;
-}
-
-h6 {
-	font-size: var(--fontSize-1);
-	color: rgb(248, 249, 250) !important;
-}
-
-/* 한국어 헤딩에 Yeon Sung 적용 (헤딩 전역 폰트 설정을 덮어씀) */
+/* 한국어 헤딩에 Yeon Sung 적용 */
 h1:lang(ko),
 h2:lang(ko),
 h3:lang(ko),
@@ -509,28 +494,14 @@ img {
 	border-radius: 8px;
 }
 
-code {
-	padding: 2px 5px;
-	background-color: rgba(255, 255, 255, 0.1);
-	border-radius: 3px;
-	font-family: 'JetBrains Mono', Monaco, Consolas, 'Courier New', monospace;
-	font-size: 0.85em;
-	color: rgb(248, 249, 250);
-}
+/* Prose code blocks: align with Shiki themes while keeping consistent layout */
 
-pre {
-	padding: var(--spacing-4);
-	border-radius: 4px;
-	background: rgba(0, 0, 0, 0.3);
-	overflow-x: auto;
-	margin-bottom: var(--spacing-8);
-	font-size: 0.875rem;
-	line-height: 1.45;
-}
-
-pre > code {
-	all: unset;
-	font-family: 'JetBrains Mono', Monaco, Consolas, 'Courier New', monospace;
+.prose pre.astro-code {
+  margin: var(--spacing-8) 0;
+  padding: var(--spacing-4);
+  border-radius: 0.75rem;
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
 }
 
 /* Tables */
@@ -574,19 +545,6 @@ table td {
 }
 
 /* Duplicate blockquote styles (commented out to avoid redundancy) */
-/*
-blockquote {
-	border-left: var(--spacing-1) solid #f97316;
-	padding: var(--spacing-0) var(--spacing-0) var(--spacing-0) var(--spacing-6);
-	margin-left: calc(-1 * var(--spacing-6));
-	margin-right: var(--spacing-8);
-	margin-bottom: var(--spacing-8);
-	font-size: var(--fontSize-2);
-	font-style: italic;
-	color: rgba(248, 249, 250, 0.7);
-}
-*/
-
 hr {
 	height: 1px;
 	border: 0;
@@ -640,7 +598,6 @@ hr {
 	white-space: nowrap;
 }
 
-/* 라인 클램핑 유틸리티 */
 .line-clamp-3 {
 	display: -webkit-box;
 	line-clamp: 3;
@@ -649,7 +606,6 @@ hr {
 	overflow: hidden;
 }
 
-/* 수동 적용용 유틸리티 클래스 */
 /* Gowun Dodum utility classes */
 .gowun-dodum-regular {
 	font-family: "Gowun Dodum", system-ui;
@@ -675,27 +631,4 @@ hr {
   font-family: "M PLUS 1p", system-ui;
   font-weight: 500;
   font-style: normal;
-}
-
-/* Ensure lists inside Tailwind's `prose` content show markers and spacing.
-	 The site previously had global list resets which removed left padding (space
-	 where markers are rendered). Target `.prose` specifically so lists in other
-	 places keep their current behavior. */
-.prose ul,
-.prose ol {
-	padding-left: 1.5rem; /* roughly Tailwind pl-6 */
-	margin-bottom: 1.25rem; /* roughly Tailwind mb-5 */
-	list-style-position: outside;
-}
-
-.prose ul {
-	list-style-type: disc;
-}
-
-.prose ol {
-	list-style-type: decimal;
-}
-
-.prose li {
-	margin-bottom: 0.5rem; /* roughly Tailwind mb-2 */
 }

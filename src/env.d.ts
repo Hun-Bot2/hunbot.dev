@@ -15,6 +15,7 @@ interface ImportMetaEnv {
 	readonly PUBLIC_GISCUS_THEME?: string;
 	readonly PUBLIC_GISCUS_LANG?: string;
 	readonly PUBLIC_GISCUS_LOADING?: string;
+	readonly PUBLIC_VIEW_COUNTER_NAMESPACE?: string;
 }
 
 interface ImportMeta {

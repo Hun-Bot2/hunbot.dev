@@ -42,14 +42,14 @@ const remaining = posts.slice(4);
 		<div class="global-wrapper" data-is-root-path="true">
 			<main class="max-w-5xl mx-auto px-4 py-10 space-y-16">
 				<section>
-					<h1 class="text-3xl font-bold mb-8 flex items-center justify-between">
+					<h1 class="text-3xl font-bold mb-4 flex items-center justify-between">
 						<span>{t('blog.recent-posts')}</span>
 					</h1>
 					<div class="featured-container">
 						<div class="featured-scroller" role="region" aria-label={t('blog.recent-posts')}>
 							{featured.map((post) => {
 								const slug = post.id.replace(`${currentLang}/`, '');
-								const hero = post.data.heroImage ?? '/images/blog-placeholder-1.jpg';
+								const hero = post.data.heroImage ?? '/images/blank.png';
 								return (
 									<a href={`/${currentLang}/blog/${slug}/`} class="featured-card group">
 										<div class="featured-card__image">
@@ -123,7 +123,7 @@ const remaining = posts.slice(4);
 		position: relative;
 		margin-inline: -1rem;
 		padding-inline: 1rem;
-		padding-bottom: 0.35rem;
+		padding-bottom: 3rem;
 	}
 
 	.featured-container::after {
@@ -222,8 +222,8 @@ const remaining = posts.slice(4);
 	.featured-card__title {
 		font-size: 1.35rem;
 		font-weight: 600;
-		color: rgb(248, 249, 250);
 		line-height: 1.4;
+		margin-top: 0;
 	}
 
 	@media (max-width: 640px) {
@@ -270,4 +270,4 @@ const remaining = posts.slice(4);
 		color: rgba(203, 213, 225, 0.9);
 	}
 </style>
-				</section>
+</section>

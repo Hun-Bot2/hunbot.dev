@@ -28,7 +28,10 @@ export default defineConfig({
     rehypePlugins: [rehypeKatex],
     drafts: true,
     shikiConfig: {
-      theme: 'github-dark-dimmed',
+      themes: {
+        light: 'github-light',
+        dark: 'github-dark-dimmed',
+      },
       langs: ['python', 'r', 'javascript', 'sql', 'bash', 'typescript'],
       wrap: true,
     },
