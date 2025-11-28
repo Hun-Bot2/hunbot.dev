@@ -32,6 +32,27 @@ const {
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 
+const headingId = 'post-title';
+const proseClass = `prose prose-slate max-w-none text-slate-200 leading-relaxed text-base
+	[&>h1]:text-2xl sm:[&>h1]:text-3xl [&>h1]:font-bold [&>h1]:mt-0 [&>h1]:mb-4 [&>h1]:text-slate-900 [&>h1]:dark:text-white [&>h1]:leading-tight [&>h1]:tracking-tight
+	[&>h2]:text-xl sm:[&>h2]:text-2xl [&>h2]:font-semibold [&>h2]:mt-8 [&>h2]:mb-4 [&>h2]:text-slate-800 [&>h2]:dark:text-slate-50 [&>h2]:leading-tight
+	[&>h3]:text-lg sm:[&>h3]:text-xl [&>h3]:font-semibold [&>h3]:mt-6 [&>h3]:mb-3 [&>h3]:text-slate-800 [&>h3]:dark:text-slate-50 [&>h3]:leading-tight
+	[&>h4]:text-base sm:[&>h4]:text-lg [&>h4]:font-semibold [&>h4]:mt-5 [&>h4]:mb-2 [&>h4]:text-slate-800 [&>h4]:dark:text-slate-50
+	[&>h5]:text-base sm:[&>h5]:text-lg [&>h5]:font-semibold [&>h5]:mt-5 [&>h5]:mb-2 [&>h5]:text-slate-800 [&>h5]:dark:text-slate-50
+	[&>h6]:text-base sm:[&>h6]:text-lg [&>h6]:font-semibold [&>h6]:mt-5 [&>h6]:mb-2 [&>h6]:text-slate-800 [&>h6]:dark:text-slate-50
+	[&>p]:mb-5 [&>p]:text-base [&>p]:leading-relaxed
+	[&>ul]:mb-5 [&>ul]:pl-6 [&>ol]:mb-5 [&>ol]:pl-6
+	[&>li]:mb-2 [&>li]:leading-relaxed
+	[&>pre]:bg-[rgba(15,23,42,0.08)] dark:[&>pre]:bg-[rgba(0,0,0,0.3)] [&>pre]:border [&>pre]:border-slate-200 dark:[&>pre]:border-slate-700 [&>pre]:rounded-lg [&>pre]:p-4 [&>pre]:my-6 [&>pre]:overflow-x-auto [&>pre]:text-sm [&>pre]:text-slate-900 dark:[&>pre]:text-slate-100
+	[&>code]:bg-[rgba(15,23,42,0.08)] dark:[&>code]:bg-[rgba(255,255,255,0.08)] [&>code]:text-slate-900 dark:[&>code]:text-slate-100 [&>code]:border [&>code]:border-slate-200 dark:[&>code]:border-slate-700 [&>code]:rounded [&>code]:px-1 [&>code]:py-0.5 [&>code]:text-sm [&>code]:font-medium
+	[&>a]:text-[rgb(248,249,250)] [&>a]:dark:text-[rgb(248,249,250)] [&>a]:text-slate-900 [&>a]:no-underline [&>a]:transition-colors [&>a]:hover:text-[rgba(248,249,250,0.8)] dark:[&>a]:hover:text-[rgba(248,249,250,0.8)] [&>a]:hover:text-orange-600
+	[&>blockquote]:border-l-4 [&>blockquote]:border-orange-500 [&>blockquote]:my-6 [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:text-slate-300 [&>blockquote]:dark:text-slate-300 [&>blockquote]:text-slate-500
+	[&>table]:w-full [&>table]:border-collapse [&>table]:my-6 [&>table]:text-sm [&>table]:overflow-x-auto [&>table]:block sm:[&>table]:table
+	[&>th]:border [&>th]:border-slate-200 [&>th]:dark:border-slate-700 [&>th]:p-3 [&>th]:text-left [&>th]:bg-slate-50 [&>th]:dark:bg-slate-900 [&>th]:font-semibold
+	[&>td]:border [&>td]:border-slate-200 [&>td]:dark:border-slate-700 [&>td]:p-3 [&>td]:text-left
+	[&>img]:rounded-lg [&>img]:shadow-sm [&>img]:my-6 [&>img]:max-w-full [&>img]:h-auto`;
+const heroImageSizes = '(min-width: 768px) 768px, 100vw';
+
 const schema = {
   "@context": "https://schema.org",
   "@type": "Article",
@@ -81,18 +102,20 @@ const schema = {
 		<Header />
 		<FloatingLanguagePicker availableLangs={availableLangs} />
 		<main class="max-w-4xl mx-auto px-6 py-8">
-			<article>
+			<article aria-labelledby={headingId}>
 				<!-- Hero Image -->
 				{heroImage && (
-					<div class="mb-8">
+					<figure class="mb-8">
 						<img 
 							src={heroImage}
 							alt={title}
 							loading="lazy"
 							decoding="async"
-							class="w-full rounded-lg shadow-sm"
+							sizes={heroImageSizes}
+							class="w-full max-h-[70vh] rounded-lg shadow-sm object-contain"
 						/>
-					</div>
+						{(description || title) && <figcaption class="sr-only">{description || title}</figcaption>}
+					</figure>
 				)}
 				
 				<!-- Breadcrumb Navigation -->
@@ -118,7 +141,7 @@ const schema = {
 					</div>
 					
 					<!-- Title -->
-					<h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 leading-tight tracking-tight mb-4">
+					<h1 id={headingId} class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 leading-tight tracking-tight mb-4">
 						{title}
 					</h1>
 					
@@ -135,24 +158,7 @@ const schema = {
 				</div>
 				
 				<!-- Main Content -->
-				<div class="prose prose-slate max-w-none text-slate-200 leading-relaxed text-base
-					[&>h1]:text-2xl sm:[&>h1]:text-3xl [&>h1]:font-bold [&>h1]:mt-0 [&>h1]:mb-4 [&>h1]:text-slate-900 [&>h1]:dark:text-white [&>h1]:leading-tight [&>h1]:tracking-tight
-					[&>h2]:text-xl sm:[&>h2]:text-2xl [&>h2]:font-semibold [&>h2]:mt-8 [&>h2]:mb-4 [&>h2]:text-slate-800 [&>h2]:dark:text-slate-50 [&>h2]:leading-tight
-					[&>h3]:text-lg sm:[&>h3]:text-xl [&>h3]:font-semibold [&>h3]:mt-6 [&>h3]:mb-3 [&>h3]:text-slate-800 [&>h3]:dark:text-slate-50 [&>h3]:leading-tight
-					[&>h4]:text-base sm:[&>h4]:text-lg [&>h4]:font-semibold [&>h4]:mt-5 [&>h4]:mb-2 [&>h4]:text-slate-800 [&>h4]:dark:text-slate-50
-					[&>h5]:text-base sm:[&>h5]:text-lg [&>h5]:font-semibold [&>h5]:mt-5 [&>h5]:mb-2 [&>h5]:text-slate-800 [&>h5]:dark:text-slate-50
-					[&>h6]:text-base sm:[&>h6]:text-lg [&>h6]:font-semibold [&>h6]:mt-5 [&>h6]:mb-2 [&>h6]:text-slate-800 [&>h6]:dark:text-slate-50
-					[&>p]:mb-5 [&>p]:text-base [&>p]:leading-relaxed
-					[&>ul]:mb-5 [&>ul]:pl-6 [&>ol]:mb-5 [&>ol]:pl-6
-					[&>li]:mb-2 [&>li]:leading-relaxed
-					[&>pre]:bg-[rgba(15,23,42,0.08)] dark:[&>pre]:bg-[rgba(0,0,0,0.3)] [&>pre]:border [&>pre]:border-slate-200 dark:[&>pre]:border-slate-700 [&>pre]:rounded-lg [&>pre]:p-4 [&>pre]:my-6 [&>pre]:overflow-x-auto [&>pre]:text-sm [&>pre]:text-slate-900 dark:[&>pre]:text-slate-100
-					[&>code]:bg-[rgba(15,23,42,0.08)] dark:[&>code]:bg-[rgba(255,255,255,0.08)] [&>code]:text-slate-900 dark:[&>code]:text-slate-100 [&>code]:border [&>code]:border-slate-200 dark:[&>code]:border-slate-700 [&>code]:rounded [&>code]:px-1 [&>code]:py-0.5 [&>code]:text-sm [&>code]:font-medium
-					[&>a]:text-[rgb(248,249,250)] [&>a]:dark:text-[rgb(248,249,250)] [&>a]:text-slate-900 [&>a]:no-underline [&>a]:transition-colors [&>a]:hover:text-[rgba(248,249,250,0.8)] dark:[&>a]:hover:text-[rgba(248,249,250,0.8)] [&>a]:hover:text-orange-600
-					[&>blockquote]:border-l-4 [&>blockquote]:border-orange-500 [&>blockquote]:my-6 [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:text-slate-300 [&>blockquote]:dark:text-slate-300 [&>blockquote]:text-slate-500
-					[&>table]:w-full [&>table]:border-collapse [&>table]:my-6 [&>table]:text-sm [&>table]:overflow-x-auto [&>table]:block sm:[&>table]:table
-					[&>th]:border [&>th]:border-slate-200 [&>th]:dark:border-slate-700 [&>th]:p-3 [&>th]:text-left [&>th]:bg-slate-50 [&>th]:dark:bg-slate-900 [&>th]:font-semibold
-					[&>td]:border [&>td]:border-slate-200 [&>td]:dark:border-slate-700 [&>td]:p-3 [&>td]:text-left
-					[&>img]:rounded-lg [&>img]:shadow-sm [&>img]:my-6 [&>img]:max-w-full [&>img]:h-auto">
+				<div class={proseClass}>
 					<slot />
 				</div>
 				

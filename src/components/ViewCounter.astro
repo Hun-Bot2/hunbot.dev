@@ -14,7 +14,7 @@ const baseKey = counterKey ?? Astro.url?.pathname ?? 'home';
 const trimmedKey = baseKey.replace(/^\/+/, '').replace(/\/+$/, '');
 const sanitizedKey = (trimmedKey || 'home').replace(/[^a-zA-Z0-9_-]/g, '-').toLowerCase();
 const elementId = `view-counter-${sanitizedKey}`;
-const namespace = 'hun-bot.dev-blog';
+const namespace = import.meta.env.PUBLIC_VIEW_COUNTER_NAMESPACE?.trim() || 'hun-bot.dev';
 ---
 
 <div
@@ -48,55 +48,67 @@ const namespace = 'hun-bot.dev-blog';
 	</div>
 </div>
 
-<script is:inline data-target={elementId} data-namespace={namespace}>
+<script is:inline>
 {
-	const script = document.currentScript;
-	if (!script) return;
-	const elementId = script.dataset.target;
-	const namespace = script.dataset.namespace || 'hun-bot.dev-blog';
-	if (!elementId) return;
+	const run = () => {
+		const containers = Array.from(document.querySelectorAll('.view-counter[data-view-key]'));
+		if (!containers.length) return;
 
-	const init = () => {
-		const container = document.getElementById(elementId);
-		if (!container) return;
-		const valueEl = container.querySelector('[data-view-value]');
-		if (!(valueEl instanceof HTMLElement)) return;
-		const key = container.dataset.viewKey || 'home';
-		const errorText = container.dataset.errorText || 'n/a';
-		const setValue = (value) => {
-			valueEl.textContent = new Intl.NumberFormat(undefined).format(value);
-			valueEl.dataset.status = 'ready';
-		};
-		const setError = () => {
-			valueEl.textContent = errorText;
-			valueEl.dataset.status = 'error';
-		};
-		const fetchCount = (mode) => {
+		const numberFormatter = new Intl.NumberFormat(undefined);
+
+		containers.forEach((container) => {
+			// Avoid double-initializing on rerenders
+			if (container.dataset.status === 'ready' || container.dataset.status === 'error') return;
+
+			const valueEl = container.querySelector('[data-view-value]');
+			if (!valueEl) return;
+
+			const key = container.dataset.viewKey || 'home';
+			const errorText = container.dataset.errorText || 'n/a';
 			const encodedKey = encodeURIComponent(key);
-			const url = `https://api.countapi.xyz/${mode}/${namespace}/${encodedKey}`;
-			return fetch(url).then((res) => {
-				if (!res.ok) throw new Error('Network response was not ok');
-				return res.json();
-			});
-		};
-		fetchCount('hit')
-			.then((data) => {
-				if (typeof data?.value !== 'number') throw new Error('Invalid payload');
-				setValue(data.value);
-			})
-			.catch(() => {
-				fetchCount('get')
-					.then((data) => {
-						if (typeof data?.value !== 'number') throw new Error('Invalid payload');
-						setValue(data.value);
-					})
-					.catch(setError);
-			});
+			const url = (mode) => `https://api.countapi.xyz/${mode}/${namespace}/${encodedKey}`;
+			const setValue = (value) => {
+				valueEl.textContent = numberFormatter.format(value);
+				valueEl.dataset.status = 'ready';
+			};
+			const setError = () => {
+				valueEl.textContent = errorText;
+				valueEl.dataset.status = 'error';
+			};
+
+			// Timeout guard so we never leave "집계 중..." hanging
+			const timeoutId = window.setTimeout(setError, 5000);
+
+			fetch(url('hit'))
+				.then((res) => {
+					if (!res.ok) throw new Error('Network response was not ok');
+					return res.json();
+				})
+				.then((data) => {
+					if (typeof data?.value !== 'number') throw new Error('Invalid payload');
+					setValue(data.value);
+					clearTimeout(timeoutId);
+				})
+				.catch(() => {
+					fetch(url('get'))
+						.then((res) => {
+							if (!res.ok) throw new Error('Network response was not ok');
+							return res.json();
+						})
+						.then((data) => {
+							if (typeof data?.value !== 'number') throw new Error('Invalid payload');
+							setValue(data.value);
+						})
+						.catch(setError)
+						.finally(() => clearTimeout(timeoutId));
+				});
+		});
 	};
+
 	if (document.readyState === 'loading') {
-		document.addEventListener('DOMContentLoaded', init, { once: true });
+		document.addEventListener('DOMContentLoaded', run, { once: true });
 	} else {
-		init();
+		run();
 	}
 }
 </script>
