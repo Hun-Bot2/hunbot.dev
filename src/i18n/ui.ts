@@ -49,6 +49,27 @@ export const ui = {
     'about.status': '재학 중',
     'about.university-desc':
       '컴퓨터교육과에서 프로그래밍과 소프트웨어 개발 기초를, 뇌인지과학에서 AI · 데이터 · 3D Vision을 공부하며 “사람이 쓰는 AI 서비스”를 만드는 관점을 기르고 있습니다.',
+    'about.academics.title': 'Educational Background',
+    'about.academics.subtitle': '학부생 — 성균관대학교 컴퓨터교육과 · 뇌인지과학',
+    'about.academics.cs.title': '컴퓨터공학 · SW 전공',
+    'about.academics.cs.courses':
+      '자료구조 · 운영체제 · 컴퓨터 그래픽스\n' +
+      '컴퓨터 구조 · 네트워크 구조\n' +
+      '리눅스 시스템 프로그래밍 · 소프트웨어 공학',
+    'about.academics.ai.title': 'AI · 머신러닝 전공',
+    'about.academics.ai.courses':
+      '기계학습 이론 · 딥러닝\n' +
+      '인공지능 · 전략적 AI\n' +
+      '인지신경과학 · 데이터 보안 · AI 윤리',
+    'about.academics.backend.title': '백엔드 · 프로그래밍 기초',
+    'about.academics.backend.courses':
+      'C 프로그래밍 · 데이터베이스 시스템\n' +
+      '게임 프로그래밍 (C# + Unity, 흥미를 느껴 수강)',
+    'about.academics.edu.title': '교육 · 뇌인지과학 (복수전공)',
+    'about.academics.edu.courses':
+      '심리학 · 철학 · 인지과학 기초\n' +
+      '교육행정 · 교육실습\n' +
+      '교육 AI · 인간 학습 이론',
 
     'about.tech-stack': 'Tech Stack & Interests',
 
@@ -96,16 +117,16 @@ export const ui = {
     'about.timeline.2.title': 'Hun-Bot.dev 다국어 블로그 운영',
     'about.timeline.2.period': '2025- 현재',
     'about.timeline.2.body':
-      'AI, 개발 로그,글쓰기 회고를 한국어 · 일본어 · 영어로 정리하며, 코드뿐 아니라 문제 정의와 시행착오까지 함께 공유합니다.',
+      '꾸준히 작성해보려고 합니다.',
 
-    'about.features.title': '더 읽어보기',
+    'about.features.title': 'Personal Links',
     'about.features.note.title': 'Study Log',
     'about.features.note.description':
       '학교에서 배운 내용들 및 스스로 공부하는 내용을 총 정리하기로 마음먹고 시작한 Github Page입니다.',
     'about.features.github.title': 'Portfolio',
     'about.features.github.description':
-      '개인 프로젝트와 각종 활동들을 정리한 포트폴리오 사이트입니다.',
-    'about.features.view-more': '자세히 보기',
+      '개인 프로젝트와 각종 활동들을 정리한 포트폴리오 사이트입니다. 아직 제작중에 있습니다',
+    'about.features.view-more': '공사중....',
   },
 
   jp: {
@@ -148,6 +169,27 @@ export const ui = {
     'about.status': '在学中',
     'about.university-desc':
       'コンピュータ教育学科でプログラミングとソフトウェア開発の基礎を学びつつ、知能情報融合専攻で AI・データ・3D Vision を学び、「人が使えるAIサービス」をつくる視点を育てています。',
+    'about.academics.title': 'アカデミックバックグラウンド',
+    'about.academics.subtitle': '学部生 — 成均館大学 コンピュータ教育学科・認知科学（複合専攻）',
+    'about.academics.cs.title': 'コンピュータサイエンス / 工学科目',
+    'about.academics.cs.courses':
+      'データ構造・オペレーティングシステム・コンピュータグラフィックス\n' +
+      'コンピュータアーキテクチャ・ネットワークアーキテクチャ\n' +
+      'Linuxシステムプログラミング・ソフトウェア工学',
+    'about.academics.ai.title': 'AI・機械学習科目',
+    'about.academics.ai.courses':
+      '機械学習理論・ディープラーニング\n' +
+      '人工知能・戦略AI\n' +
+      '認知神経科学・データセキュリティ・AI倫理',
+    'about.academics.backend.title': 'バックエンド / プログラミング基礎',
+    'about.academics.backend.courses':
+      'Cプログラミング・データベースシステム\n' +
+      'ゲームプログラミング（C# + Unity、興味が湧いて受講）',
+    'about.academics.edu.title': '教育・認知科学（ダブルメジャー）',
+    'about.academics.edu.courses':
+      '心理学・哲学・認知科学の基礎\n' +
+      '教育行政・教育実習\n' +
+      '教育AI・人間の学習理論',
 
     'about.tech-stack': '技術スタック & 興味',
 
@@ -246,6 +288,27 @@ export const ui = {
     'about.status': 'Currently Enrolled',
     'about.university-desc':
       'Studying programming, software engineering, and AI-related topics while exploring data and 3D vision, with a focus on turning ideas into AI-powered services people can actually use.',
+    'about.academics.title': 'Academic Background',
+    'about.academics.subtitle': 'Undergraduate Student — SKKU Computer Education & Cognitive Science',
+    'about.academics.cs.title': 'Computer Science & Engineering Coursework',
+    'about.academics.cs.courses':
+      'Data Structures · Operating Systems · Computer Graphics\n' +
+      'Computer Organization · Network Organization\n' +
+      'Linux System Programming · Software Engineering',
+    'about.academics.ai.title': 'AI & Machine Learning Coursework',
+    'about.academics.ai.courses':
+      'Machine Learning Theory · Deep Learning\n' +
+      'Artificial Intelligence · Strategic AI\n' +
+      'Cognitive Neuroscience · Data Security · AI Ethics',
+    'about.academics.backend.title': 'Backend & Programming Fundamentals',
+    'about.academics.backend.courses':
+      'C Programming · Database Systems\n' +
+      'Game Programming (C# + Unity — enrolled because it sparked my curiosity)',
+    'about.academics.edu.title': 'Education & Cognitive Science (Double Major)',
+    'about.academics.edu.courses':
+      'Psychology · Philosophy · Cognitive Science Fundamentals\n' +
+      'Educational Administration · Teaching Practice\n' +
+      'AI in Education · Human Learning Theories',
 
     'about.tech-stack': 'Tech Stack & Interests',
 

@@ -82,13 +82,13 @@ const featureLinks = [
 		title: t('about.features.note.title'),
 		description: t('about.features.note.description'),
 		href: 'https://hun-bot2.github.io/study/',
-		badge: 'Journal',
+		badge: 'Study Log',
 	},
 	{
 		title: t('about.features.github.title'),
 		description: t('about.features.github.description'),
-		href: 'https://github.com/Hun-Bot2/Hun-Bot2',
-		badge: 'GitHub',
+		href: 'https://hun-bot2.github.io',
+		badge: 'Portfolio',
 	},
 ];
 ---
@@ -323,23 +323,6 @@ const featureLinks = [
 					</a>
 				))}
 			</div>
-		</section>
-
-		<!-- 연락처 섹션 - CTA 버튼만 심플하게 -->
-		<section class="text-center space-y-8 py-16">
-			<h2 class="text-3xl font-bold text-orange-800 dark:text-orange-300">
-				{t('about.contact')}
-			</h2>
-			<p class="text-xl text-slate-600 dark:text-gray-400 leading-relaxed max-w-2xl mx-auto">
-				{t('about.contact-desc')}<br>
-				{t('about.contact-desc2')}
-			</p>
-			<a 
-				href="mailto:contact@hun-bot.dev" 
-				class="inline-flex items-center gap-2 px-8 py-4 text-lg font-semibold text-white bg-orange-600 hover:bg-orange-700 rounded-full transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
-			>
-				{t('about.send-email')}
-			</a>
 		</section>
 		</main>
 
