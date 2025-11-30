@@ -51,12 +51,12 @@ export const ui = {
       '컴퓨터교육과에서 프로그래밍과 소프트웨어 개발 기초를, 뇌인지과학에서 AI · 데이터 · 3D Vision을 공부하며 “사람이 쓰는 AI 서비스”를 만드는 관점을 기르고 있습니다.',
     'about.academics.title': 'Educational Background',
     'about.academics.subtitle': '학부생 — 성균관대학교 컴퓨터교육과 · 뇌인지과학',
-    'about.academics.cs.title': '컴퓨터공학 · SW 전공',
+    'about.academics.cs.title': '컴퓨터공학',
     'about.academics.cs.courses':
       '자료구조 · 운영체제 · 컴퓨터 그래픽스\n' +
       '컴퓨터 구조 · 네트워크 구조\n' +
       '리눅스 시스템 프로그래밍 · 소프트웨어 공학',
-    'about.academics.ai.title': 'AI · 머신러닝 전공',
+    'about.academics.ai.title': 'AI',
     'about.academics.ai.courses':
       '기계학습 이론 · 딥러닝\n' +
       '인공지능 · 전략적 AI\n' +
@@ -176,7 +176,7 @@ export const ui = {
       'データ構造・オペレーティングシステム・コンピュータグラフィックス\n' +
       'コンピュータアーキテクチャ・ネットワークアーキテクチャ\n' +
       'Linuxシステムプログラミング・ソフトウェア工学',
-    'about.academics.ai.title': 'AI・機械学習科目',
+    'about.academics.ai.title': 'AI',
     'about.academics.ai.courses':
       '機械学習理論・ディープラーニング\n' +
       '人工知能・戦略AI\n' +
@@ -295,7 +295,7 @@ export const ui = {
       'Data Structures · Operating Systems · Computer Graphics\n' +
       'Computer Organization · Network Organization\n' +
       'Linux System Programming · Software Engineering',
-    'about.academics.ai.title': 'AI & Machine Learning Coursework',
+    'about.academics.ai.title': 'AI Coursework',
     'about.academics.ai.courses':
       'Machine Learning Theory · Deep Learning\n' +
       'Artificial Intelligence · Strategic AI\n' +
