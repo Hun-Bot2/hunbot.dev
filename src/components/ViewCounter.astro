@@ -14,7 +14,7 @@ const baseKey = counterKey ?? Astro.url?.pathname ?? 'home';
 const trimmedKey = baseKey.replace(/^\/+/, '').replace(/\/+$/, '');
 const sanitizedKey = (trimmedKey || 'home').replace(/[^a-zA-Z0-9_-]/g, '-').toLowerCase();
 const elementId = `view-counter-${sanitizedKey}`;
-const namespace = import.meta.env.PUBLIC_VIEW_COUNTER_NAMESPACE?.trim() || 'hun-bot.dev';
+const viewCounterNamespace = import.meta.env.PUBLIC_VIEW_COUNTER_NAMESPACE?.trim() || 'hun-bot.dev';
 ---
 
 <div
@@ -48,9 +48,13 @@ const namespace = import.meta.env.PUBLIC_VIEW_COUNTER_NAMESPACE?.trim() || 'hun-
 	</div>
 </div>
 
-<script is:inline>
+<script is:inline data-namespace={viewCounterNamespace}>
 {
 	const run = () => {
+		const script = document.currentScript;
+		const ns = script?.dataset.namespace || 'hun-bot.dev';
+		if (!ns) return;
+
 		const containers = Array.from(document.querySelectorAll('.view-counter[data-view-key]'));
 		if (!containers.length) return;
 
@@ -66,7 +70,7 @@ const namespace = import.meta.env.PUBLIC_VIEW_COUNTER_NAMESPACE?.trim() || 'hun-
 			const key = container.dataset.viewKey || 'home';
 			const errorText = container.dataset.errorText || 'n/a';
 			const encodedKey = encodeURIComponent(key);
-			const url = (mode) => `https://api.countapi.xyz/${mode}/${namespace}/${encodedKey}`;
+			const url = (mode) => `https://api.countapi.xyz/${mode}/${ns}/${encodedKey}`;
 			const setValue = (value) => {
 				valueEl.textContent = numberFormatter.format(value);
 				valueEl.dataset.status = 'ready';
