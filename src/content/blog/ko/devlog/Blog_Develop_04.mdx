@@ -1,0 +1,64 @@
+---
+title: '블로그 개발일지 04'
+description: 'Counter, 조회수 기능 넣기'
+pubDate: '2025-11-28'
+# heroImage: '/images/giscus.png'
+tags: ['Devlog', 'Bug Fix']
+category: 'devlog'
+---
+
+[이전 글](./Blog_Develop_03.mdx)에서 이어집니다.  
+이전 글에서 라이트 테마에서 코드가 잘 안 보이는 문제가 있다고 했는데, 이 부분은 CSS 스타일 문제여서 쉽게(?) 수정할 수 있었다.  
+한 2시간~3시간 정도 삽질해서 CSS 수정을 완료했고, 아래와 같이 잘 보이도록 정리했다.
+
+```css
+.prose pre.astro-code {
+  margin: var(--spacing-8) 0;
+  padding: var(--spacing-4);
+  border-radius: 0.75rem;
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
+}
+```
+
+## 문제점
+- 코드 하이라이트가 Shiki에서 알아서 테마를 맞춰 주는데, 내가 global.css에서 `code`와 `pre`에 따로 색상과 배경을 덧씌워버렸다.
+- 그 스타일이 **어두운 배경 + 흰색 글자** 기준이라, 라이트 모드에서는 글자가 거의 안 보였다.
+
+## 과거 코드
+```css
+code {
+  padding: 2px 5px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  font-family: 'JetBrains Mono', Monaco, Consolas, 'Courier New', monospace;
+  font-size: 0.85em;
+  color: rgb(248, 249, 250);
+}
+
+pre {
+  padding: var(--spacing-4);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.3);
+  overflow-x: auto;
+  margin-bottom: var(--spacing-8);
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+```
+
+## 현재 코드
+```css
+.prose pre.astro-code {
+  margin: var(--spacing-8) 0;
+  padding: var(--spacing-4);
+  border-radius: 0.75rem;
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
+}
+```
+
+## 무엇을 고쳤나
+- **덮어쓰던 색상 제거**: `code`와 `pre`에 강제로 흰 글자/어두운 배경을 넣던 부분을 걷어냈다. 이제 Shiki가 라이트/다크에 맞춰 준 색을 그대로 쓴다.
+- **타깃 명확히**: `.prose pre.astro-code`로 범위를 줄여 블로그 본문 코드 블록만 스타일링한다.
+- **시각적 가이드만 남김**: 색상 대신 여백, 라운드, 얇은 테두리만 추가해서 라이트 모드에서도 경계가 보이도록 했다. 다크 모드도 기존 테마 색상을 유지한다.
