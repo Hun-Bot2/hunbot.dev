@@ -69,10 +69,16 @@ const goatcounterCode = import.meta.env.PUBLIC_GOATCOUNTER_CODE?.trim() || '';
 
 			const key = container.dataset.viewKey || 'home';
 			const errorText = container.dataset.errorText || 'n/a';
-			
+
+			if (!code) {
+				setError();
+				return;
+			}
+
+			const path = key.startsWith('/') ? key : `/${key}`;
 			// GoatCounter API endpoint for fetching view counts
-			const apiUrl = `https://${code}.goatcounter.com/counter/${encodeURIComponent('/' + key)}.json`;
-			
+			const apiUrl = `https://${code}.goatcounter.com/counter/${encodeURIComponent(path)}.json`;
+
 			const setValue = (value) => {
 				valueEl.textContent = numberFormatter.format(value);
 				container.dataset.status = 'ready';
@@ -85,7 +91,7 @@ const goatcounterCode = import.meta.env.PUBLIC_GOATCOUNTER_CODE?.trim() || '';
 			// Timeout guard so we never leave "집계 중..." hanging
 			const timeoutId = window.setTimeout(setError, 5000);
 
-			fetch(apiUrl)
+			fetch(apiUrl, { cache: 'no-store' })
 				.then((res) => {
 					if (!res.ok) throw new Error('Network response was not ok');
 					return res.json();
