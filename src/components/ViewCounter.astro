@@ -91,9 +91,10 @@ const goatcounterCode = import.meta.env.PUBLIC_GOATCOUNTER_CODE?.trim() || '';
 					return res.json();
 				})
 				.then((data) => {
-					// GoatCounter returns { count: number, count_unique: number }
-					const count = data?.count || data?.count_unique || 0;
-					if (typeof count !== 'number') throw new Error('Invalid payload');
+					// GoatCounter returns { count: "1", count_unique: "1" } as strings
+					const countStr = data?.count || data?.count_unique || '0';
+					const count = parseInt(countStr, 10);
+					if (isNaN(count)) throw new Error('Invalid payload');
 					setValue(count);
 					clearTimeout(timeoutId);
 				})
