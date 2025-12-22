@@ -14,7 +14,7 @@ const baseKey = counterKey ?? Astro.url?.pathname ?? 'home';
 const trimmedKey = baseKey.replace(/^\/+/, '').replace(/\/+$/, '');
 const sanitizedKey = (trimmedKey || 'home').replace(/[^a-zA-Z0-9_-]/g, '-').toLowerCase();
 const elementId = `view-counter-${sanitizedKey}`;
-const viewCounterNamespace = import.meta.env.PUBLIC_VIEW_COUNTER_NAMESPACE?.trim() || 'hun-bot.dev';
+const goatcounterCode = import.meta.env.PUBLIC_GOATCOUNTER_CODE?.trim() || '';
 ---
 
 <div
@@ -48,12 +48,12 @@ const viewCounterNamespace = import.meta.env.PUBLIC_VIEW_COUNTER_NAMESPACE?.trim
 	</div>
 </div>
 
-<script is:inline data-namespace={viewCounterNamespace}>
+<script is:inline data-goatcounter-code={goatcounterCode}>
 {
 	const run = () => {
 		const script = document.currentScript;
-		const ns = script?.dataset.namespace || 'hun-bot.dev';
-		if (!ns) return;
+		const code = script?.dataset.goatcounterCode || '';
+		if (!code) return;
 
 		const containers = Array.from(document.querySelectorAll('.view-counter[data-view-key]'));
 		if (!containers.length) return;
@@ -69,42 +69,38 @@ const viewCounterNamespace = import.meta.env.PUBLIC_VIEW_COUNTER_NAMESPACE?.trim
 
 			const key = container.dataset.viewKey || 'home';
 			const errorText = container.dataset.errorText || 'n/a';
-			const encodedKey = encodeURIComponent(key);
-			const url = (mode) => `https://api.countapi.xyz/${mode}/${ns}/${encodedKey}`;
+			
+			// GoatCounter API endpoint for fetching view counts
+			const apiUrl = `https://${code}.goatcounter.com/counter/${encodeURIComponent('/' + key)}.json`;
+			
 			const setValue = (value) => {
 				valueEl.textContent = numberFormatter.format(value);
-				valueEl.dataset.status = 'ready';
+				container.dataset.status = 'ready';
 			};
 			const setError = () => {
 				valueEl.textContent = errorText;
-				valueEl.dataset.status = 'error';
+				container.dataset.status = 'error';
 			};
 
 			// Timeout guard so we never leave "집계 중..." hanging
 			const timeoutId = window.setTimeout(setError, 5000);
 
-			fetch(url('hit'))
+			fetch(apiUrl)
 				.then((res) => {
 					if (!res.ok) throw new Error('Network response was not ok');
 					return res.json();
 				})
 				.then((data) => {
-					if (typeof data?.value !== 'number') throw new Error('Invalid payload');
-					setValue(data.value);
+					// GoatCounter returns { count: number, count_unique: number }
+					const count = data?.count || data?.count_unique || 0;
+					if (typeof count !== 'number') throw new Error('Invalid payload');
+					setValue(count);
 					clearTimeout(timeoutId);
 				})
-				.catch(() => {
-					fetch(url('get'))
-						.then((res) => {
-							if (!res.ok) throw new Error('Network response was not ok');
-							return res.json();
-						})
-						.then((data) => {
-							if (typeof data?.value !== 'number') throw new Error('Invalid payload');
-							setValue(data.value);
-						})
-						.catch(setError)
-						.finally(() => clearTimeout(timeoutId));
+				.catch((err) => {
+					console.error('GoatCounter fetch error:', err);
+					setError();
+					clearTimeout(timeoutId);
 				});
 		});
 	};
