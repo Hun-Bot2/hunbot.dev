@@ -1,180 +1,35 @@
 ---
-import type { UILanguage } from '../i18n/ui';
-import { useTranslations } from '../i18n/ui';
-
 type Props = {
-	lang?: UILanguage;
 	counterKey?: string;
 };
 
-const { lang = 'ko', counterKey } = Astro.props as Props;
-const t = useTranslations(lang);
+const { counterKey } = Astro.props as Props;
 
 const baseKey = counterKey ?? Astro.url?.pathname ?? 'home';
 const trimmedKey = baseKey.replace(/^\/+/, '').replace(/\/+$/, '');
-const sanitizedKey = (trimmedKey || 'home').replace(/[^a-zA-Z0-9_-]/g, '-').toLowerCase();
-const elementId = `view-counter-${sanitizedKey}`;
-const goatcounterCode = import.meta.env.PUBLIC_GOATCOUNTER_CODE?.trim() || '';
+const sanitizedKey = (trimmedKey || 'home').replace(/[^a-zA-Z0-9_/-]/g, '-').toLowerCase();
+
+// hits.sh 배지 URL
+const hitsUrl = `https://hits.sh/hun-bot.dev/${sanitizedKey}.svg?style=flat&label=Views&extraCount=0&color=f97316&labelColor=0f172a`;
 ---
 
-<div
-	id={elementId}
-	class="view-counter"
-	data-view-key={sanitizedKey}
-	data-error-text={t('blog.views-error')}
-	aria-live="polite"
->
-	<div class="view-counter__icon" aria-hidden="true">
-		<svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-			<path
-				d="M1.5 12C1.5 12 5.25 5.25 12 5.25C18.75 5.25 22.5 12 22.5 12C22.5 12 18.75 18.75 12 18.75C5.25 18.75 1.5 12 1.5 12Z"
-				stroke="currentColor"
-				stroke-width="1.5"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			/>
-			<path
-				d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z"
-				stroke="currentColor"
-				stroke-width="1.5"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			/>
-		</svg>
-	</div>
-	<div class="view-counter__body">
-		<span class="view-counter__label">{t('blog.views')}</span>
-		<span class="view-counter__value" data-view-value>{t('blog.views-loading')}</span>
-	</div>
+<div class="view-counter">
+	<img 
+		src={hitsUrl}
+		alt="Page views"
+		loading="lazy"
+		class="view-counter__badge"
+	/>
 </div>
-
-<script is:inline data-goatcounter-code={goatcounterCode}>
-{
-	const run = () => {
-		const script = document.currentScript;
-		const code = script?.dataset.goatcounterCode || '';
-		if (!code) return;
-
-		const containers = Array.from(document.querySelectorAll('.view-counter[data-view-key]'));
-		if (!containers.length) return;
-
-		const numberFormatter = new Intl.NumberFormat(undefined);
-
-		containers.forEach((container) => {
-			// Avoid double-initializing on rerenders
-			if (container.dataset.status === 'ready' || container.dataset.status === 'error') return;
-
-			const valueEl = container.querySelector('[data-view-value]');
-			if (!valueEl) return;
-
-			const key = container.dataset.viewKey || 'home';
-			const errorText = container.dataset.errorText || 'n/a';
-
-			if (!code) {
-				setError();
-				return;
-			}
-
-			const path = key.startsWith('/') ? key : `/${key}`;
-			// GoatCounter API endpoint for fetching view counts
-			const apiUrl = `https://${code}.goatcounter.com/counter/${encodeURIComponent(path)}.json`;
-
-			const setValue = (value) => {
-				valueEl.textContent = numberFormatter.format(value);
-				container.dataset.status = 'ready';
-			};
-			const setError = () => {
-				valueEl.textContent = errorText;
-				container.dataset.status = 'error';
-			};
-
-			// Timeout guard so we never leave "집계 중..." hanging
-			const timeoutId = window.setTimeout(setError, 5000);
-
-			fetch(apiUrl, { cache: 'no-store' })
-				.then((res) => {
-					if (!res.ok) throw new Error('Network response was not ok');
-					return res.json();
-				})
-				.then((data) => {
-					// GoatCounter returns { count: "1", count_unique: "1" } as strings
-					const countStr = data?.count || data?.count_unique || '0';
-					const count = parseInt(countStr, 10);
-					if (isNaN(count)) throw new Error('Invalid payload');
-					setValue(count);
-					clearTimeout(timeoutId);
-				})
-				.catch((err) => {
-					console.error('GoatCounter fetch error:', err);
-					setError();
-					clearTimeout(timeoutId);
-				});
-		});
-	};
-
-	if (document.readyState === 'loading') {
-		document.addEventListener('DOMContentLoaded', run, { once: true });
-	} else {
-		run();
-	}
-}
-</script>
 
 <style>
 	.view-counter {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.35rem;
-		padding: 0.25rem 0.6rem;
-		border-radius: 999px;
-		border: 1px solid rgba(248, 249, 250, 0.12);
-		background: rgba(15, 23, 42, 0.25);
-		color: rgba(248, 249, 250, 0.85);
-		font-size: 0.75rem;
-		line-height: 1rem;
 	}
 
-	:global(body.light-theme) .view-counter {
-		background: rgba(248, 249, 250, 0.6);
-		color: #0f172a;
-		border-color: rgba(15, 23, 42, 0.08);
-	}
-
-	.view-counter__icon {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		color: rgba(249, 115, 22, 0.9);
-	}
-
-	:global(body.light-theme) .view-counter__icon {
-		color: rgba(249, 115, 22, 0.8);
-	}
-
-	.view-counter__body {
-		display: inline-flex;
-		align-items: baseline;
-		gap: 0.35rem;
-	}
-
-	.view-counter__label {
-		font-size: 0.65rem;
-		text-transform: uppercase;
-		letter-spacing: 0.08em;
-		color: rgba(248, 249, 250, 0.65);
-	}
-
-	:global(body.light-theme) .view-counter__label {
-		color: rgba(15, 23, 42, 0.55);
-	}
-
-	.view-counter__value {
-		font-weight: 600;
-		color: rgba(248, 249, 250, 0.95);
-		font-size: 0.8rem;
-	}
-
-	:global(body.light-theme) .view-counter__value {
-		color: #0f172a;
+	.view-counter__badge {
+		height: 20px;
+		border-radius: 4px;
 	}
 </style>
