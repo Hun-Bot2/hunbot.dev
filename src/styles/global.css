@@ -361,6 +361,10 @@ body.light-theme .prose blockquote {
 	color: #475569 !important;
 }
 
+.prose strong, .prose b {
+	font-weight: 700 !important;
+}
+
 h1,
 h2,
 h3,
