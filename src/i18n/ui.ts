@@ -34,99 +34,91 @@ export const ui = {
 
     'about.title': '소개',
     'about.description': 'Hun Bot의 소개 페이지입니다.',
-    'about.greeting': '안녕하세요, 남정훈입니다!',
+    'about.greeting': '안녕하세요, AI Product Engineer를 목표하고 있는 남정훈입니다.',
     'about.intro':
-    'LLM, 컴퓨터 비전에 관심이 있고, Go/Python 기반 백엔드를 다루는 AI & 백엔드 개발자입니다.\n'+ 
-    '최근에는 3D 인터랙티브 포트폴리오, 한국어 문법 교정용 VSCode 확장, 해커톤을 위해 제작한 Go 기반 프로덕션 백엔드, TypeScript 기반 성장 그래프 시각화 도구 등을 만들었습니다.\n'+
-    '새로운 기술을 탐색하는 과정을 즐기며, 단순한 성과나 고소득보다 ‘지속 가능하고 즐거운 개발자 삶’을 더 중요하게 생각합니다.'
-  
-    ,
-    'about.connect': 'Connect with me',
+    '우리 삶에는 AI가 비집고 들어올 부분이 많지만, 그것이 효율적임을 장담할 순 없다고 생각합니다.\n' +
+    '단순하게 제품을 만들어 내는 것이 아닌, 누군가에겐 필요한 제품을 만들려고 공부하고 있습니다.',
+    
+    'about.stats.role': '현재 역할',
+    'about.stats.role.value': '학생',
+    'about.stats.location': '지역',
+    'about.stats.location.value': '서울 · 대한민국',
+    'about.stats.focus': '관심 주제',
+    'about.stats.focus.value': 'MLOps, LLM, 3D Web, CV',
+    'about.stats.languages': '사용 언어',
+    'about.stats.languages.value': '한국어(모국어)\n'+ '日本語(일상회화)\n' + 'English(일상회화)',
 
+    'about.connect': 'Connect with me',
     'about.education': 'Education',
     'about.university': '성균관대학교 (Sungkyunkwan University)',
     'about.major': '컴퓨터교육과 / 뇌인지과학(자기설계융합전공)',
     'about.status': '재학 중',
     'about.university-desc':
-      '컴퓨터교육과에서 프로그래밍과 소프트웨어 개발 기초를, 뇌인지과학에서 AI · 데이터 · 3D Vision을 공부하며 “사람이 쓰는 AI 서비스”를 만드는 관점을 기르고 있습니다.',
+      '곧 졸업을 앞두고 있는 성균관대학교 컴퓨터교육과 학생입니다. 컴퓨터교육과에서 프로그래밍과 소프트웨어 개발의 기초를 배우고, 뇌인지과학(지능정보융합전공)에서 AI · LLM · 3D Vision을 공부하며 "사람이 쓸 수 있는 AI 서비스"를 만드는 관점을 키우고 있습니다.',
     'about.academics.title': 'Educational Background',
     'about.academics.subtitle': '학부생 — 성균관대학교 컴퓨터교육과 · 뇌인지과학',
-    'about.academics.cs.title': '컴퓨터공학',
+    'about.academics.cs.title': 'Computer Science',
     'about.academics.cs.courses':
-      '자료구조 · 운영체제 · 컴퓨터 그래픽스\n' +
-      '컴퓨터 구조 · 네트워크 구조\n' +
-      '리눅스 시스템 프로그래밍 · 소프트웨어 공학',
-    'about.academics.ai.title': 'AI',
+      '운영체제 · 소프트웨어공학 · 컴퓨터그래픽스개론\n' +
+      '· 자료구조 · 컴퓨터 구조 · 네트워크 구조\n' +
+      '· 리눅스 시스템 프로그래밍 · 데이터베이스 시스템',
+    'about.academics.ai.title': 'Artificial Intelligence',
     'about.academics.ai.courses':
-      '기계학습 이론 · 딥러닝\n' +
-      '인공지능 · 전략적 AI\n' +
-      '인지신경과학 · 데이터 보안 · AI 윤리',
-    'about.academics.backend.title': '백엔드 · 프로그래밍 기초',
+      '기계학습원론 · AI기반 전략적의사결정\n' +
+      '· 인공지능개론 · 인지신경과학 · 데이터 보안 · AI 윤리',
+    'about.academics.backend.title': 'Engineering & HCI',
     'about.academics.backend.courses':
-      'C 프로그래밍 · 데이터베이스 시스템\n' +
-      '게임 프로그래밍 (C# + Unity, 흥미를 느껴 수강)',
-    'about.academics.edu.title': '교육 · 뇌인지과학 (복수전공)',
+      'HCI개론 · 기본 프로그래밍(C Lang)\n' +
+      '· 게임 프로그래밍 (C# + Unity)',
+    'about.academics.edu.title': 'Education & Cognitive Science',
     'about.academics.edu.courses':
-      '심리학 · 철학 · 인지과학 기초\n' +
-      '교육행정 · 교육실습\n' +
-      '교육 AI · 인간 학습 이론',
+      '컴퓨터교육개론 · 컴퓨터교과교육론 · 교육실습\n' +
+      '· 교육 심리학 · 교육 철학 · 인지과학 기초',
 
     'about.tech-stack': 'Tech Stack & Interests',
 
-    'about.frontend': 'Frontend / 3D Web',
+    'about.frontend': 'Frontend & Interactive Web',
     'about.frontend-desc':
-      'Three.js로 3D 웹 경험을 만들고, React와 TypeScript로 인터랙티브한 UI와 데이터 시각화를 구현합니다.',
+      '사용자와 제품이 만나는 첫 접점인 웹에서 3D 기술이 주는 몰입감에 주목하며 Three.js를 공부하고 있습니다. React와 TypeScript를 도구로 삼아, 정보를 더 직관적으로 전달할 수 있는 인터랙티브 인터페이스를 연구합니다.',
 
-    'about.backend': 'Backend / Infra',
+    'about.backend': 'Backend & MLOps',
     'about.backend-desc':
-      'Go와 FastAPI로 웹 API를 만들고, PostgreSQL · Supabase · Docker를 사용해 배포와 운영까지 고려한 백엔드 환경을 구성합니다.',
+      '더 빠르고 안정적인 서비스를 제공하고자 Go를 주력으로 백엔드 엔지니어링 역량을 쌓는 중입니다. AI 기술이 실무에서 가치를 내기 위해 필수적인 Airflow, n8n 등 MLOps 환경 구축에 큰 관심을 두고 학습하고 있습니다.',
 
-    'about.ai': 'AI & 3D Vision',
+    'about.ai': 'AI Product Engineering',
     'about.ai-desc':
-      'LLM 파이프라인과 컴퓨터 비전(포즈 추정, 이미지 처리), 3D Vision을 웹 · 백엔드와 연결해, 데모를 넘어서 실제로 쓸 수 있는 AI 기능을 구현합니다.',
+      '복잡한 AI 기술을 프로덕트로 정제하는 과정에 집중합니다. LLM 오케스트레이션과 컴퓨터 비전 기술을 적재적소에 배치하여, 기술 데모를 넘어 실제 운영 가능한 기능을 구현하는 것을 지향합니다.',
 
-    'about.hci': 'Interactive Systems',
+    'about.hci': 'HCI & UX Design',
     'about.hci-desc':
-      '데이터와 사용자 행동을 바탕으로 3D 인터랙션과 시각화를 설계해, “살아 있는” 인터페이스를 만드는 일을 좋아합니다.',
-
-    'about.contact': 'Get in Touch',
-    'about.contact-desc':
-      '편하게 연락주세요!',
-    'about.contact-desc2': '새로운 프로젝트나 협업 기회를 항상 열어두고 있습니다.',
-    'about.send-email': '이메일 보내기',
-
-    'about.stats.role': '현재 역할',
-    'about.stats.role.value': '엔지니어를 꿈꾸는 학생',
-    'about.stats.location': 'Base',
-    'about.stats.location.value': '서울 · 대한민국',
-    'about.stats.focus': '관심 주제',
-    'about.stats.focus.value': 'LLM, 컴퓨터 비전, 3D 웹, 백엔드 개발',
-    'about.stats.languages': '사용 언어',
-    'about.stats.languages.value': '한국어 · 日本語 · English',
-
-    'about.timeline.title': 'Path Highlights',
-    'about.timeline.0.title': '성균관대학교 컴퓨터교육 · 뇌인지과학',
-    'about.timeline.0.period': '2024 - 현재',
+      '뇌인지과학 전공을 바탕으로 "사람이 쓰기 편한 인공지능"을 고민합니다. 사용자 데이터 분석을 통해 경험의 빈틈을 찾고, 기술과 사람 사이의 간극을 줄이는 인터페이스 설계 능력을 기르고 있습니다.',
+    
+    'about.timeline.title': 'Timeline',
+    'about.timeline.0.title': 'Algorithm RAG Engine 개발',
+    'about.timeline.0.period': '2026.01',
     'about.timeline.0.body':
-      '소프트웨어 관련 과목을 들으며 실제 서비스로 이어질 수 있는 프로젝트를 만들고 있습니다.',
-    'about.timeline.1.title': 'Bareun 기반 VSCode Extension 제작',
-    'about.timeline.1.period': '2025-11',
+      '개인 프로젝트로 Algorithm RAG 엔진을 개발하여 사용하고 있습니다.',
+    'about.timeline.1.title': '전공 지식 정리용 github.io 사이트 제작',
+    'about.timeline.1.period': '2025.11 ~ 현재',
     'about.timeline.1.body':
-      '한국어 문법 검수를 자동화하기 위해 Bareun AI API와 VSCode 확장을 직접 설계하고 출시했습니다.\n' +
-      '현재도 제 글쓰기와 개발 워크플로에서 실제로 사용 중입니다.',
-    'about.timeline.2.title': 'Hun-Bot.dev 다국어 블로그 운영',
-    'about.timeline.2.period': '2025- 현재',
+      '전공 지식 및 개인 공부 내용을 정리하는 github.io 사이트를 제작하여 기록하고 있습니다.',
+    'about.timeline.2.title': 'Bareun 기반 VSCode Extension 제작',
+    'about.timeline.2.period': '2025.11 ~ 2025.12',
     'about.timeline.2.body':
-      '꾸준히 작성해보려고 합니다.',
+      '한국어 문법 검수 자동화를 위해 Bareun AI API를 활용한 확장 프로그램을 개발하여 개인 워크플로우에 적용하고 배포했습니다.',
+    'about.timeline.3.title': 'Hun-Bot.dev 기술 블로그 운영',
+    'about.timeline.3.period': '2025.06 - 현재',
+    'about.timeline.3.body':
+      '개인 블로그를 가지고 싶어서 개설했습니다. 다양한 주제로 글을 작성하고 있습니다.',
 
     'about.features.title': 'Personal Links',
     'about.features.note.title': 'Study Log',
     'about.features.note.description':
-      '학교에서 배운 내용들 및 스스로 공부하는 내용을 총 정리하기로 마음먹고 시작한 Github Page입니다.',
+      '학교 전공 과목과 개인적인 학습 기록을 꼼꼼하게 정리하고 있는 지식 저장소입니다.',
     'about.features.github.title': 'Portfolio',
     'about.features.github.description':
-      '개인 프로젝트와 각종 활동들을 정리한 포트폴리오 사이트입니다. 아직 제작중에 있습니다',
-    'about.features.view-more': '공사중....',
+      '진행한 프로젝트의 코드와 결과물을 정리하고 있습니다. 현재 새로운 콘텐츠로 지속 업데이트 중입니다.',
+    'about.features.view-more': '공사중입니다',
   },
 
   jp: {
@@ -135,15 +127,15 @@ export const ui = {
     'nav.about': '私について',
     'nav.tags': 'タグ',
     'nav.archive': 'アーカイブ',
-    'footer.copyright': '全著作権所有',
-    'footer.built-with': '使用技術:',
+    'footer.copyright': 'All rights reserved',
+    'footer.built-with': 'Built with:',
     'blog.read-more': '続きを読む',
     'blog.all-posts': 'すべての投稿',
     'blog.recent-posts': '最近の投稿',
     'blog.no-posts': 'まだ投稿がありません。',
     'blog.tags-title': 'タグ一覧',
-    'blog.tags-description': '投稿で使われているタグをまとめて確認できます。',
-    'blog.no-tags': 'まだタグがありません。',
+    'blog.tags-description': 'すべての投稿で使用されているタグを確認できます。',
+    'blog.no-tags': 'タグがありません。',
     'blog.tag-count': '{count}件',
     'blog.published': '公開日',
     'blog.updated': '更新日',
@@ -151,102 +143,95 @@ export const ui = {
     'blog.views-loading': '集計中...',
     'blog.views-error': '取得失敗',
     'toc.title': '目次',
-    'toc.toggle': '目次を開く',
+    'toc.toggle': '目次の切り替え',
 
     'about.title': '私について',
-    'about.description': 'Hun-Botの紹介ページです。',
-    'about.greeting': 'こんにちは' + '\n' + 'ナム・ジョンフンです！',
+    'about.description': 'AI Product Engineerを目指す、ナム・ジョンフンの紹介ページです。',
+    'about.greeting': 'こんにちは、\n'+'AI Product Engineerを 目指している ナム・ジョンフンです。',
     'about.intro':
-      'LLM、コンピュータビジョンに　興味があり、Go/Python を用いたバックエンド開発に取り組む AI × バックエンドエンジニアです。\n' +
-      '最近は、3D インタラクティブポートフォリオ、韓国語文法を補助する VSCode 拡張、ハッカソン向けの Go 製プロダクションバックエンド、TypeScript で構築した成長グラフ可視化ツールなどを開発してきました。\n' +
-      '新しい技術を探求することを楽しみつつ、高収入を追うだけではなく「継続的で楽しく働けるエンジニアとしての人生」を大切にしています。',
+      '私たちの生活にAIが入り込む隙間は多いですが、それが必ずしも効率的であるとは限らないと考えています。\n' +
+      '単に製品を作るのではなく、「誰かにとって本当に必要な製品」を作るために日々勉強しています。',
+
+    'about.stats.role': '現在の役割',
+    'about.stats.role.value': '学生',
+    'about.stats.location': '拠点',
+    'about.stats.location.value': 'ソウル・韓国',
+    'about.stats.focus': '注力分野',
+    'about.stats.focus.value': 'MLOps, LLM, 3D Web, CV',
+    'about.stats.languages': '対応言語',
+    'about.stats.languages.value': '韓国語(母国語)\n' + '日本語(日常会話)\n' + '英語(日常会話)',
 
     'about.connect': 'つながる',
-
     'about.education': '学歴',
     'about.university': '成均館大学校 (Sungkyunkwan University)',
     'about.major': 'コンピュータ教育学科 / 知能情報融合専攻（自己設計複合専攻）',
     'about.status': '在学中',
     'about.university-desc':
-      'コンピュータ教育学科でプログラミングとソフトウェア開発の基礎を学びつつ、知能情報融合専攻で AI・データ・3D Vision を学び、「人が使えるAIサービス」をつくる視点を育てています。',
+      '卒業を控えている成均館大学の学生です。コンピュータ教育学科でプログラミングとソフトウェア開発の基礎を学び、知能情報融合専攻で AI・LLM・3D Vision を研究しながら、「人が使えるAIサービス」を作る視点を養っています。',
     'about.academics.title': 'アカデミックバックグラウンド',
-    'about.academics.subtitle': '学部生 — 成均館大学 コンピュータ教育学科・認知科学（複合専攻）',
-    'about.academics.cs.title': 'コンピュータサイエンス / 工学科目',
+    'about.academics.subtitle': '学部生 — 成均館大学 コンピュータ教育学科・認知科学',
+    'about.academics.cs.title': 'Computer Science',
     'about.academics.cs.courses':
-      'データ構造・オペレーティングシステム・コンピュータグラフィックス\n' +
-      'コンピュータアーキテクチャ・ネットワークアーキテクチャ\n' +
-      'Linuxシステムプログラミング・ソフトウェア工学',
-    'about.academics.ai.title': 'AI',
+      'オペレーティングシステム・ソフトウェア工学・コンピュータグラフィックス概論\n' +
+      'データ構造・コンピュータ構成・ネットワーク構成\n' +
+      '· Linuxシステムプログラミング・データベースシステム',
+    'about.academics.ai.title': 'Artificial Intelligence',
     'about.academics.ai.courses':
-      '機械学習理論・ディープラーニング\n' +
-      '人工知能・戦略AI\n' +
-      '認知神経科学・データセキュリティ・AI倫理',
-    'about.academics.backend.title': 'バックエンド / プログラミング基礎',
+      '機械学習原論・AIベースの戦略的意思決定\n' +
+      '· 人工知能概論・認知神経科学・データセキュリティ・AI倫理',
+    'about.academics.backend.title': 'Engineering & HCI',
     'about.academics.backend.courses':
-      'Cプログラミング・データベースシステム\n' +
-      'ゲームプログラミング（C# + Unity、興味が湧いて受講）',
-    'about.academics.edu.title': '教育・認知科学（ダブルメジャー）',
+      'HCI概論・プログラミング基礎(C言語)\n' +
+      '· ゲームプログラミング (C# + Unity)',
+    'about.academics.edu.title': 'Education & Cognitive Science',
     'about.academics.edu.courses':
-      '心理学・哲学・認知科学の基礎\n' +
-      '教育行政・教育実習\n' +
-      '教育AI・人間の学習理論',
+      'コンピュータ教育概論・コンピュータ教科教育論・教育実習\n' +
+      '· 教育心理学・教育哲学・認知科学基礎',
 
     'about.tech-stack': '技術スタック & 興味',
 
-    'about.frontend': 'フロントエンド / 3D Web',
+    'about.frontend': 'Frontend & Interactive Web',
     'about.frontend-desc':
-      'Three.js で 3D Web 体験をつくり、React と TypeScript でインタラクティブな UI やデータビジュアライゼーションを実装しています。',
+      'ユーザーと製品が最初に出会う「Web」において、3D技術がもたらす没入感に注目し、Three.jsを勉強しています。ReactとTypeScriptを武器に、情報をより直感的に伝えるインタラクティブなUIを研究しています。',
 
-    'about.backend': 'バックエンド / インフラ',
+    'about.backend': 'Backend & MLOps',
     'about.backend-desc':
-      'Go と FastAPI で Web API を開発し、PostgreSQL・Supabase・Docker を使って、デプロイと運用を意識したバックエンド環境を構築しています。',
+      'より迅速で安定したサービスを提供するため、Goを主力としてバックエンドエンジニアリングのスキルを磨いています。AI技術を実務で価値あるものにするために不可欠な Airflow、n8n などの MLOps 環境構築に強い関心を持って学習しています。',
 
-    'about.ai': 'AI & 3D Vision',
+    'about.ai': 'AI Product Engineering',
     'about.ai-desc':
-      'LLM パイプラインやコンピュータビジョン（ポーズ推定・画像処理）、3D Vision を Web / バックエンドとつなぎ、「デモで終わらない」AI 機能の実装に取り組んでいます。',
+      '複雑なAI技術をプロダクトとして精製する過程に集中しています。LLMオーケストレーションとコンピュータビジョン技術を適材適所に配置し、技術デモを超えて「実際に運用可能な機能」を実装することを目指しています。',
 
-    'about.hci': 'インタラクティブシステム',
+    'about.hci': 'HCI & UX Design',
     'about.hci-desc':
-      'ユーザー行動やデータをもとに 3D インタラクションやビジュアライゼーションを設計し、「生きているように感じる」インターフェースを目指しています。',
+      '認知科学の専攻を活かし、「人が使いやすい人工知能」を模索しています。ユーザーデータの分析を通じて体験の隙間を見つけ、技術と人の距離を縮めるインターフェース設計能力を養っています。',
 
-    'about.contact': 'お問い合わせ',
-    'about.contact-desc':
-      'AI、コンピュータビジョン、3D Web、Go / バックエンド開発について話したい方は、ぜひお気軽にご連絡ください！',
-    'about.contact-desc2': '新しいプロジェクトやコラボレーションの機会をいつでも歓迎しています。',
-    'about.send-email': 'メールを送る',
-
-    'about.stats.role': '現在の役割',
-    'about.stats.role.value': 'AI × バックエンドエンジニア',
-    'about.stats.location': '拠点',
-    'about.stats.location.value': 'ソウル / 韓国',
-    'about.stats.focus': '注力分野',
-    'about.stats.focus.value': 'LLM、コンピュータビジョン、3D Web、バックエンド開発',
-    'about.stats.languages': '使用言語',
-    'about.stats.languages.value': '韓国語・日本語・英語',
-
-    'about.timeline.title': 'これまでの歩み',
-    'about.timeline.0.title': '成均館大学 コンピュータ教育学科・知能情報融合専攻',
-    'about.timeline.0.period': '2024 - 現在',
+    'about.timeline.title': 'タイムライン',
+    'about.timeline.0.title': 'Algorithm RAG Engine 開発',
+    'about.timeline.0.period': '2026.01',
     'about.timeline.0.body':
-      'プログラミング、ソフトウェア工学、AI関連科目を学びながら、授業で終わらない実サービス志向のプロジェクトに取り組んでいます。',
-    'about.timeline.1.title': 'Bareun 連携 VSCode 拡張の開発',
-    'about.timeline.1.period': '2025-11',
+      '個人プロジェクトとして Algorithm RAG エンジンを開発し、自ら活用しています。',
+    'about.timeline.1.title': '学習記録用 github.io サイト制作',
+    'about.timeline.1.period': '2025.11 - 現在',
     'about.timeline.1.body':
-      '韓国語文法チェックを自動化するために Bareun AI API を活用し、VSCode 拡張機能を設計・開発しました。\n' +
-      '現在も執筆・開発ワークフローで実際に使用しています。',
-    'about.timeline.2.title': 'Hun-Bot.dev 多言語ブログの運営',
-    'about.timeline.2.period': '2025 - 現在',
+      '専攻知識や個人の学習内容を整理するため、github.io サイトを制作し記録を残しています。',
+    'about.timeline.2.title': 'Bareun 連携 VSCode 拡張機能の開発',
+    'about.timeline.2.period': '2025.11 - 2025.12',
     'about.timeline.2.body':
-      'AI、開発ログ、文章の振り返りを韓・日・英の3言語でまとめ、コードだけでなく課題設定や試行錯誤のプロセスまで共有しています。',
+      '韓国語文法チェックの自動化のため、Bareun AI API を活用した拡張機能を開発し、個人のワークフローへの適用および配布を行いました。',
+    'about.timeline.3.title': 'Hun-Bot.dev 技術ブログ運営',
+    'about.timeline.3.period': '2025.06 - 現在',
+    'about.timeline.3.body':
+      '自分だけのブログを持ちたいと思い開設しました。多様なトピックで記事を執筆しています。',
 
     'about.features.title': '関連リンク',
-    'about.features.note.title': 'note: リサーチとエッセイ',
+    'about.features.note.title': 'Study Log',
     'about.features.note.description':
-      'noteでは、実験ログやインサイトを物語形式で整理し、ブログだけでは書ききれない背景や思考プロセスを共有しています。',
-    'about.features.github.title': 'GitHub プロフィール',
+      '大学の専攻科目や個人学習の記録を詳細に整理している知識ベースです。',
+    'about.features.github.title': 'Portfolio',
     'about.features.github.description':
-      'AI・バックエンド・3D 関連の取り組みや、使っているツールチェーン・自動化ワークフローをまとめた README です。',
-    'about.features.view-more': '読む',
+      '進行したプロジェクトのコードや成果物を整理しています。現在、新しいコンテンツを継続的に更新中です。',
+    'about.features.view-more': '準備中です',
   },
 
   en: {
@@ -256,116 +241,110 @@ export const ui = {
     'nav.tags': 'Tags',
     'nav.archive': 'Archive',
     'footer.copyright': 'All rights reserved',
-    'footer.built-with': 'Built with',
+    'footer.built-with': 'Built with:',
     'blog.read-more': 'Read more',
     'blog.all-posts': 'All Posts',
     'blog.recent-posts': 'Recent Posts',
     'blog.no-posts': 'No posts yet.',
     'blog.tags-title': 'Tags',
-    'blog.tags-description': 'Browse every tag used across posts.',
-    'blog.no-tags': 'No tags have been added yet.',
+    'blog.tags-description': 'Explore every tag used across posts.',
+    'blog.no-tags': 'No tags found.',
     'blog.tag-count': '{count} posts',
     'blog.published': 'Published',
     'blog.updated': 'Updated',
     'blog.views': 'Views',
     'blog.views-loading': 'Counting...',
-    'blog.views-error': 'Unavailable',
+    'blog.views-error': 'Error',
     'toc.title': 'Table of Contents',
     'toc.toggle': 'Toggle table of contents',
 
     'about.title': 'About',
-    'about.description': 'About Hun-Bot',
-    'about.greeting': "Hi, I'm Jeonghun Nam!",
+    'about.description': 'About Jeonghun Nam, an aspiring AI Product Engineer.',
+    'about.greeting': "Hi, I'm Jeonghun Nam, aspiring to be an AI Product Engineer.",
     'about.intro':
-      'I am an AI & Backend Engineer interested in LLMs, Computer Vision, and Go/Python backend systems.\n' +
-      'My recent work includes a 3D interactive portfolio, a Korean grammar VSCode extension, a production-ready Go backend for a hackathon, and a TypeScript growth-graph visualizer.\n' +
-      'I enjoy exploring new technologies and value a joyful, sustainable career over simply chasing the highest possible income.',
-    'about.connect': 'Connect with me',
+      "While AI is permeating many parts of our lives, I don't think its efficiency is always guaranteed.\n" +
+      'Instead of just producing products, I am studying to build products that someone truly needs.',
 
+    'about.stats.role': 'Current Role',
+    'about.stats.role.value': 'Student',
+    'about.stats.location': 'Based in',
+    'about.stats.location.value': 'Seoul, South Korea',
+    'about.stats.focus': 'Focus Areas',
+    'about.stats.focus.value': 'MLOps, LLM, 3D Web, CV',
+    'about.stats.languages': 'Languages',
+    'about.stats.languages.value': 'Korean (Native)\n' + 'Japanese (Conversational)\n' + 'English (Conversational)',
+
+    'about.connect': 'Connect with me',
     'about.education': 'Education',
-    'about.university': 'Sungkyunkwan University',
-    'about.major': 'Computer Education & Intelligent Information Convergence (Interdisciplinary Major)',
-    'about.status': 'Currently Enrolled',
+    'about.university': 'Sungkyunkwan University (SKKU)',
+    'about.major': 'Computer Education / Cognitive Science (Interdisciplinary Major)',
+    'about.status': 'Enrolled',
     'about.university-desc':
-      'Studying programming, software engineering, and AI-related topics while exploring data and 3D vision, with a focus on turning ideas into AI-powered services people can actually use.',
+      'I am a Computer Education student at SKKU, nearing graduation. I am building a foundation in software development and programming while exploring AI, LLMs, and 3D Vision to develop a perspective on creating "human-centric AI services."',
     'about.academics.title': 'Academic Background',
-    'about.academics.subtitle': 'Undergraduate Student — SKKU Computer Education & Cognitive Science',
-    'about.academics.cs.title': 'Computer Science & Engineering Coursework',
+    'about.academics.subtitle': 'Undergraduate — SKKU Computer Education & Cognitive Science',
+    'about.academics.cs.title': 'Computer Science',
     'about.academics.cs.courses':
-      'Data Structures · Operating Systems · Computer Graphics\n' +
-      'Computer Organization · Network Organization\n' +
-      'Linux System Programming · Software Engineering',
-    'about.academics.ai.title': 'AI Coursework',
+      'Operating Systems · Software Engineering · Intro to Computer Graphics\n' +
+      '· Data Structures · Computer Architecture · Network Architecture\n' +
+      '· Linux System Programming · Database Systems',
+    'about.academics.ai.title': 'Artificial Intelligence',
     'about.academics.ai.courses':
-      'Machine Learning Theory · Deep Learning\n' +
-      'Artificial Intelligence · Strategic AI\n' +
-      'Cognitive Neuroscience · Data Security · AI Ethics',
-    'about.academics.backend.title': 'Backend & Programming Fundamentals',
+      'Principles of Machine Learning · Strategic Decision Making via AI\n' +
+      '· Introduction of AI · Cognitive Neuroscience ·  Data Security · AI Ethics',
+    'about.academics.backend.title': 'Engineering & HCI',
     'about.academics.backend.courses':
-      'C Programming · Database Systems\n' +
-      'Game Programming (C# + Unity — enrolled because it sparked my curiosity)',
-    'about.academics.edu.title': 'Education & Cognitive Science (Double Major)',
+      'Intro to HCI · C Programming Fundamentals\n' +
+      '· Game Programming (C# + Unity)',
+    'about.academics.edu.title': 'Education & Cognitive Science',
     'about.academics.edu.courses':
-      'Psychology · Philosophy · Cognitive Science Fundamentals\n' +
-      'Educational Administration · Teaching Practice\n' +
-      'AI in Education · Human Learning Theories',
+      'Intro to Computer Education · CS Teaching Methods · Teaching Practice\n' +
+      '· Educational Psychology · Philosophy of Education · Cognitive Science Fundamentals',
 
     'about.tech-stack': 'Tech Stack & Interests',
 
-    'about.frontend': 'Frontend / 3D Web',
+    'about.frontend': 'Frontend & Interactive Web',
     'about.frontend-desc':
-      'Building 3D web experiences with Three.js and crafting interactive UIs and data visualizations with React and TypeScript.',
+      'Focusing on the immersive experiences 3D technology brings to the web, I am studying Three.js. Using React and TypeScript, I research interactive interfaces that deliver information more intuitively.',
 
-    'about.backend': 'Backend / Infrastructure',
+    'about.backend': 'Backend & MLOps',
     'about.backend-desc':
-      'Building web APIs with Go and FastAPI, and using PostgreSQL, Supabase, and Docker to run them in reliable, production-like environments.',
+      'To provide faster and more stable services, I am building backend engineering skills with Go. I have a strong interest in learning MLOps, including tools like Airflow and n8n, which are essential for integrating AI into production.',
 
-    'about.ai': 'AI & 3D Vision',
+    'about.ai': 'AI Product Engineering',
     'about.ai-desc':
-      'Connecting LLM pipelines, computer vision (pose estimation, image processing), and 3D vision to real web and backend systems so they become usable products—not just demos.',
+      'I focus on the process of refining complex AI technologies into usable products. By placing LLM orchestration and computer vision in the right places, I aim to implement production-ready features beyond tech demos.',
 
-    'about.hci': 'Interactive Systems',
+    'about.hci': 'HCI & UX Design',
     'about.hci-desc':
-      'Designing interfaces that feel “alive” through 3D interaction and data-driven visual feedback, with a focus on how people actually use tools.',
+      'Based on my Cognitive Science background, I think deeply about "user-friendly AI." I analyze user data to find experience gaps and develop the ability to design interfaces that bridge the gap between technology and people.',
 
-    'about.contact': 'Get in Touch',
-    'about.contact-desc':
-      'Feel free to reach out if you want to talk about AI, computer vision, 3D web, or Go/backend development!',
-    'about.contact-desc2': "I'm open to new projects and collaboration opportunities.",
-    'about.send-email': 'Send Email',
-
-    'about.stats.role': 'Current Role',
-    'about.stats.role.value': 'AI & Backend Engineer',
-    'about.stats.location': 'Based in',
-    'about.stats.location.value': 'Seoul, South Korea',
-    'about.stats.focus': 'Focus areas',
-    'about.stats.focus.value': 'LLMs, computer vision, 3D web, backend development',
-    'about.stats.languages': 'Working languages',
-    'about.stats.languages.value': 'Korean · Japanese · English',
-
-    'about.timeline.title': 'Highlights',
-    'about.timeline.0.title': 'SKKU — Computer Education & Intelligent Information Convergence',
-    'about.timeline.0.period': '2024 - Present',
+    'about.timeline.title': 'Timeline',
+    'about.timeline.0.title': 'Algorithm RAG Engine Development',
+    'about.timeline.0.period': 'Jan 2026',
     'about.timeline.0.body':
-      'Studying programming, software engineering, and AI-related courses while working on projects that aim to grow into real, usable services rather than class assignments.',
-    'about.timeline.1.title': 'Bareun-powered VSCode Extension Development',
-    'about.timeline.1.period': '2025-11',
+      'Developed and am currently using an Algorithm RAG engine as a personal project.',
+    'about.timeline.1.title': 'github.io Site for Knowledge Management',
+    'about.timeline.1.period': 'Nov 2025 - Present',
     'about.timeline.1.body':
-      'Designed and built a VSCode extension using the Bareun AI API to automate Korean grammar checking.\n' +
-      'It is now part of my everyday writing and development workflow.',
-    'about.timeline.2.title': 'Maintaining Hun-Bot.dev — Multilingual Blog',
-    'about.timeline.2.period': '2025 - Present',
+      'Created a github.io site to organize and record major-related knowledge and personal studies.',
+    'about.timeline.2.title': 'Bareun-based VSCode Extension',
+    'about.timeline.2.period': 'Nov 2025 - Dec 2025',
     'about.timeline.2.body':
-      'Writing AI experiments, development logs, and writing reflections in Korean, Japanese, and English—sharing not only code but also problem framing and the trial-and-error behind each project.',
+      'Developed and deployed a VSCode extension using the Bareun AI API to automate Korean grammar checking in my workflow.',
+    'about.timeline.3.title': 'Hun-Bot.dev Tech Blog',
+    'about.timeline.3.period': 'Jun 2025 - Present',
+    'about.timeline.3.body':
+      'Launched a personal blog to share thoughts and insights on various technical topics.',
 
-    'about.features.title': 'Featured links',
-    'about.features.note.title': 'Note: Research & reflections',
+    'about.features.title': 'Personal Links',
+    'about.features.note.title': 'Study Log',
     'about.features.note.description':
-      'Long-form essays (mainly in Japanese) where I record experiments, failures, and creative sparks that don’t always fit into blog posts.',
-    'about.features.github.title': 'GitHub profile README',
+      'A knowledge repository where I meticulously organize course materials and personal study records.',
+    'about.features.github.title': 'Portfolio',
     'about.features.github.description':
-      'A living README that captures my AI, backend, and 3D-related work, tooling, and automation experiments.',
-    'about.features.view-more': 'View more',
+      'A collection of code and results from my projects, continuously updated with new content.',
+    'about.features.view-more': 'Under Construction',
   },
 } as const;
 

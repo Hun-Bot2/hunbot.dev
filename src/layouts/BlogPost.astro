@@ -10,7 +10,6 @@ import Breadcrumb from '../components/Breadcrumb.astro';
 import GiscusComments from '../components/GiscusComments.astro';
 import { SITE_TITLE, AUTHOR, AUTHOR_EMAIL, SOCIAL_LINKS } from '../consts';
 import type { UILanguage } from '../i18n/ui';
-import ViewCounter from '../components/ViewCounter.astro';
 
 type Props = CollectionEntry<'blog'>['data'] & {
 	lang?: UILanguage;
@@ -48,7 +47,8 @@ const proseClass = `prose prose-slate max-w-none text-slate-200 leading-relaxed 
 	[&>table]:w-full [&>table]:border-collapse [&>table]:my-6 [&>table]:text-sm [&>table]:overflow-x-auto [&>table]:block sm:[&>table]:table
 	[&>th]:border [&>th]:border-slate-200 [&>th]:dark:border-slate-700 [&>th]:p-3 [&>th]:text-left [&>th]:bg-slate-50 [&>th]:dark:bg-slate-900 [&>th]:font-semibold
 	[&>td]:border [&>td]:border-slate-200 [&>td]:dark:border-slate-700 [&>td]:p-3 [&>td]:text-left
-	[&>img]:rounded-lg [&>img]:shadow-sm [&>img]:my-6 [&>img]:max-w-full [&>img]:h-auto`;
+	[&>img]:rounded-lg [&>img]:shadow-sm [&>img]:my-6 [&>img]:max-w-full [&>img]:h-auto
+	[&_.katex-display]:text-center [&_.katex-display]:text-1.5xl sm:[&_.katex-display]:text-2xl [&_.katex-display]:my-6`;
 const heroImageSizes = '(min-width: 768px) 768px, 100vw';
 
 const schema = {
@@ -135,7 +135,6 @@ const schema = {
 								</div>
 							)}
 						</div>
-						<ViewCounter lang={lang} counterKey={postId} />
 					</div>
 					
 					<!-- Title -->
