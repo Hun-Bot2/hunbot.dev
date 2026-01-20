@@ -1,0 +1,250 @@
+---
+title: 'AI-SW Car 개발 및 주행 회고'
+description: 'AI-SW Car 프로젝트의 첫 번째 개발 및 주행 회고입니다.'
+pubDate: '2026-01-20'
+heroImage: '/images/AUTO/Car.png'
+tags: ['autonomous', 'ai', 'car', 'development', 'log']
+category: 'autonomous'
+---
+
+## Trouble Shooting
+
+### 1. 하드웨어 문제
+이 하드웨어 문제를 해결하느냐 거의 6~7시간은 쓴 것 같다. 모터, 가변 저항, 모터 드라이버, 점퍼 케이블 등 사용되는 부품을 바꿔가면서 테스팅을 진행했었는데, 결국 아두이노 보드를 정품으로 바꾸니까 해결이 되었다.
+
+포트 변환, `tty/AC*`가 나오지 않는 문제도 마찬가지로 해결되지 않았다.
+
+**-> 정품으로 아두이노 보드를 교체하니까 해결됨**
+
+### 2. 소프트웨어 문제
+
+- ROS2 run 하는 프로그램마다 돌아가는 바퀴, 돌아가지 않는 바퀴의 문제 발생
+
+**-> 코드에 변수명이랑 serial port가 꼬여서 발생한 문제로 번호를 다시 설정하고, rebuild해서 해결함**
+
+- 데이터 수집이 늦어져서 충분한 데이터 확보 실패
+
+**-> 과거 2년전 데이터셋과 함께 학습시킴**
+
+
+**차선 인식 관련**
+- 하얀 차선을 건드리면 안 됨 → 차선 복귀보다 차선을 건드리지 않는 게 더 좋음
+- 라벨링 시 차선을 제외하고 진행했어야 함
+- HSV 범위 조절로 신호등 색상 범위 인식 개선 필요
+
+**모델 학습 관련**
+- YOLOv8은 먼 거리 객체 인식 어려움 → 라벨링 범위 축소 필요
+- 라벨링된 `className`과 코드상의 `className` 일치 필수
+- Python 코드 수정이 예상보다 많이 필요
+- lane2와 traffic_light 데이터 불균형 (lane2가 약 5배 많음) → 효과적 학습 불가
+
+
+## Roboflow & Colab
+총 데이터셋 : 약 1500장
+lane2 : 약 1350장
+traffic_light : 약 150장
+
+### 1차 데이터 셋 구성
+
+**Dataset Split**
+
+| Type | Percentage | Count | Unit |
+|------|-----------|-------|------|
+| Train Set | 91% | 2634 | Images |
+| Valid Set | 9% | 249 | Images |
+| Test Set | 0% | 0 | Images |
+
+**Preprocessing**
+
+| Item | Configuration |
+|------|---|
+| Auto-Orient | Applied |
+| Resize | Stretch to 640x480 |
+
+**Augmentations**
+
+| Item | Configuration |
+|------|---|
+| Outputs per training example | 3 |
+| Flip | Horizontal |
+| Crop | 8% Minimum Zoom, 22% Maximum Zoom |
+| Brightness | Between -24% and +24% |
+| Noise | Up to 1.53% of pixels |
+
+### 2차 데이터 셋 구성
+
+**Dataset Split**
+
+| Type | Percentage | Count | Unit |
+|------|-----------|-------|------|
+| Train Set | 91% | 2667 | Images |
+| Valid Set | 9% | 249 | Images |
+| Test Set | 0% | 0 | Images |
+
+**Preprocessing**
+
+| Item | Configuration |
+|------|---|
+| Auto-Orient | Applied |
+| Resize | Stretch to 640x480 |
+
+**Augmentations**
+
+| Item | Configuration |
+|------|---|
+| Outputs per training example | 3 |
+| Crop | 8% Minimum Zoom, 22% Maximum Zoom |
+| Brightness | Between -24% and +24% |
+
+### 3차 데이터 셋 구성
+
+**Dataset Split**
+
+| Type | Percentage | Count | Unit |
+|------|-----------|-------|------|
+| Train Set | 82% | 1779 | Images |
+| Valid Set | 18% | 384 | Images |
+| Test Set | 0% | 0 | Images |
+
+**Preprocessing**
+
+| Item | Configuration |
+|------|---|
+| Auto-Orient | Applied |
+| Resize | Fit (black edges) in 640x480 |
+
+**Augmentations**
+
+| Item | Configuration |
+|------|---|
+| Outputs per training example | 3 |
+| Crop | 0% Minimum Zoom, 30% Maximum Zoom |
+| Hue | Between -10° and +10° |
+| Brightness | Between 0% and +25% |
+| Exposure | Between -5% and +5% |
+| Blur | Up to 2px |
+| Noise | Up to 1.5% of pixels |
+
+위에 3가지 데이터셋은 모두 YOLOv8로 학습을 진행했으며, 3차 학습이 가장 좋은 성능을 보였음
+
+Roboflow에서 만든 데이터 셋을 Colab에서 학습시킬 때는 아래와 같은 코드가 반드시 필요했다
+1. 우리가 데이터 라벨링을 polygon으로 진행했기 때문에 segmentation task로 설정
+2. 일반 yolov8n.pt는 박스를 찾는 방법만 알고 있고, 끝에 **-seg**가 붙은 모델은 박스뿐만 아니라 마스크(모양)를 그리는 신경망(Head)이 추가로 달려 있음.
+
+```python
+task=segment mode=train model=yolov8n-seg.pt
+```
+
+## 학습 결과
+![result](/images/AUTO/result.png)
+
+### 결과 해석
+
+#### A. 손실 함수 (Loss Functions) - 낮을수록 좋음
+
+모델이 정답과 얼마나 틀렸는지를 나타내는 점수입니다. 0에 가까울수록 완벽합니다.
+
+**`box_loss` (Bounding Box Loss)**
+- 의미: "박스를 얼마나 정확한 위치에 그렸는가?"
+- 상세: 예측한 박스와 정답 박스가 겹치는 정도(IoU)를 기준으로 계산
+
+**`cls_loss` (Classification Loss)**
+- 의미: "물체의 종류(Class)를 맞췄는가?"
+- 상세: 차선을 신호등으로 오분류하거나 배경을 물체로 인식하면 증가
+
+**`dfl_loss` (Distribution Focal Loss)**
+- 의미: "박스 경계선이 명확한가?"
+- 상세: 물체의 테두리가 흐릿할 때 이를 보정해 주는 손실값
+
+#### B. 평가지표 (Metrics) - 높을수록(1.0에 가까울수록) 좋음
+
+**`Precision` (정밀도)**
+- 의미: "모델이 찾았다고 주장한 것 중에 진짜 정답이 몇 개인가?"
+- 예시: 모델이 신호등을 100번 발견했는데 실제는 90개 → 정밀도 = 0.9
+
+**`Recall` (재현율)**
+- 의미: "실제 존재하는 정답 중에 모델이 찾은 비율은 얼마인가?"
+- 예시: 트랙에 신호등이 100개인데 80개만 발견 → 재현율 = 0.8
+
+**`mAP50` (mean Average Precision @ IoU=0.5)**
+- 의미: 예측 박스와 정답 박스가 **50% 이상 겹쳤을 때**를 정답으로 인정
+- 결과: **0.948**
+- 분석: val_loss가 epoch 20 이후 증가 → 모델이 훈련 데이터에 과적합된 것으로 보임
+
+> **실제 주행 평가**
+> - 자율주행에서는 `mAP50`이 가장 중요한 지표
+> - 목표: 트랙 2바퀴 4분 이내 주행
+> - 결과: 하얀 선을 밟았지만 크게 벗어나지 않음 → mAP50 94.8%는 충분히 좋은 성능
+> - 개선 과제: 하얀 선 회피 후 중앙 주행으로 더 나은 성능 목표
+
+**`mAP50-95` (mean Average Precision @ IoU=0.5:0.95)**
+- 의미: 정답 인정 기준을 50%~95%까지 5% 단위로 높여가며 계산한 평균
+- 특징: 더 엄격한 기준이므로 점수가 훨씬 낮게 나타남
+
+---
+
+### 2. mAP (mean Average Precision) 수학적 산출 공식
+
+mAP는 **IoU → Precision/Recall → AP → mAP** 순서로 계산됩니다.
+
+#### 단계 1: IoU (Intersection over Union)
+
+두 박스(예측 박스, 정답 박스)가 얼마나 겹치는지 계산합니다.
+
+$$
+IoU = \frac{\text{교집합 넓이}}{\text{합집합 넓이}}
+$$
+
+- IoU 값이 특정 임계값(예: 0.5)을 넘으면 "맞췄다(True Positive)"로 판단
+- 높을수록 박스가 정확하게 일치
+
+#### 단계 2: Precision(정밀도)과 Recall(재현율)
+
+- **TP (True Positive):** 맞게 찾음
+- **FP (False Positive):** 틀리게 찾음
+- **FN (False Negative):** 놓침
+
+$$
+Precision = \frac{TP}{TP + FP} (정확도)
+$$
+
+$$
+Recall = \frac{TP}{TP + FN} (재현율)
+$$
+
+---
+
+### 결괏값
+
+| Class | Images | Instances | Box(P) | R | mAP50 | mAP50-95 |
+| --- | --- | --- | --- | --- | --- | --- |
+| **all** | 249 | 276 | 0.901 | 0.963 | **0.948** | 0.803 |
+| **lane2** | 231 | 236 | 0.978 | 0.951 | **0.974** | 0.829 |
+| **traffic light** | 39 | 40 | 0.823 | 0.975 | **0.923** | 0.777 |
+
+- **특이사항:** `Precision(0.823)`이 `Recall(0.975)`보다 낮다. 
+이는 **"신호등은 절대 안 놓치는데(Recall 높음), 가끔 신호등이 아닌 걸 신호등이라고 착각(Precision 낮음)한다"** 는 뜻으로 해석이 가능하다.
+
+
+## 부족한 점
+
+### 제어부 (Motion Planner)
+
+**차선 제어신호**
+- `motion_planner.py`에서 차선 제어신호 생성 시 기울기와 좌표 둘 다 사용했어야 정확한 작동 가능
+- 카메라 시야에 따라 기울기 값이 달라짐 (가까운 거리 vs 먼 거리)
+- 기울기만으로는 제어신호 생성 불가능
+
+**LiDAR 센서**
+- 테스트 환경: 범위 0~70°, min_dist = 0.5m, max_dist = 1.0m
+- 테스트 환경에서는 정상 작동
+- 실제 주행 환경에서는 작동하지 않음 → 파라미터 재조정 필요
+
+## 마무리
+데이터 수집부터 전처리, 모델 학습 및 평가, 코드 수정, 실제 주행까지 방학에 금,토,월,화 이렇게 4일 동안 진행한 첫 자율주행 프로젝트였습니다.
+금,토요일은 데이터 수집 및 전처리 + 라벨링 진행 -> 모델 학습을 진행한 뒤 월요일날 테스트 주행을 해봤는데, 학습한 모델로 주행을 하지 못해서 sample data로 다시 라벨링을 진행하고,
+다시 학습을 시켜서 주행을 시켰고, 이 과정에서 마지막 데이터셋으로 학습한 모델이 정상적으로 주행을 하는 것을 확인 할 수 있었지만, traffic_light나 lidar의 문제는 화요일날 당일에 발견했기에
+월요일날 밤 늦게 끝내고 화요일날 와서 약 2시간 동안 수정을 한 뒤 실제 주행을 했습니다.
+결과는 아쉽지만(장려상), 다음에 이와 비슷한 대회를 하게 된다면 이번에 배운 시행착오를 토대로 보다 좋은 성적을 낼 수 있을 것으로 생각됩니다.
+
+**[1/16 ~ 1/20] AI-SW Car 개발 및 주행 회고 작성 완**
