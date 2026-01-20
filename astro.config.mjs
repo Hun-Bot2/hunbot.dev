@@ -6,7 +6,7 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 
 export default defineConfig({
-  site: 'https://hun-bot.dev',
+  site: 'https://hun-bot.dev', //
   i18n: {
     defaultLocale: 'ko',
     locales: ['ko', 'jp', 'en'],
@@ -17,7 +17,9 @@ export default defineConfig({
   integrations: [
     mdx({
       remarkPlugins: [remarkMath],
-      rehypePlugins: [rehypeKatex],
+      rehypePlugins: [
+        [rehypeKatex, { strict: false }] // 한글 수식(Unicode) 경고 해결
+      ],
       drafts: true,
     }),
     sitemap(),
@@ -25,7 +27,24 @@ export default defineConfig({
   ],
   markdown: {
     remarkPlugins: [remarkMath],
-    rehypePlugins: [rehypeKatex],
+    rehypePlugins: [
+      [rehypeKatex, { strict: false }] // .md 파일에서도 동일하게 적용
+    ],
+    drafts: true,
+    shikiConfig: {
+      themes: {
+        light: 'github-light',
+        dark: 'github-dark-dimmed',
+      },
+      langs: ['python', 'r', 'javascript', 'sql', 'bash', 'typescript'],
+      wrap: true,
+    },
+  },
+  markdown: {
+    remarkPlugins: [remarkMath],
+    rehypePlugins: [
+      [rehypeKatex, { strict: false }] // .md 파일에서도 동일하게 적용
+    ],
     drafts: true,
     shikiConfig: {
       themes: {
