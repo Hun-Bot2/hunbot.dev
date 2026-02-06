@@ -41,7 +41,11 @@ const proseClass = `prose prose-slate max-w-none text-slate-200 leading-relaxed 
 	[&>h6]:text-base sm:[&>h6]:text-lg [&>h6]:font-semibold [&>h6]:mt-5 [&>h6]:mb-2 [&>h6]:text-slate-800 [&>h6]:dark:text-slate-50
 	[&>p]:mb-5 [&>p]:text-base [&>p]:leading-relaxed
 	[&>ul]:mb-5 [&>ul]:pl-6 [&>ul]:list-disc [&>ol]:mb-5 [&>ol]:pl-6 [&>ol]:list-decimal
-	[&>li]:mb-2 [&>li]:leading-relaxed
+	[&>ul>li]:mb-2 [&>ol>li]:mb-2 [&>li]:leading-relaxed
+	[&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mt-1 [&_ul]:mb-2
+	[&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mt-1 [&_ol]:mb-2
+	[&_ul>li]:mb-1 [&_ol>li]:mb-1
+	[&_li>ul]:mt-1 [&_li>ol]:mt-1
 	[&>a]:text-slate-900 dark:[&>a]:text-slate-100 [&>a]:no-underline [&>a]:transition-colors [&>a]:hover:text-orange-600 dark:[&>a]:hover:text-orange-400
 	[&>blockquote]:border-l-4 [&>blockquote]:border-orange-500 [&>blockquote]:my-6 [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:text-slate-300 [&>blockquote]:dark:text-slate-300
 	[&>table]:w-full [&>table]:border-collapse [&>table]:my-6 [&>table]:text-sm [&>table]:overflow-x-auto [&>table]:block sm:[&>table]:table
