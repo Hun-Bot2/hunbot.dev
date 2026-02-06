@@ -1,6 +1,8 @@
 /// <reference types="astro/client" />
 
 interface ImportMetaEnv {
+	readonly UPSTASH_REDIS_REST_URL?: string;
+	readonly UPSTASH_REDIS_REST_TOKEN?: string;
 	readonly PUBLIC_GOOGLE_SITE_VERIFICATION?: string;
 	readonly PUBLIC_GISCUS_ENABLED?: string;
 	readonly PUBLIC_GISCUS_REPO?: string;

@@ -1,35 +1,44 @@
 ---
-type Props = {
-	counterKey?: string;
-};
+interface Props {
+  slug: string;
+}
 
-const { counterKey } = Astro.props as Props;
-
-const baseKey = counterKey ?? Astro.url?.pathname ?? 'home';
-const trimmedKey = baseKey.replace(/^\/+/, '').replace(/\/+$/, '');
-const sanitizedKey = (trimmedKey || 'home').replace(/[^a-zA-Z0-9_/-]/g, '-').toLowerCase();
-
-// hits.sh 배지 URL
-const hitsUrl = `https://hits.sh/hun-bot.dev/${sanitizedKey}.svg?style=flat&label=Views&extraCount=0&color=f97316&labelColor=0f172a`;
+const { slug } = Astro.props;
 ---
 
-<div class="view-counter">
-	<img 
-		src={hitsUrl}
-		alt="Page views"
-		loading="lazy"
-		class="view-counter__badge"
-	/>
-</div>
+<span class="view-counter-wrapper inline-flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
+    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+    <circle cx="12" cy="12" r="3"></circle>
+  </svg>
+  
+  <span id={`view-counter-${slug}`} class="opacity-0 transition-opacity duration-500">
+    </span>
+</span>
 
-<style>
-	.view-counter {
-		display: inline-flex;
-		align-items: center;
-	}
+<script define:vars={{ slug }}>
+  (async () => {
+    const counter = document.getElementById(`view-counter-${slug}`);
+    if (!counter) return;
 
-	.view-counter__badge {
-		height: 20px;
-		border-radius: 4px;
-	}
-</style>
+    try {
+      // API 호출 (POST 요청으로 조회수 증가 + 최신 값 받기)
+      const res = await fetch(`/api/views?slug=${slug}`, { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (!res.ok) throw new Error('Network response was not ok');
+      
+      const data = await res.json();
+      
+      // 숫자가 있으면 표시
+      if (data.views !== undefined) {
+        counter.innerText = `${data.views.toLocaleString()} views`;
+        counter.classList.remove('opacity-0'); // 부드럽게 등장
+      }
+    } catch (e) {
+      console.error('Views update failed', e);
+    }
+  })();
+</script>
