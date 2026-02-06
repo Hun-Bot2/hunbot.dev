@@ -1,0 +1,133 @@
+---
+title: '블로그 개발일지 06'
+description: 'Redis 조회수 가능 및 보안 강화'
+pubDate: '2026-02-06'
+heroImage: '/images/BLOG/blog-develop06.png'
+tags: ['redis', 'security','view-counter']
+category: 'devlog'
+---
+
+마지막으로 블로그 구조를 업데이트한게 25-12-30일이었는데, 그 동안 바빠서 수정하지 못하고 있다가 지금 전체적으로 다시 점검을 하고 있습니다.
+
+우선 지난 글에는 Vercel KV를 사용하거나 Supabase를 사용해서 조회수 기능을 구현하는 방안을 고민하고 있다고 했는데, Supabase는 필요 없고, Vercel KV(Redis)를 사용해서 조회수 기능을 구현하는 방향으로 가기로 했습니다.
+알아보니, 무료 티어로 충분히 사용할 수 있을 것 같습니다. 물론, Redis는 공부를 해서 개인 study 블로그에 올릴 예정입니다.
+
+오늘은 블로그 보안 강화 및 Redis 조회수 기능을 구현해보겠습니다!
+
+아래는 `vercel.json`이라는 파일에 있는 내용을 공부하면서 정리한 내용입니다.
+
+---
+# 보안 강화
+
+## X-Content-Type-Options: nosniff
+
+### 내가 올린 이미지가 아닐 수도 있다? (공급망 공격)
+블로그를 정적으로 호스팅한다고 해도, **내가 직접 올린 파일만이 빌드 결과물에 포함된다는 보장은 없다.** -> 실제 빌드 과정은 수많은 `npm` 패키지들이 관여한다.
+아래 예시를 한 번 봅시다.
+
+* **시나리오**: 만약 사용 중인 이미지 최적화 라이브러리나 아이콘 패키지 중 하나가 해킹당했다고 가정해 봅시다.
+* **공격**: 빌드 과정에서 `logo.png`라는 파일 내부에 교묘하게 악성 스크립트 코드를 심어서 배포해버립니다.
+* **결과**:
+    * **헤더 없음**: 브라우저가 "확장자는 png인데 내용은 자바스크립트네? 실행해줘야지!" 하고 실행해버림 ***(MIME Sniffing)**. -> **해킹**
+    * **`X-Content-Type-Options: nosniff` 있음**: "확장자가 png면 그냥 이미지만 보여줘. 스크립트 실행 금지." -> **방어**
+
+즉, **내가 의도하지 않은 파일이 빌드 결과물에 섞여 들어갈 확률**에 대한 대비책입니다.
+
+#### MIME Sniffing? 브라우저의 과도한 친절함 
+브라우저(특히 구형이나 일부 모바일 브라우저)는 가끔 개발자의 설정을 무시하고 콘텐츠 내용을 보고 형식을 추측하려 합니다.
+
+* **상황**: 사용자가 어떤 이유로 댓글(Giscus)에 교묘하게 조작된 이미지 링크를 올리거나, 외부 CDN에서 불러온 이미지가 변조되었을 때.
+* **위험**: 브라우저(특히 구형이나 일부 모바일 브라우저)가 이를 실행 가능한 코드로 착각할 수 있습니다.
+* **방어**: `nosniff` 옵션은 브라우저에게 **"추측하지 말고, 서버(Vercel)가 알려준 타입(Content-Type)대로만 처리해"**라고 강제 명령을 내리는 것입니다.
+
+## X-Frame-Options : DENY
+* **시나리오**: 해커가 `free-money.com` 같은 사이트를 만들고, 그 위에 투명하게 `hun-bot.dev`를 덮어씌웁니다(`iframe`).
+* **공격**: 해커 사이트의 "돈 받기" 버튼 위치와 `hun-bot.dev`의 어떤 링크(예: Giscus 로그인 버튼 등) 위치를 겹쳐 놓습니다.
+* **결과**: 사용자는 돈 받기 버튼을 눌렀다고 생각하지만, 실제로는 저의 블로그 내에서 클릭이 발생합니다. -> **클릭재킹(Clickjacking) 공격**
+* **방어**: `X-Frame-Options: DENY` 헤더는 브라우저에게 **"이 사이트는 절대 다른 사이트의 iframe 안에 표시되지 않도록 해!"**라고 지시합니다.
+
+## Referrer-Policy 
+* **의미**: 사용자가 내 블로그 링크를 타고 다른 사이트로 이동할 때, "어디서 왔는지" 정보를 얼마나 알려줄지 정합니다.
+* **효과:**
+    * **같은 사이트 내 이동**: 전체 주소 다 보여줌.
+    * **다른 사이트(외부)로 이동**: 도메인(hun-bot.dev)만 보여주고, 구체적인 페이지 경로(비공개 글 주소 등)는 숨김.
+
+## Content-Security-Policy
+**제일 중요한 설정!**
+
+Allow-list 방식으로 허용된 출처에서만 리소스를 불러오도록 제한합니다. (스크립트, 스타일시트, 이미지 등)
+즉, 제가 직접 허용한 도메인에서만 리소스를 불러오도록 강제하여, XSS 공격을 방어합니다.
+
+## Permissions-Policy
+"value": "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+**의미:** 최신 브라우저 기능 제어입니다. ()는 빈 괄호이므로 **"사용 금지"**를 뜻합니다.
+
+**효과:** 제 블로그에서 카메라, 마이크, 위치 정보를 쓸 일은 없습니다. 혹시라도 XSS(스크립트 삽입) 공격을 당해 해커가 스크립트를 실행하더라도, 브라우저 차원에서 카메라나 마이크 접근을 원천 봉쇄하여 피해를 최소화합니다.
+
+---
+
+# Redis 조회수 기능 구현
+Vercel Storage를 들어가면 database에서 upstash로 Redis를 선택할 수 있고, Region은 Tokyo, Free Plan을 선택해서 설정을 진행했습니다.
+
+설정이 완료되면, secret key가 생성되고, 이것 저것 하라는 내용이 나오고, 아래는 Next.js 14버전의 예시입니다.
+
+```javascript
+import { Redis } from '@upstash/redis';
+import { NextResponse } from 'next/server';
+
+// Initialize Redis
+const redis = Redis.fromEnv();
+
+export const POST = async () => {
+  // Fetch data from Redis
+  const result = await redis.get("item");
+  
+  // Return the result in the response
+  return new NextResponse(JSON.stringify({ result }), { status: 200 });
+};
+```
+
+Redis가 무엇인지는 개인 공부 블로그에 있습니다. : https://hun-bot2.github.io/study/Web/redis-01
+
+terminal에서 아래 명령어로 `@upstash/redis` 패키지를 설치합니다.
+
+```bash
+npm install @upstash/redis
+```
+
+이후 `utils/counter.ts` 파일에 Redis 조회수 로직을 구현합니다. 코드는 별거 없고, localhost에서는 조회수가 집게되지 않는 부분을 추가하고, astro는 .env파일의
+import가 다른 부분이 있어서 그 부분을 수정했습니다.
+
+```typescript
+try {
+    if (isLocalhost) {
+      // 로컬에서는 조회수 증가 없이 값만 가져오기 (테스트용)
+      const views = await redis.get<number>(`pageviews:${slug}`) || 0;
+      return new Response(JSON.stringify({ views, skipped: true }), { status: 200 });
+    }
+
+    const views = await redis.incr(`pageviews:${slug}`);
+    return new Response(JSON.stringify({ views }), { status: 200 });
+  } catch (error) {
+    console.error(error);
+    return new Response(JSON.stringify({ error: 'DB Error' }), { status: 500 });
+  }
+```
+
+```typescript
+const redis = new Redis({
+  url: import.meta.env.UPSTASH_REDIS_REST_URL,
+  token: import.meta.env.UPSTASH_REDIS_REST_TOKEN,
+});
+```
+
+---
+
+## 마치며
+이제 블로그에 Redis 조회수 기능이 추가되었고, 보안도 강화되었다고(?) 생각합니다.
+이제 더 추가할 부분들은
+1. 조회수 그래프 만들기
+2. 인기글 랭킹 만들기
+3. 성능 좋은 언어 번역기 추가하기
+
+등이 있을 것 같습니다. 시간이 될 때 마다 하나씩 추가해보도록 하겠습니다.
