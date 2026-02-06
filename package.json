@@ -13,6 +13,7 @@
     "@astrojs/rss": "^4.0.14",
     "@astrojs/sitemap": "^3.6.0",
     "@astrojs/tailwind": "^6.0.2",
+    "@astrojs/vercel": "^9.0.4",
     "@fontsource/noto-sans-jp": "^5.2.6",
     "@fontsource/noto-sans-kr": "^5.2.6",
     "@upstash/redis": "^1.36.2",
