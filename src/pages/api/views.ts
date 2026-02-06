@@ -3,13 +3,28 @@ import { Redis } from '@upstash/redis';
 
 export const prerender = false;
 
-export const config = {
-  runtime: 'edge'
-};
+// Vercel(Production)은 process.env를, 로컬(Dev)은 import.meta.env를 사용.
+
+const dbUrl = 
+  process.env.UPSTASH_REDIS_REST_KV_REST_API_URL || // Vercel 배포 환경 (우선순위 1)
+  import.meta.env.UPSTASH_REDIS_REST_KV_REST_API_URL || // 로컬 환경 (우선순위 2)
+  process.env.UPSTASH_REDIS_REST_URL || 
+  import.meta.env.UPSTASH_REDIS_REST_URL;
+
+const dbToken = 
+  process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN || // Vercel 배포 환경 (우선순위 1)
+  import.meta.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN || // 로컬 환경 (우선순위 2)
+  process.env.UPSTASH_REDIS_REST_TOKEN || 
+  import.meta.env.UPSTASH_REDIS_REST_TOKEN;
+
+// 디버깅용 로그 (Vercel 로그에서 확인 가능)
+if (!dbUrl || !dbToken) {
+  console.error('CRITICAL: Redis Credentials Missing!');
+}
 
 const redis = new Redis({
-  url: import.meta.env.UPSTASH_REDIS_REST_URL,
-  token: import.meta.env.UPSTASH_REDIS_REST_TOKEN,
+  url: dbUrl,
+  token: dbToken,
 });
 
 export const GET: APIRoute = async ({ request }) => {
@@ -29,8 +44,8 @@ export const GET: APIRoute = async ({ request }) => {
       }
     });
   } catch (error) {
-    console.error(error); // 에러 로그 출력 (디버깅용)
-    return new Response(JSON.stringify({ error: 'DB Error' }), { status: 500 });
+    console.error('Redis Get Error:', error);
+    return new Response(JSON.stringify({ error: 'DB Connection Failed' }), { status: 500 });
   }
 };
 
@@ -43,15 +58,15 @@ export const POST: APIRoute = async ({ request }) => {
 
   try {
     if (isLocalhost) {
-      // 로컬에서는 조회수 증가 없이 값만 가져오기 (테스트용)
       const views = await redis.get<number>(`pageviews:${slug}`) || 0;
       return new Response(JSON.stringify({ views, skipped: true }), { status: 200 });
     }
 
     const views = await redis.incr(`pageviews:${slug}`);
+    
     return new Response(JSON.stringify({ views }), { status: 200 });
   } catch (error) {
-    console.error(error);
-    return new Response(JSON.stringify({ error: 'DB Error' }), { status: 500 });
+    console.error('Redis Incr Error:', error);
+    return new Response(JSON.stringify({ error: 'DB Connection Failed' }), { status: 500 });
   }
 };
