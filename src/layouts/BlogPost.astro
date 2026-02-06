@@ -8,6 +8,7 @@ import FormattedDate from '../components/FormattedDate.astro';
 import TableOfContents from '../components/TableOfContents.astro';
 import Breadcrumb from '../components/Breadcrumb.astro';
 import GiscusComments from '../components/GiscusComments.astro';
+import ViewCounter from '../components/ViewCounter.astro';
 import { SITE_TITLE, AUTHOR, AUTHOR_EMAIL, SOCIAL_LINKS } from '../consts';
 import type { UILanguage } from '../i18n/ui';
 
@@ -29,6 +30,7 @@ const {
 	postId,
 } = Astro.props as Props;
 
+const slug = postId ?? Astro.url.pathname;
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 
 const headingId = 'post-title';
@@ -138,6 +140,9 @@ const schema = {
 									Last updated: <FormattedDate date={updatedDate} />
 								</div>
 							)}
+						</div>
+						<div class="flex items-center before:content-['•'] before:mr-3 before:text-slate-300 dark:before:text-slate-600">
+							<ViewCounter slug={slug} />
 						</div>
 					</div>
 					
