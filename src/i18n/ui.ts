@@ -98,23 +98,64 @@ export const ui = {
     'about.hci-desc':
       '뇌인지과학 전공을 바탕으로 "사람이 쓰기 편한 인공지능"을 고민합니다. 사용자 데이터 분석을 통해 경험의 빈틈을 찾고, 기술과 사람 사이의 간극을 줄이는 인터페이스 설계 능력을 기르고 있습니다.',
     
+    // 메인 타임라인: 내 흐름
     'about.timeline.title': 'Timeline',
-    'about.timeline.0.title': 'Algorithm RAG Engine 개발',
-    'about.timeline.0.period': '2026.01',
+    'about.timeline.0.title': '일본 시장을 향한 AI 서비스 4종 설계·개발',
+    'about.timeline.0.period': '2026.01 ~ 진행 중',
     'about.timeline.0.body':
-      '개인 프로젝트로 Algorithm RAG 엔진을 개발하여 사용하고 있습니다.',
-    'about.timeline.1.title': '전공 지식 정리용 github.io 사이트 제작',
-    'about.timeline.1.period': '2025.11 ~ 현재',
+      '일본 주식 서비스, 온프레미스 일본어 학습 플랫폼, JLPT N1·경어 말하기 서비스, 핸드폰 부가서비스 탐지 서비스를 설계·구현하며 실제 배포를 준비하고 있습니다.',
+    'about.timeline.1.title': '자율주행대회 장려상',
+    'about.timeline.1.period': '2026.01.15 ~ 2026.01.20',
     'about.timeline.1.body':
-      '전공 지식 및 개인 공부 내용을 정리하는 github.io 사이트를 제작하여 기록하고 있습니다.',
-    'about.timeline.2.title': 'Bareun 기반 VSCode Extension 제작',
+      'ROS2와 AI를 활용해 팀과 함께 자율주행 차량을 구현했고, 기술적 어려움으로 아쉽게도 장려상을 수상했습니다.',
+    'about.timeline.2.title': 'Bareun 기반 VSCode Extension 개발·배포',
     'about.timeline.2.period': '2025.11 ~ 2025.12',
     'about.timeline.2.body':
-      '한국어 문법 검수 자동화를 위해 Bareun AI API를 활용한 확장 프로그램을 개발하여 개인 워크플로우에 적용하고 배포했습니다.',
-    'about.timeline.3.title': 'Hun-Bot.dev 기술 블로그 운영',
-    'about.timeline.3.period': '2025.06 - 현재',
+      '한국어 문법 검수 자동화를 위해 Bareun AI API를 활용한 VSCode 확장 프로그램을 처음부터 직접 구현하고, 실제로 사용할 목적으로 마켓플레이스에 배포했습니다. [30+ 다운로드]',
+    'about.timeline.3.title': '교내 해커톤 – AI Task Planner 백엔드 구축',
+    'about.timeline.3.period': '2025.10',
     'about.timeline.3.body':
-      '개인 블로그를 가지고 싶어서 개설했습니다. 다양한 주제로 글을 작성하고 있습니다.',
+      '교내 해커톤에서 AI 기반 Task Planner 서비스를 위한 백엔드 시스템을 설계·구현하며, API 설계와 서비스 아키텍처 감각을 키웠습니다.',
+    'about.timeline.4.title': 'ICT Next Frontier 강원 – 재난 구호 AI 시스템 최우수상',
+    'about.timeline.4.period': '2025.09',
+    'about.timeline.4.body':
+      '재난 구호 물자 중복과 비효율을 줄이기 위해, AI 기반 배분 최적화·투명성 향상 시스템의 아이디어를 발표해, ICT Next Frontier 강원 대회에서 최우수상(상금 150만원)을 받았습니다.',
+    'about.timeline.5.title': '제테마 홈페이지 리뉴얼 해커톤 우수상',
+    'about.timeline.5.period': '2025.08',
+    'about.timeline.5.body':
+      '제테마 홈페이지 리뉴얼 해커톤에서 사용자 경험 관점의 웹 리뉴얼을 제안·구현하며 우수상(상금 30만원)을 수상했습니다.',
+    'about.timeline.6.title': 'Grow Graph – 자료구조 수업 프로젝트',
+    'about.timeline.6.period': '2025.03 ~ 2025.06',
+    'about.timeline.6.body':
+      '자료구조 수업에서 Grow Graph 프로젝트를 진행하며, 클라이언트와 서버를 모두 구현하고 AI를 활용한 진로 성장 그래프 시각화를 시도했습니다.',
+    'about.timeline.7.title': '성균관대학교 3학년 편입',
+    'about.timeline.7.period': '2024.03',
+    'about.timeline.7.body':
+      '성균관대학교 정보·컴퓨터 계열로 3학년 편입하여, 이후 AI·백엔드 중심 커리어를 본격적으로 준비하기 시작했습니다.',
+    // 옵션: 블로그/정리 흐름을 추가하고 싶으면 아래 두 개까지 포함
+    'about.timeline.8.title': 'Hun-Bot.dev 기술 블로그 운영 시작',
+    'about.timeline.8.period': '2025.06 ~ 현재',
+    'about.timeline.8.body':
+      '공부와 개발 과정을 기록하기 위해 개인 기술 블로그를 개설하고, 프로젝트 회고와 생각들을 꾸준히 글로 정리하고 있습니다.',
+    'about.timeline.9.title': '전공 지식 정리용 github.io Study 사이트 구축',
+    'about.timeline.9.period': '2025.11 ~ 현재',
+    'about.timeline.9.body':
+      '전공 지식과 개인 공부 내용을 구조적으로 정리하기 위해 Docusaurus 기반 github.io 사이트를 구축하고, 노트와 정리 글을 계속 추가하고 있습니다.',
+    // 도전/부족 섹션: 실패와 배운 점
+    'about.challenges.title': '도전과 부족했던 순간들',
+    'about.challenges.0.title': '편입 직후 1년, 방향을 찾지 못한 시간',
+    'about.challenges.0.period': '2024 ~ 2025 초',
+    'about.challenges.0.body':
+      '성균관대로 편입한 뒤 처음 1년은 뚜렷한 목표 없이 수업만 따라가며 “물 흐르듯” 보냈고, 25년이 되고 나서야, 이 시간이 아깝다고 느껴서 이후 공모전·해커톤과 개인 프로젝트에 적극적으로 뛰어들게 만든 계기가 됐습니다.',
+    'about.challenges.1.title': '교내 대회 2회 연속 실패 – 개인정보 서비스 & 일정 관리 AI',
+    'about.challenges.1.period': '2024 하반기, 2025 하반기',
+    'about.challenges.1.body':
+      '죽음 이후의 개인 정보를 다루는 서비스, 일정 관리 AI 자동화 서비스를 해커톤 기간인 1박2일 안에 설계·구현했지만 상을 받지는 못했습니다. 데이터 준비와 사전 리서치, 아이디어와 도메인 지식의 중요성을 뼈저리게 배웠습니다.',
+    'about.challenges.2.title': 'SNU 공모전 탈락 – 편의점 데이터 분석',
+    'about.challenges.2.period': '2025.04 ~ 2025.06',
+    'about.challenges.2.body':
+      '대한민국 편의점 데이터를 다루는 SNU 공모전에 도전했지만, 피처 엔지니어링과 AI에 대한 지식이 부족해 탈락했습니다.' +
+      '이 경험을 바탕으로 이후 ICT 재난 구호 AI 프로젝트에서는 문제 정의와 데이터 조사, 논문 조사에 훨씬 더 많은 시간을 투자하게 됐습니다.',
 
     'about.features.title': 'Personal Links',
     'about.features.note.title': 'Study Log',
@@ -216,32 +257,84 @@ export const ui = {
     'about.hci-desc':
       '認知科学の専攻を活かし、「人が使いやすい人工知能」を模索しています。ユーザーデータの分析を通じて体験の隙間を見つけ、技術と人の距離を縮めるインターフェース設計能力を養っています。',
 
-    'about.timeline.title': 'タイムライン',
-    'about.timeline.0.title': 'Algorithm RAG Engine 開発',
-    'about.timeline.0.period': '2026.01',
-    'about.timeline.0.body':
-      '個人プロジェクトとして Algorithm RAG エンジンを開発し、自ら活用しています。',
-    'about.timeline.1.title': '学習記録用 github.io サイト制作',
-    'about.timeline.1.period': '2025.11 - 現在',
-    'about.timeline.1.body':
-      '専攻知識や個人の学習内容を整理するため、github.io サイトを制作し記録を残しています。',
-    'about.timeline.2.title': 'Bareun 連携 VSCode 拡張機能の開発',
-    'about.timeline.2.period': '2025.11 - 2025.12',
-    'about.timeline.2.body':
-      '韓国語文法チェックの自動化のため、Bareun AI API を活用した拡張機能を開発し、個人のワークフローへの適用および配布を行いました。',
-    'about.timeline.3.title': 'Hun-Bot.dev 技術ブログ運営',
-    'about.timeline.3.period': '2025.06 - 現在',
-    'about.timeline.3.body':
-      '自分だけのブログを持ちたいと思い開設しました。多様なトピックで記事を執筆しています。',
+  // メインタイムライン: 活動の軌跡
+  'about.timeline.title': '活動タイムライン',
 
-    'about.features.title': '関連リンク',
-    'about.features.note.title': 'Study Log',
-    'about.features.note.description':
-      '大学の専攻科目や個人学習の記録を詳細に整理している知識ベースです。',
-    'about.features.github.title': 'Portfolio',
-    'about.features.github.description':
-      '進行したプロジェクトのコードや成果物を整理しています。現在、新しいコンテンツを継続的に更新中です。',
-    'about.features.view-more': '準備中です',
+  'about.timeline.0.title': '日本市場向けAIサービス4種の構築',
+  'about.timeline.0.period': '2026.01 ~ 現在',
+  'about.timeline.0.body':
+    '日本株分析、日本語学習プラットフォーム、JLPT会話コーチ、モバイル付加サービス検知など、4つのAIサービスを設計・実装しています。現在は本番環境へのデプロイに向けた最終調整を行っています。',
+
+  'about.timeline.1.title': '自動運転コンテスト 奨励賞受賞',
+  'about.timeline.1.period': '2026.01.15 ~ 2026.01.20',
+  'about.timeline.1.body':
+    'ROS2とAI技術を駆使し、自律走行車両をチームで実装しました。技術的な難題に直面しながらも、粘り強く解決策を模索した結果、奨励賞を受賞しました。',
+
+  'about.timeline.2.title': 'Bareun AI活用 VSCode拡張機能の開発・公開',
+  'about.timeline.2.period': '2025.11 ~ 2025.12',
+  'about.timeline.2.body':
+    '韓国語校正を自動化するため、Bareun AI APIを用いたVSCode拡張機能を開発しました。実用性を重視してマーケットプレイスに公開し、現在30回以上のダウンロードを記録しています。',
+
+  'about.timeline.3.title': '学内ハッカソン – AIタスクプランナー構築',
+  'about.timeline.3.period': '2025.10',
+  'about.timeline.3.body':
+    'AIベースのタスク管理サービスにてバックエンド設計を担当。API設計やマイクロサービス的な視点でのシステム構築に取り組み、実践的な開発スキルを養いました。',
+
+  'about.timeline.4.title': 'ICT Next Frontier – 災害救援AIシステム 最優秀賞',
+  'about.timeline.4.period': '2025.09',
+  'about.timeline.4.body':
+    '救援物資の重複分配を防ぐためのAI最適化システムを提案しました。技術的な実現可能性と論理的な設計が評価され、最優秀賞（賞金150万ウォン）を受賞しました。',
+
+  'about.timeline.5.title': 'Jetemaサイトリニューアルハッカソン 優秀賞',
+  'about.timeline.5.period': '2025.08',
+  'about.timeline.5.body':
+    'UX（ユーザー体験）の観点からウェブサイトのリニューアルを提案・実装しました。デザインと機能性の調和を評価され、優秀賞を受賞しました。',
+
+  'about.timeline.6.title': 'Grow Graph – データ構造プロジェクト',
+  'about.timeline.6.period': '2025.03 ~ 2025.06',
+  'about.timeline.6.body':
+    'データ構造の講義にて、AIを用いたキャリア成長可視化システムを開発。クライアントからサーバーまで一貫して実装し、フルスタックな開発を経験しました。',
+
+  'about.timeline.7.title': '成均館大学への編入',
+  'about.timeline.7.period': '2024.03',
+  'about.timeline.7.body':
+    'より高度な工学の知見を得るため、成均館大学の情報通信学部に編入しました。これを機にAIおよびバックエンドエンジニアとしてのキャリアを本格化させました。',
+
+  'about.timeline.8.title': '技術ブログ「Hun-Bot.dev」の運営',
+  'about.timeline.8.period': '2025.06 ~ 現在',
+  'about.timeline.8.body':
+    '開発プロセスや思考の整理を目的として技術ブログを開設。プロジェクトの振り返りなどを通じ、継続的なアウトプットを行っています。',
+
+  'about.timeline.9.title': '学習アーカイブサイトの構築',
+  'about.timeline.9.period': '2025.11 ~ 현재',
+  'about.timeline.9.body':
+    '専門知識を体系的に整理するため、Docusaurusベースの学習サイトを構築。学んだ知識を資産化し、常にブラッシュアップを続けています。',
+
+  // 挑戦と試行錯誤の記録
+  'about.challenges.title': '挑戦と成長の記録',
+
+  'about.challenges.0.title': '編入後の模索と転환点',
+  'about.challenges.0.period': '2024 ~ 2025 初頭',
+  'about.challenges.0.body':
+    '編入直後は明確な目標が見つからず、授業に追われる日々でした。しかし、その停滞感こそが「自ら行動しなければならない」という強い動機付けとなり、後の挑戦へと繋がりました。',
+
+  'about.challenges.1.title': '学内大会での苦い経験 – 2度の落選',
+  'about.challenges.1.period': '2024 下半期、2025 下半期',
+  'about.challenges.1.body':
+    '1泊2日の強行軍でシステムを構築しましたが、入賞には至りませんでした。準備の不足やドメイン知識の重要性を痛感し、エンジニアとしての基礎体力を鍛え直す契機となりました。',
+
+  'about.challenges.2.title': 'SNUコンペでの挫折と再挑戦',
+  'about.challenges.2.period': '2025.04 ~ 2025.06',
+  'about.challenges.2.body':
+    'データ分析コンペに挑むも、AIの知識不足により落選。この悔しさを糧に、後の災害救援AIプロジェクトでは徹底的な先行研究調査を行い、最優秀賞に繋げることができました。',
+
+  'about.features.title': 'Personal Links',
+  'about.features.note.title': 'Study Log',
+  'about.features.note.description': '大学の講義や個人の学習記録をまとめたナレッジベースです。',
+  'about.features.github.title': 'Portfolio',
+  'about.features.github.description': '進行中のプロジェクトのソースコードを管理しています。',
+  'about.features.view-more': '準備中です',
+
   },
 
   en: {
@@ -334,32 +427,83 @@ export const ui = {
     'about.hci-desc':
       'Based on my Cognitive Science background, I think deeply about "user-friendly AI." I analyze user data to find experience gaps and develop the ability to design interfaces that bridge the gap between technology and people.',
 
-    'about.timeline.title': 'Timeline',
-    'about.timeline.0.title': 'Algorithm RAG Engine Development',
-    'about.timeline.0.period': 'Jan 2026',
-    'about.timeline.0.body':
-      'Developed and am currently using an Algorithm RAG engine as a personal project.',
-    'about.timeline.1.title': 'github.io Site for Knowledge Management',
-    'about.timeline.1.period': 'Nov 2025 - Present',
-    'about.timeline.1.body':
-      'Created a github.io site to organize and record major-related knowledge and personal studies.',
-    'about.timeline.2.title': 'Bareun-based VSCode Extension',
-    'about.timeline.2.period': 'Nov 2025 - Dec 2025',
-    'about.timeline.2.body':
-      'Developed and deployed a VSCode extension using the Bareun AI API to automate Korean grammar checking in my workflow.',
-    'about.timeline.3.title': 'Hun-Bot.dev Tech Blog',
-    'about.timeline.3.period': 'Jun 2025 - Present',
-    'about.timeline.3.body':
-      'Launched a personal blog to share thoughts and insights on various technical topics.',
+    // Main Timeline: My Journey
+  'about.timeline.title': 'Timeline',
 
-    'about.features.title': 'Personal Links',
-    'about.features.note.title': 'Study Log',
-    'about.features.note.description':
-      'A knowledge repository where I meticulously organize course materials and personal study records.',
-    'about.features.github.title': 'Portfolio',
-    'about.features.github.description':
-      'A collection of code and results from my projects, continuously updated with new content.',
-    'about.features.view-more': 'Under Construction',
+  'about.timeline.0.title': 'Developing 4 AI Services for the Japanese Market',
+  'about.timeline.0.period': 'Jan 2026 ~ Present',
+  'about.timeline.0.body':
+    'Architecting and implementing Japanese Stock Analysis, On-premise Language Learning, JLPT Speaking Coach, and Carrier Add-on Detection services. Preparing for production deployment.',
+
+  'about.timeline.1.title': 'Autonomous Driving Competition – Encouragement Award',
+  'about.timeline.1.period': 'Jan 2026',
+  'about.timeline.1.body':
+    'Developed an autonomous vehicle prototype using ROS2 and AI. Despite technical bottlenecks, secured the Encouragement Award through team-based problem-solving.',
+
+  'about.timeline.2.title': 'VSCode Extension Development & Deployment (Bareun AI)',
+  'about.timeline.2.period': 'Nov 2025 ~ Dec 2025',
+  'about.timeline.2.body':
+    'Built a VSCode extension from scratch for automated Korean grammar checking using Bareun AI API. Deployed to Marketplace with 30+ downloads to optimize developer workflows.',
+
+  'about.timeline.3.title': 'Campus Hackathon – AI Task Planner Backend Architecture',
+  'about.timeline.3.period': 'Oct 2025',
+  'about.timeline.3.body':
+    'Designed and implemented a backend system for an AI-powered Task Planner, gaining hands-on experience in API design and scalable service architectures.',
+
+  'about.timeline.4.title': 'ICT Next Frontier – Grand Prize (AI Disaster Relief System)',
+  'about.timeline.4.period': 'Sep 2025',
+  'about.timeline.4.body':
+    'Proposed an AI-driven optimization system for disaster relief allocation. Awarded the Grand Prize (1.5M KRW) for technological feasibility and system design logic.',
+
+  'about.timeline.5.title': 'Jetema Website Renewal Hackathon – Excellence Award',
+  'about.timeline.5.period': 'Aug 2025',
+  'about.timeline.5.body':
+    'Executed a UX-focused website renewal proposal. Won the Excellence Award (300K KRW) by demonstrating the impact of user-centric design.',
+
+  'about.timeline.6.title': 'Grow Graph – Data Structure Project',
+  'about.timeline.6.period': 'Mar 2025 ~ Jun 2025',
+  'about.timeline.6.body':
+    'Developed both client and server for the "Grow Graph" project, exploring AI-based career growth visualization during Data Structure coursework.',
+
+  'about.timeline.7.title': 'Transferred to Sungkyunkwan University',
+  'about.timeline.7.period': 'Mar 2024',
+  'about.timeline.7.body':
+    'Transferred as a junior to major in Information and Computer Engineering. Pivoted focus toward AI and Backend Engineering to build a specialized career path.',
+
+  'about.timeline.8.title': 'Launched Tech Blog "Hun-Bot.dev"',
+  'about.timeline.8.period': 'Jun 2025 ~ Present',
+  'about.timeline.8.body':
+    'Established a technical blog to document learning processes and development retrospectives, consistently sharing engineering insights.',
+
+  'about.timeline.9.title': 'Built github.io Knowledge Repository',
+  'about.timeline.9.period': 'Nov 2025 ~ Present',
+  'about.timeline.9.body':
+    'Constructed a Docusaurus-based study site to structurally organize computer science knowledge and personal learning milestones.',
+
+  // Challenges Section
+  'about.challenges.title': 'Challenges & Lessons Learned',
+
+  'about.challenges.0.title': 'A Period of Reflection After Transfer',
+  'about.challenges.0.period': '2024 ~ Early 2025',
+  'about.challenges.0.body':
+    'Spent the first year focused on core academic subjects. Recognizing the need for practical application in 2025, I began proactively engaging in hackathons and large-scale projects.',
+
+  'about.challenges.1.title': 'Successive Failures in Campus Competitions',
+  'about.challenges.1.period': 'Late 2024, Late 2025',
+  'about.challenges.1.body':
+    'Attempted to build Post-mortem Data and AI Scheduling services within 48-hour hackathon constraints. Although unsuccessful, I learned the paramount importance of data preprocessing and domain research.',
+
+  'about.challenges.2.title': 'SNU Data Competition Failure',
+  'about.challenges.2.period': 'Apr 2025 ~ Jun 2025',
+  'about.challenges.2.body':
+    'Challenged the SNU competition but failed due to insufficient knowledge in feature engineering. This experience drove me to prioritize rigorous problem definition and research in subsequent award-winning projects.',
+
+  'about.features.title': 'Personal Links',
+  'about.features.note.title': 'Study Log',
+  'about.features.note.description': 'A structured knowledge repository of academic subjects and self-study notes.',
+  'about.features.github.title': 'Portfolio',
+  'about.features.github.description': 'Source codes and deliverables for ongoing engineering projects.',
+  'about.features.view-more': 'Under Construction',
   },
 } as const;
 
