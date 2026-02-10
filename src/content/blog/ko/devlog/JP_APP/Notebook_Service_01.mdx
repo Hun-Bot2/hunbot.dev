@@ -1,0 +1,68 @@
+---
+title: '남는 노트북으로 서비스 만들기 01'
+description: '유휴 노트북을 활용한 온프레미스 개발 서버 구축기'
+pubDate: '2026-02-09'
+#heroImage: '/images/giscus.png'
+tags: ["HomeLab" ,"Ubuntu" ,"Docker", "Rust", "NextJS", "DevOps", "OnPremise"]
+category: 'onpremise_devlog'
+---
+
+
+# [Home Server] 잠자던 노트북을 깨워 24/7 온프레미스 개발 서버로 구축하기 (Ubuntu + Docker + VS Code Remote)
+
+![Home Server Architecture](https://dummyimage.com/800x400/000/fff&text=Home+Server+Architecture) 
+
+## 개요
+현재 개발 중인 **일본어 말하기 연습** 프로젝트와는 다른 프로젝트입니다. 이번 프로젝트는 집에서 놀고 있는 노트북에 Ubuntu를 설치하여(듀얼 부팅), **온프레미스 개발 서버**로 활용하는 방법을 배우면서, 프로젝트의 기능으로는
+일본 뉴스 기사들을 수집해서 개인적인 공부에 유용한 제가 원하는 서비스를 만드는 것을 목표로 합니다! 기사에 관련된 단어들을 등급별로 분류하거나, 퀴즈를 만들어주거나, 작문 과제를 내주거나, 기사 내용을 요약해서 작성해 보는 등의
+기능을 구현하려고 합니다. 
+
+지금까지 서비스를 만들 때, 맨날 클라우드 형태의 배포 환경만 구축하다 보니, 실제 배포 환경(Linux)과 동일한 환경에서 개발하고 싶다는 니즈가 있었습니다.
+이에 집에 남는 노트북에 Ubuntu를 설치하여 **On-premise 개발 서버**를 구축하고, MacBook에서는 **VS Code Remote SSH**를 통해 원격으로 제어하는 개발 환경을 만들기로 했고, 첫 날은 이 환경을 구축하고 아키텍쳐를 구상하는데 다 썼습니다.
+
+### 목표
+* **비용 절감**: AWS/GCP 등 클라우드 비용 0원으로 24시간 가동 서버 확보.
+* **리소스 분리**: 무거운 Docker 컨테이너와 빌드 작업은 Ubuntu가 담당, Mac은 코딩과 UI 확인에만 집중.
+* **배포 환경 일치**: Production 환경과 동일한 Linux(Ubuntu) 기반에서 개발하여 "내 컴퓨터에선 되는데?"에 대한 문제를 차단.
+
+---
+
+## 아키텍처 (Architecture)
+MacBook은 단지 **'Client'**로서의 역할(코드 작성, 화면 확인)만 수행하며, 실제 모든 컴퓨팅 파워와 데이터는 **'Server'**(Ubuntu)에서 처리됩니다.
+
+---
+## 구축 과정 (Implementation)
+아래 과정은 2026년 2월 8일에 진행된 작업을 바탕으로 작성되었습니다.
+### Step 1. 노트북을 서버로 변신시키기 (전원 설정)
+
+노트북을 서버로 쓸 때 가장 먼저 마주친 문제는 **"덮개를 닫으면 절전 모드로 들어가는 것"**이었습니다. 서버는 24시간 깨어있어야 하므로 시스템 설정을 변경했습니다.
+
+```bash
+# /etc/systemd/logind.conf 파일 수정
+sudo nano /etc/systemd/logind.conf
+
+# 아래 설정을 찾아 주석을 해제하고 변경
+HandleLidSwitch=ignore
+
+```
+
+설정 적용 후(`sudo systemctl restart systemd-logind`), 덮개를 닫아도 SSH 연결이 끊기지 않는 것을 확인했습니다.
+
+### Step 2. 개발 환경의 핵심, Docker & Docker Compose
+
+모든 서비스는 컨테이너 기반으로 격리되어 실행됩니다.
+
+```bash
+# Docker 설치 및 권한 설정 (sudo 없이 실행하기 위해)
+curl -fsSL [https://get.docker.com](https://get.docker.com) -o get-docker.sh
+sudo sh get-docker.sh
+sudo usermod -aG docker $USER
+newgrp docker
+
+```
+
+### Step 3. VS Code Remote SSH 설정 (MacBook)
+Vscode에 가서 "F1"을 누르고 "Remote-SSH: Connect to Host..."를 선택한 후, 노트북의 IP 주소와 사용자 이름을 입력하여 연결하면 됩니다.
+
+---
+
