@@ -16,6 +16,11 @@ type Props = CollectionEntry<'blog'>['data'] & {
 	lang?: UILanguage;
 	availableLangs?: string[];
 	postId?: string;
+	seriesName?: string;
+	seriesIndex?: number;
+	seriesTotal?: number;
+	seriesPrev?: { title: string; url: string };
+	seriesNext?: { title: string; url: string };
 };
 
 const {
@@ -28,6 +33,11 @@ const {
 	lang = 'ko',
 	availableLangs,
 	postId,
+	seriesName,
+	seriesIndex,
+	seriesTotal,
+	seriesPrev,
+	seriesNext,
 } = Astro.props as Props;
 
 const slug = postId ?? Astro.url.pathname;
@@ -167,6 +177,39 @@ const schema = {
 				<div class={proseClass}>
 					<slot />
 				</div>
+
+				{seriesName && seriesIndex && seriesTotal && (
+					<section class="mt-12 border-t border-slate-200 dark:border-slate-700 pt-6">
+						<div class="text-sm text-slate-600 dark:text-slate-400 mb-4 text-center font-semibold">
+							<span class="text-slate-800 dark:text-slate-200">{seriesName}</span>
+							<span class="ml-2">{seriesIndex} / {seriesTotal}</span>
+						</div>
+						<div class="grid gap-3 sm:grid-cols-2">
+							{seriesPrev ? (
+								<a href={seriesPrev.url} class="group block rounded-lg border border-slate-200 dark:border-slate-700 p-4 text-sm text-slate-700 dark:text-slate-200 hover:border-orange-500/70 hover:text-orange-500 transition-colors">
+									<div class="text-xs text-slate-500 dark:text-slate-400 mb-1 text-center font-semibold">
+										<span aria-hidden="true" class="mr-1">←</span>
+										이전 편
+									</div>
+									<div class="font-semibold text-center">{seriesPrev.title}</div>
+								</a>
+							) : (
+								<div class="rounded-lg border border-slate-200/40 dark:border-slate-700/40 p-4 text-sm text-slate-400 text-center font-semibold">이전 편 없음</div>
+							)}
+							{seriesNext ? (
+								<a href={seriesNext.url} class="group block rounded-lg border border-slate-200 dark:border-slate-700 p-4 text-sm text-slate-700 dark:text-slate-200 hover:border-orange-500/70 hover:text-orange-500 transition-colors">
+									<div class="text-xs text-slate-500 dark:text-slate-400 mb-1 text-center font-semibold">
+										다음 편
+										<span aria-hidden="true" class="ml-1">→</span>
+									</div>
+									<div class="font-semibold text-center">{seriesNext.title}</div>
+								</a>
+							) : (
+								<div class="rounded-lg border border-slate-200/40 dark:border-slate-700/40 p-4 text-sm text-slate-400 text-center font-semibold">다음 편 없음</div>
+							)}
+						</div>
+					</section>
+				)}
 				
 				<TableOfContents lang={lang} />
 				<GiscusComments lang={lang} />

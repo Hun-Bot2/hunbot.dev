@@ -43,8 +43,52 @@ type Props = {
 
 const { post, lang, availableLangs } = Astro.props as Props;
 const { Content } = await render(post);
+
+const seriesName = post.data.series;
+let seriesIndex: number | undefined;
+let seriesTotal: number | undefined;
+let seriesPrev: { title: string; url: string } | undefined;
+let seriesNext: { title: string; url: string } | undefined;
+
+if (seriesName) {
+	const allPosts = await getCollection('blog');
+	const seriesPosts = allPosts
+		.filter((item) => item.id.startsWith(`${lang}/`))
+		.filter((item) => item.data.series === seriesName)
+		.sort((a, b) => {
+			const aOrder = a.data.seriesOrder ?? Number.MAX_SAFE_INTEGER;
+			const bOrder = b.data.seriesOrder ?? Number.MAX_SAFE_INTEGER;
+			if (aOrder !== bOrder) return aOrder - bOrder;
+			return a.data.pubDate.valueOf() - b.data.pubDate.valueOf();
+		});
+
+	seriesTotal = seriesPosts.length;
+	seriesIndex = seriesPosts.findIndex((item) => item.id === post.id) + 1;
+
+	if (seriesIndex > 1) {
+		const prev = seriesPosts[seriesIndex - 2];
+		const slug = prev.id.replace(`${lang}/`, '');
+		seriesPrev = { title: prev.data.title, url: `/${lang}/blog/${slug}/` };
+	}
+
+	if (seriesIndex < seriesTotal) {
+		const next = seriesPosts[seriesIndex];
+		const slug = next.id.replace(`${lang}/`, '');
+		seriesNext = { title: next.data.title, url: `/${lang}/blog/${slug}/` };
+	}
+}
 ---
 
-<BlogPost {...post.data} lang={lang} availableLangs={availableLangs} postId={post.id}>
+<BlogPost
+	{...post.data}
+	lang={lang}
+	availableLangs={availableLangs}
+	postId={post.id}
+	seriesName={seriesName}
+	seriesIndex={seriesIndex}
+	seriesTotal={seriesTotal}
+	seriesPrev={seriesPrev}
+	seriesNext={seriesNext}
+>
 	<Content />
 </BlogPost>

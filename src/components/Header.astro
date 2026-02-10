@@ -127,6 +127,14 @@ const aboutUrl = lang === 'ko' ? '/ko/about' : `/${lang}/about`;
 				</svg>
 				<span>{t('nav.blog')}</span>
 			</a>
+			<a href={categoriesUrl} class="mobile-nav-item">
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<polygon points="12 2 2 7 12 12 22 7 12 2" />
+					<polyline points="2 17 12 22 22 17" />
+					<polyline points="2 12 12 17 22 12" />
+				</svg>
+				<span>{t('nav.categories')}</span>
+			</a>
 			<a href={tagsUrl} class="mobile-nav-item">
 				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 					<path d="M21 11.5L12.5 3H4v8.5L12.5 20a2 2 0 0 0 2.83 0L21 14.33a2 2 0 0 0 0-2.83z"/>
@@ -141,14 +149,6 @@ const aboutUrl = lang === 'ko' ? '/ko/about' : `/${lang}/about`;
 					<line x1="12" y1="8" x2="12.01" y2="8"/>
 				</svg>
 				<span>{t('nav.about')}</span>
-			</a>
-			<a href="/rss.xml" class="mobile-nav-item">
-				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<path d="M4 11a9 9 0 0 1 9 9"/>
-					<path d="M4 4a16 16 0 0 1 16 16"/>
-					<circle cx="5" cy="19" r="1"/>
-				</svg>
-				<span>RSS</span>
 			</a>
 			<div class="mobile-nav-divider"></div>
 			<a href={SOCIAL_LINKS.github} target="_blank" rel="noopener noreferrer" class="mobile-nav-item">
