@@ -10,7 +10,8 @@ export type UILanguage = keyof typeof languages;
 export const ui = {
   ko: {
     'nav.home': '홈',
-    'nav.blog': '블로그',
+    'nav.blog': '모든 글',
+    'nav.categories': '카테고리',
     'nav.about': '소개',
     'nav.tags': '태그',
     'nav.archive': '아카이브',
@@ -24,6 +25,10 @@ export const ui = {
     'blog.tags-description': '모든 글에서 사용한 태그를 빠르게 확인하세요.',
     'blog.no-tags': '아직 등록된 태그가 없습니다.',
     'blog.tag-count': '글 {count}개',
+    'blog.categories-title': '카테고리',
+    'blog.categories-description': '카테고리별로 글을 모아볼 수 있습니다.',
+    'blog.no-categories': '아직 등록된 카테고리가 없습니다.',
+    'blog.category-count': '글 {count}개',
     'blog.published': '작성일',
     'blog.updated': '수정일',
     'blog.views': '조회수',
@@ -123,7 +128,8 @@ export const ui = {
 
   jp: {
     'nav.home': 'ホーム',
-    'nav.blog': 'ブログ',
+    'nav.blog': 'すべての投稿',
+    'nav.categories': 'カテゴリー',
     'nav.about': '私について',
     'nav.tags': 'タグ',
     'nav.archive': 'アーカイブ',
@@ -137,6 +143,10 @@ export const ui = {
     'blog.tags-description': 'すべての投稿で使用されているタグを確認できます。',
     'blog.no-tags': 'タグがありません。',
     'blog.tag-count': '{count}件',
+    'blog.categories-title': 'カテゴリー',
+    'blog.categories-description': 'カテゴリー別に投稿を確認できます。',
+    'blog.no-categories': 'カテゴリーがありません。',
+    'blog.category-count': '{count}件',
     'blog.published': '公開日',
     'blog.updated': '更新日',
     'blog.views': '閲覧数',
@@ -236,7 +246,8 @@ export const ui = {
 
   en: {
     'nav.home': 'Home',
-    'nav.blog': 'Blog',
+    'nav.blog': 'All Posts',
+    'nav.categories': 'Categories',
     'nav.about': 'About',
     'nav.tags': 'Tags',
     'nav.archive': 'Archive',
@@ -250,6 +261,10 @@ export const ui = {
     'blog.tags-description': 'Explore every tag used across posts.',
     'blog.no-tags': 'No tags found.',
     'blog.tag-count': '{count} posts',
+    'blog.categories-title': 'Categories',
+    'blog.categories-description': 'Browse posts by category.',
+    'blog.no-categories': 'No categories found.',
+    'blog.category-count': '{count} posts',
     'blog.published': 'Published',
     'blog.updated': 'Updated',
     'blog.views': 'Views',

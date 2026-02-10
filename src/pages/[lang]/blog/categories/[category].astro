@@ -1,0 +1,181 @@
+---
+import BaseHead from '../../../../components/BaseHead.astro';
+import Header from '../../../../components/Header.astro';
+import Footer from '../../../../components/Footer.astro';
+import FloatingLanguagePicker from '../../../../components/FloatingLanguagePicker.astro';
+import { getCollection } from 'astro:content';
+import { useTranslations } from '../../../../i18n/ui';
+
+export async function getStaticPaths() {
+    const allPosts = await getCollection('blog');
+    const categoryKeys = new Set<string>();
+
+    allPosts.forEach((post) => {
+        const [lang] = post.id.split('/');
+        if (!lang) return;
+        const category = post.data.category ?? 'uncategorized';
+        categoryKeys.add(`${lang}:${category}`);
+    });
+
+    return Array.from(categoryKeys).map((key) => {
+        const [lang, category] = key.split(':');
+        return { params: { lang, category } };
+    });
+}
+
+const { lang, category } = Astro.params;
+const t = useTranslations(lang as 'ko' | 'jp' | 'en');
+const categoryValue = category ? decodeURIComponent(String(category)) : 'uncategorized';
+
+const allPosts = await getCollection('blog');
+const posts = allPosts
+    .filter((post) => post.id.startsWith(`${lang}/`))
+    .filter((post) => (post.data.category ?? 'uncategorized') === categoryValue)
+    .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+
+const categoryName = categoryValue;
+const categoryDescription = `${t('blog.categories-title')}: ${categoryValue}`;
+
+// 🎨 1. 확장된 파스텔 팔레트 (메인 페이지와 동일하게 유지)
+const PALETTE = [
+    'text-blue-400', 'text-green-400', 'text-purple-400', 'text-orange-400',
+    'text-pink-400', 'text-yellow-400', 'text-teal-400', 'text-indigo-400',
+    'text-red-400', 'text-cyan-400', 'text-lime-400', 'text-fuchsia-400',
+    'text-rose-400', 'text-emerald-400', 'text-violet-400', 'text-sky-400',
+    'text-amber-400',
+    // Soft Pastels
+    'text-red-300', 'text-orange-300', 'text-amber-300', 'text-yellow-300',
+    'text-lime-300', 'text-green-300', 'text-emerald-300', 'text-teal-300',
+    'text-cyan-300', 'text-sky-300', 'text-blue-300', 'text-indigo-300',
+    'text-violet-300', 'text-purple-300', 'text-fuchsia-300', 'text-pink-300',
+    'text-rose-300', 'text-slate-300',
+    // Very Light Pastels
+    'text-indigo-200', 'text-rose-200', 'text-teal-200', 'text-sky-200',
+    // Custom Hex
+    'text-[#ffadad]', 'text-[#ffd6a5]', 'text-[#fdffb6]', 'text-[#caffbf]',
+    'text-[#9bf6ff]', 'text-[#a0c4ff]', 'text-[#bdb2ff]', 'text-[#ffc6ff]',
+    'text-[#fffffc]'
+];
+
+// 🎨 2. 서버 사이드 해싱 (현재 카테고리 이름으로 색상 결정)
+let hash = 0;
+for (let i = 0; i < categoryValue.length; i++) {
+    hash = categoryValue.charCodeAt(i) + ((hash << 5) - hash);
+}
+const colorIndex = Math.abs(hash) % PALETTE.length;
+const categoryColor = PALETTE[colorIndex];
+---
+
+<!doctype html>
+<html lang={lang}>
+    <head>
+        <BaseHead title={categoryName} description={categoryDescription} />
+    </head>
+    <body class="bg-[#0d1117] text-slate-300">
+        <Header />
+        <FloatingLanguagePicker />
+        
+        <main class="max-w-5xl mx-auto px-4 py-10">
+            {/* 맥북 윈도우 컨테이너 */}
+            <div class="rounded-xl border border-slate-700 bg-[#161b22] shadow-2xl overflow-hidden min-h-[600px] flex flex-col">
+                
+                {/* 1. 윈도우 헤더 */}
+                <div class="h-14 sm:h-11 bg-[#21262d] border-b border-slate-700 flex items-center px-3 sm:px-4 justify-between shrink-0">
+                    <div class="flex gap-2">
+                        <div class="w-3 h-3 rounded-full bg-[#ff5f56] border border-[#e0443e]"></div>
+                        <div class="w-3 h-3 rounded-full bg-[#ffbd2e] border border-[#dea123]"></div>
+                        <div class="w-3 h-3 rounded-full bg-[#27c93f] border border-[#1aab29]"></div>
+                    </div>
+                    {/* 경로 표시 (Breadcrumb) */}
+                    <div class="text-[12px] sm:text-[13px] font-mono text-slate-400 flex items-center gap-2 px-2 sm:px-3 py-1 bg-[#0d1117] rounded border border-slate-700">
+                        <a href={`/${lang}/blog/categories`} class="hover:text-white transition-colors">categories</a>
+                        <span>/</span>
+                        {/* 해시 색상 적용 */}
+                        <span class={`${categoryColor} font-semibold`}>{categoryValue}</span>
+                    </div>
+                    <div class="w-8 sm:w-14"></div>
+                </div>
+
+                {/* 2. 폴더 이름 & 제목, 카테고리 */}
+                <div class="bg-[#161b22] border-b border-slate-800 p-4 sm:p-5">
+                    <div class="flex items-start gap-3 sm:gap-4">
+                        {/* 아이콘 (해시 색상 적용) */}
+                        <span class={`inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 ${categoryColor} shrink-0 mt-1`}>
+                            <svg viewBox="0 0 24 24" fill="currentColor" class="w-full h-full drop-shadow-md">
+                                <path d="M19.5 21a3 3 0 0 0 3-3v-4.5a3 3 0 0 0-3-3h-15a3 3 0 0 0-3 3V18a3 3 0 0 0 3 3h15ZM1.5 10.146V6a3 3 0 0 1 3-3h5.379a2.25 2.25 0 0 1 1.59.659l2.122 2.121c.14.141.331.22.53.22H19.5a3 3 0 0 1 3 3v1.146A4.483 4.483 0 0 0 19.5 9h-15a4.483 4.483 0 0 0-3 1.146Z" />
+                            </svg>
+                        </span>
+
+                        <div class="flex flex-col min-w-0">
+                            {/* flex-nowrap: 절대 줄바꿈 되지 않도록 강제 */}
+                            <div class="flex items-baseline gap-3 mb-1 flex-nowrap">
+                                {/* w-auto: 너비를 글자만큼만 차지 */}
+                                <h1 class="text-xl sm:text-2xl font-bold text-white tracking-tight truncate leading-none w-auto m-0">
+                                    {categoryName}
+                                </h1>
+
+                                {/* 뱃지 */}
+                                <span class="shrink-0 text-[11px] sm:text-xs px-2.5 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-400 font-medium translate-y-[-2px]">
+                                    {posts.length} items
+                                </span>
+                            </div>
+
+                            <p class="text-slate-400 text-sm leading-relaxed mb-0">
+                                {categoryDescription}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 3. 파일 리스트 (Finder List View) */}
+                <div class="flex-1 bg-[#0d1117]/50 overflow-y-auto">
+                    {posts.length === 0 ? (
+                        <p class="text-slate-500 p-8 text-center">{t('blog.no-posts')}</p>
+                    ) : (
+                        <div class="flex flex-col">
+                            {/* 헤더 행 */}
+                            <div class="flex px-6 py-2 border-b border-slate-800 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                <div class="flex-1">Name</div>
+                                <div class="w-32 text-right">Date</div>
+                            </div>
+
+                            {/* 파일 리스트 */}
+                            {posts.map((post) => {                            
+                                const slug = post.id
+                                    .replace(`${lang}/`, '')
+                                    .replace(/\.(md|mdx)$/, '');
+                                
+                                return (
+                                    <a href={`/${lang}/blog/${slug}/`} class="group flex items-center px-6 py-3 border-b border-slate-800/50 hover:bg-[#1f6feb]/20 transition-colors">
+                                        <div class="flex-1 flex items-center gap-3 min-w-0">
+                                            {/* 파일 아이콘 (고정 색상 또는 해시 색상) */}
+                                            {/* 여기서는 파일 아이콘은 통일성을 위해 파란색이나 회색을 추천하지만, 카테고리 색을 따라가게 했습니다. */}
+                                            <svg class={`w-5 h-5 ${categoryColor} opacity-80 group-hover:opacity-100 shrink-0`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                            
+                                            <div class="flex flex-col min-w-0">
+                                                <span class="text-sm font-medium text-slate-300 group-hover:text-white truncate">
+                                                    {post.data.title}
+                                                </span>
+                                                <span class="text-xs text-slate-500 group-hover:text-slate-300 truncate md:hidden">
+                                                    {post.data.description}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="w-32 text-right text-xs text-slate-500 font-mono group-hover:text-slate-300 shrink-0">
+                                            {post.data.pubDate.toISOString().slice(0, 10)}
+                                        </div>
+                                    </a>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </main>
+        <Footer />
+    </body>
+    {/* 스크립트 삭제됨: 서버에서 색상을 미리 입혀서 보내므로 필요 없음 */}
+</html>

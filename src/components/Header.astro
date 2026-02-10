@@ -6,6 +6,7 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const homeUrl = lang === 'ko' ? '/' : `/${lang}/`;
 const blogUrl = lang === 'ko' ? '/ko/blog' : `/${lang}/blog`;
+const categoriesUrl = lang === 'ko' ? '/ko/blog/categories' : `/${lang}/blog/categories`;
 const tagsUrl = lang === 'ko' ? '/ko/blog/tags' : `/${lang}/blog/tags`;
 const aboutUrl = lang === 'ko' ? '/ko/about' : `/${lang}/about`;
 ---
@@ -24,6 +25,16 @@ const aboutUrl = lang === 'ko' ? '/ko/about' : `/${lang}/about`;
 					</svg>
 				</span>
 				<span>{t('nav.blog')}</span>
+			</a>
+			<a href={categoriesUrl} class="desktop-nav-link">
+				<span class="nav-icon">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					  <polygon points="12 2 2 7 12 12 22 7 12 2" />
+					  <polyline points="2 17 12 22 22 17" />
+					  <polyline points="2 12 12 17 22 12" />
+					</svg>
+				</span>
+				<span>{t('nav.categories')}</span>
 			</a>
 			<a href={tagsUrl} class="desktop-nav-link">
 				<span class="nav-icon">
