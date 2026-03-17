@@ -479,6 +479,10 @@ p {
 	margin-bottom: 2em;
 }
 
+.prose-none * {
+  margin-bottom: 0 !important;
+}
+
 textarea {
 	width: 100%;
 	font-size: 16px;
