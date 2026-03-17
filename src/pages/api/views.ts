@@ -62,6 +62,16 @@ export const POST: APIRoute = async ({ request }) => {
       return new Response(JSON.stringify({ views, skipped: true }), { status: 200 });
     }
 
+    const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
+    const historyKey = `history:${ip}:${slug}`;
+
+    const isNewView = await redis.set(historyKey, '1', { nx: true, ex: 3600 });
+
+    if (!isNewView) {
+      const views = await redis.get<number>(`pageviews:${slug}`) || 0;
+      return new Response(JSON.stringify({ views, duplicated: true }), { status: 200 });
+    }
+
     const views = await redis.incr(`pageviews:${slug}`);
     
     return new Response(JSON.stringify({ views }), { status: 200 });
