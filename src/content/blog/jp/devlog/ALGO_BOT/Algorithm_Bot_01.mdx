@@ -1,0 +1,140 @@
+---
+title: 'アルゴリズムの復習と効率化'
+description: 'アルゴリズムの学習を遅く始めた人々向けに、アルゴリズム学習の効率化（？）'
+pubDate: '2025-12-24'
+heroImage: '/images/slack_bot.png'
+tags: ['algorithm', 'bot']
+category: 'algo_bot'
+series: 'Algorithm Bot'
+seriesOrder: 1
+---
+
+## アルゴリズム学習  
+まず、私は比較的遅くアルゴリズムの学習を始めた人です。もちろん、アルゴリズムが重要であることはわかっていたものの、アルゴリズムを解くのが楽しくて解いている人を見ると  
+うーん…私はそのタイプではなく、就職準備を遅く始めたものの、アルゴリズムの学習を始めたのです。  
+以前学習したときは、講義を視聴→問題を解く→知らないことを復習→整理するという順序で学習していましたが、このように進めると、以前解いた問題を忘れてしまうことが多かったです。
+
+今回は、エビングハウスの忘却曲線理論に基づいて復習周期を設定し、それに合わせて復習する問題を自動で通知するボットを作成しました。Slack Webhookを利用して、毎朝復習する問題を通知するようにしました。
+
+私はGitHub Pages + Docusaurusを使ってアルゴリズム問題を整理しており、Docusaurusで整理した問題の中から復習周期に合った問題を抽出してSlackに送信するようにしました。  
+GitHub リポジトリのGitログを活用し、各問題ファイルの最初の作成日を抽出し、今日の日付と比較して復習周期に合った問題を選別しました。  
+このコードは私のファイル構造を基準としているため、必要に応じてパスを調整して使用してください。
+
+これは効率的かどうかは、おそらく3か月ほど試してみないとわかりません。**2025年2月28日**に再度、後記を残すようにします。
+
+23日に2問を解いたので、24日に2問を復習するよう通知が届きました;;  
+24日にはその2問を復習し、必要に応じて追加の問題を解く必要がありますよね？復習量が少し心配ですが... まずはやってみるしかありません。
+
+## 補足設定  
+また、設定が必要な項目として、該当するGitHub リポジトリ -> 設定 -> 左側メニューの **Secrets and variables** -> **Actions** -> **New repository secret** で、**SLACK_WEBHOOK_URL** という名前でSlack Webhook URLを登録する必要があります。
+
+Slack Webhookの設定方法は[https://api.slack.com/messaging/webhooks](https://api.slack.com/messaging/webhooks)で確認できます。
+
+## コード
+
+```python
+import os
+import datetime
+import subprocess
+import requests
+
+# [設定] 復習周期（エビングハウスの忘却曲線理論に基づく）
+REVIEW_CYCLES = [1, 3, 7, 14, 30] 
+SLACK_URL = os.environ.get("SLACK_WEBHOOK_URL")
+
+# Docusaurus デプロイURL（ユーザーのリポジトリ基準）
+BASE_DOCS_URL = "https://hun-bot2.github.io/docs"
+
+# 監視する最上位アルゴリズムのパス
+TARGET_DIR = "study/docs/Algorithm"
+# 除外ファイルリスト
+EXCLUDE_FILES = ["intro.md", "intro.mdx", "_category_.json"]
+
+def get_first_commit_date(filepath):
+    """Gitログからファイルの最初の作成日を抽出します。"""
+    try:
+        # --diff-filter=Aオプションで最初の追加時点の日付のみ取得
+        cmd = ["git", "log", "--diff-filter=A", "--follow", "--format=%as", "--reverse", filepath]
+        output = subprocess.check_output(cmd).decode("utf-8").strip()
+        return output.split('\n')[0] if output else None
+    except:
+        return None
+
+if __name__ == "__main__":
+    today = datetime.date.today()
+    review_list = []
+
+    if not os.path.exists(TARGET_DIR):
+        print(f"パスが見つかりません: {TARGET_DIR}")
+        exit(0)
+
+    for root, dirs, files in os.walk(TARGET_DIR):
+        for f in files:
+            # 除外対象ファイルフィルタリング
+            if f in EXCLUDE_FILES or not (f.endswith(".md") or f.endswith(".mdx")):
+                continue
+            
+            path = os.path.join(root, f)
+            first_date_str = get_first_commit_date(path)
+            
+            if first_date_str:
+                first_date = datetime.datetime.strptime(first_date_str, "%Y-%m-%d").date()
+                diff = (today - first_date).days
+                
+                # 復習周期に該当する場合のみスラックメッセージに追加
+                if diff in REVIEW_CYCLES:
+                    # Docusaurus URLパス生成
+                    # 例: study/docs/Algorithm/Baekjoon/DP/11660.md 
+                    # -> Algorithm/Baekjoon/DP/11660
+                    rel_path = os.path.relpath(path, "study/docs").replace(".mdx", "").replace(".md", "")
+                    link = f"{BASE_DOCS_URL}/{rel_path}"
+                    
+                    # プラットフォーム名抽出（Algorithmフォルダ直下のフォルダ名）
+                    # 構造: Algorithm/プラットフォーム/タイプ/問題.md
+                    path_parts = os.path.relpath(path, TARGET_DIR).split(os.sep)
+                    platform = path_parts[0] if len(path_parts) > 1 else "General"
+                    
+                    review_list.append(f"• [{platform}] <{link}|{f}> (D+{diff} 復習)")
+
+    if review_list:
+        msg = f"今日のアルゴリズム復習（基準日: {today}）\n" + "\n".join(review_list)
+        if SLACK_URL:
+            requests.post(SLACK_URL, json={"text": msg})
+        else:
+            print("Slack URLが設定されていません。結果のみ出力します:\n", msg)
+    else:
+        print("今日は復習する問題がありません。")
+```
+### GitHub Actions workflow 設定
+
+```yml
+name: アルゴリズム毎日復習ボット
+
+on:
+  schedule:
+    # 毎日韓国時間午前9時（UTC 00:00）に実行
+    - cron: '0 0 * * *'
+  workflow_dispatch: # テスト目的で手動実行ボタンを有効化
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: リポジトリのチェックアウト
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # 全てのGitログを取得する必要があるため、日付計算が可能になる
+
+      - name: Pythonのセットアップ
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: 依存関係のインストール
+        run: pip install requests
+
+      - name: notifyスクリプトの実行
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }} #
+        run: python study/scripts/notify.py
+```

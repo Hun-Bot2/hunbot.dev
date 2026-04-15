@@ -1,0 +1,102 @@
+---
+title: 'DevLog 01'
+description: 'Building an Astro-based blog, dark theme implementation, and layout improvements log'
+pubDate: '2025-10-27'
+# heroImage: '../../assets/KOSSDA.png'
+tags: ['Devlog', 'Astro', 'Tailwind']
+category: 'blog_devlog'
+series: '블로그 개발일지'
+seriesOrder: 1
+---
+
+## Project
+Personal Blog Build & Operation Log
+
+**Period:** Sept 2025 - Present
+**Role:** Blog Operator
+
+
+
+## Deployment Link / Repository
+
+Deployment Link: https://hunbot-dev.vercel.app/
+GitHub: https://github.com/Hun-Bot2/hunbot.dev
+
+---
+
+## Blog Author
+
+*   **Key Responsibilities**: Content creation, design/layout improvements, performance and accessibility enhancement, deployment automation
+*   **Technologies Used**: TypeScript, Astro, Tailwind CSS, MDX
+
+
+
+## Building a Blog (Platforms · Tools)
+
+*   **Framework:** Astro v5.x (Content-focused, Zero-JS oriented, Islands Architecture)
+*   **Styling:** Tailwind CSS + global `global.css` tokens (color/font/spacing)
+*   **Content:** Markdown/MDX + Astro Content Collections (type-safe Frontmatter validation)
+*   **Images:** Sharp-based build optimization (WebP/AVIF), lazy loading
+*   **SEO:** `BaseHead.astro` metadata, `sitemap.xml.ts`, and `rss.xml.js` configuration
+
+
+
+## Key Tasks Summary
+
+1. Improving the Header (`src/components/Header.astro`)
+  - Full-bleed width + sticky positioning
+  - Left: Title, Right: Icons (Theme, GitHub, LinkedIn, Blog, RSS, Search, Menu)
+  - Moving the Header outside of `.global-wrapper` in both `index.astro` and `blog/index.astro` to remove width restrictions
+
+2. Cleaning up the Footer (`src/components/Footer.astro`)
+*   Removed duplicate rendering and reduced padding (`mt-20→mt-12`, `py-16→py-8`)
+*   Improved readability (increased text size, adjusted icon size)
+
+3. Dark theme system (`src/styles/global.css`)
+  - Background set to `rgb(40,40,40)` / Body to `rgb(248,249,250)` for clear contrast.
+  - Links and focus states unified to an orange palette, removing the blue palette.
+  - Applied `scroll-margin-top: 5rem` to headings to prevent conflicts with the sticky header.
+
+4. Content/Layout Consistency
+  - Ensure visual consistency across the /, /blog, and /about pages.
+  - Clean up the dark palette for the BlogPost/TOC components and remove unnecessary blue accents.
+
+
+
+## Tech Stack and Setup
+
+- `package.json`: Includes astro, @astrojs/tailwind, @astrojs/mdx, sharp, and @fontsource*.
+- `tailwind.config.mjs`: `darkMode: 'class'`, color/font extensions.
+- Fonts: Inter (English), Noto Sans/Serif KR (Korean), JetBrains Mono (Code).
+- Theme Management:
+  - Site: An inline script in `BaseHead.astro` toggles `<html class="dark">` (using sessionStorage).
+  - Visualization: `public/scripts/themeManager.js` provides a color palette for 3D visualization.
+
+
+
+## Performance · Accessibility
+
+*   Maintaining Astro's Zero-JS default behavior and selectively hydrating only what's necessary.
+*   Implementing image optimization using Sharp and lazy loading.
+*   I plan to improve body readability (font, spacing, contrast) and clean up the keyboard focus styles.
+
+
+
+## Future Plans
+
+*   Color residue cleanup and final inspection on pages like `/about`.
+*   Reviewing theme logic integration (BaseHead inline vs. ThemeManager consolidation).
+*   Adding automated smoke tests for build/preview.
+*   Investigating implementing a lightweight CMS (Netlify/Decap, Supabase, or Headless CMS).
+*   Improving the search/filter functionality and image upload workflow.
+*   Implementing SEO features.
+
+
+
+## Work Timeline (Summary)
+- 2025-06-24 ~ 2025-10-14: Started blog setup, abandoning the previous Three.js implementation and applying a clean, article-style blog layout.
+- 2025-10-27: Defined dark theme color tokens, improved Header/Footer layouts, standardized TOC/BlogPost dark styles, and wrote the development journal.
+
+
+
+Date: 2025-10-27
