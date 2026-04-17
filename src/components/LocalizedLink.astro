@@ -5,7 +5,6 @@ interface Props {
   href: string;
   class?: string;
 }
-
 const { href, class: className } = Astro.props as Props;
 
 const currentLocale = Astro.currentLocale || 'ko';
@@ -17,7 +16,11 @@ if (!isExternal) {
   // Normalize internal paths so old hardcoded locale links also work.
   const withoutLocalePrefix = href.replace(/^\/(ko|jp|en)(?=\/|$)/, '');
   const route = withoutLocalePrefix.replace(/^\/+/, '');
+  
   localizedHref = getRelativeLocaleUrl(currentLocale, route);
+}
+if (currentLocale === 'ko' && localizedHref.startsWith('/blog/') && !localizedHref.startsWith('/ko/')) {
+  localizedHref = `/ko${localizedHref}`;
 }
 ---
 

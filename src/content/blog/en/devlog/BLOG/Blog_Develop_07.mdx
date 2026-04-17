@@ -1,0 +1,83 @@
+---
+title: 'Blog Devlog 07'
+description: 'Using Local LLM for Blog Post Translation'
+pubDate: '2026-02-07'
+heroImage: '/images/BLOG/blog-arch-v2.png'
+tags: ['Local LLM', '자동 번역', '블로그']
+category: 'blog_devlog'
+series: 'blog-devlog'
+seriesOrder: 7
+---
+
+Do we really need a translator when Google Translate already exists? That was my first thought. But I felt it would be better to organize blog posts by language, so I added English and Japanese pages. Since manual translation every time is both difficult and time-consuming, I wanted to run a strong model locally and implement translation without ongoing API costs. The thumbnail image shows the overall architecture diagram.
+
+The workflow is as follows:
+1. I write the blog post in Korean in VS Code (the file is stored locally, and I manually commit and push when I want).
+2. I run the local LLM from the terminal and enter a translation command (monitoring and logging are mandatory).
+3. The translated post is saved in my VS Code project under the /en and /jp folders.
+4. While the AI reviews the output, I also review it to check translation quality.
+5. I manually commit and push.
+
+## Choosing a Local LLM
+For English translation, I chose Ollama's gamma2 model, and for Japanese translation, I chose Qwen2.5:7b. I selected models that were rated highly based on community feedback and benchmark results.
+
+I ran them overnight and checked the results in the morning, but the models caused problems. For example, in the Japanese and English versions of "Blog Devlog 05," the LLM added content it wanted to write on its own.
+
+### Korean Version
+```markdown
+---
+title: '블로그 개발일지 05'
+description: '조회수 기능 수정 및 앞으로 계획'
+pubDate: '2025-12-30'
+#heroImage: '/images/giscus.png'
+tags: ['Devlog', 'Bug Fix']
+category: 'devlog'
+---
+```
+
+### Japanese Version
+The English version had similar issues.
+```markdown
+---
+title: 'ブログ開発日誌 05
+
+---
+
+ご無沙汰しております。本日の開発日誌では、最近の作業についてレポートいたします。
+
+まず初めに、Local LLM の統合を完了しました。これはプロジェクトにとって重要で、次期バージョンでの性能向上につながります。
+
+その後、vscode の自動完成機能を改良しました。これにより開発効率が大幅に向上します。
+
+最後に、次のタスクについて議論しました: ['UI/UX改善', 'テスト自動化']。これらは今後数週間の主要タスクとなります。
+
+以上です。次回の日誌では、これらの改善点をどのように実装したのか詳しくお伝えします。
+
+よろしくお願いいたします。'
+description: '### クリック数機能の修正と今後の計画
+
+---
+
+[tags: ['修正', '計画']]'
+pubDate: '2025-12-30'
+#heroImage: '/images/giscus.png'
+tags: ['開発日誌', 'バグ Fixes']
+category: 'devlog'
+---
+```
+
+Because of these issues, I plan to discard all translated outputs first and then revise the logic.
+Before anything else, I need to understand how each model behaves. Then I can decide whether to improve prompt engineering or split the Python code into more detailed steps.
+
+I also think loading images separately for every translated post may be inefficient. I should complete the translation system first, then work on optimization.
+
+## Grafana (LLM Monitoring)
+![Grafana LLM Monitoring Dashboard](/images/BLOG/grafana01.png)
+
+When running an LLM, monitoring is essential: how fast it runs, token throughput, and GPU usage. I used Grafana for that.
+Grafana is an open-source monitoring tool that connects to many data sources and provides strong visualization. It was my first time using it, but it was easier than expected, so I got used to it quickly.
+
+## Closing
+In this development cycle, I focused on implementing the overall blog architecture and a translation feature powered by a local LLM. From here, I mainly need to improve translation quality through better prompt engineering and code optimization.
+
+Also, duplicated image loading across language versions of each post likely needs optimization. In the next devlog, I will cover **translation quality improvements and optimization**. Thanks for reading.
