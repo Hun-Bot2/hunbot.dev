@@ -1,0 +1,33 @@
+---
+import { getRelativeLocaleUrl } from 'astro:i18n';
+
+interface Props {
+  href: string;
+  class?: string;
+}
+
+const { href, class: className } = Astro.props as Props;
+
+const currentLocale = Astro.currentLocale || 'ko';
+const isExternal = /^(https?:)?\/\//.test(href) || href.startsWith('mailto:') || href.startsWith('tel:');
+
+let localizedHref = href;
+
+if (!isExternal) {
+  // Normalize internal paths so old hardcoded locale links also work.
+  const withoutLocalePrefix = href.replace(/^\/(ko|jp|en)(?=\/|$)/, '');
+  const route = withoutLocalePrefix.replace(/^\/+/, '');
+  localizedHref = getRelativeLocaleUrl(currentLocale, route);
+}
+---
+
+<a href={localizedHref} class={className}>
+  <u>*<slot />*</u>
+</a>
+
+<style>
+  a {
+    text-decoration: none;
+    color: inherit;
+  }
+</style>

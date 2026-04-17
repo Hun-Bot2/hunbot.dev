@@ -5,6 +5,7 @@ import tailwind from '@astrojs/tailwind';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import vercel from '@astrojs/vercel/serverless';
+import remarkLocalizedBlogLinks from './src/utils/remark-localized-blog-links.mjs';
 
 export default defineConfig({
   site: 'https://hun-bot.dev',
@@ -21,7 +22,7 @@ export default defineConfig({
   },
   integrations: [
     mdx({
-      remarkPlugins: [remarkMath],
+      remarkPlugins: [remarkLocalizedBlogLinks, remarkMath],
       rehypePlugins: [
         [rehypeKatex, { strict: false }] // 한글 수식(Unicode) 경고 해결
       ],
@@ -31,7 +32,7 @@ export default defineConfig({
     tailwind(),
   ],
   markdown: {
-    remarkPlugins: [remarkMath],
+    remarkPlugins: [remarkLocalizedBlogLinks, remarkMath],
     rehypePlugins: [
       [rehypeKatex, { strict: false }] // .md 파일에서도 동일하게 적용
     ],
