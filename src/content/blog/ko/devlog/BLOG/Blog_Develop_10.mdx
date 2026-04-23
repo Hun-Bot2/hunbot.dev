@@ -1,0 +1,116 @@
+---
+title: '블로그 개발일지 10'
+description: '블로그 문제점 개선하기: 포스트간 링크 이동 오류'
+pubDate: '2026-04-23'
+# heroImage: '/images/BLOG/redis-after.png'
+tags: ['blog', 'development','devlog','redis']
+category: 'blog_devlog'
+series: '블로그 개발일지'
+seriesOrder: 10
+---
+
+이 문제는 블로그에 새로운 폴더를 만들고, 새로 포스팅할 글을 작성하는데, 다른 폴더에 있는 글로 이동시 `(/ko/blog/devlog/blog/blog_develop_07/)` 이런식으로 redirect를 하도록 해뒀습니다.
+
+문제는 한국어까지는 이동이 되는데, 영어로 바꾸고 이동을 하면 /ko -> 이게 고정되어 있기에, 영어 포스팅이 아닌 한국어 포스팅으로 이동이 되는 문제가 있었습니다.
+
+기존 지식으로는 2가지 방법이 먼저 떠올랐고
+1. 아직까지는 문서량이 적어서, 모든 문서를 열어가며 확인해서 수정하는 방법.
+2. vercel의 middleware를 활용하는 방법.
+
+이를 제외하고서 어떤 방법이 있을지 AI에게 물어봤더니,
+```markdown
+이를 해결하기 위해 콘텐츠와 라우팅을 분리(Decoupling)하는 3가지 아키텍처 패턴을 제안합니다.
+
+### Build-Time AST 변환 아키텍처 (SSG 최적화)
+
+가장 Astro 친화적이며 성능 손실이 없는 정적 사이트 생성(SSG) 방식의 해결책입니다.
+
+  * **설계 개념:** 작성자는 마크다운에 언어 종속적인 경로를 적지 않습니다. 대신 상대 경로(`../blog_develop_07/`)나 추상화된 식별자(`@post/blog_develop_07`)만을 작성합니다.
+  * **시스템 흐름:**
+    1.  Astro가 빌드(Build)될 때 마크다운 문서를 읽어 추상 구문 트리(AST) 구조로 파싱합니다.
+    2.  사용자 정의 Remark 또는 Rehype 플러그인이 실행되어 모든 `<a>` 태그의 링크를 스캔합니다.
+    3.  현재 파싱 중인 마크다운 파일이 속한 언어 디렉토리(예: `en` 폴더)의 컨텍스트를 파악합니다.
+    4.  플러그인이 추상화된 링크 앞에 현재 컨텍스트의 언어 접두사(`/en/`)를 동적으로 조립하여 최종 HTML을 생성합니다.
+  * **장단점:** 클라이언트 브라우저에서 실행되는 자바스크립트가 없으므로 성능이 완벽합니다. 단, 빌드 파이프라인(AST 플러그인)을 직접 구성해야 하는 난이도가 있습니다.
+
+### Content Identifier 매핑 아키텍처 (Headless CMS 패턴)
+
+마크다운을 MDX로 확장하여 컴포넌트 기반으로 라우팅을 통제하는 방식입니다.
+
+  * **설계 개념:** 링크를 '경로'가 아닌 '콘텐츠의 고유 ID'로 취급합니다. 각 게시글의 Frontmatter에 고유한 `uuid`나 `slug`를 부여합니다.
+  * **시스템 흐름:**
+    1.  본문 작성 시 표준 마크다운 링크 `[]()` 대신, 커스텀 MDX 컴포넌트인 `<InternalLink id="blog_develop_07" />`를 사용합니다.
+    2.  이 컴포넌트는 내부적으로 전역 상태나 Astro의 `Astro.url`을 통해 사용자가 현재 보고 있는 페이지의 언어 상태(Locale State)를 읽어옵니다.
+    3.  컴포넌트가 렌더링될 때, 주입받은 `id`와 현재의 `locale`을 결합하여 올바른 `/en/blog/...` 형태의 하이퍼링크를 동적으로 반환합니다.
+  * **장단점:** 구조가 매우 명시적이고 관리가 편합니다. 파일 경로가 바뀌어도 고유 ID만 같으면 링크가 깨지지 않습니다. 다만, 기존 마크다운 링크 문법을 모두 커스텀 컴포넌트로 교체해야 하는 번거로움이 있습니다.
+
+### Edge Middleware 라우팅 아키텍처 (Vercel 특화)
+
+애플리케이션(Astro) 단이 아닌, 네트워크 인프라(Vercel Edge) 단에서 트래픽을 가로채어 해결하는 방식입니다.
+
+  * **설계 개념:** 마크다운에는 `/ko/...` 처럼 한국어 기준의 경로를 그대로 둡니다. 대신 사용자가 링크를 클릭하여 서버로 요청이 갈 때, 중간에서 목적지를 바꿔치기합니다.
+  * **시스템 흐름:**
+    1.  영어 페이지를 보던 사용자가 본문의 `/ko/blog/devlog_07` 링크를 클릭합니다.
+    2.  요청이 Vercel Edge Middleware에 도달합니다.
+    3.  미들웨어가 사용자의 쿠키(예: `NEXT_LOCALE=en`) 또는 브라우저의 `Accept-Language` 헤더, 혹은 직전 페이지의 Referer를 분석하여 이 사용자가 영어를 선호한다는 것을 파악합니다.
+    4.  대상 URL의 `/ko/` 부분을 `/en/`으로 Rewrite(주소창은 그대로 두고 내용만 바꿈) 하거나 301 Redirect(주소창도 바꿈) 시켜서 올바른 페이지로 꽂아줍니다.
+  * **장단점:** 이미 작성된 마크다운 파일을 단 한 글자도 수정할 필요가 없습니다. 외부에서 잘못된 링크로 접속해도 올바른 언어로 자동 라우팅해주는 강력한 사용자 경험을 제공합니다. 단, 매 요청마다 Edge 함수가 실행되므로 (미미하지만) 서버리스 컴퓨팅 비용이 발생합니다.
+
+-----
+
+### 학습 및 참조 링크 모음
+
+이러한 아키텍처를 깊이 있게 공부하고 포스팅에 녹여내기 위해 참고해야 할 공식 문서들입니다.
+
+  * **Astro Internationalization (i18n) 공식 라우팅 가이드:** Astro가 기본적으로 언어별 라우팅을 어떻게 처리하는지 기초 구조를 파악할 수 있습니다.
+      * docs.astro.build/en/guides/internationalization/
+  * **Unified / Remark AST 플러그인 제작 가이드 (1번 아키텍처용):** 마크다운 구문을 프로그래밍 방식으로 조작하는 트리의 개념을 배울 수 있습니다.
+      * [unifiedjs.com/learn/guide/create-a-plugin/](https://unifiedjs.com/learn/guide/create-a-plugin/)
+  * **Vercel Edge Middleware i18n 패턴 (3번 아키텍처용):** 엣지 네트워크에서 국가 및 언어별로 트래픽을 분기하는 설계 패턴입니다.
+      * [vercel.com/docs/edge-network/middleware](https://www.google.com/search?q=https://vercel.com/docs/edge-network/middleware)
+```
+
+보면 AST, Edge Middleware은 내가 하려고 하는 기능에 비해 너무 과하다. 그래서 커스텀 컴포넌트를 통해서 라우팅을 제어하는 방법이 가장 적합하다고 생각이 되어서, 이 방법으로 구현하기로 했습니다.
+기존 글에서 한국어 포스팅으로 고정한 형태가 몇 개 되지 않아서, 시간을 많이 들이지 않고 수정할 수 있었습니다. 코드 상 어려움은 없고, 매우 쉬운 방식으로 구현이 가능했습니다.
+
+`import LocalizedLink from '@/components/LocalizedLink.astro';`
+
+링크에 대한 글을 작성할 때, `<LocalizedLink href="/blog/devlog/blog/blog_develop_07/">Blog Devlog 07 - Using Local LLM for Blog Post Translation</LocalizedLink>` 이런식으로
+감싸서 사용하면, 자동으로 언어에 맞는 링크로 이동이 되도록 구현을 했습니다. 기존에 작성된 글들도 이 방식으로 수정해서 적용을 했습니다.
+
+```javascript
+import { getRelativeLocaleUrl } from 'astro:i18n';
+
+interface Props {
+  href: string;
+  class?: string;
+}
+const { href, class: className } = Astro.props as Props;
+
+const currentLocale = Astro.currentLocale || 'ko';
+const isExternal = /^(https?:)?\/\//.test(href) || href.startsWith('mailto:') || href.startsWith('tel:');
+
+let localizedHref = href;
+
+if (!isExternal) {
+  // Normalize internal paths so old hardcoded locale links also work.
+  const withoutLocalePrefix = href.replace(/^\/(ko|jp|en)(?=\/|$)/, '');
+  const route = withoutLocalePrefix.replace(/^\/+/, '');
+  
+  localizedHref = getRelativeLocaleUrl(currentLocale, route);
+}
+if (currentLocale === 'ko' && localizedHref.startsWith('/blog/') && !localizedHref.startsWith('/ko/')) {
+  localizedHref = `/ko${localizedHref}`;
+}
+```
+
+## 다음 구현
+지난 글에 다국어 블로그 글을 배포 완료한다고 했는데, 이게 구현하다보니 Machine Translation 분야(MT)까지 들어가게 되어서, 목표했던 3/28일보다는 한참 더 걸릴 것 같습니다.
+지금 글을 쓰고 있는 시점은 중간고사가 끝난 "4월23일"입니다. ;;;
+
+아래에 구현 숙제들을 정리해두겠습니다.
+
+1. 댓글 시스템 Giscus -> 실제 DB로 구현하기(일정 수준 인증만 거치면 누구나 댓글을 달 수 있도록)
+2. 검색 기능이 지금은 깡통인데, https://pagefind.app/ 이걸 사용해서 구현하려고 합니다.
+3. 이제 조회수가 늘어나면, 조회수에 따른 인기 글 기능을 추가하려고 합니다.
+4. 공지사항 배너 기능도 추가하려고 합니다. (예: 새로운 글이 올라왔을 때, 블로그 점검, 소개 섹션 업데이트 등등)
