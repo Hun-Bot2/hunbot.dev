@@ -479,6 +479,15 @@ p {
 	margin-bottom: 2em;
 }
 
+/* Keep list-item paragraphs compact and remove extra trailing gap. */
+.prose li > p {
+	margin-bottom: 0em;
+}
+
+.prose li > p:last-child {
+	margin-bottom: 0 !important;
+}
+
 .prose-none * {
   margin-bottom: 0 !important;
 }
