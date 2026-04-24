@@ -248,6 +248,14 @@ body.dark-theme pre.astro-code span {
   color: var(--shiki-dark) !important;
 }
 
+body.dark-theme .prose :not(pre) > code {
+	background: rgba(68, 40, 20, 0.16);
+	color: #ffe7cf;
+	border: 1px solid rgba(251, 146, 60, 0.35);
+	border-radius: 0.35rem;
+	padding: 0.05em 0.35em;
+}
+
 /* light theme */
 body.light-theme {
 	background: #f8fafc;
@@ -256,7 +264,7 @@ body.light-theme {
 }
 
 body.light-theme pre.astro-code {
-  background-color: #f7f3ed !important; 
+  background-color: #d0bc9e !important; 
 }
 
 body.light-theme .header-wrapper {
@@ -341,9 +349,11 @@ body.light-theme .prose a {
 }
 
 body.light-theme .prose :not(pre) > code {
-	background: rgba(15, 23, 42, 0.08);
-	color: #0f172a;
-	border-color: rgba(15, 23, 42, 0.2);
+	background: rgba(251, 146, 60, 0.14);
+	color: #7c2d12;
+	border: 1px solid rgba(194, 65, 12, 0.28);
+	border-radius: 0.35rem;
+	padding: 0.05em 0.35em;
 }
 
 body.light-theme .prose pre code {
