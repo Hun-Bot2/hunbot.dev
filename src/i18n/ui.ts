@@ -46,10 +46,8 @@ export const ui = {
     
     'about.stats.role': '현재 역할',
     'about.stats.role.value': '학생',
-    'about.stats.location': '지역',
-    'about.stats.location.value': '서울 · 대한민국',
     'about.stats.focus': '관심 주제',
-    'about.stats.focus.value': 'MLOps, LLM, 3D Web, CV',
+    'about.stats.focus.value': 'MLOps, LLM, 3D Web',
     'about.stats.languages': '사용 언어',
     'about.stats.languages.value': '한국어(모국어)\n'+ '日本語(일상회화)\n' + 'English(일상회화)',
 
@@ -59,111 +57,130 @@ export const ui = {
     'about.major': '컴퓨터교육과 / 뇌인지과학(자기설계융합전공)',
     'about.status': '재학 중',
     'about.university-desc':
-      '곧 졸업을 앞두고 있는 성균관대학교 컴퓨터교육과 학생입니다. 컴퓨터교육과에서 프로그래밍과 소프트웨어 개발의 기초를 배우고, 뇌인지과학(지능정보융합전공)에서 AI · LLM · 3D Vision을 공부하며 "사람이 쓸 수 있는 AI 서비스"를 만드는 관점을 키우고 있습니다.',
-    'about.academics.title': 'Educational Background',
-    'about.academics.subtitle': '학부생 — 성균관대학교 컴퓨터교육과 · 뇌인지과학',
+      '성균관대학교에서 컴퓨터교육과 지능정보융합공학을 공부하며 곧 졸업을 앞두고 있습니다. 마음이 이끄는 대로 재미있는 것을 찾기 위해 여러 분야를 부딪혀보며 탐색했습니다. 실제 동작하는 AI 서비스를 만들고 시스템을 엮어내는 엔지니어링이 가장 제 적성에 맞는다는 것을 깨닫고, 지금은 즐겁게 개발에만 몰두하고 있습니다.',
+    'about.academics.title': '수강한 과목들',
+    'about.academics.self.title': 'Independent Study',
+    'about.academics.self.courses':
+      'Go · Rust · MLOps · RAG Pipeline · WebGPU · Three.js',
+    'about.academics.self.focus.current.label': 'CURRENT',
+    'about.academics.self.focus.current.value': 
+      '기계 번역(MT) 파이프라인 연구 · 효율적인 AI 프로덕트 설계',
+    'about.academics.self.focus.past.label': 'PAST',
+    'about.academics.self.focus.past.value': 
+      '자율주행(ROS2) · 디스플레이 공정 실습 · 뇌인지과학',
     'about.academics.cs.title': 'Computer Science',
     'about.academics.cs.courses':
-      '운영체제 · 소프트웨어공학 · 컴퓨터그래픽스개론\n' +
-      '· 자료구조 · 컴퓨터 구조 · 네트워크 구조\n' +
-      '· 리눅스 시스템 프로그래밍 · 데이터베이스 시스템',
+      '운영체제 · 소프트웨어공학 · 컴퓨터그래픽스개론' +
+      '· 자료구조 · 컴퓨터 구조 · 네트워크 구조' +
+      '· 리눅스 시스템 프로그래밍 · 데이터베이스' +
+      '· 시스템 프로그램(CS:APP)' ,
     'about.academics.ai.title': 'Artificial Intelligence',
     'about.academics.ai.courses':
-      '기계학습원론 · AI기반 전략적의사결정\n' +
-      '· 인공지능개론 · 인지신경과학 · 데이터 보안 · AI 윤리',
+      '기계학습원론 · AI기반 전략적의사결정' +
+      '· 인공지능개론 · 인지신경과학 · 데이터 보안 · AI 윤리 ' +
+      '· 심층신경망개론',
     'about.academics.backend.title': 'Engineering & HCI',
     'about.academics.backend.courses':
-      'HCI개론 · 기본 프로그래밍(C Lang)\n' +
-      '· 게임 프로그래밍 (C# + Unity)',
+      'HCI개론 · 기본 프로그래밍(C Lang)' +
+      '· 게임 프로그래밍 (C# + Unity) · 차세대 컴퓨터 인터페이스 디자인(아두이노)',
     'about.academics.edu.title': 'Education & Cognitive Science',
     'about.academics.edu.courses':
-      '컴퓨터교육개론 · 컴퓨터교과교육론 · 교육실습\n' +
-      '· 교육 심리학 · 교육 철학 · 인지과학 기초',
-
+      '컴퓨터교육개론 · 컴퓨터교과교육론 · 교육실습' +
+      '· 교육 심리학 · 교육 철학 · 인지과학 기초' +
+      ' 교육 방법 및 공학 · 학교 폭력 예방과 이해 · 상업정보교과논라논술' +
+      ' 컴퓨터교재연구및지도법',
     'about.tech-stack': 'Tech Stack & Interests',
 
-    'about.frontend': 'Frontend & Interactive Web',
+    'about.frontend': 'Frontend & 3D Web',
     'about.frontend-desc':
-      '사용자와 제품이 만나는 첫 접점인 웹에서 3D 기술이 주는 몰입감에 주목하며 Three.js를 공부하고 있습니다. React와 TypeScript를 도구로 삼아, 정보를 더 직관적으로 전달할 수 있는 인터랙티브 인터페이스를 연구합니다.',
+      'React와 TypeScript로 필요한 웹 인터페이스를 빠르게 구현합니다. 최근에는 단순히 정보를 보여주는 것을 넘어, WebGPU와 Three.js를 활용해 브라우저 위에서 3D 그래픽을 직접 렌더링하고 조작하는 작업에 재미를 붙이고 있습니다.',
 
-    'about.backend': 'Backend & MLOps',
+    'about.backend': 'Backend & Systems',
     'about.backend-desc':
-      '더 빠르고 안정적인 서비스를 제공하고자 Go를 주력으로 백엔드 엔지니어링 역량을 쌓는 중입니다. AI 기술이 실무에서 가치를 내기 위해 필수적인 Airflow, n8n 등 MLOps 환경 구축에 큰 관심을 두고 학습하고 있습니다.',
+      'Go와 Rust를 주력 언어로 사용합니다. 단순히 API를 뚫는 것을 넘어 시스템의 성능이나 아키텍처에 관심이 많아, 최근에는 Kafka를 이용한 데이터 파이프라인이나 Terraform을 통한 인프라 구축까지 영역을 넓혀가며 삽질하고 있습니다.',
 
     'about.ai': 'AI Product Engineering',
     'about.ai-desc':
-      '복잡한 AI 기술을 프로덕트로 정제하는 과정에 집중합니다. LLM 오케스트레이션과 컴퓨터 비전 기술을 적재적소에 배치하여, 기술 데모를 넘어 실제 운영 가능한 기능을 구현하는 것을 지향합니다.',
+      '새로운 AI 모델의 밑바닥을 연구하기보다는, 이미 나와있는 강력한 LLM들을 엮어서 "실제로 돌아가는 서비스"를 만드는 데 집중합니다. RAG 파이프라인을 구축하거나 LangGraph 등으로 AI 에이전트 워크플로우를 설계하는 작업을 주로 합니다.',
 
-    'about.hci': 'HCI & UX Design',
+    'about.hci': 'UX & Practical Design',
     'about.hci-desc':
-      '뇌인지과학 전공을 바탕으로 "사람이 쓰기 편한 인공지능"을 고민합니다. 사용자 데이터 분석을 통해 경험의 빈틈을 찾고, 기술과 사람 사이의 간극을 줄이는 인터페이스 설계 능력을 기르고 있습니다.',
-    
+      '아무리 뛰어난 백엔드나 AI 기술이 들어가도 결국 사용자가 쓰기 불편하면 의미가 없다고 생각합니다. 대단한 디자인 철학을 내세우기보다는, 실제 프로덕트가 사람들에게 어떤 경험을 주는지 관찰하고 기능과 UI 사이의 타협점을 찾는 데 신경 씁니다.',
+
     // 메인 타임라인: 내 흐름
     'about.timeline.title': 'Timeline',
-    'about.timeline.0.title': '일본 시장을 향한 AI 서비스 4종 설계·개발',
-    'about.timeline.0.period': '2026.01 ~ 진행 중',
-    'about.timeline.0.body':
-      '일본 주식 서비스, 온프레미스 일본어 학습 플랫폼, JLPT N1·경어 말하기 서비스, 핸드폰 부가서비스 탐지 서비스를 설계·구현하며 실제 배포를 준비하고 있습니다.',
-    'about.timeline.1.title': '자율주행대회 장려상',
-    'about.timeline.1.period': '2026.01.15 ~ 2026.01.20',
-    'about.timeline.1.body':
-      'ROS2와 AI를 활용해 팀과 함께 자율주행 차량을 구현했고, 기술적 어려움으로 아쉽게도 장려상을 수상했습니다.',
-    'about.timeline.2.title': 'Bareun 기반 VSCode Extension 개발·배포',
-    'about.timeline.2.period': '2025.11 ~ 2025.12',
-    'about.timeline.2.body':
-      '한국어 문법 검수 자동화를 위해 Bareun AI API를 활용한 VSCode 확장 프로그램을 처음부터 직접 구현하고, 실제로 사용할 목적으로 마켓플레이스에 배포했습니다. [30+ 다운로드]',
-    'about.timeline.3.title': '교내 해커톤 – AI Task Planner 백엔드 구축',
-    'about.timeline.3.period': '2025.10',
-    'about.timeline.3.body':
-      '교내 해커톤에서 AI 기반 Task Planner 서비스를 위한 백엔드 시스템을 설계·구현하며, API 설계와 서비스 아키텍처 감각을 키웠습니다.',
-    'about.timeline.4.title': 'ICT Next Frontier 강원 – 재난 구호 AI 시스템 최우수상',
-    'about.timeline.4.period': '2025.09',
-    'about.timeline.4.body':
-      '재난 구호 물자 중복과 비효율을 줄이기 위해, AI 기반 배분 최적화·투명성 향상 시스템의 아이디어를 발표해, ICT Next Frontier 강원 대회에서 최우수상(상금 150만원)을 받았습니다.',
-    'about.timeline.5.title': '제테마 홈페이지 리뉴얼 해커톤 우수상',
-    'about.timeline.5.period': '2025.08',
-    'about.timeline.5.body':
-      '제테마 홈페이지 리뉴얼 해커톤에서 사용자 경험 관점의 웹 리뉴얼을 제안·구현하며 우수상(상금 30만원)을 수상했습니다.',
-    'about.timeline.6.title': 'Grow Graph – 자료구조 수업 프로젝트',
-    'about.timeline.6.period': '2025.03 ~ 2025.06',
-    'about.timeline.6.body':
-      '자료구조 수업에서 Grow Graph 프로젝트를 진행하며, 클라이언트와 서버를 모두 구현하고 AI를 활용한 진로 성장 그래프 시각화를 시도했습니다.',
-    'about.timeline.7.title': '성균관대학교 3학년 편입',
-    'about.timeline.7.period': '2024.03',
-    'about.timeline.7.body':
-      '성균관대학교 정보·컴퓨터 계열로 3학년 편입하여, 이후 AI·백엔드 중심 커리어를 본격적으로 준비하기 시작했습니다.',
-    // 옵션: 블로그/정리 흐름을 추가하고 싶으면 아래 두 개까지 포함
-    'about.timeline.8.title': 'Hun-Bot.dev 기술 블로그 운영 시작',
-    'about.timeline.8.period': '2025.06 ~ 현재',
-    'about.timeline.8.body':
-      '공부와 개발 과정을 기록하기 위해 개인 기술 블로그를 개설하고, 프로젝트 회고와 생각들을 꾸준히 글로 정리하고 있습니다.',
-    'about.timeline.9.title': '전공 지식 정리용 github.io Study 사이트 구축',
-    'about.timeline.9.period': '2025.11 ~ 현재',
-    'about.timeline.9.body':
-      '전공 지식과 개인 공부 내용을 구조적으로 정리하기 위해 Docusaurus 기반 github.io 사이트를 구축하고, 노트와 정리 글을 계속 추가하고 있습니다.',
-    // 도전/부족 섹션: 실패와 배운 점
-    'about.challenges.title': '도전과 부족했던 순간들',
-    'about.challenges.0.title': '편입 직후 1년, 방향을 찾지 못한 시간',
-    'about.challenges.0.period': '2024 ~ 2025 초',
-    'about.challenges.0.body':
-      '성균관대로 편입한 뒤 처음 1년은 뚜렷한 목표 없이 수업만 따라가며 “물 흐르듯” 보냈고, 25년이 되고 나서야, 이 시간이 아깝다고 느껴서 이후 공모전·해커톤과 개인 프로젝트에 적극적으로 뛰어들게 만든 계기가 됐습니다.',
-    'about.challenges.1.title': '교내 대회 2회 연속 실패 – 개인정보 서비스 & 일정 관리 AI',
-    'about.challenges.1.period': '2024 하반기, 2025 하반기',
-    'about.challenges.1.body':
-      '죽음 이후의 개인 정보를 다루는 서비스, 일정 관리 AI 자동화 서비스를 해커톤 기간인 1박2일 안에 설계·구현했지만 상을 받지는 못했습니다. 데이터 준비와 사전 리서치, 아이디어와 도메인 지식의 중요성을 뼈저리게 배웠습니다.',
-    'about.challenges.2.title': 'SNU 공모전 탈락 – 편의점 데이터 분석',
-    'about.challenges.2.period': '2025.04 ~ 2025.06',
-    'about.challenges.2.body':
-      '대한민국 편의점 데이터를 다루는 SNU 공모전에 도전했지만, 피처 엔지니어링과 AI에 대한 지식이 부족해 탈락했습니다.' +
-      '이 경험을 바탕으로 이후 ICT 재난 구호 AI 프로젝트에서는 문제 정의와 데이터 조사, 논문 조사에 훨씬 더 많은 시간을 투자하게 됐습니다.',
-
+    'about.timeline.order':
+      'ai_rookies,ai_products_plan,autonomous_award,bareun_vscode,campus_task_planner,ict_next_frontier,jetema_renewal,scamverse,grow_graph,digital_legacy,tech_blog_archive',
+    'about.timeline.trajectory.subtitle': '기반 구축에서 제품화까지, 2024-2026 성장 흐름',
+    'about.timeline.filter.all': 'All',
+    'about.timeline.filter.project': 'Project',
+    'about.timeline.filter.award': 'Award',
+    'about.timeline.filter.study': 'Study',
+    'about.timeline.filter.community': 'Community',
+    'about.timeline.year.2026.summary': '제품화와 실전 운영 역량 강화',
+    'about.timeline.year.2025.summary': '아이디어 검증과 구현 경험 확장',
+    'about.timeline.year.2024.summary': '전환점 확보와 기반 구축',
+    'about.timeline.type.project': 'Project',
+    'about.timeline.type.award': 'Award',
+    'about.timeline.type.study': 'Study',
+    'about.timeline.type.community': 'Community',
+    'about.timeline.meta.goal': 'Goal',
+    'about.timeline.meta.impact': 'Impact',
+    'about.timeline.year.toggle.more': '연도 펼치기',
+    'about.timeline.year.toggle.less': '연도 접기',
+    'about.timeline.toggle.more': '자세히 보기',
+    'about.timeline.toggle.less': '접기',
+    'about.timeline.ai_rookies.title': 'AI Rookies 프로그램 참여',
+    'about.timeline.ai_rookies.period': '2026.05 ~ 진행 중',
+    'about.timeline.ai_rookies.body':
+      'AI Rookies 멤버로 선발되어 AI 모델 실무 프로젝트를 수행하며 엔지니어링 파이프라인 고도화 및 최적화에 집중하고 있습니다.',
+    'about.timeline.ai_products_plan.title': 'AI 프로덕트 4종 설계 및 개발 계획',
+    'about.timeline.ai_products_plan.period': '2026.01 ~ 진행 중',
+    'about.timeline.ai_products_plan.body':
+      '주식 분석, 온프레미스 학습 플랫폼, JLPT 경어 회화, 모바일 부가서비스 탐지 등 4개 서비스를 직접 설계하고 구축 중입니다.',
+    'about.timeline.autonomous_award.title': '자율주행 경진대회 장려상',
+    'about.timeline.autonomous_award.period': '2026.01',
+    'about.timeline.autonomous_award.body':
+      'ROS2와 YOLOv8을 활용한 자율주행 시스템 구현. 제한된 하드웨어 자원에서의 모델 최적화 과정을 경험했습니다.',
+    'about.timeline.bareun_vscode.title': 'Bareun AI 기반 VSCode Extension 개발 및 배포',
+    'about.timeline.bareun_vscode.period': '2025.11 ~ 2025.12',
+    'about.timeline.bareun_vscode.body':
+      '한국어 문법 검수 자동화를 위한 VSCode 확장 프로그램을 직접 개발하여 마켓플레이스에 배포했습니다. [30+ 다운로드]',
+    'about.timeline.campus_task_planner.title': '교내 해커톤 – AI Task Planner 백엔드 구축',
+    'about.timeline.campus_task_planner.period': '2025.10',
+    'about.timeline.campus_task_planner.body':
+      'AI 기반 일정 관리 서비스의 백엔드 아키텍처 설계 및 API 서버 구현.',
+    'about.timeline.ict_next_frontier.title': 'ICT Next Frontier 강원 – 최우수상',
+    'about.timeline.ict_next_frontier.period': '2025.09',
+    'about.timeline.ict_next_frontier.body':
+      'AI 기반 재난 구호 물류 최적화 시스템을 제안하여 ICT Next Frontier 강원 대회에서 최우수상을 수상했습니다.',
+    'about.timeline.jetema_renewal.title': '제테마 홈페이지 리뉴얼 해커톤 우수상',
+    'about.timeline.jetema_renewal.period': '2025.08',
+    'about.timeline.jetema_renewal.body':
+      '사용자 경험 개선을 위한 웹 프론트엔드 리뉴얼 기획 및 구현으로 우수상을 수상했습니다.',
+    'about.timeline.scamverse.title': 'ScamVerse – 사기 예방 메타버스 기획',
+    'about.timeline.scamverse.period': '2025.07',
+    'about.timeline.scamverse.body':
+      '다양한 사기 수법을 체계적으로 가상 체험하여 피해를 예방하는 서비스의 개념과 시나리오를 설계했습니다.',
+    'about.timeline.grow_graph.title': 'Grow Graph – 자료구조 시각화 프로젝트',
+    'about.timeline.grow_graph.period': '2025.03 ~ 2025.06',
+    'about.timeline.grow_graph.body':
+      '진로 성장 그래프 시각화 서비스의 풀스택 개발 및 AI 데이터 처리 연동을 수행했습니다.',
+    'about.timeline.digital_legacy.title': '교내 해커톤 – 디지털 유산 및 데이터 상속 관리',
+    'about.timeline.digital_legacy.period': '2024.10',
+    'about.timeline.digital_legacy.body':
+      '사후 디지털 자산과 데이터를 체계적으로 관리하고 상속하는 서비스의 프로토타입을 기획하고 개발했습니다.',
+    'about.timeline.tech_blog_archive.title': '기술 블로그 및 지식 아카이브 운영',
+    'about.timeline.tech_blog_archive.period': '2025.06 ~ 현재',
+    'about.timeline.tech_blog_archive.body':
+      '트러블슈팅을 기록하는 블로그(Hun-Bot.dev)와 전공 지식을 구조화하는 Docusaurus 기반 아카이브를 운영 중입니다.',
     'about.features.title': 'Personal Links',
     'about.features.note.title': 'Study Log',
     'about.features.note.description':
-      '학교 전공 과목과 개인적인 학습 기록을 꼼꼼하게 정리하고 있는 지식 저장소입니다.',
+      '학교 전공 과목과 개인적인 학습 기록을 정리하고 있는 지식 저장소입니다.',
     'about.features.github.title': 'Portfolio',
     'about.features.github.description':
-      '진행한 프로젝트의 코드와 결과물을 정리하고 있습니다. 현재 새로운 콘텐츠로 지속 업데이트 중입니다.',
+      'Three.js로 구현한 인터렉티브한 웹 페이지입니다.',
     'about.features.view-more': '공사중입니다',
   },
 
@@ -197,8 +214,8 @@ export const ui = {
     'toc.toggle': '目次の切り替え',
 
     'about.title': '私について',
-    'about.description': 'AI Product Engineerを目指す、ナム・ジョンフンの紹介ページです。',
-    'about.greeting': 'こんにちは、\n'+'AI Product Engineerを 目指している ナム・ジョンフンです。',
+    'about.description': 'AI Product Engineerを目指すナム・ジョンフンの紹介ページです。',
+    'about.greeting': 'こんにちは。\nAI Product Engineerを目指しているナム・ジョンフンです。',
     'about.intro':
       '私たちの生活にAIが入り込む隙間は多いですが、それが必ずしも効率的であるとは限らないと考えています。\n' +
       '単に製品を作るのではなく、「誰かにとって本当に必要な製品」を作るために日々勉強しています。',
@@ -208,7 +225,7 @@ export const ui = {
     'about.stats.location': '拠点',
     'about.stats.location.value': 'ソウル・韓国',
     'about.stats.focus': '注力分野',
-    'about.stats.focus.value': 'MLOps, LLM, 3D Web, CV',
+    'about.stats.focus.value': 'MLOps, LLM, 3D Web',
     'about.stats.languages': '対応言語',
     'about.stats.languages.value': '韓国語(母国語)\n' + '日本語(日常会話)\n' + '英語(日常会話)',
 
@@ -218,9 +235,17 @@ export const ui = {
     'about.major': 'コンピュータ教育学科 / 知能情報融合専攻（自己設計複合専攻）',
     'about.status': '在学中',
     'about.university-desc':
-      '卒業を控えている成均館大学の学生です。コンピュータ教育学科でプログラミングとソフトウェア開発の基礎を学び、知能情報融合専攻で AI・LLM・3D Vision を研究しながら、「人が使えるAIサービス」を作る視点を養っています。',
-    'about.academics.title': 'アカデミックバックグラウンド',
+      '成均館大学でコンピュータ教育と知能情報融合工学を学び、卒業を控えています。興味の赴くままに多様な分野へ挑戦する中で、実際に動くAIサービスを作り、システムを組み上げるエンジニアリングが最も自分に合っていると確信しました。現在はその開発に集中しています。',
+    'about.academics.title': '履修した科目',
     'about.academics.subtitle': '学部生 — 成均館大学 コンピュータ教育学科・認知科学',
+    'about.academics.self.title': '自主学習',
+    'about.academics.self.courses':
+      'Linear Algebra · Calculus · Rust · Go · Three.js' +
+      '· Kafka · MLOps · RAG Pipeline · WebGPU · Terraform',
+    'about.academics.self.focus.current.label': 'CURRENT',
+    'about.academics.self.focus.current.value': '機械翻訳(MT)パイプライン研究 · 効率的なAIプロダクト設計',
+    'about.academics.self.focus.past.label': 'PAST',
+    'about.academics.self.focus.past.value': '自動運転(ROS2) · ディスプレイ工程実習 · 認知科学',
     'about.academics.cs.title': 'Computer Science',
     'about.academics.cs.courses':
       'オペレーティングシステム・ソフトウェア工学・コンピュータグラフィックス概論\n' +
@@ -241,92 +266,99 @@ export const ui = {
 
     'about.tech-stack': '技術スタック & 興味',
 
-    'about.frontend': 'Frontend & Interactive Web',
+    'about.frontend': 'Frontend & 3D Web',
     'about.frontend-desc':
       'ユーザーと製品が最初に出会う「Web」において、3D技術がもたらす没入感に注目し、Three.jsを勉強しています。ReactとTypeScriptを武器に、情報をより直感的に伝えるインタラクティブなUIを研究しています。',
 
-    'about.backend': 'Backend & MLOps',
+    'about.backend': 'Backend & Systems',
     'about.backend-desc':
-      'より迅速で安定したサービスを提供するため、Goを主力としてバックエンドエンジニアリングのスキルを磨いています。AI技術を実務で価値あるものにするために不可欠な Airflow、n8n などの MLOps 環境構築に強い関心を持って学習しています。',
+      'GoとRustを主力言語として活用しています。単にAPIを実装するだけでなく、システム性能やアーキテクチャに関心を持ち、最近はKafkaを使ったデータパイプラインやTerraformによるインフラ構築にも取り組んでいます。',
 
     'about.ai': 'AI Product Engineering',
     'about.ai-desc':
       '複雑なAI技術をプロダクトとして精製する過程に集中しています。LLMオーケストレーションとコンピュータビジョン技術を適材適所に配置し、技術デモを超えて「実際に運用可能な機能」を実装することを目指しています。',
 
-    'about.hci': 'HCI & UX Design',
+    'about.hci': 'UX & Practical Design',
     'about.hci-desc':
-      '認知科学の専攻を活かし、「人が使いやすい人工知能」を模索しています。ユーザーデータの分析を通じて体験の隙間を見つけ、技術と人の距離を縮めるインターフェース設計能力を養っています。',
+      'どれほど優れたバックエンドやAI技術でも、使いにくければ価値は半減すると考えています。大げさなデザイン理論よりも、実際のユーザー体験を観察し、機能とUIの最適なバランスを探ることを重視しています。',
 
   // メインタイムライン: 活動の軌跡
   'about.timeline.title': '活動タイムライン',
+  'about.timeline.order':
+    'ai_rookies,ai_products_plan,autonomous_award,bareun_vscode,campus_task_planner,ict_next_frontier,jetema_renewal,scamverse,grow_graph,digital_legacy,tech_blog_archive',
+  'about.timeline.trajectory.subtitle': '基盤構築からプロダクト化まで、2024-2026の成長軌跡',
+  'about.timeline.filter.all': 'すべて',
+  'about.timeline.filter.project': 'プロジェクト',
+  'about.timeline.filter.award': '受賞',
+  'about.timeline.filter.study': '学習',
+  'about.timeline.filter.community': 'コミュニティ',
+  'about.timeline.year.2026.summary': 'プロダクト化と実運用の強化',
+  'about.timeline.year.2025.summary': '検証と実装経験の拡張',
+  'about.timeline.year.2024.summary': '転換点の確立と基盤構築',
+  'about.timeline.type.project': 'プロジェクト',
+  'about.timeline.type.award': '受賞',
+  'about.timeline.type.study': '学習',
+  'about.timeline.type.community': 'コミュニティ',
+  'about.timeline.meta.goal': '目標',
+  'about.timeline.meta.impact': '成果',
+  'about.timeline.year.toggle.more': '年を展開',
+  'about.timeline.year.toggle.less': '年を折りたたむ',
+  'about.timeline.toggle.more': '詳しく見る',
+  'about.timeline.toggle.less': '閉じる',
 
-  'about.timeline.0.title': '日本市場向けAIサービス4種の構築',
-  'about.timeline.0.period': '2026.01 ~ 現在',
-  'about.timeline.0.body':
-    '日本株分析、日本語学習プラットフォーム、JLPT会話コーチ、モバイル付加サービス検知など、4つのAIサービスを設計・実装しています。現在は本番環境へのデプロイに向けた最終調整を行っています。',
+  'about.timeline.ai_rookies.title': 'AI Rookiesプログラム参加',
+  'about.timeline.ai_rookies.period': '2026.05 ~ 現在',
+  'about.timeline.ai_rookies.body':
+    'AI Rookiesメンバーに選抜され、AIモデルの実務プロジェクトに参加しながら、エンジニアリングパイプラインの高度化と最適化に注力しています。',
 
-  'about.timeline.1.title': '自動運転コンテスト 奨励賞受賞',
-  'about.timeline.1.period': '2026.01.15 ~ 2026.01.20',
-  'about.timeline.1.body':
-    'ROS2とAI技術を駆使し、自律走行車両をチームで実装しました。技術的な難題に直面しながらも、粘り強く解決策を模索した結果、奨励賞を受賞しました。',
+  'about.timeline.ai_products_plan.title': 'AIプロダクト4種の設計・開発計画',
+  'about.timeline.ai_products_plan.period': '2026.01 ~ 現在',
+  'about.timeline.ai_products_plan.body':
+    '株式分析、オンプレミス学習プラットフォーム、JLPT敬語会話、モバイル付加サービス検知など、4つのサービスを自ら設計・構築しています。',
 
-  'about.timeline.2.title': 'Bareun AI活用 VSCode拡張機能の開発・公開',
-  'about.timeline.2.period': '2025.11 ~ 2025.12',
-  'about.timeline.2.body':
-    '韓国語校正を自動化するため、Bareun AI APIを用いたVSCode拡張機能を開発しました。実用性を重視してマーケットプレイスに公開し、現在30回以上のダウンロードを記録しています。',
+  'about.timeline.autonomous_award.title': '自動運転コンテスト 奨励賞受賞',
+  'about.timeline.autonomous_award.period': '2026.01',
+  'about.timeline.autonomous_award.body':
+    'ROS2とYOLOv8を活用した自動運転システムを実装。限られたハードウェア資源の中でモデル最適化のプロセスを経験しました。',
 
-  'about.timeline.3.title': '学内ハッカソン – AIタスクプランナー構築',
-  'about.timeline.3.period': '2025.10',
-  'about.timeline.3.body':
-    'AIベースのタスク管理サービスにてバックエンド設計を担当。API設計やマイクロサービス的な視点でのシステム構築に取り組み、実践的な開発スキルを養いました。',
+  'about.timeline.bareun_vscode.title': 'Bareun AIベース VSCode拡張機能の開発・公開',
+  'about.timeline.bareun_vscode.period': '2025.11 ~ 2025.12',
+  'about.timeline.bareun_vscode.body':
+    '韓国語文法チェックの自動化を目的に、VSCode拡張機能を自ら開発しマーケットプレイスに公開しました。 [30+ ダウンロード]',
 
-  'about.timeline.4.title': 'ICT Next Frontier – 災害救援AIシステム 最優秀賞',
-  'about.timeline.4.period': '2025.09',
-  'about.timeline.4.body':
-    '救援物資の重複分配を防ぐためのAI最適化システムを提案しました。技術的な実現可能性と論理的な設計が評価され、最優秀賞（賞金150万ウォン）を受賞しました。',
+  'about.timeline.campus_task_planner.title': '学内ハッカソン – AI Task Plannerバックエンド構築',
+  'about.timeline.campus_task_planner.period': '2025.10',
+  'about.timeline.campus_task_planner.body':
+    'AIベースのスケジュール管理サービス向けに、バックエンドアーキテクチャ設計とAPIサーバー実装を担当しました。',
 
-  'about.timeline.5.title': 'Jetemaサイトリニューアルハッカソン 優秀賞',
-  'about.timeline.5.period': '2025.08',
-  'about.timeline.5.body':
-    'UX（ユーザー体験）の観点からウェブサイトのリニューアルを提案・実装しました。デザインと機能性の調和を評価され、優秀賞を受賞しました。',
+  'about.timeline.ict_next_frontier.title': 'ICT Next Frontier 江原 – 最優秀賞',
+  'about.timeline.ict_next_frontier.period': '2025.09',
+  'about.timeline.ict_next_frontier.body':
+    'AIベースの災害救援物流最適化システムを提案し、ICT Next Frontier 江原大会で最優秀賞を受賞しました。',
 
-  'about.timeline.6.title': 'Grow Graph – データ構造プロジェクト',
-  'about.timeline.6.period': '2025.03 ~ 2025.06',
-  'about.timeline.6.body':
-    'データ構造の講義にて、AIを用いたキャリア成長可視化システムを開発。クライアントからサーバーまで一貫して実装し、フルスタックな開発を経験しました。',
+  'about.timeline.jetema_renewal.title': 'Jetemaホームページリニューアルハッカソン 優秀賞',
+  'about.timeline.jetema_renewal.period': '2025.08',
+  'about.timeline.jetema_renewal.body':
+    'ユーザー体験改善を目的に、Webフロントエンドのリニューアルを企画・実装し、優秀賞を受賞しました。',
 
-  'about.timeline.7.title': '成均館大学への編入',
-  'about.timeline.7.period': '2024.03',
-  'about.timeline.7.body':
-    'より高度な工学の知見を得るため、成均館大学の情報通信学部に編入しました。これを機にAIおよびバックエンドエンジニアとしてのキャリアを本格化させました。',
+  'about.timeline.scamverse.title': 'ScamVerse – 詐欺防止メタバース企画',
+  'about.timeline.scamverse.period': '2025.07',
+  'about.timeline.scamverse.body':
+    '多様な詐欺手法を体系的に仮想体験できるサービスのコンセプトとシナリオを設計し、被害予防につなげる企画を行いました。',
 
-  'about.timeline.8.title': '技術ブログ「Hun-Bot.dev」の運営',
-  'about.timeline.8.period': '2025.06 ~ 現在',
-  'about.timeline.8.body':
-    '開発プロセスや思考の整理を目的として技術ブログを開設。プロジェクトの振り返りなどを通じ、継続的なアウトプットを行っています。',
+  'about.timeline.grow_graph.title': 'Grow Graph – データ構造可視化プロジェクト',
+  'about.timeline.grow_graph.period': '2025.03 ~ 2025.06',
+  'about.timeline.grow_graph.body':
+    '進路成長グラフ可視化サービスのフルスタック開発を行い、AIデータ処理連携まで実装しました。',
 
-  'about.timeline.9.title': '学習アーカイブサイトの構築',
-  'about.timeline.9.period': '2025.11 ~ 현재',
-  'about.timeline.9.body':
-    '専門知識を体系的に整理するため、Docusaurusベースの学習サイトを構築。学んだ知識を資産化し、常にブラッシュアップを続けています。',
-
-  // 挑戦と試行錯誤の記録
-  'about.challenges.title': '挑戦と成長の記録',
-
-  'about.challenges.0.title': '編入後の模索と転환点',
-  'about.challenges.0.period': '2024 ~ 2025 初頭',
-  'about.challenges.0.body':
-    '編入直後は明確な目標が見つからず、授業に追われる日々でした。しかし、その停滞感こそが「自ら行動しなければならない」という強い動機付けとなり、後の挑戦へと繋がりました。',
-
-  'about.challenges.1.title': '学内大会での苦い経験 – 2度の落選',
-  'about.challenges.1.period': '2024 下半期、2025 下半期',
-  'about.challenges.1.body':
-    '1泊2日の強行軍でシステムを構築しましたが、入賞には至りませんでした。準備の不足やドメイン知識の重要性を痛感し、エンジニアとしての基礎体力を鍛え直す契機となりました。',
-
-  'about.challenges.2.title': 'SNUコンペでの挫折と再挑戦',
-  'about.challenges.2.period': '2025.04 ~ 2025.06',
-  'about.challenges.2.body':
-    'データ分析コンペに挑むも、AIの知識不足により落選。この悔しさを糧に、後の災害救援AIプロジェクトでは徹底的な先行研究調査を行い、最優秀賞に繋げることができました。',
+  'about.timeline.digital_legacy.title': '学内ハッカソン – デジタル遺産とデータ継承管理',
+  'about.timeline.digital_legacy.period': '2024.10',
+  'about.timeline.digital_legacy.body':
+    '死後のデジタル資産とデータを体系的に管理・継承するサービスのプロトタイプを企画・開発しました。',
+  'about.timeline.tech_blog_archive.title': '技術ブログおよび知識アーカイブ運営',
+  'about.timeline.tech_blog_archive.period': '2025.06 ~ 現在',
+  'about.timeline.tech_blog_archive.body':
+    'トラブルシューティングを記録するブログ（Hun-Bot.dev）と、専攻知識を構造化するDocusaurusベースのアーカイブを運営しています。',
 
   'about.features.title': 'Personal Links',
   'about.features.note.title': 'Study Log',
@@ -367,7 +399,7 @@ export const ui = {
     'toc.toggle': 'Toggle table of contents',
 
     'about.title': 'About',
-    'about.description': 'About Jeonghun Nam, an aspiring AI Product Engineer.',
+    'about.description': 'This is the profile page of Jeonghun Nam, an aspiring AI Product Engineer.',
     'about.greeting': "Hi, I'm Jeonghun Nam, aspiring to be an AI Product Engineer.",
     'about.intro':
       "While AI is permeating many parts of our lives, I don't think its efficiency is always guaranteed.\n" +
@@ -378,7 +410,7 @@ export const ui = {
     'about.stats.location': 'Based in',
     'about.stats.location.value': 'Seoul, South Korea',
     'about.stats.focus': 'Focus Areas',
-    'about.stats.focus.value': 'MLOps, LLM, 3D Web, CV',
+    'about.stats.focus.value': 'MLOps, LLM, 3D Web',
     'about.stats.languages': 'Languages',
     'about.stats.languages.value': 'Korean (Native)\n' + 'Japanese (Conversational)\n' + 'English (Conversational)',
 
@@ -388,9 +420,17 @@ export const ui = {
     'about.major': 'Computer Education / Cognitive Science (Interdisciplinary Major)',
     'about.status': 'Enrolled',
     'about.university-desc':
-      'I am a Computer Education student at SKKU, nearing graduation. I am building a foundation in software development and programming while exploring AI, LLMs, and 3D Vision to develop a perspective on creating "human-centric AI services."',
-    'about.academics.title': 'Academic Background',
+      'I am studying Computer Education and Intelligent Information Convergence Engineering at SKKU and am nearing graduation. While exploring multiple fields, I realized that building real AI services and integrating systems is where I fit best. I am now fully focused on engineering and product development.',
+    'about.academics.title': 'Courses I Have Taken',
     'about.academics.subtitle': 'Undergraduate — SKKU Computer Education & Cognitive Science',
+    'about.academics.self.title': 'Independent Study',
+    'about.academics.self.courses':
+      'Linear Algebra · Calculus · Rust · Go · Three.js' +
+      '· Kafka · MLOps · RAG Pipeline · WebGPU · Terraform',
+    'about.academics.self.focus.current.label': 'Current',
+    'about.academics.self.focus.current.value': 'Go · Rust · Kafka · MLOps',
+    'about.academics.self.focus.past.label': 'Past',
+    'about.academics.self.focus.past.value': 'Linear Algebra · Calculus · Three.js · Terraform',
     'about.academics.cs.title': 'Computer Science',
     'about.academics.cs.courses':
       'Operating Systems · Software Engineering · Intro to Computer Graphics\n' +
@@ -411,98 +451,105 @@ export const ui = {
 
     'about.tech-stack': 'Tech Stack & Interests',
 
-    'about.frontend': 'Frontend & Interactive Web',
+    'about.frontend': 'Frontend & 3D Web',
     'about.frontend-desc':
       'Focusing on the immersive experiences 3D technology brings to the web, I am studying Three.js. Using React and TypeScript, I research interactive interfaces that deliver information more intuitively.',
 
-    'about.backend': 'Backend & MLOps',
+    'about.backend': 'Backend & Systems',
     'about.backend-desc':
-      'To provide faster and more stable services, I am building backend engineering skills with Go. I have a strong interest in learning MLOps, including tools like Airflow and n8n, which are essential for integrating AI into production.',
+      'I primarily use Go and Rust. Beyond implementing APIs, I focus on system performance and architecture, and recently expanded into Kafka-based data pipelines and infrastructure setup with Terraform.',
 
     'about.ai': 'AI Product Engineering',
     'about.ai-desc':
       'I focus on the process of refining complex AI technologies into usable products. By placing LLM orchestration and computer vision in the right places, I aim to implement production-ready features beyond tech demos.',
 
-    'about.hci': 'HCI & UX Design',
+    'about.hci': 'UX & Practical Design',
     'about.hci-desc':
-      'Based on my Cognitive Science background, I think deeply about "user-friendly AI." I analyze user data to find experience gaps and develop the ability to design interfaces that bridge the gap between technology and people.',
+      'No matter how strong the backend or AI is, it has limited value if users find it hard to use. Rather than pushing grand design theories, I focus on observing real user experiences and finding practical trade-offs between functionality and UI.',
 
     // Main Timeline: My Journey
   'about.timeline.title': 'Timeline',
+  'about.timeline.order':
+    'ai_rookies,ai_products_plan,autonomous_award,bareun_vscode,campus_task_planner,ict_next_frontier,jetema_renewal,scamverse,grow_graph,digital_legacy,tech_blog_archive',
+  'about.timeline.trajectory.subtitle': 'Growth trajectory from 2024 to 2026, from foundation to productization',
+  'about.timeline.filter.all': 'All',
+  'about.timeline.filter.project': 'Project',
+  'about.timeline.filter.award': 'Award',
+  'about.timeline.filter.study': 'Study',
+  'about.timeline.filter.community': 'Community',
+  'about.timeline.year.2026.summary': 'Strengthening productization and production readiness',
+  'about.timeline.year.2025.summary': 'Expanding validation and implementation experience',
+  'about.timeline.year.2024.summary': 'Building foundations and defining a turning point',
+  'about.timeline.type.project': 'Project',
+  'about.timeline.type.award': 'Award',
+  'about.timeline.type.study': 'Study',
+  'about.timeline.type.community': 'Community',
+  'about.timeline.meta.goal': 'Goal',
+  'about.timeline.meta.impact': 'Impact',
+  'about.timeline.year.toggle.more': 'Expand year',
+  'about.timeline.year.toggle.less': 'Collapse year',
+  'about.timeline.toggle.more': 'Read more',
+  'about.timeline.toggle.less': 'Collapse',
 
-  'about.timeline.0.title': 'Developing 4 AI Services for the Japanese Market',
-  'about.timeline.0.period': 'Jan 2026 ~ Present',
-  'about.timeline.0.body':
-    'Architecting and implementing Japanese Stock Analysis, On-premise Language Learning, JLPT Speaking Coach, and Carrier Add-on Detection services. Preparing for production deployment.',
+  'about.timeline.ai_rookies.title': 'Participating in the AI Rookies Program',
+  'about.timeline.ai_rookies.period': 'May 2026 ~ Present',
+  'about.timeline.ai_rookies.body':
+    'Selected as an AI Rookies member, I am working on practical AI model projects with a focus on upgrading and optimizing engineering pipelines.',
 
-  'about.timeline.1.title': 'Autonomous Driving Competition – Encouragement Award',
-  'about.timeline.1.period': 'Jan 2026',
-  'about.timeline.1.body':
-    'Developed an autonomous vehicle prototype using ROS2 and AI. Despite technical bottlenecks, secured the Encouragement Award through team-based problem-solving.',
+  'about.timeline.ai_products_plan.title': 'Planning and Building Four AI Products',
+  'about.timeline.ai_products_plan.period': 'Jan 2026 ~ Present',
+  'about.timeline.ai_products_plan.body':
+    'I am directly designing and building four services, including stock analysis, an on-premise learning platform, JLPT honorific conversation support, and mobile value-added service detection.',
 
-  'about.timeline.2.title': 'VSCode Extension Development & Deployment (Bareun AI)',
-  'about.timeline.2.period': 'Nov 2025 ~ Dec 2025',
-  'about.timeline.2.body':
-    'Built a VSCode extension from scratch for automated Korean grammar checking using Bareun AI API. Deployed to Marketplace with 30+ downloads to optimize developer workflows.',
+  'about.timeline.autonomous_award.title': 'Autonomous Driving Competition – Encouragement Award',
+  'about.timeline.autonomous_award.period': 'Jan 2026',
+  'about.timeline.autonomous_award.body':
+    'Implemented an autonomous driving system using ROS2 and YOLOv8, and gained hands-on experience optimizing models under constrained hardware resources.',
 
-  'about.timeline.3.title': 'Campus Hackathon – AI Task Planner Backend Architecture',
-  'about.timeline.3.period': 'Oct 2025',
-  'about.timeline.3.body':
-    'Designed and implemented a backend system for an AI-powered Task Planner, gaining hands-on experience in API design and scalable service architectures.',
+  'about.timeline.bareun_vscode.title': 'Built and Published a Bareun AI-Based VSCode Extension',
+  'about.timeline.bareun_vscode.period': 'Nov 2025 ~ Dec 2025',
+  'about.timeline.bareun_vscode.body':
+    'Developed and published a VSCode extension for automated Korean grammar review on the Marketplace. [30+ downloads]',
 
-  'about.timeline.4.title': 'ICT Next Frontier – Grand Prize (AI Disaster Relief System)',
-  'about.timeline.4.period': 'Sep 2025',
-  'about.timeline.4.body':
-    'Proposed an AI-driven optimization system for disaster relief allocation. Awarded the Grand Prize (1.5M KRW) for technological feasibility and system design logic.',
+  'about.timeline.campus_task_planner.title': 'Campus Hackathon – AI Task Planner Backend',
+  'about.timeline.campus_task_planner.period': 'Oct 2025',
+  'about.timeline.campus_task_planner.body':
+    'Designed backend architecture and implemented APIs for an AI-based scheduling service.',
 
-  'about.timeline.5.title': 'Jetema Website Renewal Hackathon – Excellence Award',
-  'about.timeline.5.period': 'Aug 2025',
-  'about.timeline.5.body':
-    'Executed a UX-focused website renewal proposal. Won the Excellence Award (300K KRW) by demonstrating the impact of user-centric design.',
+  'about.timeline.ict_next_frontier.title': 'ICT Next Frontier Gangwon – Grand Prize',
+  'about.timeline.ict_next_frontier.period': 'Sep 2025',
+  'about.timeline.ict_next_frontier.body':
+    'Proposed an AI-based disaster-relief logistics optimization system and won the Grand Prize at ICT Next Frontier Gangwon.',
 
-  'about.timeline.6.title': 'Grow Graph – Data Structure Project',
-  'about.timeline.6.period': 'Mar 2025 ~ Jun 2025',
-  'about.timeline.6.body':
-    'Developed both client and server for the "Grow Graph" project, exploring AI-based career growth visualization during Data Structure coursework.',
+  'about.timeline.jetema_renewal.title': 'Jetema Website Renewal Hackathon – Excellence Award',
+  'about.timeline.jetema_renewal.period': 'Aug 2025',
+  'about.timeline.jetema_renewal.body':
+    'Planned and implemented a web frontend renewal focused on improving user experience and received the Excellence Award.',
 
-  'about.timeline.7.title': 'Transferred to Sungkyunkwan University',
-  'about.timeline.7.period': 'Mar 2024',
-  'about.timeline.7.body':
-    'Transferred as a junior to major in Information and Computer Engineering. Pivoted focus toward AI and Backend Engineering to build a specialized career path.',
+  'about.timeline.scamverse.title': 'ScamVerse – Anti-Scam Metaverse Concept',
+  'about.timeline.scamverse.period': 'Jul 2025',
+  'about.timeline.scamverse.body':
+    'Designed a concept and scenario for a service that helps prevent fraud by systematically simulating common scam tactics in a virtual environment.',
 
-  'about.timeline.8.title': 'Launched Tech Blog "Hun-Bot.dev"',
-  'about.timeline.8.period': 'Jun 2025 ~ Present',
-  'about.timeline.8.body':
-    'Established a technical blog to document learning processes and development retrospectives, consistently sharing engineering insights.',
+  'about.timeline.grow_graph.title': 'Grow Graph – Data Structure Visualization Project',
+  'about.timeline.grow_graph.period': 'Mar 2025 ~ Jun 2025',
+  'about.timeline.grow_graph.body':
+    'Built a full-stack career growth graph visualization service and integrated AI-based data processing.',
 
-  'about.timeline.9.title': 'Built github.io Knowledge Repository',
-  'about.timeline.9.period': 'Nov 2025 ~ Present',
-  'about.timeline.9.body':
-    'Constructed a Docusaurus-based study site to structurally organize computer science knowledge and personal learning milestones.',
-
-  // Challenges Section
-  'about.challenges.title': 'Challenges & Lessons Learned',
-
-  'about.challenges.0.title': 'A Period of Reflection After Transfer',
-  'about.challenges.0.period': '2024 ~ Early 2025',
-  'about.challenges.0.body':
-    'Spent the first year focused on core academic subjects. Recognizing the need for practical application in 2025, I began proactively engaging in hackathons and large-scale projects.',
-
-  'about.challenges.1.title': 'Successive Failures in Campus Competitions',
-  'about.challenges.1.period': 'Late 2024, Late 2025',
-  'about.challenges.1.body':
-    'Attempted to build Post-mortem Data and AI Scheduling services within 48-hour hackathon constraints. Although unsuccessful, I learned the paramount importance of data preprocessing and domain research.',
-
-  'about.challenges.2.title': 'SNU Data Competition Failure',
-  'about.challenges.2.period': 'Apr 2025 ~ Jun 2025',
-  'about.challenges.2.body':
-    'Challenged the SNU competition but failed due to insufficient knowledge in feature engineering. This experience drove me to prioritize rigorous problem definition and research in subsequent award-winning projects.',
+  'about.timeline.digital_legacy.title': 'Campus Hackathon – Digital Legacy and Data Inheritance Management',
+  'about.timeline.digital_legacy.period': 'Oct 2024',
+  'about.timeline.digital_legacy.body':
+    'Planned and developed a prototype service to systematically manage and transfer post-mortem digital assets and data.',
+  'about.timeline.tech_blog_archive.title': 'Operating a Tech Blog and Knowledge Archive',
+  'about.timeline.tech_blog_archive.period': 'Jun 2025 ~ Present',
+  'about.timeline.tech_blog_archive.body':
+    'Running a troubleshooting-focused blog (Hun-Bot.dev) and a Docusaurus-based archive that structures major-related knowledge.',
 
   'about.features.title': 'Personal Links',
   'about.features.note.title': 'Study Log',
   'about.features.note.description': 'A structured knowledge repository of academic subjects and self-study notes.',
   'about.features.github.title': 'Portfolio',
-  'about.features.github.description': 'Source codes and deliverables for ongoing engineering projects.',
+  'about.features.github.description': 'An interactive web page implemented with Three.js.',
   'about.features.view-more': 'Under Construction',
   },
 } as const;

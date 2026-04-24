@@ -18,57 +18,121 @@ const t = useTranslations(lang as 'ko' | 'jp' | 'en');
 
 const SITE_TITLE = `${t('about.title')} - Hun-Bot Blog`;
 const SITE_DESCRIPTION = t('about.description');
-const introParagraphs = t('about.intro').split('\n').map((text) => text.trim()).filter(Boolean);
+const introParagraphs = t('about.intro')
+	.split('\n')
+	.map((text: string) => text.trim())
+	.filter(Boolean);
 
 const stats = [
 	{ label: t('about.stats.role'), value: t('about.stats.role.value') },
-	{ label: t('about.stats.location'), value: t('about.stats.location.value') },
 	{ label: t('about.stats.focus'), value: t('about.stats.focus.value') },
 	{ label: t('about.stats.languages'), value: t('about.stats.languages.value') },
 ];
 
-const timelineEntries = Array.from({ length: 10 }, (_, i) => ({
-	title: t(`about.timeline.${i}.title` as any),
-	period: t(`about.timeline.${i}.period` as any),
-	body: t(`about.timeline.${i}.body` as any),
-})).filter(entry => entry.title && entry.period && entry.body);
+const parseTimelineYear = (period: string) => {
+	const year = Number(period.match(/20\d{2}/)?.[0]);
+	return Number.isFinite(year) ? year : null;
+};
 
-const challengeEntries = Array.from({ length: 3 }, (_, i) => ({
-	title: t(`about.challenges.${i}.title` as any),
-	period: t(`about.challenges.${i}.period` as any),
-	body: t(`about.challenges.${i}.body` as any),
-})).filter(entry => entry.title && entry.period && entry.body);
+const inferTimelineType = (title: string, body: string) => {
+	const haystack = `${title} ${body}`.toLowerCase();
+	if (/award|수상|장려상|최우수상|우수상|受賞|賞/.test(haystack)) return 'award';
+	if (/blog|아카이브|archive|운영|knowledge|study|학습|공부|ブログ|学習/.test(haystack)) return 'study';
+	if (/hackathon|해커톤|대회|competition|コンテスト/.test(haystack)) return 'community';
+	return 'project';
+};
+
+const timelineIds = t('about.timeline.order' as any)
+	.split(',')
+	.map((id: string) => id.trim())
+	.filter(Boolean);
+
+const timelineEntries = timelineIds.map((id) => {
+	const title = t(`about.timeline.${id}.title` as any);
+	const period = t(`about.timeline.${id}.period` as any);
+	const body = t(`about.timeline.${id}.body` as any);
+	const year = period ? parseTimelineYear(period) : null;
+	if (!title || !period || !body || !year || year < 2024 || year > 2026) return null;
+	const type = inferTimelineType(title, body);
+	return {
+		id,
+		title,
+		period,
+		body,
+		year,
+		type,
+		goal: t(`about.timeline.${id}.goal` as any) || title,
+		impact: t(`about.timeline.${id}.impact` as any) || body,
+	};
+}).filter(
+	(
+		entry
+	): entry is {
+		id: string;
+		title: string;
+		period: string;
+		body: string;
+		year: number;
+		type: string;
+		goal: string;
+		impact: string;
+	} => entry !== null
+);
+
+const trajectoryYears = [2026, 2025, 2024];
+const timelineTypeFilters = ['all', 'project', 'award', 'study', 'community'] as const;
+const timelineTypeColors: Record<string, string> = {
+	project: 'border border-orange-300 bg-orange-50 text-orange-700 dark:border-orange-500/60 dark:bg-slate-800 dark:text-orange-200',
+	award: 'border border-orange-400 bg-orange-100 text-orange-800 dark:border-orange-400/70 dark:bg-slate-700 dark:text-orange-100',
+	study: 'border border-orange-300 bg-orange-50 text-orange-700 dark:border-orange-500/60 dark:bg-slate-800 dark:text-orange-200',
+	community: 'border border-orange-300 bg-orange-50 text-orange-700 dark:border-orange-500/60 dark:bg-slate-800 dark:text-orange-200',
+};
 
 const academicSections = [
+	{
+		featured: true,
+		title: t('about.academics.self.title'),
+		courses: t('about.academics.self.courses')
+			.split('\\n')
+			.map((line: string) => line.trim())
+			.filter(Boolean),
+	},
   {
+		featured: false,
     title: t('about.academics.cs.title'),
     courses: t('about.academics.cs.courses')
       .split('\\n')
-      .map((line) => line.trim())
+      .map((line: string) => line.trim())
       .filter(Boolean),
   },
   {
+		featured: false,
     title: t('about.academics.ai.title'),
     courses: t('about.academics.ai.courses')
       .split('\\n')
-      .map((line) => line.trim())
+      .map((line: string) => line.trim())
       .filter(Boolean),
   },
   {
+		featured: false,
     title: t('about.academics.backend.title'),
     courses: t('about.academics.backend.courses')
       .split('\\n')
-      .map((line) => line.trim())
+      .map((line: string) => line.trim())
       .filter(Boolean),
   },
   {
+		featured: false,
     title: t('about.academics.edu.title'),
     courses: t('about.academics.edu.courses')
       .split('\\n')
-      .map((line) => line.trim())
+      .map((line: string) => line.trim())
       .filter(Boolean),
   },
 ];
+
+const featuredAcademicSection = academicSections.find((section) => section.featured);
+const standardAcademicSections = academicSections.filter((section) => !section.featured);
 
 
 const featureLinks = [
@@ -78,12 +142,13 @@ const featureLinks = [
 		href: 'https://hun-bot2.github.io/study/',
 		badge: 'Study Log',
 	},
-	{
-		title: t('about.features.github.title'),
-		description: t('about.features.github.description'),
-		href: 'https://hun-bot2.github.io',
-		badge: 'Portfolio',
-	},
+	// Three.js로 구현하고 나서 추가
+	// {
+	// 	title: t('about.features.github.title'),
+	// 	description: t('about.features.github.description'),
+	// 	href: 'https://hun-bot2.github.io/study/',
+	// 	badge: 'Portfolio',
+	// },
 ];
 ---
 
@@ -112,45 +177,81 @@ const featureLinks = [
 			</div>
 			<div class="text-center lg:text-left space-y-1">
 				<div class="text-2xl lg:text-4xl font-bold text-orange-600 dark:text-orange-400 mb-4">
-					{t('about.greeting').split('\n').map(line => <p class="my-0">{line}</p>)}
+					{t('about.greeting').split('\n').map((line: string) => <p class="my-0">{line}</p>)}
 				</div>
 				<div class="text-xl text-slate-600 dark:text-gray-400 leading-relaxed max-w-2xl space-y-2">
-					{introParagraphs.map((paragraph) => (
-						<p>{paragraph}</p>
-					))}
+						{introParagraphs.map((paragraph: string) => (
+							<p>{paragraph}</p>
+						))}
 				</div>
 			</div>
 		</section>
 
-		<section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+		<section class="max-w-3xl mx-auto divide-y divide-slate-200 dark:divide-white/10">
 			{stats.map((stat) => (
-				<div class="rounded-2xl border border-slate-200 bg-white dark:border-white/10 dark:bg-white/5 px-5 flex flex-col text-center shadow-sm hover:shadow-md transition-all duration-200 backdrop-blur min-h-[150px]">
-					<p class="text-xm uppercase tracking-wide text-slate-400 dark:text-slate-200 mb-2 py-2">{stat.label}</p>
-					<div class="flex-1 flex items-center justify-center">
-						<p class="text-base sm:text-lg font-semibold text-slate-900 dark:text-white leading-snug break-words text-center whitespace-pre-line">{stat.value}</p>
-					</div>
+				<div class="grid gap-2 py-5 sm:grid-cols-[11rem_minmax(0,1fr)] sm:gap-6 sm:items-center">
+					<p class="text-lg uppercase tracking-[0.28em] text-slate-400 dark:text-slate-300 sm:text-left">
+						{stat.label}
+					</p>
+					<p class="text-base text-slate-900 dark:text-white leading-relaxed whitespace-pre-line sm:text-left">
+						{stat.value}
+					</p>
 				</div>
 			))}
 		</section>
 
 		<section class="space-y-6">
-			<div class="space-y-2 text-center lg:text-left">
-				<h2 class="text-3xl font-bold text-orange-800 dark:text-orange-300">{t('about.academics.title')}</h2>
-				<p class="text-lg text-slate-600 dark:text-slate-300">{t('about.academics.subtitle')}</p>
-			</div>
-			<div class="grid gap-6 md:grid-cols-2">
-				{academicSections.map((section) => (
-					<div class="rounded-2xl border border-slate-200 bg-white dark:border-white/10 dark:bg-white/5 px-6 py-3 shadow-sm hover:shadow-md transition-all duration-200 backdrop-blur">
-						<h3 class="text-xl font-semibold text-slate-900 dark:text-white">{section.title}</h3>
-						<div class="text-base text-slate-600 dark:text-slate-300 leading-relaxed">
-							{section.courses.map((courseLine) => (
-								<p>{courseLine}</p>
-							))}
-						</div>
-					</div>
-				))}
-			</div>
-		</section>
+            <div class="space-y-2 text-center lg:text-left">
+                <h2 class="text-3xl font-bold">{t('about.academics.title')}</h2>
+            </div>
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+                {standardAcademicSections.map((section) => (
+                    <div class="h-full rounded-2xl border px-6 py-4">
+                        {/* m-0을 제거하고 mb-1.5 (6px) 적용 */}
+                        <h3 class="mb-1.5 text-xl font-semibold break-keep">{section.title}</h3>
+                        <div class="text-base leading-relaxed break-keep">
+                            {section.courses.map((courseLine: string) => (
+                                <p class="m-0 break-keep">{courseLine}</p>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {featuredAcademicSection && (
+                <div class="rounded-2xl border px-6 py-4">
+                    <div class="flex h-full flex-col gap-4">
+                        <div>
+                            {/* m-0 제거, mb-1.5 적용 (위 박스들과 간격 통일) */}
+                            <h3 class="mb-1.5 text-xl font-semibold break-keep">{featuredAcademicSection.title}</h3>
+                            <div class="text-base leading-relaxed break-keep">
+                                {featuredAcademicSection.courses.map((courseLine: string) => (
+                                    <p class="m-0 break-keep">{courseLine}</p>
+                                ))}
+                            </div>
+                        </div>
+                        <div class="grid gap-3 border-t pt-4 sm:grid-cols-2">
+    <div class="space-y-1">
+        <h3 class="m-0 text-sm font-bold uppercase tracking-[0.16em] opacity-90">
+            {t('about.academics.self.focus.current.label')}
+        </h3>
+        <p class="m-0 text-sm break-keep">
+            {t('about.academics.self.focus.current.value')}
+        </p>
+    </div>
+    <div class="space-y-1 sm:border-l sm:pl-4">
+        <h3 class="m-0 text-sm font-bold uppercase tracking-[0.16em] opacity-90">
+            {t('about.academics.self.focus.past.label')}
+        </h3>
+        <p class="m-0 text-sm break-keep opacity-80">
+            {t('about.academics.self.focus.past.value')}
+        </p>
+    </div>
+</div>
+                    </div>
+                </div>
+            )}
+        </section>
 
 		<!-- 교육 섹션 - 심플한 카드 디자인 -->
 		<section class="space-y-8">
@@ -247,34 +348,121 @@ const featureLinks = [
 
 		<!-- Timeline -->
 		<section class="space-y-6">
-			<h2 class="text-3xl font-bold text-orange-800 dark:text-orange-300">{t('about.timeline.title')}</h2>
-			<div class="space-y-6 border-l border-slate-200 dark:border-slate-700 pl-6">
-				{timelineEntries.map((item) => (
-					<div class="relative pl-4">
-						<span class="absolute -left-5 top-2 h-3 w-3 rounded-full bg-orange-500 shadow shadow-orange-500/30"></span>
-						<p class="text-sm uppercase tracking-wide text-slate-400">{item.period}</p>
-						<h3 class="text-xl font-semibold text-slate-900 dark:text-white mt-1">{item.title}</h3>
-						<p class="text-slate-600 dark:text-slate-300 mt-2 leading-relaxed">{item.body}</p>
-					</div>
+			<div class="space-y-2">
+				<h2 class="text-3xl font-bold text-orange-800 dark:text-orange-300">{t('about.timeline.title')}</h2>
+				<p class="text-sm text-slate-500 break-keep dark:text-slate-400">{t('about.timeline.trajectory.subtitle')}</p>
+			</div>
+			<div class="flex flex-wrap gap-2" data-timeline-controls>
+				{timelineTypeFilters.map((type) => (
+					<button
+						type="button"
+						data-filter={type}
+						aria-pressed={type === 'all' ? 'true' : 'false'}
+						class="rounded-full border border-orange-300 px-3 py-1 text-xs font-medium text-orange-700 transition-colors hover:border-orange-400 hover:bg-orange-50 dark:border-orange-500/60 dark:text-orange-200 dark:hover:border-orange-400 dark:hover:bg-slate-800"
+					>
+						{t(`about.timeline.filter.${type}` as any)}
+					</button>
+				))}
+			</div>
+			<div class="space-y-8" data-timeline-root>
+				{trajectoryYears.map((year) => (
+					<details class="group/year rounded-xl" data-year-group data-year={year} open={year === trajectoryYears[0]}>
+						<summary class="cursor-pointer list-none">
+							<div class="grid gap-2 md:grid-cols-4 md:gap-6">
+								<div class="space-y-2">
+									<p class="text-2xl font-semibold text-orange-700 dark:text-orange-300">{year}</p>
+									<p class="text-sm text-slate-500 break-keep dark:text-slate-400">{t(`about.timeline.year.${year}.summary` as any)}</p>
+									<p class="text-xs font-medium text-orange-600 dark:text-orange-300">
+										<span class="group-open/year:hidden">[+] {t('about.timeline.year.toggle.more')}</span>
+										<span class="hidden group-open/year:inline">[-] {t('about.timeline.year.toggle.less')}</span>
+									</p>
+								</div>
+							</div>
+						</summary>
+						<div class="mt-3 grid gap-4 md:grid-cols-4 md:gap-6">
+							<div aria-hidden="true"></div>
+							<div class="space-y-4 border-l border-orange-300 pl-4 dark:border-orange-500/60 md:col-span-3">
+								{timelineEntries.filter((item) => item.year === year).map((item, index) => (
+									<details
+										class="group/item rounded-xl border border-slate-300 bg-slate-100 px-4 py-4 transition-colors hover:border-orange-400 hover:bg-slate-100 dark:border-white/10 dark:bg-white/5 dark:hover:border-orange-400 dark:hover:bg-white/10"
+										data-timeline-item
+										data-type={item.type}
+										open={index === 0}
+									>
+										<summary class="cursor-pointer list-none">
+											<div class="grid gap-3 md:grid-cols-4 md:gap-6">
+												<p class="text-sm font-medium text-slate-500 break-keep dark:text-slate-400">{item.period}</p>
+												<div class="space-y-2 md:col-span-3">
+													<div class="flex flex-wrap items-start gap-2">
+														<h3 class="flex-1 text-lg font-semibold text-slate-900 break-keep dark:text-slate-100">{item.title}</h3>
+														<span class={`shrink-0 self-start rounded-full px-2 py-0.5 text-xs font-medium ${timelineTypeColors[item.type]}`}>
+															{t(`about.timeline.type.${item.type}` as any)}
+														</span>
+													</div>
+													<p class="text-sm text-slate-600 break-keep dark:text-slate-300">
+														{item.body}
+													</p>
+													<p class="text-xs font-medium text-orange-600 dark:text-orange-300">
+														<span class="group-open/item:hidden">[+] {t('about.timeline.toggle.more')}</span>
+														<span class="hidden group-open/item:inline">[-] {t('about.timeline.toggle.less')}</span>
+													</p>
+											</div>
+										</div>
+									</summary>
+										<div class="mt-3 space-y-3 border-t border-orange-200 pt-3 dark:border-orange-500/40">
+											<div class="grid gap-2 md:grid-cols-4 md:gap-6">
+												<p class="text-xs font-semibold uppercase tracking-wide text-orange-700 dark:text-orange-300">{t('about.timeline.meta.goal')}</p>
+												<p class="text-sm text-slate-700 break-keep dark:text-slate-200 md:col-span-3">{item.goal}</p>
+											</div>
+											<div class="grid gap-2 md:grid-cols-4 md:gap-6">
+												<p class="text-xs font-semibold uppercase tracking-wide text-orange-700 dark:text-orange-300">{t('about.timeline.meta.impact')}</p>
+												<p class="text-sm text-slate-700 break-keep dark:text-slate-200 md:col-span-3">{item.impact}</p>
+											</div>
+										</div>
+									</details>
+								))}
+							</div>
+						</div>
+					</details>
 				))}
 			</div>
 		</section>
 
-		<!-- Challenges -->
-		{challengeEntries.length > 0 && (
-			<section class="space-y-6">
-				<h2 class="text-3xl font-bold text-orange-800 dark:text-orange-300">{t('about.challenges.title')}</h2>
-				<div class="space-y-6">
-					{challengeEntries.map((item) => (
-						<div class="rounded-2xl border border-slate-200 bg-white dark:border-white/10 dark:bg-white/5 px-6 py-5 shadow-sm">
-							<p class="text-sm uppercase tracking-wide text-slate-400">{item.period}</p>
-							<h3 class="text-xl font-semibold text-slate-900 dark:text-white mt-1">{item.title}</h3>
-							<p class="text-slate-600 dark:text-slate-300 mt-2 leading-relaxed">{item.body}</p>
-						</div>
-					))}
-				</div>
-			</section>
-		)}
+		<script is:inline>
+			const controls = Array.from(document.querySelectorAll('[data-timeline-controls] button'));
+			const items = Array.from(document.querySelectorAll('[data-timeline-item]'));
+			const yearGroups = Array.from(document.querySelectorAll('[data-year-group]'));
+
+			const applyFilter = (selected) => {
+				items.forEach((item) => {
+					const type = item.getAttribute('data-type');
+					const matched = selected === 'all' || type === selected;
+					item.classList.toggle('hidden', !matched);
+				});
+
+				yearGroups.forEach((group) => {
+					const visibleCount = group.querySelectorAll('[data-timeline-item]:not(.hidden)').length;
+					group.classList.toggle('hidden', visibleCount === 0);
+				});
+			};
+
+			controls.forEach((button) => {
+				button.addEventListener('click', () => {
+					const selected = button.getAttribute('data-filter') || 'all';
+					controls.forEach((control) => {
+						const active = control === button;
+						control.setAttribute('aria-pressed', active ? 'true' : 'false');
+						control.classList.toggle('bg-orange-100', active);
+						control.classList.toggle('text-orange-800', active);
+						control.classList.toggle('border-orange-400', active);
+						control.classList.toggle('dark:bg-slate-700', active);
+						control.classList.toggle('dark:text-slate-100', active);
+						control.classList.toggle('dark:border-orange-400', active);
+					});
+					applyFilter(selected);
+				});
+			});
+		</script>
 
 		<!-- Feature Stories -->
 		<section class="space-y-6">
