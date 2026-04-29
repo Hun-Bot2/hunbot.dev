@@ -1,0 +1,220 @@
+---
+title: '채팅 시스템'
+description: '채팅 시스템 구현을 위한 정리 : 기능 & 데이터베이스'
+pubDate: '2026-04-24'
+heroImage: '/images/ON-THE-BLOCK/chat-database-erd.png'
+tags: ['Cassandra', 'Redis', 'Chatting System', 'HBase', 'gRPC', 'Kafka', 'RabbitMQ', 'Pub/Sub', 'Message Queue', 'Real-time Chatting System']
+category: 'chatting_system'
+series: 'chatting_system'
+seriesOrder: 1
+---
+import LocalizedLink from '@/components/LocalizedLink.astro';
+
+#### 서비스 시작 : <LocalizedLink href="blog/devlog/on-the-block/on-the-block01/">on-the-block-chat</LocalizedLink>으로 이동하기
+
+이번 학기에 채팅 시스템을 구현하는 역할을 맡게 되었습니다.
+채팅 시스템에 대해서 공부를 하면서 제 채팅 시스템에 적합한 기술 스택과 아키텍쳐에 대해서 정리하고자 합니다.
+
+# 내가 구현하려는 채팅 시스템 설계 정리
+
+## 그룹 채팅 중심의 실시간 채팅 서비스를 어떻게 설계할 것인가
+기본적으로 채팅이라고 하면 떠오르는 몇 가지 제품이 있습니다. 카카오톡, 인스타그램 DM, 디스코드, 슬랙 등. 모두 “채팅”이라는 공통점을 갖고 있지만, 실제로는 성격이 꽤 다릅니다.
+
+어떤 서비스는 1:1 대화가 핵심이고, 어떤 서비스는 대규모 그룹 커뮤니케이션이 중요합니다. 메시지 형태도 텍스트, 이미지, 파일, 동영상 등 다양하고, 읽음 여부 표시, 반응(좋아요 등), 댓글형 답장, 알림, 메시지 삭제, 아카이빙 같은 기능도 제각각 다릅니다.
+
+평소에는 편하게 사용하지만, 막상 직접 구현하려고 보면 고려해야 할 요소가 정말 많습니다.
+그래서 이번 글에서는 
+1. **제가 구현하려는 채팅 시스템이 어떤 성격을 가지는지**
+2. **어떤 기능이 필요한지**, **어떤 기술 스택과 아키텍처가 적합한지**
+3. **어떤 DB 구조가 현실적인지**를 정리해보려고 합니다.
+
+---
+
+## 구현하려는 채팅 시스템의 목표
+
+### 기능 요구사항
+1. **그룹 채팅만 지원한다.** 각 그룹 채팅방은 최대 **30명**까지 참여할 수 있다.
+2. **모바일 앱과 웹앱 모두 지원 가능**해야 한다.
+3. 메시지 형태는 다음을 지원한다. [텍스트, 이미지, 파일]
+   단, **동영상은 용량과 운영 비용 문제로 지원하지 않는다.** -> 추후 고려
+4. 텍스트 메시지의 최대 길이는 **1,000자**로 제한한다.
+5. 다음 기능이 필요하다.
+   - 실시간 메시지 수신
+   - 읽음 여부 표시
+   - 알림
+   - 닉네임 태그
+   - 채팅 반응(좋아요, 싫어요 등)
+   - 메시지에 대한 댓글/답장 기능
+6. **종단간 암호화(E2EE)는 지원하지 않는다.**
+7. 채팅 이력은 **무제한 보관**한다.
+   다만, **1년 이상 지난 채팅은 아카이빙 처리**한다.
+8. 초기 DAU는 **10,000명**을 예상하고 설계한다.
+9. 아키텍처는 한 번에 과도하게 크게 가는 것이 아니라, **v1 → v2 → v3로 성장에 따라 확장하는 구조**를 지향한다.
+10. 게시판에 채팅방에 연동되는 구조인데, 같은 게시글에서는 1개의 채팅방만 만들 수 있다.
+
+아래와 같이 정리 할 수 있습니다.
+| **포함하는 것** | **포함하지 않는 것** |
+| --- | --- |
+| 그룹 채팅 | 1:1 채팅 |
+| 실시간 전송 | 동영상 메시지 |
+| 메시지 영구 저장 | 종단간 암호화 |
+| 읽음 여부 | 초기부터 과도하게 복잡한 분산 구조 |
+| 반응 | 초기부터 모든 기능을 완성형으로 넣는 설계 |
+| 답장/댓글 |  |
+| 알림 |  |
+| 웹/앱 대응 |  |
+| 추후 확장 가능한 구조 |  |
+
+---
+
+제가 개발하려는 채팅 시스템 특성상, timestamp, message, user_id, group_id 등등 데이터의 구조가 명확하게 정해져있기에 RDB를 사용해야 할 것 같고, RDB 중에서도 PostgreSQL이 가장 적합하다고 생각이 됩니다.
+
+MySQL과 PostgreSQL중에서 어떤 것을 사용할까 고민이 되었고, **_[PostgreSQL 과 MySQL 특징 및 성능 비교](https://dlabtech.tistory.com/entry/PostgreSQL-%EA%B3%BC-MySQL-%ED%8A%B9%EC%A7%95-%EB%B0%8F-%EC%84%B1%EB%8A%A5-%EB%B9%84%EA%B5%90)_**
+
+해당 글을 참고해서 PostgreSQL이 더 적합하다고 결론을 내렸습니다. 
+
+## 데이터베이스 ERD
+![ERD](/images/ON-THE-BLOCK/chat-database-erd.png)
+
+해당 사진에서 설명이 필요한 부분은 다음과 같습니다.
+
+### chat_rooms
+
+#### linked_board_id
+
+`linked_board_id`는 Board 게시글과 연결된 그룹 채팅방을 나타냅니다.
+
+- 일반 그룹 채팅방이면 `null`
+- Board 연동 채팅방이면 해당 Board 게시글의 ID 저장
+- Board 게시글 하나당 채팅방은 최대 1개만 허용
+
+#### is_active, deleted_at
+
+채팅방 삭제는 실제 DB row를 삭제하지 않고 soft delete 방식으로 처리합니다.
+
+- `is_active = false`
+- `deleted_at = 삭제 처리 시각`
+
+이렇게 처리하는 이유는 다음과 같습니다.
+
+- 운영 이력 보존
+- 메시지 기록 보존
+- 추후 장애/신고/운영 대응 가능성 확보
+
+
+## chat_room_members
+
+### user_id
+`user_id`는 해당 채팅방에 참여한 사용자 ID입니다.
+
+이는 auth-service에서 관리되는 내부 사용자 식별자이며, chat-service DB에서는 외부 서비스 DB와 직접 FK를 걸지 않고 논리적 참조값으로 사용합니다.
+
+### status
+
+`status`는 채팅방 멤버의 현재 상태를 나타냅니다.
+
+| 값 | 의미 |
+|---|---|
+| `ACTIVE` | 현재 채팅방에 참여 중인 사용자 |
+| `LEFT` | 사용자가 자발적으로 나간 상태 |
+| `REMOVED` | 방장에 의해 강퇴된 상태 |
+
+특히 `REMOVED` 상태의 사용자는 같은 채팅방에 다시 입장할 수 없습니다.
+
+### removed_by_user_id
+
+`removed_by_user_id`는 **강퇴당한 사용자의 ID가 아니라**, 해당 사용자를 강퇴한 방장 또는 관리자 사용자의 ID입니다.
+
+강퇴당한 사용자는 같은 row의 `user_id`에 저장됩니다.
+
+예시는 다음과 같습니다.
+
+| 필드 | 의미 |
+|---|---|
+| `user_id` | 강퇴당한 사용자 |
+| `removed_by_user_id` | 강퇴를 실행한 방장/관리자 |
+| `removed_at` | 강퇴된 시각 |
+| `status` | `REMOVED` |
+
+강퇴 후 재입장 방지는 `removed_by_user_id`가 아니라, 해당 멤버 row의 `status = REMOVED` 상태를 기준으로 처리합니다.
+
+### last_read_sequence_no
+
+`last_read_sequence_no`는 사용자가 해당 채팅방에서 마지막으로 읽은 메시지의 순서를 나타냅니다.
+
+채팅방의 메시지는 `chat_messages.sequence_no`를 기준으로 정렬되며, unread count는 일반적으로 다음 조건으로 계산할 수 있습니다.
+
+```sql
+sequence_no > last_read_sequence_no
+```
+
+## chat_messages
+
+### is_deleted, deleted_at, deleted_by_user_id
+
+메시지 삭제도 soft delete 방식으로 처리합니다.
+
+- `is_deleted` = true
+- `deleted_at` = 삭제 처리 시각
+- `deleted_by_user_id` = 삭제를 실행한 사용자 ID
+
+카카오톡에서 볼 수 있는 "삭제된 메세지입니다" 표시라고 생각하시면 됩니다.
+
+## One Board - One Chat Room
+PostgreSQL에서 partial unique indexf를 활용하여 구현하라고 하더라고요. 직접 만들어보면서 더 좋은 방식이 있다면 추가로 기록해두겠습니다.
+```sql
+CREATE UNIQUE INDEX uq_board_linked_room
+ON chat_rooms(linked_board_id)
+WHERE room_type = 'BOARD_LINKED_GROUP'
+  AND deleted_at IS NULL;
+```
+
+---
+
+## 정책, Proto
+위에 작성해둔 정책말고도, Proto를 설계하면서 추가로 고려해야하는 부분이 있습니다.
+
+#### 1. gRPC 요청에서 user_id를 계속 request body에 넣을 것인가, 아니면 gRPC metadata/JWT context에서 꺼낼 것인가?
+우선, 인증 구현을 다른 팀원이 진행하고 있기에, 저는 테스트를 위해서 gRPC 요청 body에 user_id를 넣는 방식으로 구현을 진행할 예정입니다. 
+
+추후 인증이 구현되고 나면, gRPC metadata나 JWT context에서 user_id를 꺼내는 방식으로 리팩토링할 예정입니다.
+```json
+{
+  "room_id": "room_1",
+  "sender_user_id": "test_user_1",
+  "content": "hello"
+}
+```
+
+#### 2. LeaveRoom RPC를 지금 명시적으로 만들 것인가, 아니면 v1에서는 보류하고 방장 강퇴 + 방 비활성화만 둘 것인가?
+```proto
+rpc LeaveRoom(LeaveRoomRequest) returns (LeaveRoomResponse);
+
+message LeaveRoomRequest {
+  string room_id = 1;
+  string user_id = 2;
+}
+```
+처음에는 이런 식으로 구상을 했는데, 채탕방을 나갔을 떄 고려 해야하는 문제점들이 더 있었습니다.
+1. 방장이 나간다면 방을 폭파할거냐? 다른 멤버에게 위임할거냐?
+그렇다.
+2. 방장이 나가고 다른 멤버에게 위임하는 경우, 방장이 나간 시점에 방장 권한을 누구에게 위임할거냐? (가장 오래된 멤버? 가장 최근에 활동한 멤버? 랜덤?)
+가장 오래된 멤버. 만약, 가장 오래된 멤버가 여러 명이라면, 그 중에서 user_id가 가장 작은 멤버에게 위임한다. 
+3. 마지막 멤버가 나가면 방은 비활성화되는가?
+soft delete로 방을 비활성화한다.
+4. Board-linked room에서 사용자가 나간 뒤 다시 들어올 수 있는가?
+그렇다
+5. LEFT는 재입장 가능한가?
+그렇다. 강퇴만 아니라면 가능하다.
+
+
+#### 3. 비활성화된 채팅방을 사용자가 들어가서 메시지를 확인할 수 있는가??
+방이 비활성화되면 기존 멤버라도 GetMessages를 사용할 수 없다. 메시지 row는 DB에 남지만, 일반 사용자 API에서는 조회하지 못한다.
+
+#### 4. Pagination : page_token 기반 pagination을 유지할 것인가, 아니면 메시지/채팅방에 대해서 시퀀스 기반 pagination으로 전환할 것인가?
+messages는 sequence-based pagination으로 가고, room list는 cursor/token pagination으로 가는 방향으로 한다.
+
+우선, 이 정도로 정리해두고 구현하면서 필요한 부분이 있다면 추가로 업데이트 하려고 합니다.
+
+## 마치며
+이 포스팅은 채팅 시스템에 대한 내용을 다루는 포스팅이라서, 기능 화면이나 Flutter 관련 내용은 <LocalizedLink href="blog/devlog/on-the-block/on-the-block02/">on-the-block-flutter</LocalizedLink> 포스팅에서 확인할 수 있습니다.
