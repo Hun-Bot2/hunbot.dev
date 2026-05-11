@@ -1,0 +1,175 @@
+---
+title: 'ZORO #1 — Can a Single Goal Recreate a Production Frontend?'
+description: 'Stress-testing Codex Goal on high-fidelity frontend reconstruction without external memory or workflow artifacts.'
+pubDate: '2026-05-09'
+heroImage: '/images/ZORO/zoro-main.png'
+tags: ['codex', 'ai', 'frontend', 'goal', 'zoro', 'llm']
+category: 'AI Engineering'
+series: 'ZORO'
+seriesOrder: 1
+---
+
+## Introduction
+
+Recently, OpenAI introduced an experimental workflow feature for Codex called **Goals**.
+
+The idea immediately stood out to me.
+
+Instead of repeatedly prompting the model step-by-step, you define a persistent objective and allow Codex to keep working toward it over time.
+
+The official documentation can be found here:
+
+**Link:** <u>https://developers.openai.com/codex/use-cases/follow-goals</u>
+
+At first, I thought this would simply become another AI workflow feature.
+
+But after spending time with it, I became much more interested in a different question:
+
+> How far can a single Goal actually go?
+
+Not:
+
+* "Can AI generate code?"
+* "Can AI build a small demo?"
+
+We already know it can.
+
+What interested me more was this:
+
+> Can a single persistent Goal maintain enough consistency to reconstruct a production-quality frontend over a long period of execution?
+
+That question became the starting point for the **ZORO** series.
+
+---
+
+## Why "ZORO"?
+
+The name came from a very simple idea:
+
+Continuing to move toward a goal, even when direction becomes unclear.
+
+This series is not about claiming that AI can replace software engineers.
+
+It is about stress-testing long-running AI coding workflows under realistic conditions.
+
+More specifically, I want to observe:
+
+* how long consistency survives,
+* when drift begins,
+* how architecture degrades over time,
+* and how much human guidance is still required.
+
+---
+
+## Experiment #1 — Frontend Reconstruction
+
+For the first experiment, I decided to focus entirely on frontend reconstruction.
+
+Why frontend?
+
+Because frontend systems make drift immediately visible.
+
+Small inconsistencies slowly accumulate into:
+
+* spacing issues,
+* typography mismatches,
+* broken responsive layouts,
+* duplicated components,
+* and visual degradation.
+
+Unlike backend systems, frontend work gives you a direct way to observe consistency through screenshots and structural comparison.
+
+The core question for this experiment is simple:
+
+> Can Codex Goal maintain high-fidelity frontend consistency during long-running implementation?
+
+---
+
+## The Constraint That Makes This Interesting
+
+This experiment intentionally avoids adding additional workflow layers.
+
+No:
+
+* external memory systems,
+* custom persistence artifacts,
+* goals.md,
+* progress tracking,
+* or manual decomposition.
+
+The entire reconstruction process is driven by a **single Goal**.
+
+I also intentionally avoid:
+
+* `/goal pause`
+* `/goal resume`
+
+during the initial execution phase.
+
+The purpose of this experiment is to observe how far the native Goal workflow can maintain direction on its own.
+
+---
+
+## What I’m Actually Measuring
+
+This is not simply a "looks good or bad" experiment.
+
+Most AI frontend demos look impressive in the first hour.
+
+The more interesting question is:
+
+> What happens as complexity accumulates?
+
+I’m particularly interested in observing:
+
+* long-term visual consistency,
+* layout fidelity,
+* responsive behavior,
+* component reuse quality,
+* hallucinated UI structures,
+* unfinished implementation zones,
+* CSS complexity growth,
+* and long-horizon drift.
+
+The goal is not merely generating a convincing hero section.
+
+The goal is maintaining consistency across an increasingly large and evolving frontend system.
+
+---
+
+## Why This Matters
+
+Most discussions around AI coding still focus on:
+
+* speed,
+* first-pass generation,
+* and short demos.
+
+But real software engineering is rarely about generating something once.
+
+The difficult part is:
+
+* preserving consistency,
+* evolving systems safely,
+* and continuing implementation without slowly collapsing into chaos.
+
+This experiment is the first step toward understanding how far Goal-based coding workflows can realistically go today.
+
+Future ZORO experiments will move beyond frontend reconstruction into:
+
+* backend systems,
+* architectural evolution,
+* and long-running software maintenance.
+
+---
+
+## Closing Notes
+
+Since the Goal workflow has only recently been introduced, this experiment should not be interpreted as a definitive evaluation of the feature itself.
+
+The system is clearly still evolving, and many current limitations are expected in an early experimental release.
+
+What makes this interesting is not whether the feature is already perfect —
+but how capable it already is at maintaining long-running implementation workflows at such an early stage.
+
+As OpenAI continues refining the Goal system, I plan to revisit these experiments and observe how the workflow evolves across future versions.
