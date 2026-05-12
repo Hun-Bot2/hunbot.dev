@@ -1,4 +1,5 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
+import { getBlogSlugFromId, getBlogUrlFromId } from './blog-routing';
 
 export type BlogPost = CollectionEntry<'blog'>;
 
@@ -37,14 +38,14 @@ export function normalizeCategory(category?: string): string {
  * Get post slug - use post.id if no custom slug is provided
  */
 export function getPostSlug(post: BlogPost): string {
-  return post.id;
+  return getBlogSlugFromId(post.id);
 }
 
 /**
  * Get post URL based on slug
  */
 export function getPostUrl(post: BlogPost): string {
-  return `/blog/${getPostSlug(post)}/`;
+  return getBlogUrlFromId(post.id);
 }
 
 /**
@@ -79,4 +80,3 @@ export function estimateWordCount(content: string): number {
 export function estimateReadTime(wordCount: number): number {
   return Math.max(1, Math.ceil(wordCount / 200));
 }
-
