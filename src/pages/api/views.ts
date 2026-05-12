@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { Redis } from '@upstash/redis';
+import { getPageviewsKey, getViewHistoryKey, isValidViewSlug } from '../../utils/view-counter';
 
 export const prerender = false;
 
@@ -32,9 +33,10 @@ export const GET: APIRoute = async ({ request }) => {
   const slug = url.searchParams.get('slug');
 
   if (!slug) return new Response(JSON.stringify({ error: 'Slug missing' }), { status: 400 });
+  if (!isValidViewSlug(slug)) return new Response(JSON.stringify({ error: 'Invalid slug' }), { status: 400 });
 
   try {
-    const views = await redis.get<number>(`pageviews:${slug}`) || 0;
+    const views = await redis.get<number>(getPageviewsKey(slug)) || 0;
     
     return new Response(JSON.stringify({ views }), {
       status: 200,
@@ -55,24 +57,25 @@ export const POST: APIRoute = async ({ request }) => {
   const isLocalhost = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
 
   if (!slug) return new Response(JSON.stringify({ error: 'Slug missing' }), { status: 400 });
+  if (!isValidViewSlug(slug)) return new Response(JSON.stringify({ error: 'Invalid slug' }), { status: 400 });
 
   try {
     if (isLocalhost) {
-      const views = await redis.get<number>(`pageviews:${slug}`) || 0;
+      const views = await redis.get<number>(getPageviewsKey(slug)) || 0;
       return new Response(JSON.stringify({ views, skipped: true }), { status: 200 });
     }
 
     const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
-    const historyKey = `history:${ip}:${slug}`;
+    const historyKey = getViewHistoryKey(ip, slug);
 
     const isNewView = await redis.set(historyKey, '1', { nx: true, ex: 3600 });
 
     if (!isNewView) {
-      const views = await redis.get<number>(`pageviews:${slug}`) || 0;
+      const views = await redis.get<number>(getPageviewsKey(slug)) || 0;
       return new Response(JSON.stringify({ views, duplicated: true }), { status: 200 });
     }
 
-    const views = await redis.incr(`pageviews:${slug}`);
+    const views = await redis.incr(getPageviewsKey(slug));
     
     return new Response(JSON.stringify({ views }), { status: 200 });
   } catch (error) {
