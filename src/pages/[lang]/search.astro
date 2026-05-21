@@ -1,0 +1,118 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import FloatingLanguagePicker from '../../components/FloatingLanguagePicker.astro';
+import { useTranslations, type UILanguage } from '../../i18n/ui';
+
+export function getStaticPaths() {
+	return [
+		{ params: { lang: 'ko' } },
+		{ params: { lang: 'jp' } },
+		{ params: { lang: 'en' } },
+	];
+}
+
+const lang = (Astro.params.lang ?? 'ko') as UILanguage;
+const t = useTranslations(lang);
+const title = t('search.title');
+const description = t('search.description');
+const emptyText = t('search.empty');
+const unavailableText = t('search.unavailable');
+const pagefindTranslations = {
+	placeholder: t('search.placeholder'),
+	zero_results: t('search.zero-results'),
+};
+---
+
+<!doctype html>
+<html lang={lang}>
+	<head>
+		<BaseHead title={title} description={description} lang={lang} />
+		<link rel="stylesheet" href="/pagefind/pagefind-ui.css" />
+	</head>
+	<body>
+		<Header />
+		<FloatingLanguagePicker />
+		<main class="search-shell mx-auto max-w-4xl px-6 py-10" data-pagefind-ignore>
+			<section class="mb-8">
+				<h1 class="text-3xl font-bold text-slate-100 mb-3">{title}</h1>
+				<p class="text-slate-400 leading-relaxed">{description}</p>
+			</section>
+			<div id="search" aria-label={title}></div>
+			<p class="search-empty text-sm text-slate-500 mt-4">{emptyText}</p>
+		</main>
+		<Footer />
+		<script src="/pagefind/pagefind-ui.js" defer></script>
+		<script define:vars={{ lang, pagefindTranslations, unavailableText }}>
+			window.addEventListener('DOMContentLoaded', () => {
+				const searchRoot = document.querySelector('#search');
+				const emptyState = document.querySelector('.search-empty');
+
+				if (!searchRoot) return;
+
+				const PagefindUI = (window as any).PagefindUI;
+
+				if (!PagefindUI) {
+					searchRoot.innerHTML = `<p class="text-sm text-slate-500">${unavailableText}</p>`;
+					return;
+				}
+
+				const search = new PagefindUI({
+					element: '#search',
+					showSubResults: true,
+					showImages: false,
+					resetStyles: false,
+					bundlePath: '/pagefind/',
+					showEmptyFilters: false,
+					translations: pagefindTranslations,
+				});
+
+				search.triggerFilters({ language: [lang] });
+
+				const initialQuery = new URLSearchParams(window.location.search).get('q');
+				if (initialQuery) {
+					search.triggerSearch(initialQuery);
+					emptyState?.classList.add('hidden');
+				}
+
+				searchRoot.addEventListener('input', () => {
+					emptyState?.classList.add('hidden');
+				}, { once: true });
+			});
+		</script>
+	</body>
+</html>
+
+<style>
+	.search-shell {
+		--pagefind-ui-primary: #f97316;
+		--pagefind-ui-text: rgb(248, 250, 252);
+		--pagefind-ui-background: rgb(15, 23, 42);
+		--pagefind-ui-border: rgb(51, 65, 85);
+		--pagefind-ui-tag: rgba(249, 115, 22, 0.16);
+		--pagefind-ui-border-width: 1px;
+		--pagefind-ui-border-radius: 0.5rem;
+		--pagefind-ui-font: var(--font-body);
+	}
+
+	:global(body.light-theme) .search-shell {
+		--pagefind-ui-text: rgb(15, 23, 42);
+		--pagefind-ui-background: rgb(255, 255, 255);
+		--pagefind-ui-border: rgb(203, 213, 225);
+	}
+
+	:global(.pagefind-ui__search-input) {
+		background-color: var(--pagefind-ui-background);
+		color: var(--pagefind-ui-text);
+	}
+
+	:global(.pagefind-ui__result-link) {
+		color: var(--pagefind-ui-text);
+		text-decoration: none;
+	}
+
+	:global(.pagefind-ui__result-link:hover) {
+		color: var(--pagefind-ui-primary);
+	}
+</style>

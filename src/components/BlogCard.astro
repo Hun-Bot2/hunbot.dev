@@ -2,14 +2,15 @@
 import PostMeta from './PostMeta.astro';
 import CategoryBadge from './CategoryBadge.astro';
 import TagList from './TagList.astro';
-import { getPostUrl, normalizeCategory, type BlogPost } from '../utils/blog.ts';
+import { normalizeCategory, type BlogPost } from '../utils/blog.ts';
+import { getBlogUrlFromPost } from '../utils/blog-routing.ts';
 
 export interface Props {
   post: BlogPost;
 }
 
 const { post } = Astro.props;
-const postUrl = getPostUrl(post);
+const postUrl = getBlogUrlFromPost(post);
 const category = normalizeCategory(post.data.category);
 ---
 

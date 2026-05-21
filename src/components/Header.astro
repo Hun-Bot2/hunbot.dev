@@ -9,9 +9,10 @@ const blogUrl = lang === 'ko' ? '/ko/blog' : `/${lang}/blog`;
 const categoriesUrl = lang === 'ko' ? '/ko/blog/categories' : `/${lang}/blog/categories`;
 const tagsUrl = lang === 'ko' ? '/ko/blog/tags' : `/${lang}/blog/tags`;
 const aboutUrl = lang === 'ko' ? '/ko/about' : `/${lang}/about`;
+const searchUrl = lang === 'ko' ? '/ko/search' : `/${lang}/search`;
 ---
 
-<header class="header-wrapper">
+<header class="header-wrapper" data-pagefind-ignore>
 	<div class="header-content">
 		<h1 class="site-title">
 			<a href={homeUrl} class="no-underline">{SITE_TITLE}</a>
@@ -91,12 +92,12 @@ const aboutUrl = lang === 'ko' ? '/ko/about' : `/${lang}/about`;
 				</a>
 					
 					<!-- Search Icon -->
-					<button class="icon-button search-button" title="Search" aria-label="검색 열기">
+					<a href={searchUrl} class="icon-button search-button" title={t('nav.search')} aria-label={t('nav.search')}>
 						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<circle cx="11" cy="11" r="8"/>
 							<path d="m21 21-4.35-4.35"/>
 						</svg>
-					</button>
+					</a>
 				</div>
 			
 			<!-- Menu/Hamburger Icon (visible on mobile) -->
@@ -149,6 +150,13 @@ const aboutUrl = lang === 'ko' ? '/ko/about' : `/${lang}/about`;
 					<line x1="12" y1="8" x2="12.01" y2="8"/>
 				</svg>
 				<span>{t('nav.about')}</span>
+			</a>
+			<a href={searchUrl} class="mobile-nav-item">
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<circle cx="11" cy="11" r="8"/>
+					<path d="m21 21-4.35-4.35"/>
+				</svg>
+				<span>{t('nav.search')}</span>
 			</a>
 			<div class="mobile-nav-divider"></div>
 			<a href={SOCIAL_LINKS.github} target="_blank" rel="noopener noreferrer" class="mobile-nav-item">
