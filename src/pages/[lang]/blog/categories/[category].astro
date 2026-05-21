@@ -5,6 +5,7 @@ import Footer from '../../../../components/Footer.astro';
 import FloatingLanguagePicker from '../../../../components/FloatingLanguagePicker.astro';
 import { getCollection } from 'astro:content';
 import { useTranslations } from '../../../../i18n/ui';
+import { getBlogUrlFromId } from '../../../../utils/blog-routing';
 
 export async function getStaticPaths() {
     const allPosts = await getCollection('blog');
@@ -141,12 +142,10 @@ const categoryColor = PALETTE[colorIndex];
 
                             {/* 파일 리스트 */}
                             {posts.map((post) => {                            
-                                const slug = post.id
-                                    .replace(`${lang}/`, '')
-                                    .replace(/\.(md|mdx)$/, '');
+                                const postUrl = getBlogUrlFromId(post.id);
                                 
                                 return (
-                                    <a href={`/${lang}/blog/${slug}/`} class="group flex items-center px-6 py-3 border-b border-slate-800/50 hover:bg-[#1f6feb]/20 transition-colors">
+                                    <a href={postUrl} class="group flex items-center px-6 py-3 border-b border-slate-800/50 hover:bg-[#1f6feb]/20 transition-colors">
                                         <div class="flex-1 flex items-center gap-3 min-w-0">
                                             {/* 파일 아이콘 (고정 색상 또는 해시 색상) */}
                                             {/* 여기서는 파일 아이콘은 통일성을 위해 파란색이나 회색을 추천하지만, 카테고리 색을 따라가게 했습니다. */}

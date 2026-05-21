@@ -3,6 +3,7 @@ import { type CollectionEntry, getCollection } from 'astro:content';
 import BlogPost from '../../../layouts/BlogPost.astro';
 import { render } from 'astro:content';
 import type { UILanguage } from '../../../i18n/ui';
+import { getBlogLanguageFromId, getBlogSlugFromId, getBlogUrlFromId } from '../../../utils/blog-routing';
 
 export async function getStaticPaths() {
 	const langs: UILanguage[] = ['ko', 'jp', 'en'];
@@ -11,9 +12,16 @@ export async function getStaticPaths() {
 	const slugMap = new Map<string, string[]>();
 
 	for (const post of posts) {
-		const [lang, ...rest] = post.id.split('/');
-		if (lang !== 'ko' && lang !== 'jp' && lang !== 'en') continue;
-		const slug = rest.join('/');
+		let lang: UILanguage;
+		let slug: string;
+
+		try {
+			lang = getBlogLanguageFromId(post.id);
+			slug = getBlogSlugFromId(post.id);
+		} catch {
+			continue;
+		}
+
 		if (!slugMap.has(slug)) {
 			slugMap.set(slug, []);
 		}
@@ -22,11 +30,16 @@ export async function getStaticPaths() {
 	
 	return langs.flatMap(lang => {
 		// Filter posts for the current language
-		const langPosts = posts.filter(post => post.id.startsWith(`${lang}/`));
+		const langPosts = posts.filter((post) => {
+			try {
+				return getBlogLanguageFromId(post.id) === lang;
+			} catch {
+				return false;
+			}
+		});
 		
 		return langPosts.map((post) => {
-			// Remove language prefix from slug
-			const slug = post.id.replace(`${lang}/`, '');
+			const slug = getBlogSlugFromId(post.id);
 			return {
 				params: { lang, slug },
 				props: { post, lang, availableLangs: slugMap.get(slug) ?? [lang] },
@@ -53,7 +66,13 @@ let seriesNext: { title: string; url: string } | undefined;
 if (seriesName) {
 	const allPosts = await getCollection('blog');
 	const seriesPosts = allPosts
-		.filter((item) => item.id.startsWith(`${lang}/`))
+		.filter((item) => {
+			try {
+				return getBlogLanguageFromId(item.id) === lang;
+			} catch {
+				return false;
+			}
+		})
 		.filter((item) => item.data.series === seriesName)
 		.sort((a, b) => {
 			const aOrder = a.data.seriesOrder ?? Number.MAX_SAFE_INTEGER;
@@ -67,14 +86,12 @@ if (seriesName) {
 
 	if (seriesIndex > 1) {
 		const prev = seriesPosts[seriesIndex - 2];
-		const slug = prev.id.replace(`${lang}/`, '');
-		seriesPrev = { title: prev.data.title, url: `/${lang}/blog/${slug}/` };
+		seriesPrev = { title: prev.data.title, url: getBlogUrlFromId(prev.id) };
 	}
 
 	if (seriesIndex < seriesTotal) {
 		const next = seriesPosts[seriesIndex];
-		const slug = next.id.replace(`${lang}/`, '');
-		seriesNext = { title: next.data.title, url: `/${lang}/blog/${slug}/` };
+		seriesNext = { title: next.data.title, url: getBlogUrlFromId(next.id) };
 	}
 }
 ---

@@ -1,5 +1,5 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
-import { getBlogSlugFromId, getBlogUrlFromId } from './blog-routing';
+import { getBlogSlugFromId, getBlogUrlFromPost } from './blog-routing';
 
 export type BlogPost = CollectionEntry<'blog'>;
 
@@ -45,7 +45,7 @@ export function getPostSlug(post: BlogPost): string {
  * Get post URL based on slug
  */
 export function getPostUrl(post: BlogPost): string {
-  return getBlogUrlFromId(post.id);
+  return getBlogUrlFromPost(post);
 }
 
 /**
