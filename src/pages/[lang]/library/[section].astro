@@ -3,6 +3,7 @@ import BaseHead from '../../../components/BaseHead.astro';
 import Header from '../../../components/Header.astro';
 import Footer from '../../../components/Footer.astro';
 import FloatingLanguagePicker from '../../../components/FloatingLanguagePicker.astro';
+import LibraryIcon from '../../../components/library/LibraryIcon.astro';
 import LibraryPageStyles from '../../../components/library/LibraryPageStyles.astro';
 import { getCollection } from 'astro:content';
 import { useTranslations, type UILanguage } from '../../../i18n/ui';
@@ -61,6 +62,10 @@ const panelClass = 'library-panel';
 const panelDividerClass = 'library-panel-footer';
 const subtlePillClass = 'library-pill';
 const actionLinkClass = 'library-action';
+const backActionClass = `${actionLinkClass} library-action--back`;
+const externalActionClass = `${actionLinkClass} library-action--external`;
+const deckActionClass = `${actionLinkClass} library-action--deck`;
+const downloadActionClass = `${actionLinkClass} library-action--download`;
 const formatCount = (count: number) => t('library.item-count').replace('{count}', String(count));
 ---
 
@@ -80,10 +85,10 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 		<FloatingLanguagePicker />
 		<main class="library-page mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8" data-pagefind-body>
 			<section class="mb-12 max-w-5xl space-y-5">
-				<a href={libraryUrl} class={actionLinkClass}>{t('library.back-to-library')}</a>
-				<p class="library-kicker">
-					{t('library.human-reviewed')}
-				</p>
+				<a href={libraryUrl} class={backActionClass}>
+					<LibraryIcon name="arrow-left" />
+					{t('library.back-to-library')}
+				</a>
 				<div class="space-y-4">
 					<h1 class="text-4xl font-bold tracking-normal text-slate-100 sm:text-5xl">{sectionTitle}</h1>
 					<p class="text-xl leading-relaxed text-slate-300">{sectionDescription}</p>
@@ -113,9 +118,10 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 										href={resource.data.url}
 										target="_blank"
 										rel="noopener noreferrer"
-										class={actionLinkClass}
+										class={externalActionClass}
 									>
 										{t('library.view-resource')}
+										<LibraryIcon name="external" />
 									</a>
 								</div>
 							</article>
@@ -144,9 +150,10 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 									href={paper.data.url}
 									target="_blank"
 									rel="noopener noreferrer"
-									class={actionLinkClass}
+									class={externalActionClass}
 								>
 									{t('library.view-paper')}
+									<LibraryIcon name="external" />
 								</a>
 							</article>
 						))}
@@ -180,9 +187,10 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 												href={primaryDeckUrl}
 												target="_blank"
 												rel="noopener noreferrer"
-												class={actionLinkClass}
+												class={deck.htmlUrl ? deckActionClass : externalActionClass}
 											>
 												{deck.htmlUrl ? t('library.view-deck') : t('library.open-pdf')}
+												<LibraryIcon name={deck.htmlUrl ? 'arrow-right' : 'external'} />
 											</a>
 										)}
 										{showSource && (
@@ -190,9 +198,10 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 												href={deck.pptxUrl}
 												target="_blank"
 												rel="noopener noreferrer"
-												class={actionLinkClass}
+												class={downloadActionClass}
 											>
 												{t('library.download-source')}
+												<LibraryIcon name="download" />
 											</a>
 										)}
 									</div>
@@ -209,16 +218,6 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 					<p class="mt-2 leading-relaxed text-slate-400">{t('library.section.empty.body')}</p>
 				</section>
 			)}
-
-			<section class={`${panelClass} grid gap-4 md:grid-cols-[1fr_auto] md:items-center`}>
-				<div>
-					<h2 class="text-xl font-bold text-slate-100">{t('library.review-note.title')}</h2>
-					<p class="mt-2 leading-relaxed text-slate-400">{t('library.review-note.body')}</p>
-				</div>
-				<a href={libraryUrl} class={actionLinkClass}>
-					{t('library.back-to-library')}
-				</a>
-			</section>
 		</main>
 		<Footer />
 	</body>

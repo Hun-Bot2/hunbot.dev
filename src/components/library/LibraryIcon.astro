@@ -1,0 +1,29 @@
+---
+type IconName = 'arrow-left' | 'arrow-right' | 'external' | 'download';
+
+interface Props {
+	name: IconName;
+	class?: string;
+}
+
+const { name, class: className = 'library-action-icon' } = Astro.props;
+
+const iconPaths: Record<IconName, string[]> = {
+	'arrow-left': ['M19 12H5', 'M12 19l-7-7 7-7'],
+	'arrow-right': ['M5 12h14', 'M12 5l7 7-7 7'],
+	external: ['M7 17 17 7', 'M10 7h7v7'],
+	download: ['M12 4v11', 'M7 10l5 5 5-5', 'M5 20h14'],
+};
+---
+
+<svg
+	class={className}
+	aria-hidden="true"
+	viewBox="0 0 24 24"
+	fill="none"
+	stroke="currentColor"
+	stroke-linecap="round"
+	stroke-linejoin="round"
+>
+	{iconPaths[name].map((path) => <path d={path} />)}
+</svg>

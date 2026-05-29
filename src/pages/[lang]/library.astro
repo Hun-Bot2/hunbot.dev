@@ -3,6 +3,7 @@ import BaseHead from '../../components/BaseHead.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import FloatingLanguagePicker from '../../components/FloatingLanguagePicker.astro';
+import LibraryIcon from '../../components/library/LibraryIcon.astro';
 import LibraryPageStyles from '../../components/library/LibraryPageStyles.astro';
 import { getCollection } from 'astro:content';
 import { useTranslations, type UILanguage } from '../../i18n/ui';
@@ -32,7 +33,6 @@ const lang = (Astro.params.lang ?? 'ko') as UILanguage;
 const t = useTranslations(lang);
 const title = `${t('library.title')} - Hun-Bot Blog`;
 const description = t('library.description');
-const searchUrl = `/${lang}/search/`;
 
 const allResources = await getCollection('resources');
 const allPapers = await getCollection('papers');
@@ -78,6 +78,7 @@ const subtlePillClass = 'library-pill';
 const availableBadgeClass = 'library-badge--available';
 const comingSoonBadgeClass = 'library-badge--muted';
 const actionLinkClass = 'library-action';
+const externalActionClass = `${actionLinkClass} library-action--external`;
 ---
 
 <!doctype html>
@@ -95,9 +96,6 @@ const actionLinkClass = 'library-action';
 		<FloatingLanguagePicker />
 		<main class="library-page mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8" data-pagefind-body>
 			<section class="mb-12 max-w-5xl space-y-5">
-				<p class="library-kicker">
-					{t('library.human-reviewed')}
-				</p>
 				<div class="space-y-4">
 					<h1 class="text-4xl font-bold tracking-normal text-slate-100 sm:text-5xl">{t('library.title')}</h1>
 					<p class="text-xl leading-relaxed text-slate-300">{t('library.subtitle')}</p>
@@ -135,7 +133,10 @@ const actionLinkClass = 'library-action';
 								<p class="min-h-[4rem] text-sm leading-relaxed text-slate-400">{section.description}</p>
 								<div class={panelDividerClass}>
 									<span class="font-medium text-slate-300">{formatCount(section.count)}</span>
-									<span class="text-slate-500">{t('library.open-section')}</span>
+									<span class="library-section-button">
+										{t('library.open-section')}
+										<LibraryIcon name="arrow-right" />
+									</span>
 								</div>
 							</a>
 						);
@@ -163,9 +164,10 @@ const actionLinkClass = 'library-action';
 								href={resource.data.url}
 								target="_blank"
 								rel="noopener noreferrer"
-								class={actionLinkClass}
+								class={externalActionClass}
 							>
 								{t('library.view-resource')}
+								<LibraryIcon name="external" />
 							</a>
 						</article>
 					))}
@@ -222,28 +224,16 @@ const actionLinkClass = 'library-action';
 									href={paper.data.url}
 									target="_blank"
 									rel="noopener noreferrer"
-									class={actionLinkClass}
+									class={externalActionClass}
 								>
 									{t('library.view-paper')}
+									<LibraryIcon name="external" />
 								</a>
 							</article>
 						))}
 					</div>
 				</section>
 			)}
-
-			<section class={`${panelClass} grid gap-4 md:grid-cols-[1fr_auto] md:items-center`}>
-				<div>
-					<h2 class="text-xl font-bold text-slate-100">{t('library.review-note.title')}</h2>
-					<p class="mt-2 leading-relaxed text-slate-400">{t('library.review-note.body')}</p>
-				</div>
-				<a
-					href={searchUrl}
-					class="inline-flex min-h-10 items-center justify-center rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-400"
-				>
-					{t('library.search-cta')}
-				</a>
-			</section>
 		</main>
 		<Footer />
 	</body>
