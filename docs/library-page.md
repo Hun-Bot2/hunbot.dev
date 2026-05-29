@@ -45,6 +45,8 @@ The page reads from `src/content/resources/` and displays only entries where:
 
 Featured resources are preferred on the hub. Section pages list approved resources for their section, but still keep the display lightweight.
 
+Section resource pages group resources by `category`. Cards show type, tags, localized summary, license public policy, resolved related topics when present, and resolved related deck names when present.
+
 ## Paper Selection
 
 The page reads from `src/content/papers/` and displays paper cards only where:
@@ -53,6 +55,8 @@ The page reads from `src/content/papers/` and displays paper cards only where:
 - `review.humanReviewed === true`
 
 Cards show concise metadata such as venue, year, and priority only when available. The hub uses the localized TLDR summary and never stores or renders full paper text.
+
+The AI Papers section page shows venue, year, priority, difficulty, decision, localized TLDR, resolved topic labels, and any resolved related resources or decks. Topic and relationship IDs that do not resolve are omitted instead of creating broken links.
 
 ## Topic Selection
 
@@ -65,6 +69,8 @@ Topics are shown as lightweight cards for future filtering and recommendation wo
 ## Deck Selection
 
 The `/library/decks/` page reads from the local deck registry in `src/data/decks.ts`. It does not accept arbitrary URLs from content and does not use external document viewers.
+
+Deck cards show available viewing formats such as local HTML deck, PDF fallback, static slide count, and reviewed PPTX source availability. PPTX remains secondary and is only shown when deck metadata gates it as reviewed.
 
 ## Localization Fallback
 
@@ -92,6 +98,8 @@ The Library hub is server-rendered as static HTML and includes Pagefind metadata
 - `section=library`
 
 Section pages also add `library-section` as a Pagefind filter. This lets the existing search foundation index the Library without adding client-side JavaScript to these pages.
+
+Section pages remain server-rendered static HTML. The current discovery depth uses category grouping and resolved relationship metadata instead of client-side filter controls.
 
 ## Validation
 

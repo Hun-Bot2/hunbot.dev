@@ -1,6 +1,6 @@
 # 004: Library Discovery And Section Depth
 
-Status: Draft.
+Status: Implemented.
 
 ## Goal
 
