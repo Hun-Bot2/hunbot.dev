@@ -4,7 +4,14 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "npm run build:astro && npm run search:index",
+    "build:astro": "astro build",
+    "search:index": "pagefind --site dist/client && pagefind --site .vercel/output/static",
+    "search:validate": "node scripts/validate-search.mjs",
+    "deck:validate": "node scripts/validate-decks.mjs",
+    "library:validate": "node scripts/validate-library.mjs",
+    "library-page:validate": "node scripts/validate-library-page.mjs",
+    "routes:validate": "node scripts/validate-routes.mjs",
     "preview": "astro preview",
     "astro": "astro"
   },
@@ -22,5 +29,8 @@
     "remark-math": "^6.0.0",
     "sharp": "^0.34.2",
     "unist-util-visit": "^5.1.0"
+  },
+  "devDependencies": {
+    "pagefind": "^1.5.2"
   }
 }

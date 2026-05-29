@@ -8,13 +8,14 @@ This is a PR-sized implementation plan. It preserves the current Astro/Vercel/st
 
 ### PR: Centralize Localized Blog URL Generation
 
+- Status: Implemented in PR01.
 - Problem: `src/utils/blog.ts`, RSS, sitemap, public 3D script metadata, and route files disagree on post URLs. Actual post routes are language scoped, but some helpers emit `/blog/{post.id}/`.
 - Expected small diff: Add a tested helper that converts a content ID into `/{lang}/blog/{slug}/`; update direct consumers.
 - Likely files changed: `src/utils/blog.ts`, `src/pages/rss.xml.js`, `src/pages/sitemap.xml.ts`, `src/components/BlogCard.astro`, possibly `public/scripts/neuralNetwork.js` if still used.
 - Test or verification required: Unit tests for ID-to-URL cases; `npm run build`; manually open representative `ko`, `jp`, and `en` post links; validate RSS and sitemap URLs.
 - Rollback strategy: Revert helper and consumer changes together.
 - Implementation risk: Medium, because URLs are public contracts and Korean prefix behavior must be verified against generated output.
-- Codex action: Defer until explicitly asked to implement.
+- Codex action: Implemented in PR01.
 
 ### PR: Make Post `hreflang` Translation-Aware
 
@@ -134,13 +135,14 @@ This is a PR-sized implementation plan. It preserves the current Astro/Vercel/st
 
 ### PR: Add Search Route Only After URL Fixes
 
+- Status: Implemented in PR02.
 - Problem: Header has a search button, but no search page or index. Search should not be added before URL helpers are correct.
 - Expected small diff: Add a localized search page and static index plan, likely with Pagefind in a later dependency PR.
 - Likely files changed: Header, new localized search page, package scripts if a search indexer is added.
 - Test or verification required: Build; verify search results link to localized canonical post URLs.
 - Rollback strategy: Remove search route and package script changes.
 - Implementation risk: Medium.
-- Codex action: Defer.
+- Codex action: Implemented in PR02.
 
 ### PR: Add Image Size Guidelines And Spot Optimization
 

@@ -6,6 +6,7 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const homeUrl = lang === 'ko' ? '/' : `/${lang}/`;
 const blogUrl = lang === 'ko' ? '/ko/blog' : `/${lang}/blog`;
+const libraryUrl = lang === 'ko' ? '/ko/library' : `/${lang}/library`;
 const categoriesUrl = lang === 'ko' ? '/ko/blog/categories' : `/${lang}/blog/categories`;
 const tagsUrl = lang === 'ko' ? '/ko/blog/tags' : `/${lang}/blog/tags`;
 const aboutUrl = lang === 'ko' ? '/ko/about' : `/${lang}/about`;
@@ -26,6 +27,15 @@ const searchUrl = lang === 'ko' ? '/ko/search' : `/${lang}/search`;
 					</svg>
 				</span>
 				<span>{t('nav.blog')}</span>
+			</a>
+			<a href={libraryUrl} class="desktop-nav-link">
+				<span class="nav-icon">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+						<path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z" />
+					</svg>
+				</span>
+				<span>{t('nav.library')}</span>
 			</a>
 			<a href={categoriesUrl} class="desktop-nav-link">
 				<span class="nav-icon">
@@ -127,6 +137,13 @@ const searchUrl = lang === 'ko' ? '/ko/search' : `/${lang}/search`;
 					<path d="M12 6.253c0-.828.895-1.5 2-1.5h5.5A1.5 1.5 0 0 1 21 6.253v13a1.5 1.5 0 0 1-1.5 1.5H14c-1.105 0-2 .672-2 1.5" />
 				</svg>
 				<span>{t('nav.blog')}</span>
+			</a>
+			<a href={libraryUrl} class="mobile-nav-item">
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+					<path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z" />
+				</svg>
+				<span>{t('nav.library')}</span>
 			</a>
 			<a href={categoriesUrl} class="mobile-nav-item">
 				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

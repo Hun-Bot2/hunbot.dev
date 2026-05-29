@@ -19,6 +19,7 @@ const title = t('search.title');
 const description = t('search.description');
 const emptyText = t('search.empty');
 const unavailableText = t('search.unavailable');
+const buttonText = t('nav.search');
 const pagefindTranslations = {
 	placeholder: t('search.placeholder'),
 	zero_results: t('search.zero-results'),
@@ -39,6 +40,17 @@ const pagefindTranslations = {
 				<h1 class="text-3xl font-bold text-slate-100 mb-3">{title}</h1>
 				<p class="text-slate-400 leading-relaxed">{description}</p>
 			</section>
+			<form id="search-fallback" class="search-fallback" method="get" role="search">
+				<label class="sr-only" for="search-fallback-input">{title}</label>
+				<input
+					id="search-fallback-input"
+					name="q"
+					type="search"
+					placeholder={t('search.placeholder')}
+					autocomplete="off"
+				/>
+				<button type="submit">{buttonText}</button>
+			</form>
 			<div id="search" aria-label={title}></div>
 			<p class="search-empty text-sm text-slate-500 mt-4">{emptyText}</p>
 		</main>
@@ -48,10 +60,18 @@ const pagefindTranslations = {
 			window.addEventListener('DOMContentLoaded', () => {
 				const searchRoot = document.querySelector('#search');
 				const emptyState = document.querySelector('.search-empty');
+				const fallbackForm = document.querySelector('#search-fallback');
+				const fallbackInput = document.querySelector('#search-fallback-input');
+				const initialQuery = new URLSearchParams(window.location.search).get('q');
 
 				if (!searchRoot) return;
 
-				const PagefindUI = (window as any).PagefindUI;
+				if (initialQuery && fallbackInput instanceof HTMLInputElement) {
+					fallbackInput.value = initialQuery;
+					emptyState?.classList.add('hidden');
+				}
+
+				const PagefindUI = window.PagefindUI;
 
 				if (!PagefindUI) {
 					searchRoot.innerHTML = `<p class="text-sm text-slate-500">${unavailableText}</p>`;
@@ -68,9 +88,9 @@ const pagefindTranslations = {
 					translations: pagefindTranslations,
 				});
 
+				fallbackForm?.classList.add('hidden');
 				search.triggerFilters({ language: [lang] });
 
-				const initialQuery = new URLSearchParams(window.location.search).get('q');
 				if (initialQuery) {
 					search.triggerSearch(initialQuery);
 					emptyState?.classList.add('hidden');
@@ -96,10 +116,49 @@ const pagefindTranslations = {
 		--pagefind-ui-font: var(--font-body);
 	}
 
+	.search-fallback {
+		display: flex;
+		gap: 0.75rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.search-fallback input {
+		width: 100%;
+		min-height: 3rem;
+		border: 1px solid rgb(51, 65, 85);
+		border-radius: 0.5rem;
+		background: rgb(15, 23, 42);
+		color: rgb(248, 250, 252);
+		padding: 0.75rem 1rem;
+		font: inherit;
+	}
+
+	.search-fallback button {
+		min-height: 3rem;
+		border: 1px solid #f97316;
+		border-radius: 0.5rem;
+		background: #f97316;
+		color: white;
+		padding: 0.75rem 1rem;
+		font: inherit;
+		font-weight: 700;
+		white-space: nowrap;
+	}
+
+	.search-fallback.hidden {
+		display: none;
+	}
+
 	:global(body.light-theme) .search-shell {
 		--pagefind-ui-text: rgb(15, 23, 42);
 		--pagefind-ui-background: rgb(255, 255, 255);
 		--pagefind-ui-border: rgb(203, 213, 225);
+	}
+
+	:global(body.light-theme) .search-fallback input {
+		background: rgb(255, 255, 255);
+		color: rgb(15, 23, 42);
+		border-color: rgb(203, 213, 225);
 	}
 
 	:global(.pagefind-ui__search-input) {

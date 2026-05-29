@@ -1,0 +1,27 @@
+---
+import DeckFallback from './DeckFallback.astro';
+import HtmlDeckFrame from './HtmlDeckFrame.astro';
+import SlideImageDeck from './SlideImageDeck.astro';
+import { getDeckById } from '../../data/decks.ts';
+
+export interface Props {
+	deckId: string;
+}
+
+const { deckId } = Astro.props;
+const deck = getDeckById(deckId);
+
+if (!deck) {
+	throw new Error(`PresentationEmbed could not find deck metadata for deckId "${deckId}". Add it to src/data/decks.ts.`);
+}
+---
+
+{
+	deck.htmlUrl ? (
+		<HtmlDeckFrame deck={deck} />
+	) : deck.slides.length > 0 ? (
+		<SlideImageDeck deck={deck} />
+	) : (
+		<DeckFallback deck={deck} />
+	)
+}

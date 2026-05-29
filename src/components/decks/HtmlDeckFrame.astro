@@ -1,0 +1,249 @@
+---
+import {
+	getAspectRatioValue,
+	isPptxDownloadEnabled,
+	type DeckMeta,
+} from '../../lib/decks/validateDeckMeta.ts';
+
+export interface Props {
+	deck: DeckMeta;
+}
+
+const { deck } = Astro.props;
+const canDownloadSource = isPptxDownloadEnabled(deck);
+const aspectRatio = getAspectRatioValue(deck.aspectRatio);
+
+if (!deck.htmlUrl) {
+	throw new Error(`HtmlDeckFrame requires htmlUrl for deck "${deck.id}".`);
+}
+---
+
+<section class="not-prose presentation-embed" aria-labelledby={`presentation-${deck.id}-title`}>
+	<div class="presentation-header">
+		<div>
+			<p class="presentation-kicker">Presentation</p>
+			<h2 id={`presentation-${deck.id}-title`}>{deck.title}</h2>
+			<p>{deck.description}</p>
+		</div>
+		<div class="presentation-actions" aria-label="Presentation file actions">
+			<a class="presentation-action presentation-action-secondary" href={deck.htmlUrl} target="_blank" rel="noopener noreferrer">
+				Open in new tab
+			</a>
+			{deck.pdfUrl && (
+				<a class="presentation-action presentation-action-primary" href={deck.pdfUrl} target="_blank" rel="noopener noreferrer">
+					Open PDF
+				</a>
+			)}
+			{canDownloadSource && (
+				<a class="presentation-action presentation-action-source" href={deck.pptxUrl} download>
+					Download PPTX source
+				</a>
+			)}
+		</div>
+	</div>
+
+	<div class="presentation-rotate-hint" role="note">
+		This presentation is best viewed in landscape mode.
+		{deck.pdfUrl && (
+			<a href={deck.pdfUrl} target="_blank" rel="noopener noreferrer">Open PDF</a>
+		)}
+	</div>
+
+	<div class="presentation-frame-shell" style={`--deck-aspect-ratio: ${aspectRatio};`}>
+		<iframe
+			src={deck.htmlUrl}
+			title={`${deck.title} presentation deck`}
+			loading="lazy"
+			sandbox="allow-scripts"
+			referrerpolicy="same-origin"
+		></iframe>
+	</div>
+</section>
+
+<style>
+	.presentation-embed {
+		margin: 2rem auto;
+		width: min(100%, 1120px);
+		color: rgb(15 23 42);
+	}
+
+	:global(.dark) .presentation-embed {
+		color: rgb(241 245 249);
+	}
+
+	.presentation-header {
+		display: flex;
+		gap: 1rem;
+		justify-content: space-between;
+		margin-bottom: 0.9rem;
+	}
+
+	.presentation-header > div:first-child {
+		max-width: 46rem;
+	}
+
+	.presentation-kicker {
+		margin: 0 0 0.35rem;
+		color: rgb(234 88 12);
+		font-size: 0.78rem;
+		font-weight: 700;
+		text-transform: uppercase;
+	}
+
+	.presentation-header h2 {
+		margin: 0;
+		font-size: 1.25rem;
+		line-height: 1.25;
+	}
+
+	.presentation-header p {
+		margin: 0.45rem 0 0;
+		color: rgb(71 85 105);
+		line-height: 1.55;
+	}
+
+	:global(.dark) .presentation-header p {
+		color: rgb(203 213 225);
+	}
+
+	.presentation-actions {
+		align-items: flex-start;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.6rem;
+		justify-content: flex-end;
+	}
+
+	.presentation-action {
+		align-items: center;
+		border-radius: 0.5rem;
+		display: inline-flex;
+		font-size: 0.85rem;
+		font-weight: 700;
+		justify-content: center;
+		line-height: 1;
+		min-height: 2.35rem;
+		padding: 0.65rem 0.85rem;
+		text-decoration: none;
+		transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+		white-space: nowrap;
+	}
+
+	.presentation-action-primary {
+		background: rgb(234 88 12);
+		color: white;
+	}
+
+	.presentation-action-primary:hover {
+		background: rgb(194 65 12);
+	}
+
+	.presentation-action-secondary,
+	.presentation-action-source {
+		border: 1px solid rgb(203 213 225);
+		color: rgb(51 65 85);
+	}
+
+	.presentation-action-source {
+		font-weight: 600;
+	}
+
+	.presentation-action-secondary:hover,
+	.presentation-action-source:hover {
+		border-color: rgb(148 163 184);
+		color: rgb(15 23 42);
+	}
+
+	:global(.dark) .presentation-action-secondary,
+	:global(.dark) .presentation-action-source {
+		border-color: rgb(71 85 105);
+		color: rgb(203 213 225);
+	}
+
+	:global(.dark) .presentation-action-secondary:hover,
+	:global(.dark) .presentation-action-source:hover {
+		border-color: rgb(148 163 184);
+		color: rgb(248 250 252);
+	}
+
+	.presentation-rotate-hint {
+		display: none;
+		border: 1px solid rgb(253 186 116);
+		border-radius: 0.5rem;
+		background: rgb(255 247 237);
+		color: rgb(124 45 18);
+		font-size: 0.92rem;
+		line-height: 1.5;
+		margin-bottom: 0.9rem;
+		padding: 0.85rem;
+	}
+
+	.presentation-rotate-hint a {
+		color: rgb(154 52 18);
+		display: inline-block;
+		font-weight: 700;
+		margin-left: 0.5rem;
+	}
+
+	:global(.dark) .presentation-rotate-hint {
+		background: rgba(124, 45, 18, 0.24);
+		border-color: rgb(154 52 18);
+		color: rgb(254 215 170);
+	}
+
+	:global(.dark) .presentation-rotate-hint a {
+		color: rgb(253 186 116);
+	}
+
+	.presentation-frame-shell {
+		aspect-ratio: var(--deck-aspect-ratio);
+		background: rgb(15 23 42);
+		border: 1px solid rgb(203 213 225);
+		border-radius: 0.5rem;
+		overflow: hidden;
+		width: 100%;
+	}
+
+	:global(.dark) .presentation-frame-shell {
+		border-color: rgb(51 65 85);
+	}
+
+	iframe {
+		border: 0;
+		display: block;
+		height: 100%;
+		width: 100%;
+	}
+
+	@media (max-width: 720px) {
+		.presentation-header {
+			display: grid;
+		}
+
+		.presentation-actions {
+			justify-content: flex-start;
+		}
+	}
+
+	@media (max-width: 640px) and (orientation: portrait) {
+		.presentation-frame-shell {
+			display: none;
+		}
+
+		.presentation-rotate-hint {
+			display: block;
+		}
+
+		.presentation-action-source {
+			font-size: 0.8rem;
+			opacity: 0.75;
+		}
+	}
+
+	@media (max-height: 520px) and (orientation: landscape) {
+		.presentation-embed {
+			margin-left: calc(50% - 50vw + 1rem);
+			width: calc(100vw - 2rem);
+		}
+	}
+</style>

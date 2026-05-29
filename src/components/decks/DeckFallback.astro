@@ -1,0 +1,153 @@
+---
+import {
+	getAspectRatioValue,
+	isPptxDownloadEnabled,
+	type DeckMeta,
+} from '../../lib/decks/validateDeckMeta.ts';
+
+export interface Props {
+	deck: DeckMeta;
+}
+
+const { deck } = Astro.props;
+const canDownloadSource = isPptxDownloadEnabled(deck);
+const hasFileAction = Boolean(deck.pdfUrl || canDownloadSource);
+const aspectRatio = getAspectRatioValue(deck.aspectRatio);
+---
+
+<section class="not-prose presentation-embed" aria-labelledby={`presentation-${deck.id}-title`}>
+	<div class="presentation-shell" style={`--deck-aspect-ratio: ${aspectRatio};`}>
+		<div class="presentation-copy">
+			<p class="presentation-kicker">Presentation</p>
+			<h2 id={`presentation-${deck.id}-title`}>{deck.title}</h2>
+			<p>{deck.description}</p>
+			<p class="presentation-note">
+				{hasFileAction
+					? 'No inline preview is available for this deck yet. Use the available file action below.'
+					: 'No inline preview or downloadable fallback is configured for this deck yet.'}
+			</p>
+		</div>
+
+		{hasFileAction && (
+			<div class="presentation-actions" aria-label="Presentation file actions">
+				{deck.pdfUrl && (
+					<a class="presentation-action presentation-action-primary" href={deck.pdfUrl} target="_blank" rel="noopener noreferrer">
+						Open PDF
+					</a>
+				)}
+				{canDownloadSource && (
+					<a class="presentation-action presentation-action-secondary" href={deck.pptxUrl} download>
+						Download PPTX source
+					</a>
+				)}
+			</div>
+		)}
+	</div>
+</section>
+
+<style>
+	.presentation-embed {
+		margin: 2rem auto;
+		width: min(100%, 1120px);
+		color: rgb(15 23 42);
+	}
+
+	:global(.dark) .presentation-embed {
+		color: rgb(241 245 249);
+	}
+
+	.presentation-shell {
+		display: grid;
+		gap: 1rem;
+		border: 1px solid rgb(203 213 225);
+		border-radius: 0.5rem;
+		background: rgb(248 250 252);
+		padding: 1.25rem;
+	}
+
+	:global(.dark) .presentation-shell {
+		border-color: rgb(51 65 85);
+		background: rgb(15 23 42);
+	}
+
+	.presentation-copy {
+		max-width: 48rem;
+	}
+
+	.presentation-kicker {
+		margin: 0 0 0.35rem;
+		color: rgb(234 88 12);
+		font-size: 0.78rem;
+		font-weight: 700;
+		text-transform: uppercase;
+	}
+
+	.presentation-copy h2 {
+		margin: 0;
+		font-size: 1.25rem;
+		line-height: 1.25;
+	}
+
+	.presentation-copy p {
+		margin: 0.55rem 0 0;
+		color: rgb(71 85 105);
+		line-height: 1.6;
+	}
+
+	:global(.dark) .presentation-copy p {
+		color: rgb(203 213 225);
+	}
+
+	.presentation-note {
+		font-size: 0.92rem;
+	}
+
+	.presentation-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+	}
+
+	.presentation-action {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 0.5rem;
+		font-size: 0.9rem;
+		font-weight: 700;
+		line-height: 1;
+		min-height: 2.5rem;
+		padding: 0.7rem 0.9rem;
+		text-decoration: none;
+		transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+	}
+
+	.presentation-action-primary {
+		background: rgb(234 88 12);
+		color: white;
+	}
+
+	.presentation-action-primary:hover {
+		background: rgb(194 65 12);
+	}
+
+	.presentation-action-secondary {
+		border: 1px solid rgb(203 213 225);
+		color: rgb(51 65 85);
+	}
+
+	.presentation-action-secondary:hover {
+		border-color: rgb(148 163 184);
+		color: rgb(15 23 42);
+	}
+
+	:global(.dark) .presentation-action-secondary {
+		border-color: rgb(71 85 105);
+		color: rgb(203 213 225);
+	}
+
+	:global(.dark) .presentation-action-secondary:hover {
+		border-color: rgb(148 163 184);
+		color: rgb(248 250 252);
+	}
+</style>
