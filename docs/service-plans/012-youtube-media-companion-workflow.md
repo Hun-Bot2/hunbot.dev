@@ -1,6 +1,6 @@
 # 012: YouTube Media Companion Workflow
 
-Status: Draft.
+Status: Implemented.
 
 ## Goal
 
@@ -74,6 +74,7 @@ git diff --check
 If metadata or routes are added later, run:
 
 ```sh
+npm run media:validate
 npm run content:validate
 npm run library:validate
 npm run search:validate
