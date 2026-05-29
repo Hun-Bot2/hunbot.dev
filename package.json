@@ -18,6 +18,7 @@
     "paths:validate": "node scripts/validate-learning-paths.mjs",
     "routes:validate": "node scripts/validate-routes.mjs",
     "seo:validate": "node scripts/validate-seo.mjs",
+    "ui:validate": "node scripts/validate-ui.mjs",
     "views:validate": "node scripts/validate-view-counter.mjs",
     "images:inventory": "node scripts/inventory-public-images.mjs",
     "csp:validate": "node scripts/validate-csp.mjs",

@@ -40,7 +40,7 @@ const tags = Array.from(tagMap.entries()).map(([name, count]) => ({ name, count 
 	<body>
 		<Header />
 		<FloatingLanguagePicker />
-		<main class="max-w-4xl mx-auto px-6 py-10">
+		<main id="main-content" class="max-w-4xl mx-auto px-6 py-10">
 			<section>
 				<h1 class="text-3xl font-bold text-slate-100 mb-6">{t('blog.tags-title')}</h1>
 				<p class="text-slate-400 mb-10">{t('blog.tags-description')}</p>

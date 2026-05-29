@@ -185,6 +185,37 @@ body {
 	line-height: var(--lineHeight-relaxed);
 }
 
+.skip-link {
+	position: fixed;
+	top: 0.75rem;
+	left: 0.75rem;
+	z-index: 1000;
+	transform: translateY(-160%);
+	border: 1px solid rgba(251, 146, 60, 0.5);
+	border-radius: 0.5rem;
+	background: rgb(15, 23, 42);
+	color: rgb(255, 237, 213);
+	padding: 0.65rem 0.9rem;
+	font-family: var(--font-heading);
+	font-size: 0.875rem;
+	font-weight: 700;
+	text-decoration: none;
+	box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+	transition: transform 160ms ease;
+}
+
+.skip-link:focus,
+.skip-link:focus-visible {
+	transform: translateY(0);
+	outline: 2px solid rgba(251, 146, 60, 0.8);
+	outline-offset: 3px;
+}
+
+:where(a, button, input, textarea, select, summary):focus-visible {
+	outline: 2px solid rgba(251, 146, 60, 0.78);
+	outline-offset: 3px;
+}
+
 /* Korean typography (Gowun Dodum) */
 /* 전체 문서가 한국어일 때 기본 본문 폰트로 Gowun Dodum 사용 */
 html[lang^="ko"] body { 

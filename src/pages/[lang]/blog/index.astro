@@ -34,7 +34,7 @@ const posts = getPaginatedPosts(allLanguagePosts, currentPage);
 	<body>
 		<Header />
 		<FloatingLanguagePicker />
-		<main class="max-w-4xl mx-auto px-6 py-8">
+		<main id="main-content" class="max-w-4xl mx-auto px-6 py-8">
 			<h1 class="text-3xl font-bold mb-8">{t('blog.all-posts')}</h1>
 			<div class="space-y-8">
 				{posts.map((post) => {

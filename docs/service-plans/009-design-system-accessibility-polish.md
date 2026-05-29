@@ -1,6 +1,6 @@
 # 009: Design System And Accessibility Polish
 
-Status: Draft.
+Status: Implemented.
 
 ## Goal
 
