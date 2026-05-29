@@ -3,6 +3,7 @@ import { getBlogLanguageFromId, getBlogSlugFromId, getBlogUrlFromPost } from './
 import type { UILanguage } from '../i18n/ui';
 
 export type BlogPost = CollectionEntry<'blog'>;
+export const BLOG_PAGE_SIZE = 12;
 
 const CATEGORY_ALIASES: Record<string, 'ai' | 'devlog' | 'review' | 'misc'> = {
   'ai engineering': 'ai',
@@ -71,6 +72,19 @@ export function sortPostsBySeries(posts: BlogPost[]): BlogPost[] {
 
 export function getPostsByLanguage(posts: BlogPost[], lang: UILanguage): BlogPost[] {
   return sortPostsByDateDesc(filterPostsByLanguage(posts, lang));
+}
+
+export function getTotalBlogPages(posts: BlogPost[], pageSize = BLOG_PAGE_SIZE): number {
+  return Math.max(1, Math.ceil(posts.length / pageSize));
+}
+
+export function getPaginatedPosts(posts: BlogPost[], page: number, pageSize = BLOG_PAGE_SIZE): BlogPost[] {
+  const start = (page - 1) * pageSize;
+  return posts.slice(start, start + pageSize);
+}
+
+export function getBlogPageUrl(lang: UILanguage, page: number): string {
+  return page <= 1 ? `/${lang}/blog/` : `/${lang}/blog/page/${page}/`;
 }
 
 export function getCategoryKey(post: BlogPost): string {

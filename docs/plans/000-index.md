@@ -11,7 +11,7 @@ This directory keeps implementation plans before code work starts. Plans should 
 | [003-content-validation-and-library-governance.md](./003-content-validation-and-library-governance.md) | Implemented | P0/P4 content validation and Library publication safety |
 | [004-view-counter-security.md](./004-view-counter-security.md) | Implemented | P1 view counter slug safety, Redis keys, and abuse protection |
 | [005-maintainability-refactors.md](./005-maintainability-refactors.md) | Implemented | P2 shared helpers, category handling, math config, and theme persistence |
-| [006-ux-performance-growth.md](./006-ux-performance-growth.md) | Draft | P3 pagination and public image performance guidance |
+| [006-ux-performance-growth.md](./006-ux-performance-growth.md) | Implemented | P3 pagination and public image performance guidance |
 | [007-csp-hardening.md](./007-csp-hardening.md) | Draft | P1 incremental CSP tightening and script inventory |
 
 ## Planning Rules

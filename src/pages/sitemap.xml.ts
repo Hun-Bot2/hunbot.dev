@@ -2,12 +2,19 @@ import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 import { SITE_URL, SUPPORTED_LANGUAGES } from '../consts';
 import { getBlogUrlFromId } from '../utils/blog-routing';
+import { getBlogPageUrl, getPostsByLanguage, getTotalBlogPages } from '../utils/blog';
 import { getLibrarySectionPath, librarySections } from '../utils/library';
 
 export const GET: APIRoute = async ({ site }) => {
   const siteUrl = site ?? new URL(SITE_URL);
   const posts = await getCollection('blog');
   const now = new Date().toISOString();
+  const blogPaginationPages = SUPPORTED_LANGUAGES.flatMap((lang) => {
+    const totalPages = getTotalBlogPages(getPostsByLanguage(posts, lang));
+    return Array.from({ length: Math.max(0, totalPages - 1) }, (_, index) =>
+      getBlogPageUrl(lang, index + 2),
+    );
+  });
   const staticPages = [
     '/',
     '/about/',
@@ -21,6 +28,7 @@ export const GET: APIRoute = async ({ site }) => {
       `/${lang}/search/`,
       ...librarySections.map((section) => getLibrarySectionPath(lang, section.id)),
     ]),
+    ...blogPaginationPages,
   ];
   
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>

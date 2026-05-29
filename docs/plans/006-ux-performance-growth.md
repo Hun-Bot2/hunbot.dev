@@ -1,5 +1,7 @@
 # 006: UX And Performance Growth
 
+Status: Implemented.
+
 ## Goal
 
 Improve reader browsing and page weight as the blog grows, while preserving existing localized routes and static-first deployment.
