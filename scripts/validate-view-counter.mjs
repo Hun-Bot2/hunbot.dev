@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 import {
 	VIEW_RATE_LIMIT_MAX_REQUESTS,
@@ -9,6 +11,9 @@ import {
 	getViewRateLimitKey,
 	isValidViewSlug,
 } from '../src/utils/view-counter.ts';
+
+const root = process.cwd();
+const viewsApi = readFileSync(join(root, 'src/pages/api/views.ts'), 'utf8');
 
 assert.equal(isValidViewSlug('ko/devlog/blog/blog_develop_10'), true);
 assert.equal(isValidViewSlug('en/research/ai-agents/example'), true);
@@ -39,4 +44,11 @@ assert.equal(getViewRateLimitKey('bad/path'), 'ratelimit:views:unknown-client');
 assert.ok(VIEW_RATE_LIMIT_WINDOW_SECONDS > 0);
 assert.ok(VIEW_RATE_LIMIT_MAX_REQUESTS > 0);
 
-console.log('Validated view counter slug safety, client parsing, and key builders.');
+assert.match(viewsApi, /const redis = redisConfig \? new Redis\(redisConfig\) : null/);
+assert.match(viewsApi, /if \(!redis\) return viewCounterUnavailable\(\)/);
+assert.match(viewsApi, /View counter unavailable/);
+assert.match(viewsApi, /Cache-Control': 'no-store'/);
+assert.doesNotMatch(viewsApi, /CRITICAL: Redis Credentials Missing/);
+assert.doesNotMatch(viewsApi, /console\.error\([^)]*error/);
+
+console.log('Validated view counter slug safety, client parsing, key builders, and fail-closed config handling.');

@@ -1,6 +1,6 @@
 # 011: Security, Privacy, And Platform Hardening
 
-Status: Draft.
+Status: Implemented.
 
 ## Goal
 

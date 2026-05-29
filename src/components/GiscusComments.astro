@@ -12,11 +12,12 @@ const { lang = defaultLang } = Astro.props;
 const resolvedLang = (lang as SupportedLanguage) ?? defaultLang;
 const config = GISCUS_CONFIG;
 const repo = config.repo?.trim();
+const repoLooksValid = Boolean(repo && /^[\w.-]+\/[\w.-]+$/.test(repo));
 const isConfigured = Boolean(
-	config.enabled && repo && config.repoId && config.category && config.categoryId
+	config.enabled && repoLooksValid && config.repoId && config.category && config.categoryId
 );
 const missingKeys = [
-	!repo && 'PUBLIC_GISCUS_REPO',
+	!repoLooksValid && 'PUBLIC_GISCUS_REPO',
 	!config.repoId && 'PUBLIC_GISCUS_REPO_ID',
 	!config.category && 'PUBLIC_GISCUS_CATEGORY',
 	!config.categoryId && 'PUBLIC_GISCUS_CATEGORY_ID',

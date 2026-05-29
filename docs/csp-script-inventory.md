@@ -4,6 +4,8 @@ This inventory supports incremental CSP hardening. The site still needs some inl
 
 Product direction reference: [`docs/service-plans/001-product-service-direction.md`](./service-plans/001-product-service-direction.md). Future Library, media companion, or productization work should not add third-party scripts or document viewers without updating this inventory and the CSP plan.
 
+Third-party service reference: [`docs/third-party-services.md`](./third-party-services.md).
+
 ## Current Scripts
 
 | File | Purpose | Routes | Paint Critical | Status |

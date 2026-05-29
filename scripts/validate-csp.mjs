@@ -30,4 +30,22 @@ assert.match(inventory, /Header\.astro/);
 assert.match(inventory, /unsafe-inline/);
 assert.match(inventory, /unsafe-eval/);
 
-console.log('Validated CSP hardening source, extracted header script, and script inventory.');
+const thirdPartyInventory = read('docs/third-party-services.md');
+for (const requiredDomain of [
+	'gc.zgo.at',
+	'hunbot.goatcounter.com',
+	'giscus.app',
+	'www.googletagmanager.com',
+	'fonts.googleapis.com',
+	'fonts.gstatic.com',
+	'cdn.jsdelivr.net',
+]) {
+	assert.match(thirdPartyInventory, new RegExp(requiredDomain.replaceAll('.', '\\.')));
+}
+assert.match(thirdPartyInventory, /No document viewer domains are approved/);
+
+const giscus = read('src/components/GiscusComments.astro');
+assert.match(giscus, /repoLooksValid/);
+assert.match(giscus, /Giscus 설정이 누락되어 댓글을 숨겼습니다/);
+
+console.log('Validated CSP hardening source, extracted header script, script inventory, and third-party service inventory.');
