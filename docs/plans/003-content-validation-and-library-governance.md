@@ -1,5 +1,7 @@
 # 003: Content Validation And Library Governance
 
+Status: Implemented.
+
 ## Goal
 
 Prevent broken public content and unreviewed Library data from reaching the build by adding lightweight validation around blog frontmatter and Library publication rules.

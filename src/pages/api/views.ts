@@ -1,6 +1,14 @@
 import type { APIRoute } from 'astro';
 import { Redis } from '@upstash/redis';
-import { getPageviewsKey, getViewHistoryKey, isValidViewSlug } from '../../utils/view-counter';
+import {
+  VIEW_RATE_LIMIT_MAX_REQUESTS,
+  VIEW_RATE_LIMIT_WINDOW_SECONDS,
+  getPageviewsKey,
+  getViewClientId,
+  getViewHistoryKey,
+  getViewRateLimitKey,
+  isValidViewSlug,
+} from '../../utils/view-counter';
 
 export const prerender = false;
 
@@ -65,8 +73,25 @@ export const POST: APIRoute = async ({ request }) => {
       return new Response(JSON.stringify({ views, skipped: true }), { status: 200 });
     }
 
-    const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
-    const historyKey = getViewHistoryKey(ip, slug);
+    const clientId = getViewClientId(request.headers.get('x-forwarded-for'));
+    const rateLimitKey = getViewRateLimitKey(clientId);
+    const requestCount = await redis.incr(rateLimitKey);
+
+    if (requestCount === 1) {
+      await redis.expire(rateLimitKey, VIEW_RATE_LIMIT_WINDOW_SECONDS);
+    }
+
+    if (requestCount > VIEW_RATE_LIMIT_MAX_REQUESTS) {
+      return new Response(JSON.stringify({ error: 'Too many view updates' }), {
+        status: 429,
+        headers: {
+          'Content-Type': 'application/json',
+          'Retry-After': String(VIEW_RATE_LIMIT_WINDOW_SECONDS),
+        },
+      });
+    }
+
+    const historyKey = getViewHistoryKey(clientId, slug);
 
     const isNewView = await redis.set(historyKey, '1', { nx: true, ex: 3600 });
 

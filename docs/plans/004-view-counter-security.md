@@ -1,5 +1,7 @@
 # 004: View Counter Security
 
+Status: Implemented.
+
 ## Goal
 
 Harden the page-view API so Redis keys remain safe and high-volume writes are limited without changing the public view-counter behavior for normal readers.

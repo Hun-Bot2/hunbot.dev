@@ -1,6 +1,6 @@
 # Library Data Model
 
-This document defines the data foundation for the future Library section. This PR adds schemas, small sample entries, and validation only. It does not add `/library` pages, ingestion jobs, private candidate storage, search UI, or publishing workflows.
+This document defines the data foundation for the Library section. The repository now has public schemas, small sample entries, validation, a Library hub, and first-pass section listing pages. It does not add ingestion jobs, private candidate storage, search UI automation, or publishing workflows.
 
 Related implementation plans are indexed in [`docs/plans/000-index.md`](./plans/000-index.md). Future Library schema, route, ingestion, or publishing workflow changes should be planned there before implementation.
 
@@ -307,10 +307,18 @@ The validator rejects fields named `rawHtml`, `rawPdfText`, `fullPdfText`, `larg
 Run:
 
 ```bash
+npm run content:validate
+```
+
+For focused Library-only checks, run:
+
+```bash
 npm run library:validate
 ```
 
-The validation script checks duplicate IDs, slug-safe IDs, approved review rules, required Korean summaries, forbidden raw fields, resource license metadata, resource public policies, topic references, resource references, and safe optional deck IDs.
+The Library validation script checks duplicate IDs, slug-safe IDs, approved review rules, required Korean summaries, forbidden raw fields, resource license metadata, resource public policies, topic references, resource references, and safe optional deck IDs.
+
+`content:validate` also runs the blog frontmatter checker and deck metadata validator so public content issues can be caught before a full Astro build.
 
 Astro build also validates the collection schemas:
 

@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 import {
   getBlogLanguageFromContentPath,
@@ -11,6 +13,7 @@ import {
   isBlogLanguage,
 } from '../src/utils/blog-routing.ts';
 
+const root = process.cwd();
 const expectedUrls = [
   ['ko/devlog/BLOG/Blog_Develop_10', '/ko/blog/devlog/blog/blog_develop_10/'],
   ['en/devlog/BLOG/Blog_Develop_10', '/en/blog/devlog/blog/blog_develop_10/'],
@@ -64,6 +67,17 @@ for (const [, url] of expectedUrls) {
   assert.equal(url.includes('/blog/en/'), false, `${url} should not put en after /blog/`);
   assert.equal(url.includes('/blog/jp/'), false, `${url} should not put jp after /blog/`);
   assert.equal(/\/(ko|jp|en)\/blog\/\1\//.test(url), false, `${url} should not duplicate lang`);
+}
+
+const sitemapPath = join(root, 'dist/client/sitemap.xml');
+if (existsSync(sitemapPath)) {
+  const sitemap = readFileSync(sitemapPath, 'utf8');
+  assert.match(sitemap, /https:\/\/hun-bot\.dev\/ko\/blog\//);
+  assert.match(sitemap, /https:\/\/hun-bot\.dev\/en\/blog\//);
+  assert.match(sitemap, /https:\/\/hun-bot\.dev\/jp\/blog\//);
+  assert.match(sitemap, /https:\/\/hun-bot\.dev\/ko\/library\/design\//);
+  assert.doesNotMatch(sitemap, /https:\/\/hun-bot\.dev\/blog\//);
+  assert.doesNotMatch(sitemap, /https:\/\/hun-bot\.dev\/archive\//);
 }
 
 console.log(`Validated ${expectedUrls.length} language-aware blog URL fixtures.`);

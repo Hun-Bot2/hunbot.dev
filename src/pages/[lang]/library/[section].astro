@@ -1,0 +1,225 @@
+---
+import BaseHead from '../../../components/BaseHead.astro';
+import Header from '../../../components/Header.astro';
+import Footer from '../../../components/Footer.astro';
+import FloatingLanguagePicker from '../../../components/FloatingLanguagePicker.astro';
+import LibraryPageStyles from '../../../components/library/LibraryPageStyles.astro';
+import { getCollection } from 'astro:content';
+import { useTranslations, type UILanguage } from '../../../i18n/ui';
+import { decks } from '../../../data/decks';
+import {
+	getApprovedPapers,
+	getApprovedResources,
+	getLibrarySectionPath,
+	getPaperTldr,
+	getResourceSummary,
+	getResourcesForLibrarySection,
+	isLibrarySectionId,
+	librarySections,
+	type LibrarySectionId,
+} from '../../../utils/library';
+
+export function getStaticPaths() {
+	const languages: UILanguage[] = ['ko', 'jp', 'en'];
+	return languages.flatMap((lang) =>
+		librarySections.map((section) => ({
+			params: { lang, section: section.id },
+		})),
+	);
+}
+
+const lang = (Astro.params.lang ?? 'ko') as UILanguage;
+const sectionParam = Astro.params.section;
+
+if (!isLibrarySectionId(sectionParam)) {
+	throw new Error(`Unknown Library section: ${sectionParam}`);
+}
+
+const sectionId: LibrarySectionId = sectionParam;
+const t = useTranslations(lang);
+const sectionMeta = librarySections.find((section) => section.id === sectionId)!;
+const sectionTitle = t(`library.section.${sectionMeta.translationKey}.title` as Parameters<typeof t>[0]);
+const sectionDescription = t(
+	`library.section.${sectionMeta.translationKey}.description` as Parameters<typeof t>[0],
+);
+const title = `${sectionTitle} - ${t('library.title')} - Hun-Bot Blog`;
+const description = sectionDescription;
+const libraryUrl = `/${lang}/library/`;
+
+const allResources = await getCollection('resources');
+const allPapers = await getCollection('papers');
+const approvedResources = getApprovedResources(allResources);
+const approvedPapers = getApprovedPapers(allPapers);
+
+const sectionResources =
+	sectionMeta.kind === 'resources' ? getResourcesForLibrarySection(approvedResources, sectionId) : [];
+const sectionPapers = sectionMeta.kind === 'papers' ? approvedPapers : [];
+const sectionDecks = sectionMeta.kind === 'decks' ? decks : [];
+const itemCount = sectionResources.length + sectionPapers.length + sectionDecks.length;
+
+const panelClass = 'library-panel';
+const panelDividerClass = 'library-panel-footer';
+const subtlePillClass = 'library-pill';
+const actionLinkClass = 'library-action';
+const formatCount = (count: number) => t('library.item-count').replace('{count}', String(count));
+---
+
+<!doctype html>
+<html lang={lang}>
+	<head>
+		<BaseHead title={title} description={description} lang={lang} />
+		<LibraryPageStyles />
+		<meta data-pagefind-meta="title[content]" content={`${t('library.title')} - ${sectionTitle}`} />
+		<meta data-pagefind-meta="description[content]" content={description} />
+		<meta data-pagefind-filter="language[content]" content={lang} />
+		<meta data-pagefind-filter="section[content]" content="library" />
+		<meta data-pagefind-filter="library-section[content]" content={sectionId} />
+	</head>
+	<body>
+		<Header />
+		<FloatingLanguagePicker />
+		<main class="library-page mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8" data-pagefind-body>
+			<section class="mb-12 max-w-5xl space-y-5">
+				<a href={libraryUrl} class={actionLinkClass}>{t('library.back-to-library')}</a>
+				<p class="library-kicker">
+					{t('library.human-reviewed')}
+				</p>
+				<div class="space-y-4">
+					<h1 class="text-4xl font-bold tracking-normal text-slate-100 sm:text-5xl">{sectionTitle}</h1>
+					<p class="text-xl leading-relaxed text-slate-300">{sectionDescription}</p>
+					<p class="leading-relaxed text-slate-400">{formatCount(itemCount)}</p>
+				</div>
+			</section>
+
+			{sectionResources.length > 0 && (
+				<section class="mb-14 space-y-6" aria-labelledby="section-resources-heading">
+					<h2 id="section-resources-heading" class="text-2xl font-bold text-slate-100">
+						{t('library.featured-resources')}
+					</h2>
+					<div class="grid gap-4 lg:grid-cols-3">
+						{sectionResources.map((resource) => (
+							<article class={panelClass}>
+								<div class="mb-3 flex flex-wrap gap-2">
+									<span class={subtlePillClass}>{resource.data.category}</span>
+									<span class={subtlePillClass}>{resource.data.type}</span>
+								</div>
+								<h3 class="mb-3 text-lg font-semibold text-slate-100">{resource.data.title}</h3>
+								<p class="mb-5 text-sm leading-relaxed text-slate-400">
+									{getResourceSummary(resource, lang)}
+								</p>
+								<div class={panelDividerClass}>
+									<span class="text-slate-500">{resource.data.license.publicPolicy}</span>
+									<a
+										href={resource.data.url}
+										target="_blank"
+										rel="noopener noreferrer"
+										class={actionLinkClass}
+									>
+										{t('library.view-resource')}
+									</a>
+								</div>
+							</article>
+						))}
+					</div>
+				</section>
+			)}
+
+			{sectionPapers.length > 0 && (
+				<section class="mb-14 space-y-6" aria-labelledby="section-papers-heading">
+					<h2 id="section-papers-heading" class="text-2xl font-bold text-slate-100">
+						{t('library.featured-papers')}
+					</h2>
+					<div class="grid gap-4 lg:grid-cols-3">
+						{sectionPapers.map((paper) => (
+							<article class={panelClass}>
+								<div class="mb-3 flex flex-wrap gap-2">
+									{paper.data.venue && <span class={subtlePillClass}>{paper.data.venue}</span>}
+									{paper.data.year && <span class={subtlePillClass}>{paper.data.year}</span>}
+									<span class={subtlePillClass}>{paper.data.priority}</span>
+									<span class={subtlePillClass}>{paper.data.difficulty}</span>
+								</div>
+								<h3 class="mb-3 text-lg font-semibold text-slate-100">{paper.data.title}</h3>
+								<p class="mb-5 text-sm leading-relaxed text-slate-400">{getPaperTldr(paper, lang)}</p>
+								<a
+									href={paper.data.url}
+									target="_blank"
+									rel="noopener noreferrer"
+									class={actionLinkClass}
+								>
+									{t('library.view-paper')}
+								</a>
+							</article>
+						))}
+					</div>
+				</section>
+			)}
+
+			{sectionDecks.length > 0 && (
+				<section class="mb-14 space-y-6" aria-labelledby="section-decks-heading">
+					<h2 id="section-decks-heading" class="text-2xl font-bold text-slate-100">
+						{t('library.section.decks.title')}
+					</h2>
+					<div class="grid gap-4 lg:grid-cols-3">
+						{sectionDecks.map((deck) => {
+							const primaryDeckUrl = deck.htmlUrl ?? deck.pdfUrl;
+							const showSource = deck.pptxUrl && deck.sourceAvailable && deck.sourceReviewed;
+
+							return (
+								<article class={panelClass}>
+									<div class="mb-3 flex flex-wrap gap-2">
+										<span class={subtlePillClass}>
+											{t('library.deck-type')}: {deck.type}
+										</span>
+										<span class={subtlePillClass}>{deck.aspectRatio}</span>
+									</div>
+									<h3 class="mb-3 text-lg font-semibold text-slate-100">{deck.title}</h3>
+									<p class="mb-5 text-sm leading-relaxed text-slate-400">{deck.description}</p>
+									<div class="flex flex-wrap gap-2">
+										{primaryDeckUrl && (
+											<a
+												href={primaryDeckUrl}
+												target="_blank"
+												rel="noopener noreferrer"
+												class={actionLinkClass}
+											>
+												{deck.htmlUrl ? t('library.view-deck') : t('library.open-pdf')}
+											</a>
+										)}
+										{showSource && (
+											<a
+												href={deck.pptxUrl}
+												target="_blank"
+												rel="noopener noreferrer"
+												class={actionLinkClass}
+											>
+												{t('library.download-source')}
+											</a>
+										)}
+									</div>
+								</article>
+							);
+						})}
+					</div>
+				</section>
+			)}
+
+			{itemCount === 0 && (
+				<section class={`${panelClass} mb-14`}>
+					<h2 class="text-xl font-bold text-slate-100">{t('library.section.empty.title')}</h2>
+					<p class="mt-2 leading-relaxed text-slate-400">{t('library.section.empty.body')}</p>
+				</section>
+			)}
+
+			<section class={`${panelClass} grid gap-4 md:grid-cols-[1fr_auto] md:items-center`}>
+				<div>
+					<h2 class="text-xl font-bold text-slate-100">{t('library.review-note.title')}</h2>
+					<p class="mt-2 leading-relaxed text-slate-400">{t('library.review-note.body')}</p>
+				</div>
+				<a href={libraryUrl} class={actionLinkClass}>
+					{t('library.back-to-library')}
+				</a>
+			</section>
+		</main>
+		<Footer />
+	</body>
+</html>

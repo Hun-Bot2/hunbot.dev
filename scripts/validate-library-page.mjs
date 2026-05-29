@@ -11,6 +11,7 @@ import {
 	getResourceSummary,
 	getTopicDescription,
 	getTopicLabel,
+	librarySections,
 } from '../src/utils/library.ts';
 import { ui } from '../src/i18n/ui.ts';
 
@@ -23,6 +24,8 @@ assert.match(packageJson.scripts?.['library-page:validate'] ?? '', /validate-lib
 
 const libraryPagePath = 'src/pages/[lang]/library.astro';
 const libraryPage = read(libraryPagePath);
+const sectionPagePath = 'src/pages/[lang]/library/[section].astro';
+const sectionPage = read(sectionPagePath);
 const header = read('src/components/Header.astro');
 
 for (const lang of languages) {
@@ -37,16 +40,21 @@ assert.match(libraryPage, /getCollection\('topics'\)/);
 assert.match(libraryPage, /getApprovedResources/);
 assert.match(libraryPage, /getApprovedPapers/);
 assert.match(libraryPage, /getActiveTopics/);
+assert.match(libraryPage, /getLibrarySectionPath/);
 assert.match(libraryPage, /data-pagefind-body/);
 assert.match(libraryPage, /data-pagefind-filter="language\[content\]"/);
 assert.match(libraryPage, /data-pagefind-filter="section\[content\]"/);
-assert.doesNotMatch(libraryPage, /\/(?:ko|jp|en)\/library\/(?:design|vibe-coding|dev-docs|ai-papers|useful-feeds|decks)/);
+
+assert.match(sectionPage, /getResourcesForLibrarySection/);
+assert.match(sectionPage, /getApprovedResources/);
+assert.match(sectionPage, /getApprovedPapers/);
+assert.match(sectionPage, /data-pagefind-filter="library-section\[content\]"/);
 
 assert.match(header, /const libraryUrl =/);
 assert.match(header, /href=\{libraryUrl\}/);
 assert.match(header, /nav\.library/);
 
-assert.equal(existsSync(join(root, 'src/pages/[lang]/library')), false, 'Do not add detailed Library section routes in PR05.');
+assert.equal(existsSync(join(root, sectionPagePath)), true, 'Library section routes should exist.');
 assert.equal(existsSync(join(root, 'src/pages/[lang]/design.astro')), false, 'Do not add a Design page in PR05.');
 
 const resources = readCollection('resources', 'src/content/resources');
@@ -83,7 +91,10 @@ if (topicWithFullLocale) {
 
 for (const outputRoot of [join(root, 'dist/client'), join(root, '.vercel/output/static')]) {
 	const hasGeneratedLibraryPages = languages.some((lang) => existsSync(join(outputRoot, lang, 'library', 'index.html')));
-	if (!hasGeneratedLibraryPages) continue;
+	const hasGeneratedSectionPages = languages.every((lang) =>
+		librarySections.every((section) => existsSync(join(outputRoot, lang, 'library', section.id, 'index.html'))),
+	);
+	if (!hasGeneratedLibraryPages || !hasGeneratedSectionPages) continue;
 
 	for (const lang of languages) {
 		const htmlPath = join(outputRoot, lang, 'library', 'index.html');
@@ -92,7 +103,13 @@ for (const outputRoot of [join(root, 'dist/client'), join(root, '.vercel/output/
 		const html = readFileSync(htmlPath, 'utf8');
 		assert.match(html, /data-pagefind-body/);
 		assert.match(html, new RegExp(ui[lang]['library.title']));
-		assert.doesNotMatch(html, /\/(?:ko|jp|en)\/library\/(?:design|vibe-coding|dev-docs|ai-papers|useful-feeds|decks)/);
+
+		for (const section of librarySections) {
+			assert.ok(
+				html.includes(`/${lang}/library/${section.id}/`),
+				`${relative(root, htmlPath)} should link to ${section.id} section.`,
+			);
+		}
 
 		for (const entry of resources) {
 			const shouldDisplay = entry.data.status === 'approved' && entry.data.review?.humanReviewed === true;
@@ -126,6 +143,19 @@ for (const outputRoot of [join(root, 'dist/client'), join(root, '.vercel/output/
 					`${relative(root, htmlPath)} must not display inactive topic "${entry.data.id}".`,
 				);
 			}
+		}
+
+		for (const section of librarySections) {
+			const sectionHtmlPath = join(outputRoot, lang, 'library', section.id, 'index.html');
+			assert.ok(existsSync(sectionHtmlPath), `${relative(root, sectionHtmlPath)} should exist after build.`);
+
+			const sectionHtml = readFileSync(sectionHtmlPath, 'utf8');
+			assert.match(sectionHtml, /data-pagefind-body/);
+			assert.match(sectionHtml, new RegExp(ui[lang][`library.section.${section.translationKey}.title`]));
+			assert.ok(
+				sectionHtml.includes(`content="${section.id}"`),
+				`${relative(root, sectionHtmlPath)} should include a Pagefind section filter.`,
+			);
 		}
 	}
 }

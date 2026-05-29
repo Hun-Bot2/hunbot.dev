@@ -3,6 +3,7 @@ import BaseHead from '../../components/BaseHead.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import FloatingLanguagePicker from '../../components/FloatingLanguagePicker.astro';
+import LibraryPageStyles from '../../components/library/LibraryPageStyles.astro';
 import { getCollection } from 'astro:content';
 import { useTranslations, type UILanguage } from '../../i18n/ui';
 import { decks } from '../../data/decks';
@@ -11,10 +12,12 @@ import {
 	getApprovedPapers,
 	getApprovedResources,
 	getFeaturedResources,
+	getLibrarySectionPath,
 	getPaperTldr,
 	getResourceSummary,
 	getTopicDescription,
 	getTopicLabel,
+	librarySections,
 } from '../../utils/library';
 
 export function getStaticPaths() {
@@ -50,50 +53,38 @@ const resourcesBySection = approvedResources.reduce<Record<string, number>>((cou
 
 const formatCount = (count: number) => t('library.item-count').replace('{count}', String(count));
 
-const sectionCards = [
-	{
-		id: 'design',
-		title: t('library.section.design.title'),
-		description: t('library.section.design.description'),
-		count: resourcesBySection.design ?? 0,
-	},
-	{
-		id: 'vibe-coding',
-		title: t('library.section.vibe-coding.title'),
-		description: t('library.section.vibe-coding.description'),
-		count: resourcesBySection['vibe-coding'] ?? 0,
-	},
-	{
-		id: 'dev-docs',
-		title: t('library.section.dev-docs.title'),
-		description: t('library.section.dev-docs.description'),
-		count: resourcesBySection['dev-docs'] ?? 0,
-	},
-	{
-		id: 'ai-papers',
-		title: t('library.section.ai-papers.title'),
-		description: t('library.section.ai-papers.description'),
-		count: approvedPapers.length,
-	},
-	{
-		id: 'useful-feeds',
-		title: t('library.section.useful-feeds.title'),
-		description: t('library.section.useful-feeds.description'),
-		count: resourcesBySection['useful-feeds'] ?? 0,
-	},
-	{
-		id: 'decks',
-		title: t('library.section.decks.title'),
-		description: t('library.section.decks.description'),
-		count: decks.length,
-	},
-];
+const sectionCards = librarySections.map((section) => {
+	const titleKey = `library.section.${section.translationKey}.title` as Parameters<typeof t>[0];
+	const descriptionKey = `library.section.${section.translationKey}.description` as Parameters<typeof t>[0];
+	const count =
+		section.kind === 'papers'
+			? approvedPapers.length
+			: section.kind === 'decks'
+				? decks.length
+				: resourcesBySection[section.resourceSection] ?? 0;
+
+	return {
+		id: section.id,
+		title: t(titleKey),
+		description: t(descriptionKey),
+		count,
+		href: getLibrarySectionPath(lang, section.id),
+	};
+});
+
+const panelClass = 'library-panel';
+const panelDividerClass = 'library-panel-footer';
+const subtlePillClass = 'library-pill';
+const availableBadgeClass = 'library-badge--available';
+const comingSoonBadgeClass = 'library-badge--muted';
+const actionLinkClass = 'library-action';
 ---
 
 <!doctype html>
 <html lang={lang}>
 	<head>
 		<BaseHead title={title} description={description} lang={lang} />
+		<LibraryPageStyles />
 		<meta data-pagefind-meta="title[content]" content={t('library.title')} />
 		<meta data-pagefind-meta="description[content]" content={description} />
 		<meta data-pagefind-filter="language[content]" content={lang} />
@@ -102,9 +93,9 @@ const sectionCards = [
 	<body>
 		<Header />
 		<FloatingLanguagePicker />
-		<main class="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8" data-pagefind-body>
-			<section class="mb-12 max-w-3xl space-y-5">
-				<p class="inline-flex rounded-lg border border-orange-400/40 bg-orange-500/10 px-3 py-1 text-sm font-semibold text-orange-300">
+		<main class="library-page mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8" data-pagefind-body>
+			<section class="mb-12 max-w-5xl space-y-5">
+				<p class="library-kicker">
 					{t('library.human-reviewed')}
 				</p>
 				<div class="space-y-4">
@@ -127,24 +118,26 @@ const sectionCards = [
 					{sectionCards.map((section) => {
 						const isAvailable = section.count > 0;
 						return (
-							<article class="rounded-lg border border-slate-700 bg-slate-900/70 p-5">
+							<a
+								href={section.href}
+								class={`${panelClass} library-panel-link`}
+								aria-label={`${section.title}: ${t('library.open-section')}`}
+							>
 								<div class="mb-4 flex items-start justify-between gap-4">
 									<h3 class="text-lg font-semibold text-slate-100">{section.title}</h3>
 									<span class:list={[
-										'rounded-lg border px-2 py-1 text-xs font-semibold',
-										isAvailable
-											? 'border-emerald-400/40 bg-emerald-500/10 text-emerald-200'
-											: 'border-slate-600 bg-slate-800 text-slate-300',
+										'library-badge',
+										isAvailable ? availableBadgeClass : comingSoonBadgeClass,
 									]}>
 										{isAvailable ? t('library.available') : t('library.coming-soon')}
 									</span>
 								</div>
 								<p class="min-h-[4rem] text-sm leading-relaxed text-slate-400">{section.description}</p>
-								<div class="mt-5 flex items-center justify-between gap-3 border-t border-slate-800 pt-4 text-sm">
+								<div class={panelDividerClass}>
 									<span class="font-medium text-slate-300">{formatCount(section.count)}</span>
-									<span class="text-slate-500">{t('library.section-pages-deferred')}</span>
+									<span class="text-slate-500">{t('library.open-section')}</span>
 								</div>
-							</article>
+							</a>
 						);
 					})}
 				</div>
@@ -159,10 +152,10 @@ const sectionCards = [
 				</div>
 				<div class="grid gap-4 lg:grid-cols-3">
 					{featuredResources.map((resource) => (
-						<article class="rounded-lg border border-slate-700 bg-slate-900/70 p-5">
+						<article class={panelClass}>
 							<div class="mb-3 flex flex-wrap gap-2">
-								<span class="rounded-lg bg-slate-800 px-2 py-1 text-xs font-semibold text-slate-300">{resource.data.section}</span>
-								<span class="rounded-lg bg-slate-800 px-2 py-1 text-xs font-semibold text-slate-300">{resource.data.type}</span>
+								<span class={subtlePillClass}>{resource.data.section}</span>
+								<span class={subtlePillClass}>{resource.data.type}</span>
 							</div>
 							<h3 class="mb-3 text-lg font-semibold text-slate-100">{resource.data.title}</h3>
 							<p class="mb-5 text-sm leading-relaxed text-slate-400">{getResourceSummary(resource, lang)}</p>
@@ -170,7 +163,7 @@ const sectionCards = [
 								href={resource.data.url}
 								target="_blank"
 								rel="noopener noreferrer"
-								class="inline-flex min-h-10 items-center rounded-lg border border-orange-400/60 px-3 py-2 text-sm font-semibold text-orange-200 transition-colors hover:bg-orange-500/10"
+								class={actionLinkClass}
 							>
 								{t('library.view-resource')}
 							</a>
@@ -188,13 +181,13 @@ const sectionCards = [
 				</div>
 				<div class="grid gap-4 md:grid-cols-2">
 					{featuredTopics.map((topic) => (
-						<article class="rounded-lg border border-slate-700 bg-slate-900/70 p-5">
+						<article class={panelClass}>
 							<h3 class="mb-3 text-lg font-semibold text-slate-100">{getTopicLabel(topic, lang)}</h3>
 							<p class="text-sm leading-relaxed text-slate-400">{getTopicDescription(topic, lang)}</p>
 							{topic.data.positiveKeywords.length > 0 && (
 								<div class="mt-4 flex flex-wrap gap-2" aria-label={t('library.topic-keywords')}>
 									{topic.data.positiveKeywords.slice(0, 5).map((keyword) => (
-										<span class="rounded-lg bg-slate-800 px-2 py-1 text-xs text-slate-300">{keyword}</span>
+										<span class={subtlePillClass}>{keyword}</span>
 									))}
 								</div>
 							)}
@@ -213,15 +206,15 @@ const sectionCards = [
 					</div>
 					<div class="grid gap-4 lg:grid-cols-3">
 						{featuredPapers.map((paper) => (
-							<article class="rounded-lg border border-slate-700 bg-slate-900/70 p-5">
+							<article class={panelClass}>
 								<div class="mb-3 flex flex-wrap gap-2">
 									{paper.data.venue && (
-										<span class="rounded-lg bg-slate-800 px-2 py-1 text-xs font-semibold text-slate-300">{paper.data.venue}</span>
+										<span class={subtlePillClass}>{paper.data.venue}</span>
 									)}
 									{paper.data.year && (
-										<span class="rounded-lg bg-slate-800 px-2 py-1 text-xs font-semibold text-slate-300">{paper.data.year}</span>
+										<span class={subtlePillClass}>{paper.data.year}</span>
 									)}
-									<span class="rounded-lg bg-slate-800 px-2 py-1 text-xs font-semibold text-slate-300">{paper.data.priority}</span>
+									<span class={subtlePillClass}>{paper.data.priority}</span>
 								</div>
 								<h3 class="mb-3 text-lg font-semibold text-slate-100">{paper.data.title}</h3>
 								<p class="mb-5 text-sm leading-relaxed text-slate-400">{getPaperTldr(paper, lang)}</p>
@@ -229,7 +222,7 @@ const sectionCards = [
 									href={paper.data.url}
 									target="_blank"
 									rel="noopener noreferrer"
-									class="inline-flex min-h-10 items-center rounded-lg border border-orange-400/60 px-3 py-2 text-sm font-semibold text-orange-200 transition-colors hover:bg-orange-500/10"
+									class={actionLinkClass}
 								>
 									{t('library.view-paper')}
 								</a>
@@ -239,7 +232,7 @@ const sectionCards = [
 				</section>
 			)}
 
-			<section class="grid gap-4 rounded-lg border border-slate-700 bg-slate-900/70 p-5 md:grid-cols-[1fr_auto] md:items-center">
+			<section class={`${panelClass} grid gap-4 md:grid-cols-[1fr_auto] md:items-center`}>
 				<div>
 					<h2 class="text-xl font-bold text-slate-100">{t('library.review-note.title')}</h2>
 					<p class="mt-2 leading-relaxed text-slate-400">{t('library.review-note.body')}</p>

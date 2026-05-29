@@ -6,6 +6,31 @@ export type PaperEntry = CollectionEntry<'papers'>;
 export type TopicEntry = CollectionEntry<'topics'>;
 
 type LocalizedText = Partial<Record<UILanguage, string>>;
+type ResourceSection = ResourceEntry['data']['section'];
+
+export const librarySections = [
+	{ id: 'design', translationKey: 'design', kind: 'resources', resourceSection: 'design' },
+	{ id: 'vibe-coding', translationKey: 'vibe-coding', kind: 'resources', resourceSection: 'vibe-coding' },
+	{ id: 'dev-docs', translationKey: 'dev-docs', kind: 'resources', resourceSection: 'dev-docs' },
+	{ id: 'ai-papers', translationKey: 'ai-papers', kind: 'papers' },
+	{ id: 'useful-feeds', translationKey: 'useful-feeds', kind: 'resources', resourceSection: 'useful-feeds' },
+	{ id: 'decks', translationKey: 'decks', kind: 'decks' },
+] as const satisfies readonly {
+	id: string;
+	translationKey: string;
+	kind: 'resources' | 'papers' | 'decks';
+	resourceSection?: ResourceSection;
+}[];
+
+export type LibrarySectionId = (typeof librarySections)[number]['id'];
+
+export function isLibrarySectionId(value: string | undefined): value is LibrarySectionId {
+	return librarySections.some((section) => section.id === value);
+}
+
+export function getLibrarySectionPath(lang: UILanguage, sectionId: LibrarySectionId): string {
+	return `/${lang}/library/${sectionId}/`;
+}
 
 export function isApprovedResource(resource: ResourceEntry): boolean {
 	return resource.data.status === 'approved' && resource.data.review.humanReviewed === true;
@@ -51,6 +76,16 @@ export function getTopicDescription(topic: TopicEntry, lang: UILanguage): string
 export function getPaperTldr(paper: PaperEntry, lang: UILanguage): string {
 	const summary = paper.data.summary;
 	return summary[lang]?.tldr ?? summary.ko?.tldr ?? summary.en?.tldr ?? summary.jp?.tldr ?? '';
+}
+
+export function getResourcesForLibrarySection(
+	resources: ResourceEntry[],
+	sectionId: LibrarySectionId,
+): ResourceEntry[] {
+	const section = librarySections.find((item) => item.id === sectionId);
+	if (section?.kind !== 'resources' || !section.resourceSection) return [];
+
+	return resources.filter((resource) => resource.data.section === section.resourceSection);
 }
 
 export function getFeaturedResources(resources: ResourceEntry[], limit = 3): ResourceEntry[] {

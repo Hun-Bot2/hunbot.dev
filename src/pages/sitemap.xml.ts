@@ -1,39 +1,38 @@
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
-import { SITE_URL } from '../consts';
+import { SITE_URL, SUPPORTED_LANGUAGES } from '../consts';
 import { getBlogUrlFromId } from '../utils/blog-routing';
+import { getLibrarySectionPath, librarySections } from '../utils/library';
 
 export const GET: APIRoute = async ({ site }) => {
   const siteUrl = site ?? new URL(SITE_URL);
   const posts = await getCollection('blog');
+  const now = new Date().toISOString();
+  const staticPages = [
+    '/',
+    '/about/',
+    ...SUPPORTED_LANGUAGES.flatMap((lang) => [
+      `/${lang}/`,
+      `/${lang}/about/`,
+      `/${lang}/blog/`,
+      `/${lang}/blog/categories/`,
+      `/${lang}/blog/tags/`,
+      `/${lang}/library/`,
+      `/${lang}/search/`,
+      ...librarySections.map((section) => getLibrarySectionPath(lang, section.id)),
+    ]),
+  ];
   
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <!-- Main pages -->
+  ${staticPages.map((path) => `
   <url>
-    <loc>${siteUrl}</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>${new URL('/about/', siteUrl).href}</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>${new URL('/blog/', siteUrl).href}</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>${new URL('/archive/', siteUrl).href}</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
+    <loc>${new URL(path, siteUrl).href}</loc>
+    <lastmod>${now}</lastmod>
+    <changefreq>${path.includes('/library/') ? 'monthly' : 'weekly'}</changefreq>
+    <priority>${path === '/' ? '1.0' : path.endsWith('/blog/') ? '0.9' : '0.7'}</priority>
+  </url>`).join('')}
   
   <!-- Blog posts -->
   ${posts.map(post => `

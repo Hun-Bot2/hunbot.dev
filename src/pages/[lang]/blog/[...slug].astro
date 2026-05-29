@@ -9,7 +9,7 @@ export async function getStaticPaths() {
 	const langs: UILanguage[] = ['ko', 'jp', 'en'];
 	const posts = await getCollection('blog');
 
-	const slugMap = new Map<string, string[]>();
+	const slugMap = new Map<string, UILanguage[]>();
 
 	for (const post of posts) {
 		let lang: UILanguage;
@@ -51,7 +51,7 @@ export async function getStaticPaths() {
 type Props = {
 	post: CollectionEntry<'blog'>;
 	lang: UILanguage;
-	availableLangs: string[];
+	availableLangs: UILanguage[];
 };
 
 const { post, lang, availableLangs } = Astro.props as Props;

@@ -1,5 +1,7 @@
 # 001: Multilingual Library Section Listing Pages
 
+Status: Implemented.
+
 ## Goal
 
 Add the first detailed Library section listing pages using the existing PR04 content schemas and PR05 Library hub data.

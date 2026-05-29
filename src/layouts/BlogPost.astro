@@ -14,7 +14,7 @@ import type { UILanguage } from '../i18n/ui';
 
 type Props = CollectionEntry<'blog'>['data'] & {
 	lang?: UILanguage;
-	availableLangs?: string[];
+	availableLangs?: UILanguage[];
 	postId?: string;
 	seriesName?: string;
 	seriesIndex?: number;
@@ -103,7 +103,14 @@ const schema = {
 
 <html lang={lang}>
 	<head>
-		<BaseHead title={title} description={description} canonicalURL={canonicalURL.href} image={heroImage} />
+		<BaseHead
+			title={title}
+			description={description}
+			canonicalURL={canonicalURL.href}
+			image={heroImage}
+			lang={lang}
+			availableLangs={availableLangs}
+		/>
 		<script type="application/ld+json" set:html={JSON.stringify(schema)} />
 		<!-- Essential SEO meta tags -->
 		<meta property="og:type" content="article" />

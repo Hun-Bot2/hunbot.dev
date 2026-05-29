@@ -19,10 +19,18 @@ interface Props {
 	image?: string;
 	canonicalURL?: string;
 	lang?: string;
+	availableLangs?: SupportedLanguage[];
 }
 
 const fallbackImageUrl = '/images/blog-placeholder-1.jpg';
-const { title, description, image = fallbackImageUrl, canonicalURL, lang: explicitLang } = Astro.props;
+const {
+	title,
+	description,
+	image = fallbackImageUrl,
+	canonicalURL,
+	lang: explicitLang,
+	availableLangs,
+} = Astro.props;
 const siteOrigin = Astro.site?.origin ?? SITE_URL;
 const canonicalHref = canonicalURL ?? new URL(Astro.url.pathname, siteOrigin).href;
 const descriptionContent = (description ?? '').trim() || SITE_DESCRIPTION;
@@ -53,11 +61,17 @@ const fontCssConfig: Record<SupportedLanguage, string[]> = {
 	],
 };
 const currentLang = (explicitLang || getLangFromUrl(Astro.url)) as SupportedLanguage;
+const requestedAlternateLanguageCodes = availableLangs
+	? languageCodes.filter((code) => availableLangs.includes(code))
+	: languageCodes;
+const alternateLanguageCodes = requestedAlternateLanguageCodes.includes(currentLang)
+	? requestedAlternateLanguageCodes
+	: [...requestedAlternateLanguageCodes, currentLang];
 const langMeta = languageMeta[currentLang] ?? languageMeta.ko;
 const ogLocale = openGraphLocales[currentLang] ?? openGraphLocales.ko;
-const ogAlternateLocales = Object.entries(openGraphLocales)
-	.filter(([code]) => code !== currentLang)
-	.map(([, locale]) => locale);
+const ogAlternateLocales = alternateLanguageCodes
+	.filter((code) => code !== currentLang)
+	.map((code) => openGraphLocales[code]);
 const fontCssUrls = fontCssConfig[currentLang] ?? fontCssConfig.ko;
 const pathSegments = Astro.url.pathname.split('/').filter(Boolean);
 const hasLocalePrefix =
@@ -67,7 +81,7 @@ const trailingSlash = Astro.url.pathname.endsWith('/') ? '/' : '';
 const normalizedPath =
 	normalizedSegments.length === 0 ? '/' : `/${normalizedSegments.join('/')}${trailingSlash}`;
 const normalizedPathSuffix = normalizedPath === '/' ? '/' : normalizedPath;
-const alternateLinks = languageCodes.map((code) => {
+const alternateLinks = alternateLanguageCodes.map((code) => {
 	const hrefLang = LANGUAGE_HREF_MAP[code];
 	const prefix = `/${code}`;
 	const href = new URL(`${prefix}${normalizedPathSuffix === '/' ? '/' : normalizedPathSuffix}`, siteOrigin).href;
@@ -86,6 +100,12 @@ const xDefaultHref = alternateLinks.find((link) => link.code === defaultLang)?.h
 	type="application/rss+xml"
 	title={SITE_TITLE}
 	href={new URL('rss.xml', siteOrigin).href}
+/>
+<link
+	rel="alternate"
+	type="application/rss+xml"
+	title={`${SITE_TITLE} RSS (${currentLang})`}
+	href={new URL(`${currentLang}/rss.xml`, siteOrigin).href}
 />
 <meta name="generator" content={Astro.generator} />
 {googleVerification && <meta name="google-site-verification" content={googleVerification} />}

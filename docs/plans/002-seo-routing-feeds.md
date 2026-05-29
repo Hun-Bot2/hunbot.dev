@@ -1,5 +1,7 @@
 # 002: SEO, Routing, Feeds, And OG Stability
 
+Status: Implemented.
+
 ## Goal
 
 Stabilize public discovery URLs after PR01 by making post alternates, RSS, sitemap, per-language feeds, and future OG image work use the same localized route contract.
