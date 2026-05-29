@@ -17,6 +17,7 @@
     "library-page:validate": "node scripts/validate-library-page.mjs",
     "paths:validate": "node scripts/validate-learning-paths.mjs",
     "media:validate": "node scripts/validate-media-companions.mjs",
+    "product:validate": "node scripts/validate-product-boundaries.mjs",
     "routes:validate": "node scripts/validate-routes.mjs",
     "seo:validate": "node scripts/validate-seo.mjs",
     "ui:validate": "node scripts/validate-ui.mjs",

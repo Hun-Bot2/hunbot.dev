@@ -1,6 +1,6 @@
 # 013: Service Monetization And Separation
 
-Status: Draft.
+Status: Implemented.
 
 ## Goal
 
@@ -76,6 +76,7 @@ These are direction markers, not implementation approvals.
 If only docs change, run:
 
 ```sh
+npm run product:validate
 git diff --check
 ```
 

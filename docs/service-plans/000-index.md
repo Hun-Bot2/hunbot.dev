@@ -20,7 +20,7 @@ Use this folder for broad service planning: Library scope, media companion workf
 | [010-performance-media-and-build-budget.md](./010-performance-media-and-build-budget.md) | Implemented | Media optimization, build baselines, Pagefind size, and asset loading |
 | [011-security-privacy-and-platform-hardening.md](./011-security-privacy-and-platform-hardening.md) | Implemented | CSP, third-party services, comments, view counter, and privacy hardening |
 | [012-youtube-media-companion-workflow.md](./012-youtube-media-companion-workflow.md) | Implemented | Static workflow connecting videos, posts, Library cards, papers, and decks |
-| [013-service-monetization-and-separation.md](./013-service-monetization-and-separation.md) | Draft | Keep the personal blog as a trust asset while deferring product monetization |
+| [013-service-monetization-and-separation.md](./013-service-monetization-and-separation.md) | Implemented | Keep the personal blog as a trust asset while deferring product monetization |
 
 ## Redirect Files
 
