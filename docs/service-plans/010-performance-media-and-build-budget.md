@@ -1,6 +1,6 @@
 # 010: Performance, Media, And Build Budget
 
-Status: Draft.
+Status: Implemented.
 
 ## Goal
 

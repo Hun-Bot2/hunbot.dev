@@ -21,6 +21,7 @@
     "ui:validate": "node scripts/validate-ui.mjs",
     "views:validate": "node scripts/validate-view-counter.mjs",
     "images:inventory": "node scripts/inventory-public-images.mjs",
+    "perf:budget": "node scripts/validate-performance-budget.mjs",
     "csp:validate": "node scripts/validate-csp.mjs",
     "preview": "astro preview",
     "astro": "astro"
