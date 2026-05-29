@@ -1,6 +1,6 @@
 # 007: Content Operations And Review Workflow
 
-Status: Draft.
+Status: Implemented.
 
 ## Goal
 
