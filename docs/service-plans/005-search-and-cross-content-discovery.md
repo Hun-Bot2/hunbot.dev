@@ -1,6 +1,6 @@
 # 005: Search And Cross-Content Discovery
 
-Status: Draft.
+Status: Implemented.
 
 ## Goal
 

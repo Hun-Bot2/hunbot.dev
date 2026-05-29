@@ -20,6 +20,11 @@ const description = t('search.description');
 const emptyText = t('search.empty');
 const unavailableText = t('search.unavailable');
 const buttonText = t('nav.search');
+const searchFilters = [
+	{ value: 'all', label: t('search.filter.all') },
+	{ value: 'blog', label: t('search.filter.blog') },
+	{ value: 'library', label: t('search.filter.library') },
+];
 const pagefindTranslations = {
 	placeholder: t('search.placeholder'),
 	zero_results: t('search.zero-results'),
@@ -39,7 +44,20 @@ const pagefindTranslations = {
 			<section class="mb-8">
 				<h1 class="text-3xl font-bold text-slate-100 mb-3">{title}</h1>
 				<p class="text-slate-400 leading-relaxed">{description}</p>
+				<p class="mt-2 text-sm text-slate-500">{t('search.guidance')}</p>
 			</section>
+			<div class="search-filter-bar" aria-label={t('search.filters-label')}>
+				{searchFilters.map((filter) => (
+					<button
+						type="button"
+						data-section-filter={filter.value}
+						aria-pressed={filter.value === 'all' ? 'true' : 'false'}
+						class:list={['search-filter-button', filter.value === 'all' && 'is-active']}
+					>
+						{filter.label}
+					</button>
+				))}
+			</div>
 			<form id="search-fallback" class="search-fallback" method="get" role="search">
 				<label class="sr-only" for="search-fallback-input">{title}</label>
 				<input
@@ -62,7 +80,22 @@ const pagefindTranslations = {
 				const emptyState = document.querySelector('.search-empty');
 				const fallbackForm = document.querySelector('#search-fallback');
 				const fallbackInput = document.querySelector('#search-fallback-input');
+				const filterButtons = Array.from(document.querySelectorAll('[data-section-filter]'));
 				const initialQuery = new URLSearchParams(window.location.search).get('q');
+				let currentSectionFilter = 'all';
+
+				const buildSearchFilters = () => {
+					if (currentSectionFilter === 'all') return { language: [lang] };
+					return { language: [lang], section: [currentSectionFilter] };
+				};
+
+				const updateFilterButtons = () => {
+					filterButtons.forEach((button) => {
+						const isActive = button.getAttribute('data-section-filter') === currentSectionFilter;
+						button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+						button.classList.toggle('is-active', isActive);
+					});
+				};
 
 				if (!searchRoot) return;
 
@@ -89,7 +122,15 @@ const pagefindTranslations = {
 				});
 
 				fallbackForm?.classList.add('hidden');
-				search.triggerFilters({ language: [lang] });
+				search.triggerFilters(buildSearchFilters());
+				filterButtons.forEach((button) => {
+					button.addEventListener('click', () => {
+						currentSectionFilter = button.getAttribute('data-section-filter') || 'all';
+						updateFilterButtons();
+						search.triggerFilters(buildSearchFilters());
+						emptyState?.classList.add('hidden');
+					});
+				});
 
 				if (initialQuery) {
 					search.triggerSearch(initialQuery);
@@ -120,6 +161,36 @@ const pagefindTranslations = {
 		display: flex;
 		gap: 0.75rem;
 		margin-bottom: 1.5rem;
+	}
+
+	.search-filter-bar {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		margin-bottom: 1.25rem;
+	}
+
+	.search-filter-button {
+		min-height: 2.25rem;
+		border: 1px solid rgba(148, 163, 184, 0.35);
+		border-radius: 999px;
+		background: rgba(15, 23, 42, 0.55);
+		color: rgb(203, 213, 225);
+		padding: 0.4rem 0.85rem;
+		font: inherit;
+		font-size: 0.875rem;
+		font-weight: 700;
+		transition:
+			background 160ms ease,
+			border-color 160ms ease,
+			color 160ms ease;
+	}
+
+	.search-filter-button:hover,
+	.search-filter-button.is-active {
+		border-color: rgba(249, 115, 22, 0.58);
+		background: rgba(249, 115, 22, 0.14);
+		color: rgb(255, 237, 213);
 	}
 
 	.search-fallback input {
@@ -159,6 +230,19 @@ const pagefindTranslations = {
 		background: rgb(255, 255, 255);
 		color: rgb(15, 23, 42);
 		border-color: rgb(203, 213, 225);
+	}
+
+	:global(body.light-theme) .search-filter-button {
+		background: rgb(255, 255, 255);
+		color: rgb(51, 65, 85);
+		border-color: rgb(203, 213, 225);
+	}
+
+	:global(body.light-theme) .search-filter-button:hover,
+	:global(body.light-theme) .search-filter-button.is-active {
+		background: rgba(249, 115, 22, 0.1);
+		color: rgb(154, 52, 18);
+		border-color: rgba(194, 65, 12, 0.28);
 	}
 
 	:global(.pagefind-ui__search-input) {

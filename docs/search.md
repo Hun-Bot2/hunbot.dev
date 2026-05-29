@@ -72,16 +72,24 @@ Each blog post adds Pagefind filters for:
 
 The search page initializes Pagefind UI and triggers the current `language` filter. This keeps `/ko/search/`, `/jp/search/`, and `/en/search/` focused on their own language content.
 
+The search page also exposes a small scope control:
+
+- All: current language only.
+- Posts: current language plus `section=blog`.
+- Library: current language plus `section=library`.
+
+The language filter is always applied. There is no cross-language mode yet.
+
 ## Known Limitations
 
 - Search is only available after a production build plus Pagefind indexing.
-- This PR indexes blog post title and body content only.
+- Search indexes blog post body content and public Library pages that opt into `data-pagefind-body`.
 - The current UI uses Pagefind's default result rendering with light styling overrides.
-- Language filtering depends on the indexed `language` filter metadata.
+- Language and scope filtering depend on the indexed `language` and `section` filter metadata.
 
 ## Future Work
 
-- Library-specific filters.
+- Library-specific filters beyond the current Library scope filter.
 - Design category filters.
 - Vibe Coding and Developer Docs section filters.
 - AI paper topic filters.

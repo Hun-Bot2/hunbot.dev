@@ -18,7 +18,10 @@ for (const lang of ['ko', 'jp', 'en']) {
   assert.match(searchPage, new RegExp(`params: \\{ lang: '${lang}' \\}`));
 }
 assert.match(searchPage, /new PagefindUI/);
-assert.match(searchPage, /triggerFilters\(\{ language: \[lang\] \}\)/);
+assert.match(searchPage, /buildSearchFilters/);
+assert.match(searchPage, /language: \[lang\]/);
+assert.match(searchPage, /section: \[currentSectionFilter\]/);
+assert.match(searchPage, /data-section-filter/);
 assert.match(searchPage, /\/pagefind\/pagefind-ui\.js/);
 assert.match(searchPage, /\/pagefind\/pagefind-ui\.css/);
 assert.doesNotMatch(searchPage, /\(window as any\)/, 'browser search script must not contain TypeScript syntax');
