@@ -23,6 +23,7 @@ const t = useTranslations(currentLang);
 const languageBasePath = `/${currentLang}`;
 const blogUrl = `${languageBasePath}/blog`;
 const libraryUrl = `${languageBasePath}/library`;
+const pathsUrl = `${languageBasePath}/paths`;
 const searchUrl = `${languageBasePath}/search`;
 
 // Filter posts by language and get latest posts
@@ -69,6 +70,7 @@ const focusCards = [
 							<div class="home-actions" aria-label={t('home.actions-label')}>
 								<a href={libraryUrl} class="home-action home-action-primary">{t('home.primary-cta')}</a>
 								<a href={blogUrl} class="home-action">{t('home.secondary-cta')}</a>
+								<a href={pathsUrl} class="home-action">{t('home.paths-cta')}</a>
 								<a href={searchUrl} class="home-action">{t('home.search-cta')}</a>
 							</div>
 						</div>

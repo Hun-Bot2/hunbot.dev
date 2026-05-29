@@ -1,0 +1,218 @@
+---
+import BaseHead from '../../../components/BaseHead.astro';
+import Header from '../../../components/Header.astro';
+import Footer from '../../../components/Footer.astro';
+import FloatingLanguagePicker from '../../../components/FloatingLanguagePicker.astro';
+import FormattedDate from '../../../components/FormattedDate.astro';
+import LibraryIcon from '../../../components/library/LibraryIcon.astro';
+import LibraryPageStyles from '../../../components/library/LibraryPageStyles.astro';
+import { getCollection } from 'astro:content';
+import { decks, getDeckById } from '../../../data/decks';
+import { learningPaths } from '../../../data/learningPaths';
+import { useTranslations, type UILanguage } from '../../../i18n/ui';
+import {
+	getLearningPathUrl,
+	getLocalizedPathText,
+	getPublishedLearningPaths,
+	resolveLearningPathSteps,
+} from '../../../utils/learning-paths';
+import {
+	getApprovedPapers,
+	getApprovedResources,
+	getPaperTldr,
+	getResourceSummary,
+} from '../../../utils/library';
+
+export function getStaticPaths() {
+	return (['ko', 'jp', 'en'] as const).flatMap((lang) =>
+		getPublishedLearningPaths(learningPaths).map((path) => ({
+			params: { lang, path: path.id },
+		})),
+	);
+}
+
+const lang = (Astro.params.lang ?? 'ko') as UILanguage;
+const pathId = Astro.params.path ?? '';
+const t = useTranslations(lang);
+const learningPath = learningPaths.find((path) => path.id === pathId && path.status === 'published');
+
+if (!learningPath) {
+	throw new Error(`Unknown learning path route: ${pathId}`);
+}
+
+const allPosts = await getCollection('blog');
+const allResources = await getCollection('resources');
+const allPapers = await getCollection('papers');
+
+const steps = resolveLearningPathSteps(learningPath, allPosts, lang);
+const isDefined = <T,>(entry: T | undefined | null): entry is T => Boolean(entry);
+const approvedResourcesById = new Map(getApprovedResources(allResources).map((entry) => [entry.data.id, entry]));
+const approvedPapersById = new Map(getApprovedPapers(allPapers).map((entry) => [entry.data.id, entry]));
+const deckById = new Map(decks.map((deck) => [deck.id, deck]));
+
+const supportingResources = learningPath.resourceIds
+	.map((resourceId) => approvedResourcesById.get(resourceId))
+	.filter(isDefined);
+const supportingPapers = learningPath.paperIds
+	.map((paperId) => approvedPapersById.get(paperId))
+	.filter(isDefined);
+const supportingDecks = learningPath.deckIds
+	.map((deckId) => getDeckById(deckId) ?? deckById.get(deckId))
+	.filter(isDefined);
+
+const pageTitle = getLocalizedPathText(learningPath.title, lang);
+const description = getLocalizedPathText(learningPath.description, lang);
+const languageLabels: Record<string, string> = {
+	ko: '한국어',
+	jp: '日本語',
+	en: 'English',
+};
+---
+
+<!doctype html>
+<html lang={lang}>
+	<head>
+		<BaseHead title={`${pageTitle} - Hun-Bot Blog`} description={description} lang={lang} />
+		<LibraryPageStyles />
+		<meta data-pagefind-meta="title[content]" content={pageTitle} />
+		<meta data-pagefind-meta="description[content]" content={description} />
+		<meta data-pagefind-filter="language[content]" content={lang} />
+		<meta data-pagefind-filter="section[content]" content="paths" />
+		<meta data-pagefind-filter="path[content]" content={learningPath.id} />
+	</head>
+	<body>
+		<Header />
+		<FloatingLanguagePicker />
+		<main class="library-page mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8" data-pagefind-body>
+			<a href={`/${lang}/paths/`} class="library-action library-action--back mb-8">
+				<LibraryIcon name="arrow-left" />
+				{t('paths.detail.back')}
+			</a>
+
+			<section class="mb-12 space-y-4">
+				<div class="flex flex-wrap gap-2" aria-label={t('paths.supporting-label')}>
+					{learningPath.topicIds.map((topicId) => <span class="library-pill">{topicId}</span>)}
+					<span class="library-pill">{t('paths.detail.updated').replace('{date}', learningPath.updatedAt)}</span>
+				</div>
+				<h1 class="text-4xl font-bold tracking-normal text-slate-100 sm:text-5xl">{pageTitle}</h1>
+				<p class="text-lg leading-relaxed text-slate-400">{description}</p>
+			</section>
+
+			<section class="mb-14 space-y-5" aria-labelledby="path-steps-heading">
+				<h2 id="path-steps-heading" class="text-2xl font-bold text-slate-100">{t('paths.detail.steps')}</h2>
+				<ol class="space-y-4">
+					{steps.map((resolvedStep, index) => (
+						<li class="library-panel">
+							<div class="flex flex-col gap-4 sm:flex-row sm:items-start">
+								<div class="path-step-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</div>
+								<div class="min-w-0 flex-1">
+									<div class="mb-2 flex flex-wrap gap-2">
+										<span class="library-pill">{getLocalizedPathText(resolvedStep.step.title, lang)}</span>
+										{resolvedStep.isLanguageFallback && (
+											<span class="library-badge library-badge--muted">
+												{t('paths.detail.fallback-language').replace('{language}', languageLabels[resolvedStep.postLanguage])}
+											</span>
+										)}
+									</div>
+									<h3 class="text-xl font-semibold text-slate-100">{resolvedStep.post.data.title}</h3>
+									<p class="mt-2 text-sm leading-relaxed text-slate-400">{resolvedStep.post.data.description}</p>
+									<p class="mt-3 text-sm leading-relaxed text-slate-400">
+										{getLocalizedPathText(resolvedStep.step.note, lang)}
+									</p>
+									<div class="mt-4 flex flex-wrap items-center gap-3">
+										<span class="text-sm text-slate-500"><FormattedDate date={resolvedStep.post.data.pubDate} /></span>
+										<a href={resolvedStep.url} class="library-action">
+											{t('paths.detail.open-post')}
+											<LibraryIcon name="arrow-right" />
+										</a>
+									</div>
+								</div>
+							</div>
+						</li>
+					))}
+				</ol>
+			</section>
+
+			<section class="grid gap-4 lg:grid-cols-3" aria-label={t('paths.supporting-label')}>
+				{supportingResources.length > 0 && (
+					<div class="library-panel">
+						<h2 class="mb-4 text-lg font-semibold text-slate-100">{t('paths.detail.supporting-resources')}</h2>
+						<div class="space-y-5">
+							{supportingResources.map((resource) => (
+								<article>
+									<h3 class="font-semibold text-slate-100">{resource.data.title}</h3>
+									<p class="mt-2 text-sm leading-relaxed text-slate-400">{getResourceSummary(resource, lang)}</p>
+									<a href={resource.data.url} target="_blank" rel="noopener noreferrer" class="library-action library-action--external mt-3">
+										{t('paths.supporting.open-resource')}
+										<LibraryIcon name="external" />
+									</a>
+								</article>
+							))}
+						</div>
+					</div>
+				)}
+
+				{supportingPapers.length > 0 && (
+					<div class="library-panel">
+						<h2 class="mb-4 text-lg font-semibold text-slate-100">{t('paths.detail.supporting-papers')}</h2>
+						<div class="space-y-5">
+							{supportingPapers.map((paper) => (
+								<article>
+									<h3 class="font-semibold text-slate-100">{paper.data.title}</h3>
+									<p class="mt-2 text-sm leading-relaxed text-slate-400">{getPaperTldr(paper, lang)}</p>
+									<a href={paper.data.url} target="_blank" rel="noopener noreferrer" class="library-action library-action--external mt-3">
+										{t('paths.supporting.open-paper')}
+										<LibraryIcon name="external" />
+									</a>
+								</article>
+							))}
+						</div>
+					</div>
+				)}
+
+				{supportingDecks.length > 0 && (
+					<div class="library-panel">
+						<h2 class="mb-4 text-lg font-semibold text-slate-100">{t('paths.detail.supporting-decks')}</h2>
+						<div class="space-y-5">
+							{supportingDecks.map((deck) => {
+								const href = deck.htmlUrl ?? deck.pdfUrl;
+								return (
+									<article>
+										<div class="mb-2 flex flex-wrap gap-2">
+											<span class="library-pill">{deck.type}</span>
+											{deck.pdfUrl && <span class="library-pill">PDF</span>}
+										</div>
+										<h3 class="font-semibold text-slate-100">{deck.title}</h3>
+										<p class="mt-2 text-sm leading-relaxed text-slate-400">{deck.description}</p>
+										{href && (
+											<a href={href} target="_blank" rel="noopener noreferrer" class="library-action library-action--deck mt-3">
+												{t('paths.supporting.open-deck')}
+												<LibraryIcon name="external" />
+											</a>
+										)}
+									</article>
+								);
+							})}
+						</div>
+					</div>
+				)}
+			</section>
+		</main>
+		<Footer />
+	</body>
+</html>
+
+<style>
+	.path-step-number {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 3rem;
+		height: 3rem;
+		border-radius: 0.75rem;
+		border: 1px solid rgba(251, 146, 60, 0.24);
+		background: rgba(249, 115, 22, 0.1);
+		color: #fed7aa;
+		font-weight: 800;
+	}
+</style>

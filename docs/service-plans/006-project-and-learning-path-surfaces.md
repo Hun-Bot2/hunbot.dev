@@ -1,6 +1,6 @@
 # 006: Project And Learning Path Surfaces
 
-Status: Draft.
+Status: Implemented.
 
 ## Goal
 
