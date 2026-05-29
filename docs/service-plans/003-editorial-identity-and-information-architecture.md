@@ -1,6 +1,6 @@
 # 003: Editorial Identity And Information Architecture
 
-Status: Draft.
+Status: Implemented.
 
 ## Goal
 

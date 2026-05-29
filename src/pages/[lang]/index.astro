@@ -3,7 +3,6 @@ import BaseHead from '../../components/BaseHead.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import FloatingLanguagePicker from '../../components/FloatingLanguagePicker.astro';
-import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
 import { getCollection } from 'astro:content';
 import FormattedDate from '../../components/FormattedDate.astro';
 import { useTranslations } from '../../i18n/ui';
@@ -21,6 +20,10 @@ export function getStaticPaths() {
 const { lang } = Astro.params;
 const currentLang = (lang ?? 'ko') as UILanguage;
 const t = useTranslations(currentLang);
+const languageBasePath = `/${currentLang}`;
+const blogUrl = `${languageBasePath}/blog`;
+const libraryUrl = `${languageBasePath}/library`;
+const searchUrl = `${languageBasePath}/search`;
 
 // Filter posts by language and get latest posts
 const allPosts = await getCollection('blog');
@@ -30,18 +33,56 @@ const posts = allPosts
 
 const featured = posts.slice(0, 4);
 const remaining = posts.slice(4);
+const focusCards = [
+	{
+		title: t('home.focus.build.title'),
+		description: t('home.focus.build.description'),
+	},
+	{
+		title: t('home.focus.papers.title'),
+		description: t('home.focus.papers.description'),
+	},
+	{
+		title: t('home.focus.library.title'),
+		description: t('home.focus.library.description'),
+	},
+];
 ---
 
 <!doctype html>
-<html lang={lang}>
+<html lang={currentLang}>
 	<head>
-		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+		<BaseHead title={t('home.meta.title')} description={t('home.meta.description')} lang={currentLang} />
 	</head>
 	<body>
 		<Header />
 		<FloatingLanguagePicker />
 		<div class="global-wrapper" data-is-root-path="true">
 			<main class="max-w-5xl mx-auto px-4 py-10 space-y-16">
+				<section class="home-hero" aria-labelledby="home-title">
+					<p class="home-eyebrow">{t('home.eyebrow')}</p>
+					<div class="home-hero-grid">
+						<div class="space-y-5">
+							<h1 id="home-title" class="home-title">{t('home.title')}</h1>
+							<p class="home-subtitle">{t('home.subtitle')}</p>
+							<p class="home-description">{t('home.description')}</p>
+							<div class="home-actions" aria-label={t('home.actions-label')}>
+								<a href={libraryUrl} class="home-action home-action-primary">{t('home.primary-cta')}</a>
+								<a href={blogUrl} class="home-action">{t('home.secondary-cta')}</a>
+								<a href={searchUrl} class="home-action">{t('home.search-cta')}</a>
+							</div>
+						</div>
+						<div class="home-focus-list" aria-label={t('home.focus-label')}>
+							{focusCards.map((card) => (
+								<article class="home-focus-card">
+									<h2>{card.title}</h2>
+									<p>{card.description}</p>
+								</article>
+							))}
+						</div>
+					</div>
+				</section>
+
 				<section>
 					<h1 class="text-3xl font-bold mb-4 flex items-center justify-between">
 						<span>{t('blog.recent-posts')}</span>
@@ -116,6 +157,170 @@ const remaining = posts.slice(4);
 </html>
 
 <style>
+	.home-hero {
+		border-radius: 1.5rem;
+		border: 1px solid rgba(148, 163, 184, 0.22);
+		background:
+			linear-gradient(135deg, rgba(15, 23, 42, 0.08), rgba(249, 115, 22, 0.08)),
+			rgba(255, 255, 255, 0.68);
+		padding: clamp(1.5rem, 4vw, 2.5rem);
+		box-shadow: 0 24px 70px rgba(15, 23, 42, 0.08);
+	}
+
+	.dark .home-hero {
+		border-color: rgba(248, 249, 250, 0.12);
+		background:
+			linear-gradient(135deg, rgba(248, 249, 250, 0.08), rgba(249, 115, 22, 0.08)),
+			rgba(15, 23, 42, 0.4);
+		box-shadow: 0 24px 70px rgba(0, 0, 0, 0.22);
+	}
+
+	.home-eyebrow {
+		margin-bottom: 1rem;
+		color: rgb(234, 88, 12);
+		font-size: 0.8rem;
+		font-weight: 700;
+		letter-spacing: 0;
+		text-transform: uppercase;
+	}
+
+	.dark .home-eyebrow {
+		color: rgb(251, 146, 60);
+	}
+
+	.home-hero-grid {
+		display: grid;
+		gap: 2rem;
+		align-items: end;
+	}
+
+	@media (min-width: 860px) {
+		.home-hero-grid {
+			grid-template-columns: minmax(0, 1.2fr) minmax(18rem, 0.8fr);
+		}
+	}
+
+	.home-title {
+		max-width: 13ch;
+		color: rgb(15, 23, 42);
+		font-size: clamp(2.5rem, 7vw, 4.75rem);
+		font-weight: 800;
+		line-height: 1.02;
+		letter-spacing: 0;
+	}
+
+	.dark .home-title {
+		color: rgb(248, 249, 250);
+	}
+
+	.home-subtitle {
+		max-width: 42rem;
+		color: rgb(51, 65, 85);
+		font-size: clamp(1.15rem, 2.2vw, 1.5rem);
+		line-height: 1.65;
+	}
+
+	.dark .home-subtitle {
+		color: rgb(226, 232, 240);
+	}
+
+	.home-description {
+		max-width: 44rem;
+		color: rgb(100, 116, 139);
+		font-size: 1rem;
+		line-height: 1.75;
+	}
+
+	.dark .home-description {
+		color: rgb(148, 163, 184);
+	}
+
+	.home-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+	}
+
+	.home-action {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-height: 2.75rem;
+		border-radius: 999px;
+		border: 1px solid rgba(148, 163, 184, 0.35);
+		padding: 0.7rem 1rem;
+		color: rgb(30, 41, 59);
+		font-size: 0.95rem;
+		font-weight: 700;
+		text-decoration: none;
+		transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+	}
+
+	.home-action:hover {
+		transform: translateY(-1px);
+		border-color: rgba(249, 115, 22, 0.6);
+		background: rgba(249, 115, 22, 0.08);
+	}
+
+	.home-action-primary {
+		border-color: rgba(249, 115, 22, 0.8);
+		background: rgb(249, 115, 22);
+		color: white;
+	}
+
+	.home-action-primary:hover {
+		background: rgb(234, 88, 12);
+	}
+
+	.dark .home-action {
+		border-color: rgba(248, 249, 250, 0.14);
+		color: rgb(226, 232, 240);
+	}
+
+	.dark .home-action-primary {
+		border-color: rgba(251, 146, 60, 0.9);
+		color: white;
+	}
+
+	.home-focus-list {
+		display: grid;
+		gap: 0.85rem;
+	}
+
+	.home-focus-card {
+		border-radius: 1rem;
+		border: 1px solid rgba(148, 163, 184, 0.22);
+		background: rgba(255, 255, 255, 0.62);
+		padding: 1rem;
+	}
+
+	.dark .home-focus-card {
+		border-color: rgba(248, 249, 250, 0.1);
+		background: rgba(15, 23, 42, 0.55);
+	}
+
+	.home-focus-card h2 {
+		margin: 0 0 0.45rem;
+		color: rgb(15, 23, 42);
+		font-size: 1rem;
+		font-weight: 800;
+	}
+
+	.dark .home-focus-card h2 {
+		color: rgb(248, 249, 250);
+	}
+
+	.home-focus-card p {
+		margin: 0;
+		color: rgb(71, 85, 105);
+		font-size: 0.92rem;
+		line-height: 1.65;
+	}
+
+	.dark .home-focus-card p {
+		color: rgb(203, 213, 225);
+	}
+
 	.featured-container {
 		position: relative;
 	}
@@ -271,4 +476,3 @@ const remaining = posts.slice(4);
 		color: rgba(203, 213, 225, 0.9);
 	}
 </style>
-</section>

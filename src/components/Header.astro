@@ -4,7 +4,7 @@ import { getLangFromUrl, useTranslations } from '../i18n/ui';
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
-const homeUrl = lang === 'ko' ? '/' : `/${lang}/`;
+const homeUrl = `/${lang}/`;
 const blogUrl = lang === 'ko' ? '/ko/blog' : `/${lang}/blog`;
 const libraryUrl = lang === 'ko' ? '/ko/library' : `/${lang}/library`;
 const categoriesUrl = lang === 'ko' ? '/ko/blog/categories' : `/${lang}/blog/categories`;
