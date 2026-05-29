@@ -299,7 +299,7 @@ const xDefaultHref = alternateLinks.find((link) => link.code === defaultLang)?.h
 	document.addEventListener('DOMContentLoaded', () => {
 		try {
 			themeBtn = document.getElementById('themeToggleBtn');
-			const savedTheme = sessionStorage.getItem(THEME_STORAGE_KEY);
+			const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
 			const initialTheme = resolveInitialTheme(savedTheme);
 			applyTheme(initialTheme);
 
@@ -309,12 +309,12 @@ const xDefaultHref = alternateLinks.find((link) => link.code === defaultLang)?.h
 					const current = themeBtn?.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
 					const next = current === 'dark' ? 'light' : 'dark';
 					applyTheme(next);
-					sessionStorage.setItem(THEME_STORAGE_KEY, next);
+					localStorage.setItem(THEME_STORAGE_KEY, next);
 				});
 			}
 
 			const mediaHandler = (event) => {
-				if (!sessionStorage.getItem(THEME_STORAGE_KEY)) {
+				if (!localStorage.getItem(THEME_STORAGE_KEY)) {
 					applyTheme(event.matches ? 'dark' : 'light');
 				}
 			};
@@ -331,7 +331,7 @@ const xDefaultHref = alternateLinks.find((link) => link.code === defaultLang)?.h
 
 	(function() {
 		try {
-			const savedTheme = sessionStorage.getItem(THEME_STORAGE_KEY);
+			const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
 			const initialTheme = resolveInitialTheme(savedTheme);
 			document.documentElement.classList.toggle('dark', initialTheme === 'dark');
 		} catch (err) {

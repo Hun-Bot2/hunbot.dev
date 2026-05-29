@@ -4,7 +4,8 @@ import Header from '../../../components/Header.astro';
 import Footer from '../../../components/Footer.astro';
 import FloatingLanguagePicker from '../../../components/FloatingLanguagePicker.astro';
 import { getCollection } from 'astro:content';
-import { useTranslations } from '../../../i18n/ui';
+import { useTranslations, type UILanguage } from '../../../i18n/ui';
+import { filterPostsByLanguage } from '../../../utils/blog';
 
 export function getStaticPaths() {
 	const langs = ['ko', 'jp', 'en'];
@@ -12,10 +13,11 @@ export function getStaticPaths() {
 }
 
 const { lang } = Astro.params;
-const t = useTranslations(lang as 'ko' | 'jp' | 'en');
+const currentLang = lang as UILanguage;
+const t = useTranslations(currentLang);
 
 const allPosts = await getCollection('blog');
-const posts = allPosts.filter((post) => post.id.startsWith(`${lang}/`));
+const posts = filterPostsByLanguage(allPosts, currentLang);
 
 const tagMap = new Map<string, number>();
 

@@ -7,6 +7,9 @@ import rehypeKatex from 'rehype-katex';
 import vercel from '@astrojs/vercel/serverless';
 import remarkLocalizedBlogLinks from './src/utils/remark-localized-blog-links.mjs';
 
+const remarkPlugins = [remarkLocalizedBlogLinks, remarkMath];
+const rehypePlugins = [[rehypeKatex, { strict: false }]];
+
 export default defineConfig({
   site: 'https://hun-bot.dev',
   
@@ -22,20 +25,16 @@ export default defineConfig({
   },
   integrations: [
     mdx({
-      remarkPlugins: [remarkLocalizedBlogLinks, remarkMath],
-      rehypePlugins: [
-        [rehypeKatex, { strict: false }] // 한글 수식(Unicode) 경고 해결
-      ],
+      remarkPlugins,
+      rehypePlugins,
       drafts: true,
     }),
     sitemap(),
     tailwind(),
   ],
   markdown: {
-    remarkPlugins: [remarkLocalizedBlogLinks, remarkMath],
-    rehypePlugins: [
-      [rehypeKatex, { strict: false }] // .md 파일에서도 동일하게 적용
-    ],
+    remarkPlugins,
+    rehypePlugins,
     drafts: true,
     shikiConfig: {
       themes: {

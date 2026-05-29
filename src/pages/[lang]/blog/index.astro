@@ -5,8 +5,9 @@ import Footer from '../../../components/Footer.astro';
 import FloatingLanguagePicker from '../../../components/FloatingLanguagePicker.astro';
 import { getCollection } from 'astro:content';
 import FormattedDate from '../../../components/FormattedDate.astro';
-import { useTranslations } from '../../../i18n/ui';
+import { useTranslations, type UILanguage } from '../../../i18n/ui';
 import { getBlogUrlFromId } from '../../../utils/blog-routing';
+import { getPostsByLanguage } from '../../../utils/blog';
 
 export function getStaticPaths() {
   const langs = ['ko', 'jp', 'en'];
@@ -14,13 +15,11 @@ export function getStaticPaths() {
 }
 
 const { lang } = Astro.params;
-const t = useTranslations(lang as 'ko' | 'jp' | 'en');
+const currentLang = lang as UILanguage;
+const t = useTranslations(currentLang);
 
-// Filter posts by language and sort by date (newest first)
 const allPosts = await getCollection('blog');
-const posts = allPosts
-  .filter(post => post.id.startsWith(`${lang}/`))
-  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+const posts = getPostsByLanguage(allPosts, currentLang);
 ---
 
 <!doctype html>

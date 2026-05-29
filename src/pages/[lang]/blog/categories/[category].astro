@@ -4,8 +4,9 @@ import Header from '../../../../components/Header.astro';
 import Footer from '../../../../components/Footer.astro';
 import FloatingLanguagePicker from '../../../../components/FloatingLanguagePicker.astro';
 import { getCollection } from 'astro:content';
-import { useTranslations } from '../../../../i18n/ui';
+import { useTranslations, type UILanguage } from '../../../../i18n/ui';
 import { getBlogUrlFromId } from '../../../../utils/blog-routing';
+import { filterPostsByLanguage, getCategoryKey, sortPostsByDateDesc } from '../../../../utils/blog';
 
 export async function getStaticPaths() {
     const allPosts = await getCollection('blog');
@@ -14,7 +15,7 @@ export async function getStaticPaths() {
     allPosts.forEach((post) => {
         const [lang] = post.id.split('/');
         if (!lang) return;
-        const category = post.data.category ?? 'uncategorized';
+        const category = getCategoryKey(post);
         categoryKeys.add(`${lang}:${category}`);
     });
 
@@ -25,14 +26,14 @@ export async function getStaticPaths() {
 }
 
 const { lang, category } = Astro.params;
-const t = useTranslations(lang as 'ko' | 'jp' | 'en');
+const currentLang = lang as UILanguage;
+const t = useTranslations(currentLang);
 const categoryValue = category ? decodeURIComponent(String(category)) : 'uncategorized';
 
 const allPosts = await getCollection('blog');
-const posts = allPosts
-    .filter((post) => post.id.startsWith(`${lang}/`))
-    .filter((post) => (post.data.category ?? 'uncategorized') === categoryValue)
-    .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+const posts = sortPostsByDateDesc(
+    filterPostsByLanguage(allPosts, currentLang).filter((post) => getCategoryKey(post) === categoryValue),
+);
 
 const categoryName = categoryValue;
 const categoryDescription = `${t('blog.categories-title')}: ${categoryValue}`;

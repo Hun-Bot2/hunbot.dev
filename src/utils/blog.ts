@@ -1,36 +1,103 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
-import { getBlogSlugFromId, getBlogUrlFromPost } from './blog-routing';
+import { getBlogLanguageFromId, getBlogSlugFromId, getBlogUrlFromPost } from './blog-routing';
+import type { UILanguage } from '../i18n/ui';
 
 export type BlogPost = CollectionEntry<'blog'>;
+
+const CATEGORY_ALIASES: Record<string, 'ai' | 'devlog' | 'review' | 'misc'> = {
+  'ai engineering': 'ai',
+  'ai-frontier': 'ai',
+  'paper': 'ai',
+  '공부': 'ai',
+  '勉強': 'ai',
+  'devlog': 'devlog',
+  'add_on_doctor_devlog': 'devlog',
+  'algo_bot': 'devlog',
+  'app_devlog': 'devlog',
+  'autonomous_car': 'devlog',
+  'blog_devlog': 'devlog',
+  'chatting_system': 'devlog',
+  'jp_app_devlog': 'devlog',
+  'local_llm_devlog': 'devlog',
+  'on-the-block': 'devlog',
+  'onpremise_devlog': 'devlog',
+  'stock_app_devlog': 'devlog',
+  'vsextension_devlog': 'devlog',
+  'paper_review': 'review',
+  'review': 'review',
+  'hackathon': 'review',
+  'skku_ai_hackathon': 'review',
+  'snu_kossda': 'review',
+  'architecture': 'misc',
+  'career': 'misc',
+  'category': 'misc',
+  'contemplation': 'misc',
+  'misc': 'misc',
+  'retrospective': 'misc',
+  'study': 'misc',
+  'thoughts': 'misc',
+};
 
 /**
  * Get all blog posts sorted by publication date (newest first)
  */
 export async function getAllPosts(): Promise<BlogPost[]> {
   const posts = await getCollection('blog');
-  return posts.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+  return sortPostsByDateDesc(posts);
+}
+
+export function sortPostsByDateDesc(posts: BlogPost[]): BlogPost[] {
+  return [...posts].sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+}
+
+export function filterPostsByLanguage(posts: BlogPost[], lang: UILanguage): BlogPost[] {
+  return posts.filter((post) => {
+    try {
+      return getBlogLanguageFromId(post.id) === lang;
+    } catch {
+      return false;
+    }
+  });
+}
+
+export function sortPostsBySeries(posts: BlogPost[]): BlogPost[] {
+  return [...posts].sort((a, b) => {
+    const aOrder = a.data.seriesOrder ?? Number.MAX_SAFE_INTEGER;
+    const bOrder = b.data.seriesOrder ?? Number.MAX_SAFE_INTEGER;
+    if (aOrder !== bOrder) return aOrder - bOrder;
+    return a.data.pubDate.valueOf() - b.data.pubDate.valueOf();
+  });
+}
+
+export function getPostsByLanguage(posts: BlogPost[], lang: UILanguage): BlogPost[] {
+  return sortPostsByDateDesc(filterPostsByLanguage(posts, lang));
+}
+
+export function getCategoryKey(post: BlogPost): string {
+  return post.data.category ?? 'uncategorized';
+}
+
+export function getCategoryCounts(posts: BlogPost[]): Map<string, number> {
+  return posts.reduce((categoryMap, post) => {
+    const category = getCategoryKey(post);
+    categoryMap.set(category, (categoryMap.get(category) ?? 0) + 1);
+    return categoryMap;
+  }, new Map<string, number>());
+}
+
+export function getSeriesPosts(posts: BlogPost[], lang: UILanguage, seriesName: string): BlogPost[] {
+  return sortPostsBySeries(
+    filterPostsByLanguage(posts, lang).filter((post) => post.data.series === seriesName),
+  );
 }
 
 /**
- * Normalize category - convert any category to one of our standard categories
+ * Normalize category - convert known aliases to grouped category badges.
  */
 export function normalizeCategory(category?: string): string {
   if (!category) return 'misc';
-  
-  const normalized = category.toLowerCase();
-  
-  // Map various category names to our standard categories
-  if (normalized.includes('ai') || normalized.includes('lifelog') || normalized.includes('논문')) {
-    return 'ai';
-  }
-  if (normalized.includes('dev') || normalized.includes('개발')) {
-    return 'devlog';  
-  }
-  if (normalized.includes('review') || normalized.includes('리뷰')) {
-    return 'review';
-  }
-  
-  return 'misc';
+
+  return CATEGORY_ALIASES[category.trim().toLowerCase()] ?? 'misc';
 }
 
 

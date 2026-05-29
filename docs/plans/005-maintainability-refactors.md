@@ -1,5 +1,7 @@
 # 005: Maintainability Refactors
 
+Status: Implemented.
+
 ## Goal
 
 Reduce duplicated logic and fragile configuration in small, reversible steps without changing public routes or content behavior.

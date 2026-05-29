@@ -17,8 +17,8 @@ export class ThemeManager {
    * 테마 매니저 초기화
    */
   init() {
-    // 저장된 테마 불러오기 (localStorage 대신 세션 스토리지 사용)
-    const savedTheme = sessionStorage.getItem('neural-blog-theme');
+    // 저장된 테마 불러오기
+    const savedTheme = localStorage.getItem('neural-blog-theme');
     if (savedTheme) {
       this.isDarkTheme = savedTheme === 'dark';
     }
@@ -79,7 +79,7 @@ export class ThemeManager {
    * 테마 저장
    */
   saveTheme() {
-    sessionStorage.setItem('neural-blog-theme', this.isDarkTheme ? 'dark' : 'light');
+    localStorage.setItem('neural-blog-theme', this.isDarkTheme ? 'dark' : 'light');
   }
 
   /**
