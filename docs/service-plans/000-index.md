@@ -15,7 +15,7 @@ Use this folder for broad service planning: Library scope, media companion workf
 | [005-search-and-cross-content-discovery.md](./005-search-and-cross-content-discovery.md) | Implemented | Pagefind search UX, filters, and cross-content discovery |
 | [006-project-and-learning-path-surfaces.md](./006-project-and-learning-path-surfaces.md) | Implemented | Static project trails and learning paths across posts/resources/decks |
 | [007-content-operations-and-review-workflow.md](./007-content-operations-and-review-workflow.md) | Implemented | Human review workflow, content validation, and publication discipline |
-| [008-seo-social-and-feed-growth.md](./008-seo-social-and-feed-growth.md) | Draft | Translation-aware SEO, feeds, sitemap, social previews, and acquisition surfaces |
+| [008-seo-social-and-feed-growth.md](./008-seo-social-and-feed-growth.md) | Implemented | Translation-aware SEO, feeds, sitemap, social previews, and acquisition surfaces |
 | [009-design-system-accessibility-polish.md](./009-design-system-accessibility-polish.md) | Draft | Shared UI quality, accessibility, mobile, and theme polish |
 | [010-performance-media-and-build-budget.md](./010-performance-media-and-build-budget.md) | Draft | Media optimization, build baselines, Pagefind size, and asset loading |
 | [011-security-privacy-and-platform-hardening.md](./011-security-privacy-and-platform-hardening.md) | Draft | CSP, third-party services, comments, view counter, and privacy hardening |

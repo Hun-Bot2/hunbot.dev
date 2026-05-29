@@ -4,6 +4,8 @@ import { SITE_URL, SUPPORTED_LANGUAGES } from '../consts';
 import { getBlogUrlFromId } from '../utils/blog-routing';
 import { getBlogPageUrl, getPostsByLanguage, getTotalBlogPages } from '../utils/blog';
 import { getLibrarySectionPath, librarySections } from '../utils/library';
+import { learningPaths } from '../data/learningPaths';
+import { getLearningPathUrl, getPublishedLearningPaths } from '../utils/learning-paths';
 
 export const GET: APIRoute = async ({ site }) => {
   const siteUrl = site ?? new URL(SITE_URL);
@@ -15,6 +17,10 @@ export const GET: APIRoute = async ({ site }) => {
       getBlogPageUrl(lang, index + 2),
     );
   });
+  const learningPathPages = SUPPORTED_LANGUAGES.flatMap((lang) => [
+    `/${lang}/paths/`,
+    ...getPublishedLearningPaths(learningPaths).map((path) => getLearningPathUrl(lang, path.id)),
+  ]);
   const staticPages = [
     '/',
     '/about/',
@@ -29,6 +35,7 @@ export const GET: APIRoute = async ({ site }) => {
       ...librarySections.map((section) => getLibrarySectionPath(lang, section.id)),
     ]),
     ...blogPaginationPages,
+    ...learningPathPages,
   ];
   
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
@@ -38,7 +45,7 @@ export const GET: APIRoute = async ({ site }) => {
   <url>
     <loc>${new URL(path, siteUrl).href}</loc>
     <lastmod>${now}</lastmod>
-    <changefreq>${path.includes('/library/') ? 'monthly' : 'weekly'}</changefreq>
+    <changefreq>${path.includes('/library/') || path.includes('/paths/') ? 'monthly' : 'weekly'}</changefreq>
     <priority>${path === '/' ? '1.0' : path.endsWith('/blog/') ? '0.9' : '0.7'}</priority>
   </url>`).join('')}
   

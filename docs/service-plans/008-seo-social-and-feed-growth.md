@@ -1,6 +1,6 @@
 # 008: SEO, Social, And Feed Growth
 
-Status: Draft.
+Status: Implemented.
 
 ## Goal
 
