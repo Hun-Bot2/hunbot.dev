@@ -6,6 +6,8 @@ This is a PR-sized implementation plan. It preserves the current Astro/Vercel/st
 
 Grouped implementation plans derived from this document now live in [`docs/plans/000-index.md`](./plans/000-index.md). Keep this file as the historical source and risk register; use the numbered plans for future execution.
 
+The broader product/service direction now lives in [`docs/service-plans/001-product-service-direction.md`](./service-plans/001-product-service-direction.md). Use that document for current scope decisions around Library, media companion resources, monetization, and future dynamic architecture.
+
 ## P0 Correctness
 
 ### PR: Centralize Localized Blog URL Generation

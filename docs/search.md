@@ -2,6 +2,8 @@
 
 This site uses Pagefind for static full-text search.
 
+Search supports the broader service direction in [`docs/service-plans/001-product-service-direction.md`](./service-plans/001-product-service-direction.md): public blog posts, Library resources, paper cards, topics, decks, and future media companion notes should remain discoverable without adding a backend search service.
+
 ## Why Pagefind
 
 Pagefind indexes built HTML after Astro finishes and writes a static `/pagefind/` bundle into the deployable output. That keeps search compatible with the current static-first Astro and Vercel setup without adding a backend search service.
@@ -53,6 +55,8 @@ The header search icon links to the current language's search page.
 
 Blog posts opt into indexing in `src/layouts/BlogPost.astro` with `data-pagefind-body` on the post title and main prose content. Future public content types, such as Library pages, should add their own `data-pagefind-body` regions when they are ready to appear in search.
 
+Only reviewed public content should be indexed. Private candidate notes, unreviewed AI drafts, raw PDF text, and generated transcript drafts should stay outside public content paths.
+
 ## Excluding Repeated UI
 
 Header, footer, and the search page shell use `data-pagefind-ignore`. Because the current index is limited to explicit `data-pagefind-body` regions, repeated navigation, chrome, comments, and search UI are not intended to be indexed.
@@ -79,7 +83,9 @@ The search page initializes Pagefind UI and triggers the current `language` filt
 
 - Library-specific filters.
 - Design category filters.
+- Vibe Coding and Developer Docs section filters.
 - AI paper topic filters.
+- Deck and media companion discovery after reviewed metadata exists.
 - Search result highlighting customization.
 - Command palette integration.
 - Hosted search evaluation only if static search becomes insufficient.

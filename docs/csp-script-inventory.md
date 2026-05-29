@@ -2,6 +2,8 @@
 
 This inventory supports incremental CSP hardening. The site still needs some inline scripts, so `script-src 'unsafe-inline'` remains for now. `unsafe-eval` has been removed from the Vercel CSP after moving the first low-risk interaction script out of an Astro component.
 
+Product direction reference: [`docs/service-plans/001-product-service-direction.md`](./service-plans/001-product-service-direction.md). Future Library, media companion, or productization work should not add third-party scripts or document viewers without updating this inventory and the CSP plan.
+
 ## Current Scripts
 
 | File | Purpose | Routes | Paint Critical | Status |

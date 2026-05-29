@@ -2,6 +2,8 @@
 
 `PresentationEmbed` is a backendless component for showing presentation materials inside blog posts and future Library pages. It keeps the site static-first: deck assets are committed under `public/`, metadata is committed under `src/data/decks.ts`, and rendering happens in Astro plus a small browser script for slide-image navigation.
 
+Deck support is part of the broader product direction in [`docs/service-plans/001-product-service-direction.md`](./service-plans/001-product-service-direction.md). It should support paper reviews, experiment notes, technical explanations, build logs, and future YouTube companion notes without turning the blog into a document server.
+
 ## Why PPTX Is Not Embedded
 
 PPTX files committed to this repository can be served as static files, but browsers do not reliably render PPTX files as slide decks. An iframe such as `<iframe src="/decks/example/deck.pptx"></iframe>` usually becomes a download, a blank frame, or a browser-specific fallback.
@@ -194,3 +196,4 @@ The script checks deck ID safety, unique IDs, allowed types, supported aspect ra
 - Optional PDF.js support.
 - Optional Library deck collection.
 - Optional Pagefind indexing of deck transcript text.
+- Optional media companion workflow that links videos, posts, Library cards, papers, and reviewed deck assets.

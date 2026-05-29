@@ -4,6 +4,8 @@ Reviewed: 2026-05-12
 
 Do not print or commit secret values. A root `.env` file exists and was not read during this review.
 
+Product direction reference: [`docs/service-plans/001-product-service-direction.md`](./service-plans/001-product-service-direction.md). Security work should preserve the public/private boundary: approved public content can live in Git, while private candidates, raw source text, embeddings, unreviewed AI output, and future commercial data stay outside the public repo.
+
 | Risk ID | Severity | Affected files | Scenario | Recommended fix | Test or verification method | Status |
 | --- | --- | --- | --- | --- | --- | --- |
 | SEC-001 | High | `src/pages/api/views.ts`, `src/components/ViewCounter.astro` | The `slug` query parameter is accepted as a raw Redis key fragment. A client can create arbitrary high-cardinality keys or keys with unexpected separators. | Add a single slug validator that only accepts generated blog content IDs or a strict allowlist pattern. Build Redis keys through a helper that encodes or rejects invalid input. | `npm run views:validate`; smoke test `GET` and `POST` with valid, missing, malformed, and oversized slugs. | Implemented |

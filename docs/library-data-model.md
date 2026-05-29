@@ -2,6 +2,8 @@
 
 This document defines the data foundation for the Library section. The repository now has public schemas, small sample entries, validation, a Library hub, and first-pass section listing pages. It does not add ingestion jobs, private candidate storage, search UI automation, or publishing workflows.
 
+The broader service direction is documented in [`docs/service-plans/001-product-service-direction.md`](./service-plans/001-product-service-direction.md). This data model should support that full direction: Design, Vibe Coding, Developer Docs, AI Papers, Useful Feeds, Decks, and future media companion resources.
+
 Related implementation plans are indexed in [`docs/plans/000-index.md`](./plans/000-index.md). Future Library schema, route, ingestion, or publishing workflow changes should be planned there before implementation.
 
 ## Purpose
@@ -15,6 +17,8 @@ The current implementation uses Astro content collections with Markdown files un
 - `src/content/topics/`
 
 Each file uses JSON frontmatter so the lightweight Node validator can parse metadata without adding dependencies.
+
+The public collections are not a private candidate store. They should contain small, reviewed metadata records and original summaries, not raw source material.
 
 ## Public Data Vs Private Candidates
 
@@ -332,9 +336,11 @@ Not implemented in this PR:
 
 - Design Library page.
 - AI Papers page.
+- Vibe Coding and Developer Docs section depth.
 - Private candidate store.
 - Review/promote CLI.
 - Paper ingestion from OpenReview, arXiv, Semantic Scholar, or OpenAlex.
 - Local LLM draft summary generation.
-- Newsletter and YouTube companion resource linking.
+- YouTube/media companion resource linking.
+- Newsletter material generated from reviewed public artifacts.
 - Paid or pro Library features.

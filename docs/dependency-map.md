@@ -2,6 +2,8 @@
 
 Reviewed: 2026-05-12
 
+Product direction reference: [`docs/service-plans/001-product-service-direction.md`](./service-plans/001-product-service-direction.md). New dependencies should be judged against the static-first blog role and the future service direction; do not add product infrastructure dependencies before a plan explicitly approves them.
+
 ## Package Manager
 
 - Package manager: `npm`

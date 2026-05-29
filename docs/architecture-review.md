@@ -6,6 +6,8 @@ Reviewed: 2026-05-12
 
 `hun-bot.dev` is a multilingual personal tech blog built on Astro 5, MDX, Astro Content Collections, Tailwind CSS, and the Vercel serverless adapter. The intended model is static-first: most pages are generated from filesystem content, and dynamic behavior is limited to a small page-view API backed by Redis-compatible serverless persistence.
 
+The broader product/service direction is documented in [`docs/service-plans/001-product-service-direction.md`](./service-plans/001-product-service-direction.md). Architecture changes should preserve the personal blog as a lightweight trust asset unless a later plan explicitly separates a new product layer.
+
 The stack to preserve:
 
 - Astro pages, layouts, and components in `src/pages`, `src/layouts`, and `src/components`.
@@ -72,6 +74,8 @@ Content maintainability risks:
 - Client-side behavior comes from inline scripts in Astro components and standalone scripts under `public/scripts`.
 
 Preserve the static-first model. Do not expand dynamic/serverless behavior unless a specific feature requires it.
+
+Future service candidates such as Turso, Upstash expansion, Turnstile, R2, Cloudflare Workers, or D1 are not current architecture. They require a separate plan before implementation.
 
 ## I18n Model
 
@@ -156,3 +160,5 @@ Do not add new external services casually. Each service should have a clear purp
 - Treat route shape, canonical URLs, `hreflang`, RSS, sitemap, and robots behavior as public contracts.
 - Keep public content separate from private drafts and candidate Library data.
 - Human-review AI-generated translations and summaries before publication.
+- Keep the Library scope broad across Design, Vibe Coding, Developer Docs, AI Papers, Useful Feeds, Decks, and media companion resources.
+- Do not add payments, accounts, saved resources, review queues, ingestion workers, or newsletter infrastructure to the personal blog without an explicit product separation plan.

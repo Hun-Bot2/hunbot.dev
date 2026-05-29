@@ -2,6 +2,8 @@
 
 Public images live under `public/images/` and are served as static files. Keep this workflow simple unless a later image pipeline plan explicitly changes it.
 
+This guidance supports the static-first product direction in [`docs/service-plans/001-product-service-direction.md`](./service-plans/001-product-service-direction.md). It applies to blog images, Library illustrations, deck assets, and future media companion images that are intentionally published.
+
 ## Recommended Sizes
 
 - Hero images: 1200-1600px wide, ideally under 500 KB.

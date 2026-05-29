@@ -6,6 +6,8 @@ The Library hub is the first public entry point for the human-reviewed Library d
 
 The current implementation also adds first-pass section listing pages. It does not add ingestion, private candidate storage, comments, authentication, payments, newsletters, or a database.
 
+The broader product direction is documented in [`docs/service-plans/001-product-service-direction.md`](./service-plans/001-product-service-direction.md). The hub should stay broad enough to represent the whole AI-native curation service, not only the Design Library.
+
 ## Supported Sections
 
 The hub and section pages cover:
@@ -18,6 +20,8 @@ The hub and section pages cover:
 - Decks / Presentations
 
 Cards on the hub link only to the generated section routes listed below.
+
+Future media companion resources may connect videos to these sections through reviewed posts, resource cards, paper cards, topics, and deck references. The current page does not add a video or newsletter surface.
 
 ## Route Convention
 
@@ -104,8 +108,10 @@ The validator checks source wiring, generated section routes after build output 
 Future work may add:
 
 - Library-specific Pagefind filters
+- Deeper Design, Vibe Coding, Developer Docs, AI Papers, Useful Feeds, and Deck section pages
+- YouTube/media companion links after reviewed metadata exists
 - Private candidate storage
 - Review/promote CLI
 - Automated ingestion from approved sources
 - Local LLM draft summary generation
-- Newsletter and YouTube companion resource pages
+- Newsletter companion material after product scope is approved

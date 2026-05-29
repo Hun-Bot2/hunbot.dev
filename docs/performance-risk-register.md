@@ -2,6 +2,8 @@
 
 Reviewed: 2026-05-12
 
+Product direction reference: [`docs/service-plans/001-product-service-direction.md`](./service-plans/001-product-service-direction.md). Performance work should keep the public blog static-first while Library data, search indexes, deck assets, and future media companion notes grow.
+
 | Risk ID | Severity | Affected files | Build-time risk | Runtime/client-side risk | API/serverless risk | Recommended fix | Test or verification method | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | PERF-001 | High | `src/pages/[lang]/*.astro`, `src/pages/[lang]/blog/**/*.astro`, `src/utils/blog.ts` | Multiple pages call `getCollection('blog')`, filter, and sort independently. Build time grows with content volume and logic can drift. | None directly. | None. | Add shared helpers for language filtering, sorting, slug generation, categories, and series. | Unit tests for helpers; compare generated paths before and after refactor; run `npm run build`. | Planned |
@@ -16,4 +18,3 @@ Reviewed: 2026-05-12
 | PERF-010 | Medium | `public/scripts/neuralNetwork.js`, `public/scripts/controlsManager.js`, `public/scripts/themeManager.js` | None if dormant. | If loaded, the 3D visualization uses WebGL, fonts, particles, animation, and a global `THREE` dependency. | None. | Keep 3D scripts opt-in and route-scoped. Verify actual loading path before investing in optimization. | Network and performance profile on any page that loads the visualization. | Needs manual review |
 | PERF-011 | High | Future Library collection/data files | Large Library datasets in Content Collections can slow builds and inflate serverless bundles. | Large client payloads can hurt search, filtering, and browsing. | If Library APIs are added, filtering can become runtime cost. | Separate approved public metadata from private candidates. Keep raw datasets out of the repo unless licensed and intentionally summarized. | Build with synthetic Library volume; bundle/page size check; schema validation. | Planned |
 | PERF-012 | Medium | Future search implementation | Search indexing can add build time and deploy size. | Client-side search can add JS and index download cost. | None if static search. | Prefer static indexing such as Pagefind only after route and content boundaries are stable. Scope indexes by language/section. | Build-time index size check; query latency and page weight check. | Planned |
-
