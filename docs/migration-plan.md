@@ -4,6 +4,8 @@ Reviewed: 2026-05-12
 
 This is a PR-sized implementation plan. It preserves the current Astro/Vercel/static-first architecture. No item should be implemented as part of a documentation-only task.
 
+Grouped implementation plans derived from this document now live in [`docs/plans/000-index.md`](./plans/000-index.md). Keep this file as the historical source and risk register; use the numbered plans for future execution.
+
 ## P0 Correctness
 
 ### PR: Centralize Localized Blog URL Generation

@@ -86,15 +86,13 @@ This lets the existing search foundation index the hub without adding client-sid
 
 This PR validates the user-facing shape of the Library without expanding the routing surface. Section pages need separate decisions about filtering, pagination, topic pages, paper sorting, and Pagefind facets, so they should be handled in focused future PRs.
 
+The current implementation plan for those detail pages is tracked in [`docs/plans/001-library-section-pages.md`](./plans/001-library-section-pages.md).
+
 ## Future PRs
 
 Future work may add:
 
-- Language-aware Design Library pages
-- Vibe Coding section pages
-- Developer Docs section pages
-- AI Papers listing and topic pages
-- Useful Feeds pages
+- Language-aware Library section pages from [`docs/plans/001-library-section-pages.md`](./plans/001-library-section-pages.md)
 - Library-specific Pagefind filters
 - Private candidate storage
 - Review/promote CLI

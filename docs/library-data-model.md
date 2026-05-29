@@ -2,6 +2,8 @@
 
 This document defines the data foundation for the future Library section. This PR adds schemas, small sample entries, and validation only. It does not add `/library` pages, ingestion jobs, private candidate storage, search UI, or publishing workflows.
 
+Related implementation plans are indexed in [`docs/plans/000-index.md`](./plans/000-index.md). Future Library schema, route, ingestion, or publishing workflow changes should be planned there before implementation.
+
 ## Purpose
 
 The Library will organize human-reviewed resources, paper cards, and topics for design references, vibe coding, developer documentation, AI papers, useful feeds, community links, YouTube companion notes, and future presentation references.

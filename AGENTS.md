@@ -88,6 +88,7 @@ Flag these as high priority in future reviews:
 
 For the planned Library section:
 
+- Use `docs/plans/` for future Library implementation plans before adding new routes, schemas, ingestion, or publishing workflows.
 - Keep approved public data separate from private candidate data and unpublished notes.
 - AI-generated summaries or translations must be human-reviewed before publication.
 - Open-source resources should include license, source URL, author/project attribution, and retrieval/update date when practical.
