@@ -17,6 +17,7 @@
     "routes:validate": "node scripts/validate-routes.mjs",
     "views:validate": "node scripts/validate-view-counter.mjs",
     "images:inventory": "node scripts/inventory-public-images.mjs",
+    "csp:validate": "node scripts/validate-csp.mjs",
     "preview": "astro preview",
     "astro": "astro"
   },

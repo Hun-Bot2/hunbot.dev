@@ -192,25 +192,7 @@ const searchUrl = lang === 'ko' ? '/ko/search' : `/${lang}/search`;
 	</div>
 </header>
 
-<script>
-	// Mobile menu toggle
-	const menuToggle = document.getElementById('menuToggle');
-	const mobileMenu = document.getElementById('mobileMenu');
-	
-	if (menuToggle && mobileMenu) {
-		menuToggle.addEventListener('click', () => {
-			mobileMenu.classList.toggle('hidden');
-		});
-		
-		// Close menu when clicking outside
-		document.addEventListener('click', (e) => {
-			const target = e.target as Node;
-			if (!menuToggle.contains(target) && !mobileMenu.contains(target)) {
-				mobileMenu.classList.add('hidden');
-			}
-		});
-	}
-</script>
+<script type="module" src="/scripts/header-menu.js"></script>
 
 <style>
 	.header-wrapper {

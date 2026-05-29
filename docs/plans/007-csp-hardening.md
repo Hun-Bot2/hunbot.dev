@@ -1,5 +1,7 @@
 # 007: CSP Hardening And Script Inventory
 
+Status: Implemented.
+
 ## Goal
 
 Tighten Content Security Policy incrementally by inventorying inline scripts, moving one low-risk behavior at a time, and preserving existing UI behavior.
