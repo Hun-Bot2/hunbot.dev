@@ -1,6 +1,6 @@
 # 002: Zero-To-Hero Blog Roadmap
 
-Status: Draft.
+Status: Implemented.
 
 ## Goal
 
@@ -38,7 +38,8 @@ Keep the site stable while content is reviewed manually.
 
 Covered by current plans:
 
-- `001` through `007` are implemented.
+- `001` is the product direction source of truth.
+- `003` through `013` are implemented as static-first workstreams.
 - The remaining MDX review set is intentionally outside this roadmap until the owner approves it.
 
 ### Level 1: Make The Purpose Obvious

@@ -9,7 +9,7 @@ Use this folder for broad service planning: Library scope, media companion workf
 | Plan | Status | Scope |
 | --- | --- | --- |
 | [001-product-service-direction.md](./001-product-service-direction.md) | Source of truth | Full AI-native human-reviewed curation service direction |
-| [002-zero-to-hero-roadmap.md](./002-zero-to-hero-roadmap.md) | Draft | Roadmap from personal blog to AI-native knowledge hub |
+| [002-zero-to-hero-roadmap.md](./002-zero-to-hero-roadmap.md) | Implemented | Roadmap from personal blog to AI-native knowledge hub |
 | [003-editorial-identity-and-information-architecture.md](./003-editorial-identity-and-information-architecture.md) | Implemented | Purpose, navigation, home/about positioning, and public copy |
 | [004-library-discovery-and-section-depth.md](./004-library-discovery-and-section-depth.md) | Implemented | Deeper Library section browsing, grouping, relationships, and filters |
 | [005-search-and-cross-content-discovery.md](./005-search-and-cross-content-discovery.md) | Implemented | Pagefind search UX, filters, and cross-content discovery |
