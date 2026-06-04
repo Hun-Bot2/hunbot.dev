@@ -15,6 +15,7 @@
     "deck:validate": "node scripts/validate-decks.mjs",
     "library:validate": "node scripts/validate-library.mjs",
     "library-page:validate": "node scripts/validate-library-page.mjs",
+    "homepage:validate": "node scripts/validate-homepage.mjs",
     "paths:validate": "node scripts/validate-learning-paths.mjs",
     "media:validate": "node scripts/validate-media-companions.mjs",
     "product:validate": "node scripts/validate-product-boundaries.mjs",

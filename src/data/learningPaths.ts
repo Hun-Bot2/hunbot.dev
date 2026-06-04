@@ -31,14 +31,14 @@ export const learningPaths: LearningPath[] = [
 		id: 'blog-knowledge-hub',
 		status: 'published',
 		title: {
-			ko: '블로그를 지식 허브로 키우는 경로',
-			en: 'Growing the blog into a knowledge hub',
-			jp: 'ブログをナレッジハブへ育てる道筋',
+			ko: '블로그 기록 방식을 정리하는 경로',
+			en: 'Shaping the blog writing system',
+			jp: 'ブログの記録方法を整える道筋',
 		},
 		description: {
-			ko: '개인 기술 블로그를 정적이고 검색 가능한 AI-native 지식 허브로 확장하는 과정입니다.',
-			en: 'A path about extending a personal tech blog into a static, searchable AI-native knowledge hub.',
-			jp: '個人技術ブログを静的で検索可能なAI-nativeナレッジハブへ広げる過程です。',
+			ko: '개인 기술 블로그의 글, 검색, 자료 연결 방식을 단계적으로 정리하는 과정입니다.',
+			en: 'A path about organizing posts, search, and reference links in a personal technical blog.',
+			jp: '個人技術ブログの記事、検索、参考資料のつなげ方を段階的に整える過程です。',
 		},
 		updatedAt: '2026-05-29',
 		minimumSteps: 2,
@@ -68,9 +68,9 @@ export const learningPaths: LearningPath[] = [
 			{
 				id: 'searchable-knowledge',
 				title: {
-					ko: '검색 가능한 지식 구조로 확장하기',
-					en: 'Move toward a searchable knowledge structure',
-					jp: '検索可能な知識構造へ広げる',
+					ko: '검색 가능한 글 구조로 확장하기',
+					en: 'Move toward a searchable post structure',
+					jp: '検索しやすい記事構造へ広げる',
 				},
 				note: {
 					ko: '글, 라이브러리, 발표 자료를 다시 찾기 쉬운 구조로 연결합니다.',

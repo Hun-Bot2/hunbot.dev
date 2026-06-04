@@ -1,7 +1,7 @@
 // Place any global data in this file.
 // You can import this data from anywhere in your site by using the `import` keyword.
 
-export const SITE_TITLE = "Hun-Bot's Devlog";
+export const SITE_TITLE = 'Hun-Bot';
 export const SITE_DESCRIPTION =
 	'Hun-Bot의 기술 블로그입니다. AI, 소프트웨어 개발, 생각등을 공유합니다';
 export const SITE_URL = 'https://hun-bot.dev';
