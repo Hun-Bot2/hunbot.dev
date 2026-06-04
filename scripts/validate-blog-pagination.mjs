@@ -17,9 +17,13 @@ const sitemap = read('src/pages/sitemap.xml.ts');
 
 assert.match(blogUtils, /BLOG_PAGE_SIZE = 12/);
 assert.match(blogUtils, /getBlogPageUrl/);
-assert.match(blogIndex, /PaginationNav/);
+assert.match(blogIndex, /blog-series-sidebar/);
+assert.match(blogIndex, /sortPostsBySeries/);
+assert.match(blogIndex, /PostListCard/);
+assert.doesNotMatch(blogIndex, /PaginationNav/);
 assert.match(paginatedRoute, /getStaticPaths/);
 assert.match(paginatedRoute, /index \+ 2/);
+assert.match(paginatedRoute, /PaginationNav/);
 assert.match(sitemap, /blogPaginationPages/);
 
 for (const outputRoot of [join(root, 'dist/client'), join(root, '.vercel/output/static')]) {
@@ -50,4 +54,4 @@ for (const outputRoot of [join(root, 'dist/client'), join(root, '.vercel/output/
 	}
 }
 
-console.log('Validated localized blog pagination source and generated routes.');
+console.log('Validated localized blog index series view and paginated archive routes.');
