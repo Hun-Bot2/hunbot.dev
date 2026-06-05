@@ -39,10 +39,12 @@ const validBaseDeck = {
 	id: 'fixture-deck',
 	title: 'Fixture Deck',
 	description: 'A validation fixture.',
+	language: 'en',
 	type: 'html',
 	aspectRatio: '16:9',
 	htmlUrl: '/decks-html/fixture-deck/index.html',
 	pdfUrl: null,
+	pdfPageCount: null,
 	pptxUrl: null,
 	sourceAvailable: false,
 	sourceReviewed: false,
@@ -96,6 +98,8 @@ for (const unsafeUrl of unsafeUrls) {
 }
 
 assertInvalid({ ...validBaseDeck, id: '../bad' }, 'deck IDs should reject path-like values');
+assertInvalid({ ...validBaseDeck, language: 'kr' }, 'deck language must use supported language codes');
+assertInvalid({ ...validBaseDeck, pdfPageCount: 0 }, 'pdfPageCount must be positive when provided');
 assertInvalid({ ...validBaseDeck, htmlUrl: '/decks/fixture-deck/index.html' }, 'htmlUrl must use /decks-html/');
 assertInvalid(
 	{ ...validBaseDeck, type: 'pdf', htmlUrl: null, pdfUrl: '/decks-html/fixture-deck/deck.pdf' },

@@ -46,17 +46,31 @@ Before setting `sourceReviewed: true`, inspect the PPTX for hidden speaker notes
 
 1. Put the built HTML deck under `public/decks-html/my-deck/index.html`.
 2. Put related HTML deck assets under the same folder or another local public path reviewed for publication.
-3. Add metadata in `src/data/decks.ts`:
+3. Add metadata in `src/data/decks.ts`.
+
+Keep presentation files grouped by deck ID under `public/decks/{deck-id}/`. If a deck has separate language versions, add a language folder such as `ko/` or `en/`:
+
+```text
+public/decks/my-deck/
+  ko/deck.pdf
+  ko/source.pptx
+  en/deck.pdf
+  slides/
+```
+
+Use `deck.pdf` for the PDF fallback, `source.pptx` for an optional reviewed PPTX source, and `slides/` for pre-rendered slide images. HTML decks still use `public/decks-html/`.
 
 ```ts
 {
 	id: 'my-deck',
 	title: 'My Deck',
 	description: 'A local HTML presentation.',
+	language: 'en',
 	type: 'html',
 	aspectRatio: '16:9',
 	htmlUrl: '/decks-html/my-deck/index.html',
 	pdfUrl: '/decks/my-deck/deck.pdf',
+	pdfPageCount: null,
 	pptxUrl: null,
 	sourceAvailable: false,
 	sourceReviewed: false,
@@ -75,10 +89,12 @@ Before setting `sourceReviewed: true`, inspect the PPTX for hidden speaker notes
 	id: 'my-slide-deck',
 	title: 'My Slide Deck',
 	description: 'A presentation rendered from static slide images.',
+	language: 'en',
 	type: 'slides',
 	aspectRatio: '16:9',
 	htmlUrl: null,
 	pdfUrl: '/decks/my-slide-deck/deck.pdf',
+	pdfPageCount: null,
 	pptxUrl: null,
 	sourceAvailable: false,
 	sourceReviewed: false,
@@ -101,10 +117,12 @@ Use PDF-only metadata when no HTML deck or slide images are available:
 	id: 'my-pdf-deck',
 	title: 'My PDF Deck',
 	description: 'A PDF-only presentation fallback.',
+	language: 'en',
 	type: 'pdf',
 	aspectRatio: '16:9',
 	htmlUrl: null,
 	pdfUrl: '/decks/my-pdf-deck/deck.pdf',
+	pdfPageCount: 24,
 	pptxUrl: null,
 	sourceAvailable: false,
 	sourceReviewed: false,
@@ -112,7 +130,7 @@ Use PDF-only metadata when no HTML deck or slide images are available:
 }
 ```
 
-The component renders a fallback card with an `Open PDF` action.
+The component renders a fallback card with an `Open PDF` action. `pdfPageCount` is optional for plain fallback cards, but it can be used by custom Library views that provide PDF page controls through browser-supported `#page=` URL fragments.
 
 ## Expose PPTX Safely
 
@@ -123,10 +141,12 @@ Only expose PPTX as a secondary source download:
 	id: 'my-source-deck',
 	title: 'My Source Deck',
 	description: 'A presentation with a reviewed PPTX source file.',
+	language: 'en',
 	type: 'pdf',
 	aspectRatio: '16:9',
 	htmlUrl: null,
 	pdfUrl: '/decks/my-source-deck/deck.pdf',
+	pdfPageCount: 24,
 	pptxUrl: '/decks/my-source-deck/deck.pptx',
 	sourceAvailable: true,
 	sourceReviewed: true,

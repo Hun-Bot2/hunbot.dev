@@ -1,14 +1,17 @@
 export type DeckType = 'html' | 'slides' | 'pdf' | 'source';
 export type DeckAspectRatio = '16:9' | '4:3';
+export type DeckLanguage = 'ko' | 'en' | 'jp' | 'multi' | 'unknown';
 
 export interface DeckMeta {
 	id: string;
 	title: string;
 	description: string;
+	language: DeckLanguage;
 	type: DeckType;
 	aspectRatio: DeckAspectRatio;
 	htmlUrl: string | null;
 	pdfUrl: string | null;
+	pdfPageCount: number | null;
 	pptxUrl: string | null;
 	sourceAvailable: boolean;
 	sourceReviewed: boolean;
@@ -20,6 +23,7 @@ export const DECK_ASSET_PREFIX = '/decks/';
 
 const DECK_TYPES: DeckType[] = ['html', 'slides', 'pdf', 'source'];
 const ASPECT_RATIOS: DeckAspectRatio[] = ['16:9', '4:3'];
+const DECK_LANGUAGES: DeckLanguage[] = ['ko', 'en', 'jp', 'multi', 'unknown'];
 const DECK_ID_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$/;
 const LOCAL_PATH_PATTERN = /^\/[A-Za-z0-9._/-]+$/;
 const URL_SCHEME_PATTERN = /^[a-z][a-z0-9+.-]*:/i;
@@ -69,12 +73,24 @@ export function getDeckMetaErrors(deck: unknown, indexLabel = 'deck') {
 		errors.push(`${indexLabel}.description must be a non-empty string.`);
 	}
 
+	if (!candidate.language || !DECK_LANGUAGES.includes(candidate.language)) {
+		errors.push(`${indexLabel}.language must be one of: ${DECK_LANGUAGES.join(', ')}.`);
+	}
+
 	if (!candidate.type || !DECK_TYPES.includes(candidate.type)) {
 		errors.push(`${indexLabel}.type must be one of: ${DECK_TYPES.join(', ')}.`);
 	}
 
 	if (!candidate.aspectRatio || !ASPECT_RATIOS.includes(candidate.aspectRatio)) {
 		errors.push(`${indexLabel}.aspectRatio must be one of: ${ASPECT_RATIOS.join(', ')}.`);
+	}
+
+	if (
+		candidate.pdfPageCount !== null &&
+		typeof candidate.pdfPageCount !== 'undefined' &&
+		(!Number.isInteger(candidate.pdfPageCount) || candidate.pdfPageCount < 1)
+	) {
+		errors.push(`${indexLabel}.pdfPageCount must be null or a positive integer.`);
 	}
 
 	if (typeof candidate.sourceAvailable !== 'boolean') {

@@ -8,6 +8,7 @@ import LibraryPageStyles from '../../../components/library/LibraryPageStyles.ast
 import { getCollection } from 'astro:content';
 import { useTranslations, type UILanguage } from '../../../i18n/ui';
 import { decks } from '../../../data/decks';
+import { getAspectRatioValue } from '../../../lib/decks/validateDeckMeta';
 import {
 	getActiveTopics,
 	getApprovedPapers,
@@ -60,6 +61,18 @@ const sectionResources =
 	sectionMeta.kind === 'resources' ? getResourcesForLibrarySection(approvedResources, sectionId) : [];
 const sectionPapers = sectionMeta.kind === 'papers' ? approvedPapers : [];
 const sectionDecks = sectionMeta.kind === 'decks' ? decks : [];
+const highlightedDeck = sectionDecks.find((deck) => deck.id === 'akiya-ai-paperwork-local-jobs-ko');
+const highlightedDeckUrl = highlightedDeck?.htmlUrl ?? highlightedDeck?.pdfUrl ?? null;
+const highlightedDeckSlides = highlightedDeck?.slides ?? [];
+const highlightedDeckPreviewUrl = highlightedDeckSlides[0] ?? highlightedDeck?.htmlUrl ?? highlightedDeck?.pdfUrl ?? null;
+const highlightedDeckSlidesJson = JSON.stringify(highlightedDeckSlides);
+const highlightedDeckAspectRatio = highlightedDeck ? getAspectRatioValue(highlightedDeck.aspectRatio) : '16 / 9';
+const highlightedDeckSlideCount = highlightedDeckSlides.length;
+const showHighlightedDeckControls = highlightedDeckSlideCount > 1;
+const highlightedDeckActionLabel = highlightedDeck?.htmlUrl ? t('library.view-deck') : t('library.open-pdf');
+const highlightedDeckLanguageLabel = highlightedDeck
+	? t(`library.deck.language.${highlightedDeck.language}` as Parameters<typeof t>[0])
+	: null;
 const itemCount = sectionResources.length + sectionPapers.length + sectionDecks.length;
 const groupedResourceMap = new Map<string, typeof sectionResources>();
 for (const resource of sectionResources) {
@@ -113,12 +126,12 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 		<Header />
 		<FloatingLanguagePicker />
 		<main id="main-content" class="library-page mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8" data-pagefind-body>
-			<section class="mb-12 max-w-5xl space-y-5">
+			<section class="mb-8 max-w-5xl space-y-3">
 				<a href={libraryUrl} class={backActionClass}>
 					<LibraryIcon name="arrow-left" />
 					{t('library.back-to-library')}
 				</a>
-				<div class="space-y-4">
+				<div class="space-y-2">
 					<h1 class="text-4xl font-bold tracking-normal text-slate-100 sm:text-5xl">{sectionTitle}</h1>
 					<p class="text-xl leading-relaxed text-slate-300">{sectionDescription}</p>
 					<p class="leading-relaxed text-slate-400">{formatCount(itemCount)}</p>
@@ -126,7 +139,7 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 			</section>
 
 			{sectionResources.length > 0 && (
-				<section class="mb-14 space-y-6" aria-labelledby="section-resources-heading">
+				<section class="mb-10 space-y-4" aria-labelledby="section-resources-heading">
 					<h2 id="section-resources-heading" class="text-2xl font-bold text-slate-100">
 						{t('library.section.resources-heading')}
 					</h2>
@@ -192,7 +205,7 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 			)}
 
 			{sectionPapers.length > 0 && (
-				<section class="mb-14 space-y-6" aria-labelledby="section-papers-heading">
+				<section class="mb-10 space-y-4" aria-labelledby="section-papers-heading">
 					<h2 id="section-papers-heading" class="text-2xl font-bold text-slate-100">
 						{t('library.section.papers-heading')}
 					</h2>
@@ -254,10 +267,85 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 			)}
 
 			{sectionDecks.length > 0 && (
-				<section class="mb-14 space-y-6" aria-labelledby="section-decks-heading">
+				<section class="mb-10 space-y-4" aria-labelledby="section-decks-heading">
 					<h2 id="section-decks-heading" class="text-2xl font-bold text-slate-100">
 						{t('library.section.deck-heading')}
 					</h2>
+					{highlightedDeck && (
+						<article
+							class={`${panelClass} library-latest-deck-card`}
+							style={`--library-latest-deck-ratio: ${highlightedDeckAspectRatio};`}
+							data-slide-deck-root
+						>
+							<div class="library-latest-deck-header">
+								<div>
+									<div class="mb-3 flex flex-wrap gap-2">
+										<span class={subtlePillClass}>{t('library.latest-deck')}</span>
+										<span class={subtlePillClass}>{highlightedDeck.type.toUpperCase()}</span>
+										{highlightedDeckLanguageLabel && (
+											<span class={subtlePillClass}>{highlightedDeckLanguageLabel}</span>
+										)}
+									</div>
+									<h3 class="text-xl font-semibold text-slate-100">{t('library.latest-deck.item.title')}</h3>
+								</div>
+								{highlightedDeckUrl && (
+									<a
+										href={highlightedDeckUrl}
+										target="_blank"
+										rel="noopener noreferrer"
+										class={externalActionClass}
+									>
+										{highlightedDeckActionLabel}
+										<LibraryIcon name={highlightedDeck.htmlUrl ? 'arrow-right' : 'external'} />
+									</a>
+								)}
+							</div>
+							{highlightedDeckPreviewUrl && (
+								<div
+									class="library-deck-preview"
+									data-slide-deck-viewer
+									data-slide-list={highlightedDeckSlidesJson}
+								>
+									<img
+										src={highlightedDeckPreviewUrl}
+										alt={t('library.latest-deck.preview-title')}
+										loading="lazy"
+										decoding="async"
+										data-slide-deck-image
+									/>
+								</div>
+							)}
+							{showHighlightedDeckControls && (
+								<div class="library-deck-controls" aria-label={t('library.deck.controls-label')}>
+									<button
+										type="button"
+										class="library-deck-control"
+										aria-label={t('library.deck.previous-slide')}
+										data-slide-deck-prev
+										disabled
+									>
+										<LibraryIcon name="arrow-left" />
+									</button>
+									<span class="library-deck-counter" data-slide-deck-counter aria-live="polite">
+										1 / {highlightedDeckSlideCount}
+									</span>
+									<button
+										type="button"
+										class="library-deck-control"
+										aria-label={t('library.deck.next-slide')}
+										data-slide-deck-next
+									>
+										<LibraryIcon name="arrow-right" />
+									</button>
+								</div>
+							)}
+							<div class="library-latest-deck-actions">
+								<p class="max-w-3xl text-sm leading-relaxed text-slate-400">
+									{t('library.latest-deck.item.description')}
+								</p>
+							</div>
+						</article>
+					)}
 					<div class="grid gap-4 lg:grid-cols-3">
 						{sectionDecks.map((deck) => {
 							const primaryDeckUrl = deck.htmlUrl ?? deck.pdfUrl;
@@ -316,12 +404,65 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 			)}
 
 			{itemCount === 0 && (
-				<section class={`${panelClass} mb-14`}>
+				<section class={`${panelClass} mb-10`}>
 					<h2 class="text-xl font-bold text-slate-100">{t('library.section.empty.title')}</h2>
 					<p class="mt-2 leading-relaxed text-slate-400">{t('library.section.empty.body')}</p>
 				</section>
 			)}
 		</main>
+		<script is:inline>
+			for (const viewer of document.querySelectorAll('[data-slide-deck-viewer]')) {
+				let slides = [];
+
+				try {
+					slides = JSON.parse(viewer.getAttribute('data-slide-list') || '[]');
+				} catch {
+					slides = [];
+				}
+
+				const image = viewer.querySelector('[data-slide-deck-image]');
+				const root = viewer.closest('[data-slide-deck-root]');
+				const prev = root?.querySelector('[data-slide-deck-prev]');
+				const next = root?.querySelector('[data-slide-deck-next]');
+				const counter = root?.querySelector('[data-slide-deck-counter]');
+
+				if (!image || !Array.isArray(slides) || slides.length < 2) {
+					continue;
+				}
+
+				let index = 0;
+
+				function preloadSlide(nextIndex) {
+					if (!slides[nextIndex]) return;
+					const preload = new Image();
+					preload.src = slides[nextIndex];
+				}
+
+				function updateDeckSlide(nextIndex) {
+					index = Math.min(Math.max(nextIndex, 0), slides.length - 1);
+					image.src = slides[index];
+
+					if (counter) {
+						counter.textContent = `${index + 1} / ${slides.length}`;
+					}
+
+					if (prev) {
+						prev.disabled = index === 0;
+					}
+
+					if (next) {
+						next.disabled = index === slides.length - 1;
+					}
+
+					preloadSlide(index - 1);
+					preloadSlide(index + 1);
+				}
+
+				prev?.addEventListener('click', () => updateDeckSlide(index - 1));
+				next?.addEventListener('click', () => updateDeckSlide(index + 1));
+				updateDeckSlide(0);
+			}
+		</script>
 		<Footer />
 	</body>
 </html>
