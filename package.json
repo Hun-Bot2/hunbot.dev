@@ -20,6 +20,7 @@
     "media:validate": "node scripts/validate-media-companions.mjs",
     "product:validate": "node scripts/validate-product-boundaries.mjs",
     "routes:validate": "node scripts/validate-routes.mjs",
+    "links:validate": "node scripts/validate-internal-links.mjs",
     "seo:validate": "node scripts/validate-seo.mjs",
     "ui:validate": "node scripts/validate-ui.mjs",
     "views:validate": "node scripts/validate-view-counter.mjs",

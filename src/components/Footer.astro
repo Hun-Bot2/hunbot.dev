@@ -1,5 +1,16 @@
 ---
+import { getLangFromUrl } from '../i18n/ui';
+
 const today = new Date();
+const lang = getLangFromUrl(Astro.url);
+const langBase = `/${lang}`;
+const footerLinks = [
+	{ href: `${langBase}/`, label: 'Home' },
+	{ href: `${langBase}/blog/`, label: 'Blog' },
+	{ href: `${langBase}/library/`, label: 'Library' },
+	{ href: `${langBase}/search/`, label: 'Search' },
+	{ href: `${langBase}/about/`, label: 'About' },
+];
 ---
 
 <footer class="mt-12 py-8 px-6 bg-gradient-to-t from-slate-50 to-white dark:from-neutral-800 dark:to-neutral-900 border-t border-slate-200 dark:border-neutral-700" data-pagefind-ignore>
@@ -17,10 +28,11 @@ const today = new Date();
 			<div class="space-y-4">
 				<h3 class="text-xl font-semibold text-slate-900 dark:text-slate-100">Navigation</h3>
 				<nav class="space-y-2">
-					<a href="/" class="block text-base text-slate-600 dark:text-slate-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors duration-200">Home</a>
-					<a href="/blog" class="block text-base text-slate-600 dark:text-slate-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors duration-200">Blog</a>
-					<a href="/archive" class="block text-base text-slate-600 dark:text-slate-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors duration-200">Archive</a>
-					<a href="/about" class="block text-base text-slate-600 dark:text-slate-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors duration-200">About</a>
+					{footerLinks.map((link) => (
+						<a href={link.href} class="block text-base text-slate-600 dark:text-slate-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors duration-200">
+							{link.label}
+						</a>
+					))}
 				</nav>
 			</div>
 			

@@ -5,7 +5,7 @@ import Footer from '../../../../components/Footer.astro';
 import FloatingLanguagePicker from '../../../../components/FloatingLanguagePicker.astro';
 import { getCollection } from 'astro:content';
 import { useTranslations, type UILanguage } from '../../../../i18n/ui';
-import { getBlogUrlFromId } from '../../../../utils/blog-routing';
+import { getBlogLanguageFromId, getBlogUrlFromId } from '../../../../utils/blog-routing';
 import { filterPostsByLanguage, getCategoryKey, sortPostsByDateDesc } from '../../../../utils/blog';
 
 export async function getStaticPaths() {
@@ -33,6 +33,17 @@ const categoryValue = category ? decodeURIComponent(String(category)) : 'uncateg
 const allPosts = await getCollection('blog');
 const posts = sortPostsByDateDesc(
     filterPostsByLanguage(allPosts, currentLang).filter((post) => getCategoryKey(post) === categoryValue),
+);
+const categoryAvailableLangs = Array.from(
+    allPosts.reduce((langs, post) => {
+        if (getCategoryKey(post) !== categoryValue) return langs;
+        try {
+            langs.add(getBlogLanguageFromId(post.id));
+        } catch {
+            // Ignore invalid content IDs here; collection validation handles them elsewhere.
+        }
+        return langs;
+    }, new Set<UILanguage>()),
 );
 
 const categoryName = categoryValue;
@@ -71,11 +82,16 @@ const categoryColor = PALETTE[colorIndex];
 <!doctype html>
 <html lang={lang}>
     <head>
-        <BaseHead title={categoryName} description={categoryDescription} />
+        <BaseHead
+            title={categoryName}
+            description={categoryDescription}
+            lang={currentLang}
+            availableLangs={categoryAvailableLangs}
+        />
     </head>
     <body class="bg-[#0d1117] text-slate-300">
         <Header />
-        <FloatingLanguagePicker />
+        <FloatingLanguagePicker availableLangs={categoryAvailableLangs} />
         
         <main id="main-content" class="max-w-5xl mx-auto px-4 py-10">
             {/* 맥북 윈도우 컨테이너 */}

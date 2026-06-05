@@ -9,13 +9,19 @@ const { href, class: className } = Astro.props as Props;
 
 const currentLocale = Astro.currentLocale || 'ko';
 const isExternal = /^(https?:)?\/\//.test(href) || href.startsWith('mailto:') || href.startsWith('tel:');
+const legacyRouteAliases: Array<[RegExp, string]> = [
+  [/^blog\/tech\/chat\//, 'blog/technical_note/chat/'],
+];
 
 let localizedHref = href;
 
 if (!isExternal) {
   // Normalize internal paths so old hardcoded locale links also work.
   const withoutLocalePrefix = href.replace(/^\/(ko|jp|en)(?=\/|$)/, '');
-  const route = withoutLocalePrefix.replace(/^\/+/, '');
+  let route = withoutLocalePrefix.replace(/^\/+/, '');
+  for (const [pattern, replacement] of legacyRouteAliases) {
+    route = route.replace(pattern, replacement);
+  }
   
   localizedHref = getRelativeLocaleUrl(currentLocale, route);
 }

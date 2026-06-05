@@ -1,4 +1,51 @@
 {
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/ko/",
+      "permanent": false
+    },
+    {
+      "source": "/about",
+      "destination": "/ko/about/",
+      "permanent": false
+    },
+    {
+      "source": "/blog",
+      "destination": "/ko/blog/",
+      "permanent": false
+    },
+    {
+      "source": "/library",
+      "destination": "/ko/library/",
+      "permanent": false
+    },
+    {
+      "source": "/search",
+      "destination": "/ko/search/",
+      "permanent": false
+    },
+    {
+      "source": "/paths",
+      "destination": "/ko/paths/",
+      "permanent": false
+    },
+    {
+      "source": "/archive",
+      "destination": "/ko/blog/",
+      "permanent": false
+    },
+    {
+      "source": "/:lang(ko|jp|en)/blog/tech/chat/:path*",
+      "destination": "/:lang/blog/technical_note/chat/:path*",
+      "permanent": false
+    },
+    {
+      "source": "/blog/tech/chat/:path*",
+      "destination": "/ko/blog/technical_note/chat/:path*",
+      "permanent": false
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
