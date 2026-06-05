@@ -73,6 +73,7 @@ const ogAlternateLocales = alternateLanguageCodes
 	.filter((code) => code !== currentLang)
 	.map((code) => openGraphLocales[code]);
 const fontCssUrls = fontCssConfig[currentLang] ?? fontCssConfig.ko;
+const enableAnalytics = import.meta.env.PROD;
 const pathSegments = Astro.url.pathname.split('/').filter(Boolean);
 const hasLocalePrefix =
 	pathSegments.length > 0 && languageCodes.includes(pathSegments[0] as SupportedLanguage);
@@ -250,18 +251,38 @@ const xDefaultHref = alternateLinks.find((link) => link.code === defaultLang)?.h
 }
 </script>
 
-<!-- GoatCounter Analytics -->
-<script data-goatcounter="https://hunbot.goatcounter.com/count"
-        async src="//gc.zgo.at/count.js"></script>
+<!-- Third-party analytics are delayed so they do not compete with first render. -->
+{enableAnalytics && (
+	<script is:inline>
+		(() => {
+			const loadAnalytics = () => {
+				const goatCounter = document.createElement('script');
+				goatCounter.async = true;
+				goatCounter.src = 'https://gc.zgo.at/count.js';
+				goatCounter.dataset.goatcounter = 'https://hunbot.goatcounter.com/count';
+				document.head.appendChild(goatCounter);
 
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-KR3M3GY8J7"></script>
-<script is:inline>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-KR3M3GY8J7');
-</script>
+				window.dataLayer = window.dataLayer || [];
+				window.gtag = window.gtag || function gtag() {
+					window.dataLayer.push(arguments);
+				};
+				window.gtag('js', new Date());
+				window.gtag('config', 'G-KR3M3GY8J7');
+
+				const googleTag = document.createElement('script');
+				googleTag.async = true;
+				googleTag.src = 'https://www.googletagmanager.com/gtag/js?id=G-KR3M3GY8J7';
+				document.head.appendChild(googleTag);
+			};
+
+			if ('requestIdleCallback' in window) {
+				window.requestIdleCallback(loadAnalytics, { timeout: 3000 });
+			} else {
+				window.addEventListener('load', () => window.setTimeout(loadAnalytics, 1000), { once: true });
+			}
+		})();
+	</script>
+)}
 
 <!-- 전역 테마 관리 스크립트 (모든 페이지에서 작동) -->
 <script is:inline>

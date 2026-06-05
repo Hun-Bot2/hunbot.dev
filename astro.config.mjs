@@ -4,7 +4,7 @@ import sitemap from '@astrojs/sitemap';
 import tailwind from '@astrojs/tailwind';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import vercel from '@astrojs/vercel/serverless';
+import vercel from '@astrojs/vercel';
 import remarkLocalizedBlogLinks from './src/utils/remark-localized-blog-links.mjs';
 
 const remarkPlugins = [remarkLocalizedBlogLinks, remarkMath];
