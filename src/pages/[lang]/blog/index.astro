@@ -76,11 +76,15 @@ const formatSeriesCount = (count: number) =>
 			{seriesGroups.length > 0 ? (
 				<div class="blog-index-layout">
 					<aside class="blog-series-sidebar" aria-labelledby="blog-series-title">
-						<h2 id="blog-series-title">{t('blog.series-sidebar-title')}</h2>
+						<div class="blog-series-sidebar-header">
+							<h2 id="blog-series-title">{t('blog.series-sidebar-title')}</h2>
+							<strong class="blog-series-total">{formatSeriesCount(allLanguagePosts.length)}</strong>
+						</div>
 						<p>{t('blog.series-sidebar-description')}</p>
 						<nav aria-label={t('blog.series-sidebar-title')} class="blog-series-nav">
 							{seriesGroups.map((group) => (
 								<a href={`#${group.id}`} class="blog-series-link">
+									<span class="blog-series-marker" aria-hidden="true"></span>
 									<span class="blog-series-link-title">{group.title}</span>
 									<strong class="blog-series-count">{formatSeriesCount(group.count)}</strong>
 								</a>
@@ -112,6 +116,12 @@ const formatSeriesCount = (count: number) =>
 
 <style>
 	.blog-index-page {
+		--blog-index-accent: #34d399;
+		--blog-index-accent-strong: #10b981;
+		--blog-index-accent-deep: #047857;
+		--blog-index-surface: linear-gradient(180deg, rgba(6, 78, 59, 0.18), rgba(255, 255, 255, 0.04));
+		--blog-index-border: rgba(52, 211, 153, 0.16);
+		--blog-index-border-strong: rgba(52, 211, 153, 0.34);
 		width: min(100%, 72rem);
 		margin: 0 auto;
 		padding: 2rem 1.25rem 4rem;
@@ -142,10 +152,18 @@ const formatSeriesCount = (count: number) =>
 		min-width: 0;
 		max-height: calc(100vh - 6rem);
 		overflow: hidden;
-		border: 1px solid rgba(248, 249, 250, 0.12);
-		border-radius: 0.65rem;
-		background: rgba(255, 255, 255, 0.045);
-		padding: 0.85rem;
+		border: 1px solid var(--blog-index-border);
+		border-radius: 0.85rem;
+		background: var(--blog-index-surface);
+		box-shadow: 0 18px 42px rgba(0, 0, 0, 0.18);
+		padding: 0.8rem;
+	}
+
+	.blog-series-sidebar-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem;
 	}
 
 	.blog-series-sidebar h2 {
@@ -154,6 +172,23 @@ const formatSeriesCount = (count: number) =>
 		font-family: var(--font-heading);
 		font-size: 0.98rem;
 		font-weight: 800;
+	}
+
+	.blog-series-total {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-height: 1.75rem;
+		border: 1px solid var(--blog-index-border-strong);
+		border-radius: 999px;
+		padding: 0.24rem 0.56rem;
+		background: rgba(16, 185, 129, 0.13);
+		color: #bbf7d0;
+		font-family: var(--font-heading);
+		font-size: 0.74rem;
+		font-weight: 900;
+		line-height: 1;
+		white-space: nowrap;
 	}
 
 	.blog-series-sidebar p {
@@ -170,24 +205,50 @@ const formatSeriesCount = (count: number) =>
 		overflow-y: auto;
 		overscroll-behavior: contain;
 		padding-right: 0.15rem;
+		scrollbar-color: rgba(52, 211, 153, 0.42) transparent;
 	}
 
 	.blog-series-link {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto;
+		grid-template-columns: 0.48rem minmax(0, 1fr) auto;
 		align-items: center;
-		gap: 0.55rem;
+		gap: 0.6rem;
 		min-width: 0;
-		border-radius: 0.5rem;
+		border: 1px solid transparent;
+		border-radius: 0.6rem;
 		padding: 0.48rem 0.55rem;
 		color: inherit;
 		text-decoration: none;
-		transition: background 160ms ease, color 160ms ease;
+		transition:
+			background 160ms ease,
+			border-color 160ms ease,
+			color 160ms ease,
+			transform 160ms ease;
+	}
+
+	.blog-series-marker {
+		width: 0.42rem;
+		height: 1.35rem;
+		border-radius: 999px;
+		background: rgba(52, 211, 153, 0.24);
+		transition:
+			background 160ms ease,
+			box-shadow 160ms ease,
+			transform 160ms ease;
 	}
 
 	.blog-series-link:hover {
-		background: rgba(255, 255, 255, 0.07);
+		border-color: var(--blog-index-border-strong);
+		background: rgba(16, 185, 129, 0.1);
+		transform: translateX(2px);
 		text-decoration: none;
+	}
+
+	.blog-series-link:hover .blog-series-marker,
+	.blog-series-link:focus-visible .blog-series-marker {
+		background: var(--blog-index-accent);
+		box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.12);
+		transform: scaleY(1.08);
 	}
 
 	.blog-series-link-title {
@@ -203,12 +264,12 @@ const formatSeriesCount = (count: number) =>
 
 	.blog-series-count {
 		flex: 0 0 auto;
-		min-width: 2.6rem;
-		border: 1px solid rgba(248, 249, 250, 0.12);
+		min-width: 2.75rem;
+		border: 1px solid rgba(52, 211, 153, 0.28);
 		border-radius: 999px;
-		padding: 0.12rem 0.42rem;
-		background: rgba(255, 255, 255, 0.045);
-		color: rgba(203, 213, 225, 0.82);
+		padding: 0.14rem 0.44rem;
+		background: rgba(16, 185, 129, 0.1);
+		color: #bbf7d0;
 		font-family: var(--font-heading);
 		font-size: 0.74rem;
 		font-weight: 800;
@@ -249,9 +310,14 @@ const formatSeriesCount = (count: number) =>
 
 	.blog-series-heading span {
 		flex: 0 0 auto;
-		color: rgba(203, 213, 225, 0.78);
-		font-size: 0.84rem;
-		font-weight: 700;
+		border: 1px solid rgba(52, 211, 153, 0.24);
+		border-radius: 999px;
+		padding: 0.22rem 0.55rem;
+		background: rgba(16, 185, 129, 0.09);
+		color: #bbf7d0;
+		font-size: 0.78rem;
+		font-weight: 800;
+		white-space: nowrap;
 	}
 
 	.blog-series-posts {
@@ -275,28 +341,31 @@ const formatSeriesCount = (count: number) =>
 
 	:global(body.light-theme) .blog-series-sidebar,
 	:global(body.light-theme) .blog-empty {
-		border-color: rgba(15, 23, 42, 0.12);
-		background: rgba(255, 255, 255, 0.82);
+		border-color: rgba(4, 120, 87, 0.16);
+		background: linear-gradient(180deg, rgba(236, 253, 245, 0.94), rgba(255, 255, 255, 0.82));
+		box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
 	}
 
 	:global(body.light-theme) .blog-series-sidebar p,
-	:global(body.light-theme) .blog-series-count,
-	:global(body.light-theme) .blog-series-heading span,
 	:global(body.light-theme) .blog-empty {
 		color: rgba(51, 65, 85, 0.78);
+	}
+
+	:global(body.light-theme) .blog-series-total,
+	:global(body.light-theme) .blog-series-count,
+	:global(body.light-theme) .blog-series-heading span {
+		border-color: rgba(4, 120, 87, 0.18);
+		background: rgba(16, 185, 129, 0.11);
+		color: #047857;
 	}
 
 	:global(body.light-theme) .blog-series-link-title {
 		color: rgba(15, 23, 42, 0.88);
 	}
 
-	:global(body.light-theme) .blog-series-count {
-		border-color: rgba(15, 23, 42, 0.12);
-		background: rgba(15, 23, 42, 0.045);
-	}
-
 	:global(body.light-theme) .blog-series-link:hover {
-		background: rgba(15, 23, 42, 0.055);
+		border-color: rgba(4, 120, 87, 0.22);
+		background: rgba(16, 185, 129, 0.09);
 	}
 
 	:global(body.light-theme) .blog-series-heading {
@@ -319,6 +388,11 @@ const formatSeriesCount = (count: number) =>
 			padding-inline: 1rem;
 		}
 
+		.blog-series-sidebar {
+			max-height: none;
+			overflow: visible;
+		}
+
 		.blog-series-nav {
 			display: flex;
 			width: 100%;
@@ -333,7 +407,7 @@ const formatSeriesCount = (count: number) =>
 		}
 
 		.blog-series-link {
-			min-width: 9.75rem;
+			min-width: 10.75rem;
 			max-width: 13rem;
 		}
 	}

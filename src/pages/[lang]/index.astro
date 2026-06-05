@@ -98,9 +98,10 @@ const getPickSectionLabel = (pick: (typeof libraryPicks)[number]) => {
 						<div>
 							<h2 id="home-latest-title">{t('home.latest.title')}</h2>
 						</div>
-						<a href={blogUrl} class="home-text-link">
+						<a href={blogUrl} class="home-text-link home-text-link-blog">
 							<LibraryIcon name="article" class="home-action-icon" />
 							<span>{t('home.latest.view-all')}</span>
+							<LibraryIcon name="arrow-right" class="home-action-icon" />
 						</a>
 					</div>
 					{latestPosts.length > 0 ? (
@@ -141,7 +142,9 @@ const getPickSectionLabel = (pick: (typeof libraryPicks)[number]) => {
 								>
 									<span class="home-pick-label">{getPickSectionLabel(pick)}</span>
 									<h3>{getPickTitle(pick)}</h3>
-									<LibraryIcon name="external" class="home-action-icon" />
+									<span class="home-card-icon-button" aria-hidden="true">
+										<LibraryIcon name="external" class="home-action-icon" />
+									</span>
 								</a>
 							))}
 						</div>
@@ -155,9 +158,10 @@ const getPickSectionLabel = (pick: (typeof libraryPicks)[number]) => {
 						<div>
 							<h2 id="home-library-title">{t('home.explore.title')}</h2>
 						</div>
-						<a href={libraryUrl} class="home-text-link">
+						<a href={libraryUrl} class="home-text-link home-text-link-primary">
 							<LibraryIcon name="book-open" class="home-action-icon" />
 							<span>{t('home.primary-cta')}</span>
+							<LibraryIcon name="arrow-right" class="home-action-icon" />
 						</a>
 					</div>
 					<div class="home-section-grid">
@@ -170,8 +174,11 @@ const getPickSectionLabel = (pick: (typeof libraryPicks)[number]) => {
 									</div>
 									<p>{section.description}</p>
 									<div class="home-card-footer">
-										<strong>{formatCount(section.count)}</strong>
-										<span>{t('library.open-section')}</span>
+										<strong class="home-count-badge">{formatCount(section.count)}</strong>
+										<span class="home-card-button">
+											{t('library.open-section')}
+											<LibraryIcon name="arrow-right" class="home-action-icon" />
+										</span>
 									</div>
 								</a>
 							) : (
@@ -182,8 +189,8 @@ const getPickSectionLabel = (pick: (typeof libraryPicks)[number]) => {
 									</div>
 									<p>{section.description}</p>
 									<div class="home-card-footer">
-										<strong>{formatCount(section.count)}</strong>
-										<span>{t('library.section-pages-deferred')}</span>
+										<strong class="home-count-badge home-count-badge-muted">{formatCount(section.count)}</strong>
+										<span class="home-card-note">{t('library.section-pages-deferred')}</span>
 									</div>
 								</article>
 							)
@@ -297,7 +304,12 @@ const getPickSectionLabel = (pick: (typeof libraryPicks)[number]) => {
 		font-weight: 700;
 		line-height: 1.2;
 		white-space: nowrap;
-		transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+		box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+		transition:
+			transform 160ms ease,
+			border-color 160ms ease,
+			background 160ms ease,
+			box-shadow 160ms ease;
 	}
 
 	.home-text-link > span {
@@ -310,7 +322,66 @@ const getPickSectionLabel = (pick: (typeof libraryPicks)[number]) => {
 		transform: translateY(-1px);
 		border-color: var(--home-blog-border-strong);
 		background: var(--home-blog-surface-strong);
+		box-shadow: 0 12px 26px rgba(0, 0, 0, 0.16);
 		text-decoration: none;
+	}
+
+	.home-text-link-primary {
+		border-color: rgba(251, 146, 60, 0.46);
+		background: linear-gradient(180deg, rgba(249, 115, 22, 0.22), rgba(194, 65, 12, 0.18));
+		color: #ffedd5 !important;
+		box-shadow: 0 10px 26px rgba(249, 115, 22, 0.14);
+	}
+
+	.home-text-link-primary:hover,
+	.home-text-link-primary:focus-visible {
+		border-color: rgba(251, 146, 60, 0.68);
+		background: linear-gradient(180deg, rgba(249, 115, 22, 0.3), rgba(194, 65, 12, 0.24));
+		color: #fff7ed !important;
+		box-shadow: 0 14px 32px rgba(249, 115, 22, 0.18);
+	}
+
+	.home-text-link-blog {
+		border-color: rgba(52, 211, 153, 0.34);
+		background: linear-gradient(180deg, rgba(16, 185, 129, 0.16), rgba(5, 150, 105, 0.12));
+		color: #bbf7d0 !important;
+		box-shadow: 0 10px 26px rgba(16, 185, 129, 0.12);
+	}
+
+	.home-text-link-blog:hover,
+	.home-text-link-blog:focus-visible {
+		border-color: rgba(52, 211, 153, 0.56);
+		background: linear-gradient(180deg, rgba(16, 185, 129, 0.24), rgba(5, 150, 105, 0.18));
+		color: #dcfce7 !important;
+		box-shadow: 0 14px 32px rgba(16, 185, 129, 0.16);
+	}
+
+	:global(body.light-theme) .home-text-link-primary {
+		border-color: rgba(194, 65, 12, 0.28);
+		background: linear-gradient(180deg, rgba(249, 115, 22, 0.16), rgba(255, 247, 237, 0.96));
+		color: #9a3412 !important;
+		box-shadow: 0 12px 26px rgba(194, 65, 12, 0.1);
+	}
+
+	:global(body.light-theme) .home-text-link-primary:hover,
+	:global(body.light-theme) .home-text-link-primary:focus-visible {
+		border-color: rgba(194, 65, 12, 0.4);
+		background: linear-gradient(180deg, rgba(249, 115, 22, 0.22), rgba(255, 247, 237, 1));
+		color: #7c2d12 !important;
+	}
+
+	:global(body.light-theme) .home-text-link-blog {
+		border-color: rgba(4, 120, 87, 0.24);
+		background: linear-gradient(180deg, rgba(16, 185, 129, 0.12), rgba(236, 253, 245, 0.98));
+		color: #047857 !important;
+		box-shadow: 0 12px 26px rgba(4, 120, 87, 0.09);
+	}
+
+	:global(body.light-theme) .home-text-link-blog:hover,
+	:global(body.light-theme) .home-text-link-blog:focus-visible {
+		border-color: rgba(4, 120, 87, 0.36);
+		background: linear-gradient(180deg, rgba(16, 185, 129, 0.18), rgba(236, 253, 245, 1));
+		color: #065f46 !important;
 	}
 
 	.home-action-icon {
@@ -385,12 +456,35 @@ const getPickSectionLabel = (pick: (typeof libraryPicks)[number]) => {
 		padding: 0.42rem 0.58rem;
 	}
 
+	.home-card-icon-button {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.8rem;
+		height: 1.8rem;
+		border-radius: 999px;
+		border: 1px solid rgba(251, 146, 60, 0.26);
+		background: rgba(249, 115, 22, 0.1);
+		color: var(--home-accent);
+		transition:
+			background 160ms ease,
+			border-color 160ms ease,
+			transform 160ms ease;
+	}
+
 	.home-pick-card:hover,
 	.home-section-card:hover {
 		transform: translateY(-2px);
 		border-color: var(--home-border-strong);
 		background: var(--home-surface-strong);
 		text-decoration: none;
+	}
+
+	.home-pick-card:hover .home-card-icon-button,
+	.home-pick-card:focus-visible .home-card-icon-button {
+		border-color: rgba(251, 146, 60, 0.5);
+		background: rgba(249, 115, 22, 0.18);
+		transform: translateX(2px);
 	}
 
 	.home-brief-card:hover,
@@ -503,6 +597,86 @@ const getPickSectionLabel = (pick: (typeof libraryPicks)[number]) => {
 
 	.home-card-footer strong {
 		color: var(--home-text);
+		font-weight: 800;
+	}
+
+	.home-count-badge {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-height: 1.75rem;
+		border: 1px solid rgba(251, 191, 36, 0.3);
+		border-radius: 999px;
+		padding: 0.3rem 0.56rem;
+		background: rgba(251, 191, 36, 0.11);
+		color: #fde68a;
+		font-size: 0.78rem;
+		font-weight: 900;
+		line-height: 1;
+		white-space: nowrap;
+	}
+
+	.home-count-badge-muted {
+		border-color: var(--home-border);
+		background: rgba(255, 255, 255, 0.035);
+		color: var(--home-muted);
+	}
+
+	:global(body.light-theme) .home-count-badge {
+		border-color: rgba(217, 119, 6, 0.22);
+		background: rgba(245, 158, 11, 0.11);
+		color: #92400e;
+	}
+
+	:global(body.light-theme) .home-count-badge-muted {
+		border-color: rgba(15, 23, 42, 0.1);
+		background: rgba(15, 23, 42, 0.035);
+		color: #64748b;
+	}
+
+	.home-card-button,
+	.home-card-note {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.35rem;
+		min-height: 2rem;
+		border-radius: 999px;
+		padding: 0.36rem 0.62rem;
+		font-size: 0.78rem;
+		font-weight: 800;
+		line-height: 1;
+		white-space: nowrap;
+	}
+
+	.home-card-button {
+		border: 1px solid rgba(251, 146, 60, 0.34);
+		background: rgba(249, 115, 22, 0.12);
+		color: var(--home-accent);
+		transition:
+			background 160ms ease,
+			border-color 160ms ease,
+			color 160ms ease,
+			transform 160ms ease;
+	}
+
+	.home-section-card:hover .home-card-button,
+	.home-section-card:focus-visible .home-card-button {
+		border-color: rgba(251, 146, 60, 0.56);
+		background: rgba(249, 115, 22, 0.2);
+		color: #ffedd5;
+		transform: translateX(2px);
+	}
+
+	:global(body.light-theme) .home-section-card:hover .home-card-button,
+	:global(body.light-theme) .home-section-card:focus-visible .home-card-button {
+		color: #7c2d12;
+	}
+
+	.home-card-note {
+		border: 1px solid var(--home-border);
+		background: rgba(255, 255, 255, 0.035);
+		color: var(--home-muted);
 	}
 
 	.home-section-card-disabled {
