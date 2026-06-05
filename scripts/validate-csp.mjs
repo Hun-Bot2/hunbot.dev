@@ -9,7 +9,8 @@ const packageJson = JSON.parse(read('package.json'));
 assert.match(packageJson.scripts?.['csp:validate'] ?? '', /validate-csp\.mjs/);
 
 const vercelConfig = JSON.parse(read('vercel.json'));
-const cspHeader = vercelConfig.headers?.[0]?.headers?.find((header) => header.key === 'Content-Security-Policy');
+const globalHeaderConfig = vercelConfig.headers?.find((entry) => entry.source === '/(.*)');
+const cspHeader = globalHeaderConfig?.headers?.find((header) => header.key === 'Content-Security-Policy');
 assert.ok(cspHeader, 'Content-Security-Policy header is required.');
 assert.doesNotMatch(cspHeader.value, /'unsafe-eval'/);
 assert.match(cspHeader.value, /object-src 'none'/);
