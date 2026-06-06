@@ -1,0 +1,71 @@
+---
+title: '공부'
+description: '공부'
+pubDate: '2026-05-12'
+# heroImage: '/images/TECH/head-first-swa.png'
+tags: ['ADR', 'Architectural Decision Record', 'Architecture', 'Design Decision']
+category: '공부'
+series: '공부'
+seriesOrder: 1
+---
+
+11주차 / 5월12일
+
+CART에 대한 내용 질문 & 답변.
+
+Why CART use a binary??? -> to avoid bias, data fragmentation, handling of classification, regreession.
+
+이 클래스는 Bagging에 집중해서 설명함. Boosting은 질문에 있었음
+
+Decision Tree에서 어떻게, MSE를 줄이는가?? Greedy Search로 사용, 그렇기에 local minimun이 대부분임
+
+"하루에 한 과목씩만 공부" -> ML, DL, SP 이 3개밖에 없음
+
+각 Boostrap sample은 bias가 존재할 수 있음. -> Ensemble이 bias를 줄이는 효과가 있음.
+
+
+[브라우저 탭에서 LLM이 돌아가는 시대]
+로컬 LLM을 GPU 세팅도 프로그램 설치도 없이 그냥 웹브라우저 탭에서 돌리는 흐름이 있어서 어디까지 왔나 조사해봤더니, 2026년이 변곡점이었다.
+─ 갈래는 둘 ─
+▸ 내가 모델을 받아 탭에서 실행 — 브라우저 GPU 가속 표준 WebGPU 위에서 MLC의 WebLLM, 허깅페이스의 transformers.js (로컬LLM 커뮤니티가 미는 쪽)
+▸ 브라우저에 모델이 내장 — 크롬의 온디바이스 소형모델 Gemini Nano를 부르는 Prompt API. 다운로드는 없지만 구글이 통제하고 크롬 전용
+─ 왜 지금 변곡점인가 ─
+▸ WebGPU가 2025년 말 크롬·엣지·파이어폭스·사파리 전부에 기본 탑재 (전역 지원 ~83%) — 토대가 깔렸다
+▸ 크롬 Prompt API가 2026년 5월(크롬 148) 웹페이지용 정식 출시. 단 모질라·애플·W3C 반대를 넘어 크롬 단독 강행
+▸ 허깅페이스 transformers.js 내려받기가 1년새 ~13배 — 실사용이 실제로 늘었다는 신호
+─ 아직 '보조 도구'인 이유 ─
+▸ 탭에서 돌 만한 작은 모델(2B 미만)은 품질이 약하고 환각이 심하다는 불만이 1순위
+▸ 사이트마다 수백 MB~1GB 첫 다운로드 + 사파리·모바일은 불안정, 속도도 네이티브 GPU의 일부
+─ 핵심 ─
+클라우드를 대체하는 게 아니라 자동완성·번역·문서 추출처럼 프라이버시·저지연 작업의 보조 레이어로 자리잡는 중이다.
+2년 전엔 7B를 소비자 GPU에 올릴 수 있나 논쟁했는데 지금은 그걸 탭에서 돌리고, 큰 모델(예: Gemma 4 12B)은 여전히 노트북·클라우드 몫이다.
+─ 근거 자료 ─
+▸ web.dev 'WebGPU now supported in all major browsers' (2025-11)
+▸ Chrome for Developers — Prompt API / chromestatus 'Prompt API' feature (크롬 148 정식, 2026-05)
+▸ Hugging Face transformers.js v4 릴리스 (2026-03~04)
+▸ MLC WebLLM 프로젝트 (GitHub)
+▸ caniuse — WebGPU 지원률
+
+[Gemma 4 12B — 로컬 LLM의 희망이 될까]
+구글이 "16GB 노트북에서 돌아간다"며 내놨길래, 진짜 내 GPU로 되는지랑 쓰는 사람들 반응을 찾아봤더니 마케팅과 현장이 절반씩 갈렸다.
+─ 뭐가 새로운가 ─
+▸ 인코더를 없앤 '통합' 멀티모달 — 이미지·오디오를 별도 처리기 없이 LLM에 바로 밀어넣는 구조 (모델명의 Unified가 이걸 뜻함)
+▸ 중간 크기 Gemma 최초로 오디오 입력 지원(최대 30초), 이미지·영상도 처리
+▸ Apache 2.0(상업적 사용 자유), 컨텍스트 256K, 약 12B 파라미터
+─ 최소 GPU 사양 ─
+▸ 4비트 양자화(Q4)면 가중치 ~7GB → RTX 3060 12GB면 넉넉. 8GB 카드도 컨텍스트 줄이면 됨 (초당 20~25토큰)
+▸ 16GB(4060 Ti 16GB·맥 통합메모리)가 스윗스팟이자 구글이 노린 타깃. 8비트(~14GB)면 거의 풀퀄
+▸ 24GB(3090·4090)면 여유 만점(4090 약 78토큰/s). GPU 없이 CPU+RAM도 되지만 3~5토큰/s로 느림(맥 통합메모리는 예외)
+▸ 실행 툴: Ollama·LM Studio(초보)·llama.cpp
+─ 핵심 ─
+▸ 호평: 작은데 멀티모달에 에이전트 툴 호출까지 실제로 된다. 한 4090 테스터 "9GB·초당 80토큰, 16GB 노트북에 이상적"
+▸ 회의: '16GB 노트북'은 절반만 사실 — dense라 원본 ~24GB, 양자화+컨텍스트 축소가 전제. 같은 패밀리 26B가 head-to-head에선 이기고 1.7배 빠르다. 다운로드 1.5억 숫자엔 부풀림 의혹
+▸ 순수 코딩은 아직 알리바바 오픈소스 Qwen을 더 찾는 분위기. "앤트로픽 Opus는 아니지만 로컬치곤 훌륭"이 중론
+인코더를 없앤 설계 덕에 멀티모달 모델이 처음으로 16GB급 하드웨어에 들어왔고, 동시에 그 '16GB' 한 줄은 양자화와 컨텍스트 축소를 전제로만 성립한다.
+─ 근거 자료 ─
+▸ 구글 공식 'Introducing Gemma 4 12B' 발표 (blog.google, 2026-06-03)
+▸ Hugging Face 모델 카드 google/gemma-4-12B-it
+▸ r/LocalLLaMA 'Gemma 4 12B Claims Near-26B Performance — We Tested Both' 스레드
+▸ Hacker News 'Gemma 4 12B: A unified, encoder-free multimodal model' 토론
+▸ Unsloth Gemma 4 양자화 VRAM 가이드
+

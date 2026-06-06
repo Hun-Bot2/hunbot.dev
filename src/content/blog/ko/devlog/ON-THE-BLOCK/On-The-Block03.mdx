@@ -1,0 +1,346 @@
+---
+title: 'On-The-Block 서비스 개발기 03 : Admin 페이지 & 채팅'
+description: 'On-The-Block 서비스 개발기 03: Admin 페이지 & 채팅'
+pubDate: '2026-04-30'
+heroImage: '/images/ON-THE-BLOCK/Admin-Page.png'
+tags: ['채팅', 'Admin', 'on-the-block']
+category: 'on-the-block'
+series: 'on-the-block'
+seriesOrder: 3
+---
+
+# Admin 페이지 만들기
+개발하면서, Docker에 매번 SQL 쿼리를 통해서 채팅 기록이 송수신 됬는지 확인하는게 번거로워서 기록들을 시각적으로 편하게 확인할 수 있는 웹페이지를 만들었습니다.
+로컬에선 개발할 때 사용하다가, GCP를 구축하기 시작한다면 GCP에 있는 모니터링 서비스를 사용할 예정입니다.
+
+
+# 채팅 시스템 정리 및 추가
+이번 글에서는 이번에 작업한 내용을 정리해서 다음에 개발할 부분을 명확하게 하려고 합니다.
+
+## 1. 이번 작업 내용
+
+이번 세션에서 해결한 주요 사항:
+
+- 동시 메시지 전송 상황에서도 메시지 저장
+- 방 목록 응답이 proto 계약과 일치
+- 스트림 재연결 시 메시지가 누락되지 않기
+- 메시지가 없는 방이 있어도 페이지네이션의 유지
+- 로컬 다중 사용자 테스팅
+
+---
+
+## 2. 방 단위 메시지 시퀀싱 강화
+
+첫 번째 문제는 동시성 상황에서의 메시지 순서였습니다.
+
+각 방은 단조 증가하는 `sequence_no`를 사용하며, `(room_id, sequence_no)` 조합은 항상 고유해야 합니다. 
+단순히 `MAX(sequence_no) + 1`을 사용하는 방식은 단일 사용자 테스트에서는 동작하지만, 여러 사용자가 거의 동시에 같은 방에 메시지를 보낼 때는 안전하지 않습니다.
+
+#### 문제
+동시에 발생한 두 개의 send 요청은 다음과 같은 상황을 만들 수 있습니다.
+
+1. 같은 현재 max sequence를 읽음
+2. 같은 next sequence를 계산함
+3. insert 과정에서 race condition이 발생
+
+그 결과 duplicate-key error가 발생하거나 메시지 순서에 문제가 생길 수 있습니다.
+
+#### 해결
+PostgreSQL repository를 수정하여 다음 sequence를 transaction 내부에서 할당하고, `room_id`를 key로 하는 transaction-scoped advisory lock으로 보호했습니다.
+
+- sequence 할당 시 방 단위로 한 번에 하나의 writer만 허용
+- 다른 방끼리는 serialization되지 않음
+- 방 내부 메시지 순서의 안정성 확보
+
+#### 왜 이 방식을 택했나?
+
+이 방식은 PostgreSQL을 source of truth로 유지하면서, v1에서 실제로 필요해지기 전에 Redis나 별도의 sequencing system을 도입하지 않을 수 있게 해줍니다.
+
+## 3. ListMyRooms.last_message 필드 완성
+proto에서는 이미 `ChatRoomSummary` 안에 `last_message`를 노출하고 있었지만, 백엔드 응답은 이를 채우지 않고 있었습니다.
+
+### 변경 사항
+
+room-summary domain model에 `LastMessage`를 추가했고, memory repository와 PostgreSQL repository 모두 이를 채우도록 수정했습니다.
+
+PostgreSQL 쪽에서는 `ListRoomsByUser`가 이제 `LEFT JOIN LATERAL`을 사용하여 각 방의 최신 메시지를 가져옵니다.
+
+gRPC layer는 이를 `LastMessagePreview`로 매핑하며, 다음 정보를 포함합니다.
+
+- `message_id`
+- `message_type`
+- `content_preview`
+- `sender_user_id`
+- `sequence_no`
+- `sent_at`
+
+삭제된 메시지는 외부로 노출되기 전에 계속 sanitize됩니다.
+
+## 4. 방 목록 페이지네이션 버그 수정
+`last_message`를 연결한 뒤, 버그가 발생했습니다.
+
+Flutter는 `ListMyRooms`의 1페이지를 불러올 수 있었지만, 2페이지에서는 다음 에러와 함께 실패했습니다.
+
+```text
+sql: Scan error on column index 13, name "message_type": converting NULL to string is unsupported
+```
+
+### Root cause
+메시지가 하나도 없는 방은 `LEFT JOIN LATERAL` 결과로 `NULL` 값을 생성합니다. 
+repository scan 로직은 몇몇 nullable column을 안전하게 처리하고 있었지만, `message_type`은 여전히 non-nullable Go type으로 scan되고 있었습니다.
+
+그 결과 다음과 같은 문제가 생겼습니다.
+
+* 1페이지는 동작할 수 있음
+* 2페이지에 메시지가 없는 오래된 방이 포함되면 crash 발생
+* 오래된 방이 Flutter 방 목록에 절대 표시되지 않음
+
+### 해결 방법
+
+`message_type`은 먼저 nullable wrapper를 통해 scan하도록 변경했고, 실제 message row가 존재할 때만 `LastMessage`를 생성하도록 수정했습니다.
+
+### 회귀 테스트 추가
+
+이제 PostgreSQL repository 테스트는 다음 케이스를 명시적으로 검증합니다.
+
+* last message가 있는 방 하나
+* 메시지가 전혀 없는 방 하나
+
+이런 종류의 테스트가 중요한 이유는, 작은 happy-path demo에서는 정상처럼 보이지만 실제 데이터에서 서로 다른 상태의 방이 섞이면 깨지는 동작을 보호하기 때문입니다.
+
+### 스트림 로직 개선
+
+이제 stream path는 다음 순서로 동작합니다.
+
+1. active membership 검증
+2. room pub/sub 구독
+3. `after_sequence_no` 이후의 메시지를 PostgreSQL forward query로 catch up
+4. 메시지를 `sequence_no` 기준으로 buffer
+5. 연속된 메시지만 순서대로 flush
+6. live message가 도착하는 중 gap이 감지되면 repository에서 다시 backfill
+
+이를 지원하기 위해 새로운 repository method를 추가했습니다.
+
+* `ListMessagesAfter`
+
+이 메서드는 다음 두 repository에 모두 구현했습니다.
+
+* in-memory repository
+* PostgreSQL repository
+
+### 이 변경이 중요한 이유
+
+이 변경은 다음 상황에서 reconnect/resume 동작을 더 안전하게 만듭니다.
+
+* client가 disconnected 상태에서 많은 메시지를 놓친 경우
+* 하나 이상의 catch-up batch가 필요한 경우
+* stream을 통해 이전에 놓친 sequence가 도착하기 전에 live message가 먼저 도착한 경우
+
+구현은 여전히 v1에 적합합니다.
+
+* pub/sub은 단순하고 교체 가능하게 유지
+* PostgreSQL이 authoritative source로 유지됨
+* Redis 의존성을 도입하지 않음
+
+## 5. Flutter 버그처럼 보였던 로컬 런타임 이슈
+
+모든 실패가 코드 버그였던 것은 아닙니다.
+
+어느 순간 Flutter에서는 방 목록을 불러올 수 있었지만, 메시지 전송은 실패했습니다. UI의 Enter 버튼이 고장 난 것처럼 보였습니다.
+
+하지만 백엔드를 직접 추적해보니 실제 원인은 다음과 같았습니다.
+
+* 오래된 `chat-service` process가 여전히 port `9090`에서 실행 중이었음
+* Flutter는 그 stale binary와 통신하고 있었음
+* stale binary에는 여전히 이전의 깨진 SQL path가 포함되어 있었음
+
+이 문제는 유용한 교훈을 남겼습니다.
+
+* transport는 동작하지만 특정 operation만 이상하게 실패한다면, client를 의심하기 전에 실제 실행 중인 server process를 먼저 확인해야 함
+
+smoke client와 직접적인 process inspection 덕분에 이 사실을 빠르게 확인할 수 있었습니다.
+
+## 6. 로컬 다중 사용자 채팅 테스트 편의성 개선
+
+smoke client도 확장했습니다.
+
+### 개선 전
+
+기존에는 짧은 end-to-end smoke check만 수행했습니다.
+
+* create room
+* join room
+* send message
+* get messages
+* mark as read
+
+### 개선 후
+
+이제 다음을 수행할 수 있습니다.
+
+* smoke mode에서 로컬 테스트 사용자 2명을 추가로 join
+* interactive `chat` mode로 실행
+* 기존 방에 다른 member로 join
+* 터미널에서 live message stream
+* 터미널에 입력한 메시지를 방으로 전송
+
+그 결과 매번 또 다른 full frontend instance를 띄우지 않아도 다음을 훨씬 쉽게 테스트할 수 있게 되었습니다.
+
+* Flutter-to-terminal live chat
+* multi-user streaming behavior
+* reconnect scenarios
+
+## 7. 검증 전략 (Verification Strategy)
+
+이번 세션은 “모든 것을 끝내고 나중에 테스트”하는 방식이 아니라, incremental verification에 크게 의존했습니다.
+
+검증에는 다음이 포함되었습니다.
+
+* service tests
+* gRPC handler tests
+* PostgreSQL repository tests
+* migration integration tests
+* smoke-client checks
+* Docker PostgreSQL instance를 대상으로 한 직접 runtime validation
+
+작업 마지막에는 PostgreSQL-backed test를 활성화한 상태로 전체 test suite가 통과했습니다.
+
+## 8. 이번 세션에서 개선된 점
+
+사용자 관점에서 서비스는 다음과 같은 중요한 부분에서 더 안정적이 되었습니다.
+
+* 동시 사용 상황에서 메시지 전송이 더 안전해짐
+* 방 목록이 더 풍부한 summary data를 반환함
+* 메시지가 없는 방이 있어도 방 목록 페이지네이션이 더 이상 깨지지 않음
+* reconnect/resume streaming에서 메시지가 유실될 가능성이 낮아짐
+* 로컬 다중 사용자 검증이 훨씬 쉬워짐
+
+엔지니어링 관점에서는 까다로운 부분들이 더 강한 테스트로 보호되면서 repository를 더 신뢰하기 쉬워졌습니다.
+
+## 9. 다음 작업 (향후 개선 계획)
+
+이번 세션은 정확성을 개선했지만, 서비스가 완전히 성숙했다고 느껴지기까지는 아직 몇 가지 작업이 남아 있습니다.
+
+가능성 높은 다음 단계는 다음과 같습니다.
+
+* 새로운 stream semantics에 대해 Flutter reconnect behavior 검증
+* 새 메시지가 생길 때 방 정렬을 위해 `chat_rooms.updated_at`을 갱신할지 결정
+* empty text / image payload 조합에 대한 message validation rule 강화
+* v1 request-body `user_id`를 유지하면서 향후 auth/JWT migration 계획
+
+---
+
+# 향후 계획: 파일 업로드 기능
+
+## GCP Cloud Storage 통합
+
+### 구현 계획
+
+채팅방에서 메시지 전송 시 이미지와 파일을 보낼 수 있도록 기능을 추가할 예정입니다.
+
+- GCP Cloud Storage Bucket을 사용하여 파일 저장
+- 저장된 파일의 URL을 메시지로 전송
+
+### 개발 접근법
+
+AI가 없던 시절에는:
+- 다른 블로그에서 자료를 찾아보기
+- 공식 문서 뒤져가며 설정하기
+- 모든 과정을 직접 문서화하기
+
+현재는:
+- 개발 관련 공식 문서와 자신의 상황을 AI에게 설명
+- AI가 필요한 정보를 찾아서 제공받기
+- 설정 방법도 AI의 도움을 받기
+- 따로 상세한 문서 작성이 불필요
+
+---
+
+# 현재 발생 중인 이슈
+
+## 파일 전송 에러: message_type = "FILE"
+
+Flutter 클라이언트에서 파일(PDF)을 전송할 때 발생하는 에러:
+
+```json
+{
+  "timestamp": "2026-05-03T14:25:09.975066Z",
+  "feature": "chat",
+  "screen": "groupchat_room",
+  "operation": "send_file",
+  "userFacingMessage": "Could not send file.",
+  "technicalMessage": "create_content_type=application/pdf put_content_type=application/pdf detail=grpc INTERNAL: ERROR: invalid input value for enum message_type: \"FILE\" (SQLSTATE 22P02)",
+  "currentUserId": "11111111-1111-1111-1111-111111111111",
+  "roomId": "38496f46-7b2c-4dd5-adc5-ffc465e7467f",
+  "grpcStatusCode": "INTERNAL",
+  "grpcStatusMessage": "ERROR: invalid input value for enum message_type: \"FILE\" (SQLSTATE 22P02)",
+  "endpointHost": "127.0.0.1",
+  "endpointPort": 9090
+}
+```
+
+### 근본 원인
+
+에러 분석:
+- GCS 업로드 URL 생성 성공
+- 파일 업로드 성공
+- `create_content_type`과 `put_content_type` 모두 `application/pdf`로 일치
+- 백엔드가 메시지 row를 쓸 때 실패: `invalid input value for enum message_type: "FILE"`
+
+**문제:**
+- 앱 코드는 이제 `MESSAGE_TYPE_FILE`을 전송
+- 데이터베이스의 `message_type` enum에는 아직 `'FILE'` 값이 정의되지 않음
+
+### 해결 방법
+
+#### 1. SQL로 직접 수정하기 (권장)
+
+```sql
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_type t
+    JOIN pg_enum e ON e.enumtypid = t.oid
+    WHERE t.typname = 'message_type'
+      AND e.enumlabel = 'FILE'
+  ) THEN
+    ALTER TYPE message_type ADD VALUE 'FILE';
+  END IF;
+END $$;
+```
+
+#### 2. 마이그레이션 파일로 적용하기
+
+```bash
+go run ./cmd/migrate -dsn "$CHAT_DB_DSN" -path migrations/002_add_file_message_type.sql
+```
+
+#### 3. 검증
+
+```sql
+SELECT enumlabel
+FROM pg_enum e
+JOIN pg_type t ON t.oid = e.enumtypid
+WHERE t.typname = 'message_type';
+```
+
+예상 결과:
+- `TEXT`
+- `SYSTEM`
+- `IMAGE`
+- `FILE`
+
+이후 PDF 전송을 다시 시도하면 정상 동작합니다.  
+This error is not Flutter now. It is the DB enum lagging behind the backend code.
+
+사진과 파일을 보낼 떄, 방 id에 해당하는 형태로 보내지게 만들어야했음
+
+
+1. 클라이언트가 이미지/파일 선택
+2. 서버에 업로드 권한 요청
+3. 서버가 업로드용 signed URL 또는 업로드 토큰 발급
+4. 클라이언트가 object storage/CDN origin에 직접 업로드
+5. 서버에는 object_key, file metadata만 저장
+6. 수신자는 서버/API를 통해 읽기 권한이 검증된 URL을 받음
+7. 클라이언트는 signed read URL 또는 CDN token URL로 이미지/파일 표시

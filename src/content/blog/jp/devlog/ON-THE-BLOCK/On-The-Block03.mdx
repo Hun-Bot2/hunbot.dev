@@ -1,0 +1,336 @@
+---
+title: 'On-The-Blockサービス開発記 03: Adminページ & チャット'
+description: 'On-The-Blockサービス開発記 03: Adminページ & チャット'
+pubDate: '2026-04-30'
+heroImage: '/images/ON-THE-BLOCK/Admin-Page.png'
+tags: ['チャット', 'Admin', 'on-the-block']
+category: 'on-the-block'
+series: 'on-the-block'
+seriesOrder: 3
+---
+
+# Adminページ作成
+開発中、Dockerに毎回SQLクエリを投げてチャット履歴が送受信されたか確認するのが面倒だったため、履歴を視覚的に楽に確認できるWebページを作りました。
+ローカルでは開発時に使い、GCP構築を始めたらGCPのモニタリングサービスを使う予定です。
+
+# チャットシステム整理と追加
+今回の記事では、今回作業した内容を整理し、次に開発する部分を明確にします。
+
+## 1. 今回の作業内容
+
+今回のセッションで解決した主な事項:
+
+- 同時メッセージ送信状況でもメッセージを保存
+- ルーム一覧応答がproto契約と一致
+- ストリーム再接続時にメッセージが欠落しない
+- メッセージがないルームがあってもページネーションを維持
+- ローカル複数ユーザーテスト
+
+---
+
+## 2. ルーム単位メッセージシーケンシング強化
+
+最初の問題は、同時性状況でのメッセージ順序でした。
+
+各ルームは単調増加する`sequence_no`を使い、`(room_id, sequence_no)`の組み合わせは常に一意である必要があります。
+単純に`MAX(sequence_no) + 1`を使う方式は単一ユーザーテストでは動作しますが、複数ユーザーがほぼ同時に同じルームへメッセージを送ると安全ではありません。
+
+#### 問題
+同時に発生した2つのsendリクエストは次の状況を作る可能性があります。
+
+1. 同じ現在max sequenceを読む。
+2. 同じnext sequenceを計算する。
+3. insert過程でrace conditionが発生する。
+
+その結果、duplicate-key errorが発生したり、メッセージ順序に問題が生じたりします。
+
+#### 解決
+PostgreSQL repositoryを修正し、次のsequenceをtransaction内部で割り当て、`room_id`をkeyにしたtransaction-scoped advisory lockで保護しました。
+
+- sequence割り当て時、ルーム単位で一度に1つのwriterだけ許可
+- 異なるルーム同士はserializationしない
+- ルーム内部メッセージ順序の安定性を確保
+
+#### なぜこの方式を選んだのか？
+この方式はPostgreSQLをsource of truthとして維持しながら、v1で実際に必要になる前にRedisや別のsequencing systemを導入しなくて済むようにしてくれます。
+
+## 3. `ListMyRooms.last_message`フィールド完成
+protoではすでに`ChatRoomSummary`内に`last_message`を公開していましたが、バックエンド応答はそれを埋めていませんでした。
+
+### 変更事項
+room-summary domain modelに`LastMessage`を追加し、memory repositoryとPostgreSQL repositoryの両方でこれを埋めるよう修正しました。
+
+PostgreSQL側では、`ListRoomsByUser`が`LEFT JOIN LATERAL`を使い、各ルームの最新メッセージを取得します。
+
+gRPC layerはこれを`LastMessagePreview`へマッピングし、次の情報を含みます。
+
+- `message_id`
+- `message_type`
+- `content_preview`
+- `sender_user_id`
+- `sequence_no`
+- `sent_at`
+
+削除されたメッセージは外部へ露出される前に引き続きsanitizeされます。
+
+## 4. ルーム一覧ページネーションバグ修正
+`last_message`を接続したあと、バグが発生しました。
+
+Flutterは`ListMyRooms`の1ページ目を読み込めましたが、2ページ目では次のエラーで失敗しました。
+
+```text
+sql: Scan error on column index 13, name "message_type": converting NULL to string is unsupported
+```
+
+### Root cause
+メッセージが一つもないルームは`LEFT JOIN LATERAL`結果として`NULL`値を生成します。
+repository scanロジックはいくつかのnullable columnを安全に処理していましたが、`message_type`はまだnon-nullable Go typeへscanされていました。
+
+その結果:
+
+* 1ページ目は動作する可能性がある。
+* 2ページ目にメッセージのない古いルームが含まれるとcrashする。
+* 古いルームがFlutterルーム一覧に表示されない。
+
+### 解決方法
+`message_type`をまずnullable wrapperでscanするよう変更し、実際のmessage rowが存在するときだけ`LastMessage`を生成するよう修正しました。
+
+### 回帰テスト追加
+PostgreSQL repositoryテストは次のケースを明示的に検証します。
+
+* last messageがあるルーム1つ
+* メッセージがまったくないルーム1つ
+
+この種のテストが重要なのは、小さなhappy-path demoでは正常に見えても、実データで異なる状態のルームが混ざると壊れる動作を守るためです。
+
+### ストリームロジック改善
+現在stream pathは次の順序で動作します。
+
+1. active membership検証
+2. room pub/sub購読
+3. `after_sequence_no`以降のメッセージをPostgreSQL forward queryでcatch up
+4. メッセージを`sequence_no`基準でbuffer
+5. 連続したメッセージだけ順番にflush
+6. live message到着中にgapが検知されるとrepositoryから再度backfill
+
+これを支えるため、新しいrepository methodを追加しました。
+
+* `ListMessagesAfter`
+
+このメソッドは次の2つのrepositoryに実装しました。
+
+* in-memory repository
+* PostgreSQL repository
+
+### この変更が重要な理由
+この変更は、次の状況でreconnect/resume動作をより安全にします。
+
+* clientがdisconnected状態で多くのメッセージを逃した場合
+* 1つ以上のcatch-up batchが必要な場合
+* streamで以前逃したsequenceが到着する前にlive messageが先に到着した場合
+
+実装はまだv1に適しています。
+
+* pub/subは単純で交換可能に維持
+* PostgreSQLがauthoritative sourceとして維持
+* Redis依存性を導入しない
+
+## 5. Flutterバグのように見えたローカルランタイム問題
+
+すべての失敗がコードバグだったわけではありません。
+
+ある時点で、Flutterではルーム一覧を読み込めましたが、メッセージ送信は失敗しました。UIのEnterボタンが壊れたように見えました。
+
+しかしバックエンドを直接追跡すると、実際の原因は次の通りでした。
+
+* 古い`chat-service` processがまだport `9090`で実行中だった。
+* Flutterはそのstale binaryと通信していた。
+* stale binaryには以前の壊れたSQL pathがまだ含まれていた。
+
+この問題は有用な教訓を残しました。
+
+* transportは動作するが特定operationだけ変に失敗するなら、clientを疑う前に実際に実行中のserver processを先に確認するべき。
+
+smoke clientと直接的なprocess inspectionのおかげで、この事実をすぐ確認できました。
+
+## 6. ローカル複数ユーザーチャットテストの利便性改善
+
+smoke clientも拡張しました。
+
+### 改善前
+既存では短いend-to-end smoke checkだけを実行しました。
+
+* create room
+* join room
+* send message
+* get messages
+* mark as read
+
+### 改善後
+今は次を実行できます。
+
+* smoke modeでローカルテストユーザー2人を追加join
+* interactive `chat` modeで実行
+* 既存ルームに別memberとしてjoin
+* ターミナルでlive message stream
+* ターミナルに入力したメッセージをルームへ送信
+
+その結果、毎回もう一つのfrontend instanceを立ち上げなくても、次をはるかに簡単にテストできるようになりました。
+
+* Flutter-to-terminal live chat
+* multi-user streaming behavior
+* reconnect scenarios
+
+## 7. 検証戦略
+
+今回のセッションは、「全部終わらせて後でテスト」する方式ではなく、incremental verificationに大きく依存しました。
+
+検証には次が含まれました。
+
+* service tests
+* gRPC handler tests
+* PostgreSQL repository tests
+* migration integration tests
+* smoke-client checks
+* Docker PostgreSQL instanceを対象にした直接runtime validation
+
+作業最後には、PostgreSQL-backed testを有効にした状態で全体test suiteが通過しました。
+
+## 8. 今回改善された点
+
+ユーザー視点では、サービスは次の重要な部分でより安定しました。
+
+* 同時使用状況でメッセージ送信がより安全になった。
+* ルーム一覧がより豊富なsummary dataを返す。
+* メッセージがないルームがあっても、ルーム一覧ページネーションが壊れない。
+* reconnect/resume streamingでメッセージが失われる可能性が下がった。
+* ローカル複数ユーザー検証がはるかに簡単になった。
+
+エンジニアリング視点では、難しい部分がより強いテストで守られるようになり、repositoryを信頼しやすくなりました。
+
+## 9. 次の作業
+
+今回のセッションでは正確性を改善しましたが、サービスが完全に成熟したと感じるには、まだいくつか作業が残っています。
+
+可能性の高い次の段階は次の通りです。
+
+* 新しいstream semanticsに対するFlutter reconnect behavior検証
+* 新メッセージ発生時、ルーム整列のため`chat_rooms.updated_at`を更新するか決定
+* empty text / image payload組み合わせに対するmessage validation rule強化
+* v1 request-body `user_id`を維持しながら、今後のauth/JWT migrationを計画
+
+---
+
+# 今後の計画: ファイルアップロード機能
+
+## GCP Cloud Storage統合
+
+### 実装計画
+
+チャットルームでメッセージ送信時、画像とファイルを送れる機能を追加する予定です。
+
+- GCP Cloud Storage Bucketを使ってファイル保存
+- 保存されたファイルのURLをメッセージとして送信
+
+### 開発アプローチ
+
+AIがなかった時代は:
+- 他のブログで資料を探す
+- 公式文書を読みながら設定する
+- すべての過程を直接文書化する
+
+現在は:
+- 開発関連公式文書と自分の状況をAIへ説明
+- AIが必要な情報を探して提供
+- 設定方法もAIの助けを受ける
+- 別途詳細文書作成が不要
+
+---
+
+# 現在発生中のIssue
+
+## ファイル送信エラー: `message_type = "FILE"`
+
+Flutterクライアントでファイル(PDF)を送信するときに発生するエラー:
+
+```json
+{
+  "timestamp": "2026-05-03T14:25:09.975066Z",
+  "feature": "chat",
+  "screen": "groupchat_room",
+  "operation": "send_file",
+  "userFacingMessage": "Could not send file.",
+  "technicalMessage": "create_content_type=application/pdf put_content_type=application/pdf detail=grpc INTERNAL: ERROR: invalid input value for enum message_type: \"FILE\" (SQLSTATE 22P02)",
+  "currentUserId": "11111111-1111-1111-1111-111111111111",
+  "roomId": "38496f46-7b2c-4dd5-adc5-ffc465e7467f",
+  "grpcStatusCode": "INTERNAL",
+  "grpcStatusMessage": "ERROR: invalid input value for enum message_type: \"FILE\" (SQLSTATE 22P02)",
+  "endpointHost": "127.0.0.1",
+  "endpointPort": 9090
+}
+```
+
+### 根本原因
+
+エラー分析:
+- GCSアップロードURL生成成功
+- ファイルアップロード成功
+- `create_content_type`と`put_content_type`の両方が`application/pdf`で一致
+- バックエンドがmessage rowを書くときに失敗: `invalid input value for enum message_type: "FILE"`
+
+**問題:**
+- アプリコードは今`MESSAGE_TYPE_FILE`を送信
+- データベースの`message_type` enumにはまだ`'FILE'`値が定義されていない
+
+### 解決方法
+
+#### 1. SQLで直接修正（推奨）
+
+```sql
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_type t
+    JOIN pg_enum e ON e.enumtypid = t.oid
+    WHERE t.typname = 'message_type'
+      AND e.enumlabel = 'FILE'
+  ) THEN
+    ALTER TYPE message_type ADD VALUE 'FILE';
+  END IF;
+END $$;
+```
+
+#### 2. マイグレーションファイルで適用
+
+```bash
+go run ./cmd/migrate -dsn "$CHAT_DB_DSN" -path migrations/002_add_file_message_type.sql
+```
+
+#### 3. 検証
+
+```sql
+SELECT enumlabel
+FROM pg_enum e
+JOIN pg_type t ON t.oid = e.enumtypid
+WHERE t.typname = 'message_type';
+```
+
+期待結果:
+- `TEXT`
+- `SYSTEM`
+- `IMAGE`
+- `FILE`
+
+その後PDF送信を再試行すると正常に動作します。  
+This error is not Flutter now. It is the DB enum lagging behind the backend code.
+
+写真とファイルを送るときは、room IDに該当する形で送られるようにする必要がありました。
+
+1. クライアントが画像/ファイルを選択
+2. サーバーへアップロード権限をリクエスト
+3. サーバーがアップロード用signed URLまたはupload tokenを発行
+4. クライアントがobject storage/CDN originへ直接アップロード
+5. サーバーには`object_key`とfile metadataだけ保存
+6. 受信者はserver/APIを通じて読み取り権限が検証されたURLを受け取る
+7. クライアントはsigned read URLまたはCDN token URLで画像/ファイルを表示

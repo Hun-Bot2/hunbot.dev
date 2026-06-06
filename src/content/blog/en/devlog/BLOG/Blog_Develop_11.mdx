@@ -1,0 +1,200 @@
+---
+title: 'Blog Devlog 11'
+description: 'From search to the Library hub: expanding the blog into a static knowledge hub'
+pubDate: '2026-05-25'
+tags: ['blog', 'development', 'devlog', 'search', 'library']
+category: 'blog_devlog'
+series: 'Blog Devlog'
+seriesOrder: 11
+---
+
+This work was not simply about increasing the number of blog posts. It was about preparing the foundation so the blog can be used more like a **knowledge hub**.
+
+The overall direction was simple.
+
+> Keep the Vercel/GitHub-based static-first structure, while making search, presentation materials, and Library data safer to expand.
+
+So this time I did not add new servers, databases, logins, or upload features. I built a structure that runs only with reviewed data and static files stored in the repository.
+
+## 1. Cleaning Up Multilingual Blog URLs
+
+Previously, there was a risk that language paths could get mixed when generating blog post links.
+
+For example, if a link created in a Korean post was fixed to `/ko/...` even on an English page, users reading the English post would be sent back to the Korean post when clicking the link.
+
+So I cleaned up blog URL generation so it reads the language from the content ID and always emits language-specific URLs like this:
+
+```text
+/ko/blog/...
+/jp/blog/...
+/en/blog/...
+```
+
+Thanks to this work, later features such as search, sitemap generation, internal links, and related post navigation can follow the same rule.
+
+## 2. Adding Pagefind Search
+
+I also added search.
+
+At first, the search UI appeared but real results did not work well. The cause was that TypeScript-only syntax was mixed into a browser-executed script.
+
+TypeScript can be used inside Astro files, but the following syntax does not work inside a `<script>` that is sent directly to the browser.
+
+```ts
+(window as any).PagefindUI
+```
+
+So I changed the browser script to access it in plain JavaScript.
+
+```js
+const PagefindUI = window.PagefindUI;
+```
+
+I also added a Pagefind filter so search results only include posts in the current language.
+
+```js
+search.triggerFilters({ language: [lang] });
+```
+
+That means `/ko/search` only searches Korean posts, `/en/search` only searches English posts, and so on. To avoid confusing users, I also changed the Korean search page helper text.
+
+```text
+/ko/search에서는 한국어 글만 검색합니다.
+```
+
+## 3. Adding a Presentation Embed Component
+
+In the future, I will likely need to show presentation materials in paper reviews, experiment notes, technical explanations, and YouTube companion notes.
+
+There was one important constraint.
+
+PPTX files can be committed to the repository and served as static files, but browsers do not reliably render PPTX files as slide decks.
+
+So I decided not to use this pattern:
+
+```html
+<iframe src="/decks/example/deck.pptx"></iframe>
+```
+
+Instead, I created a `PresentationEmbed` component and clearly separated the supported cases.
+
+1. HTML decks are embedded in an iframe only when they live under a trusted local path such as `/decks-html/`.
+2. PDF decks are left to the browser's built-in viewer and exposed through an "Open PDF" action.
+3. If pre-rendered slide images exist, they are shown through a simple slide viewer.
+4. PPTX is not used as the primary viewing format. It is only exposed as a secondary download link when it has been reviewed by a human.
+
+The key here was backendless.
+
+I did not build a server that converts PPTX to PDF, and I did not parse PPTX in the browser. I also did not use external document viewers such as Google Slides Viewer or Microsoft Office Viewer.
+
+I implemented only the range that can be shown safely with static files and metadata.
+
+## 4. Adding the Library Data Model
+
+The next step was the Library.
+
+The Library I want to build is not a simple list of links. It is a place to collect human-reviewed resources, papers, and topics.
+
+So before building pages, I created the data model first.
+
+The three collections are:
+
+```text
+src/content/resources/
+src/content/papers/
+src/content/topics/
+```
+
+`resources` contains external resources such as design resources, vibe coding materials, developer documentation, and useful feeds.
+
+`papers` contains AI paper cards. It does not copy full papers or long abstracts. It stores only short summaries reviewed by a human.
+
+`topics` stores interest topics that can later be used for paper recommendations, Library filters, YouTube planning, and newsletters.
+
+The most important rule is:
+
+```text
+Public data with approved status must have humanReviewed === true.
+```
+
+AI may create drafts, but summaries that have not been reviewed by a human are not treated as public data.
+
+## 5. Adding the Library Hub Page
+
+Finally, I built the first user-facing Library page.
+
+The current routes are:
+
+```text
+/ko/library/
+/jp/library/
+/en/library/
+```
+
+In Astro settings, Korean is the default locale, but this blog's actual routing and navigation use `/ko/...`. So the Library follows the existing rule too.
+
+The Library hub does not link to detailed section pages yet.
+
+For example, I did not create pages like `/ko/library/design/`. Instead, the hub shows which sections are being prepared and how many reviewed sample items exist.
+
+The sections currently shown in the hub are:
+
+1. Design
+2. Vibe Coding
+3. Developer Docs
+4. AI Papers
+5. Useful Feeds
+6. Decks / Presentations
+
+Only the following data is displayed:
+
+```text
+resources: status === "approved" && review.humanReviewed === true
+papers: status === "approved" && review.humanReviewed === true
+topics: status === "active"
+```
+
+This prevents draft, pending, or rejected data from being accidentally exposed on public pages.
+
+## 6. Adding Validation Scripts
+
+Because this work is centered on content and static pages, I did not add a heavy test framework.
+
+Instead, I added small Node validation scripts.
+
+```bash
+npm run routes:validate
+npm run search:validate
+npm run deck:validate
+npm run library:validate
+npm run library-page:validate
+```
+
+In particular, `library-page:validate` checks that the Library hub follows these rules:
+
+1. `/ko`, `/jp`, and `/en` routes are generated.
+2. Only approved and human-reviewed resources are shown.
+3. Only approved and human-reviewed papers are shown.
+4. Only active topics are shown.
+5. The page does not link to nonexistent detailed Library sections.
+6. Pagefind metadata is included.
+
+Finally, I also ran `npm run build` and confirmed the Astro build and Pagefind indexing.
+
+## Summary
+
+With this work, the blog is now prepared to become more of a structured knowledge store instead of just a list of posts.
+
+There are no detailed Library pages yet, and the data is still at a sample level. But the safe foundation now exists.
+
+At the current stage, the blog can:
+
+1. Generate stable language-aware blog URLs.
+2. Search by language with Pagefind.
+3. Embed presentation materials in a backendless way.
+4. Store human-reviewed Library data in the repository.
+5. Show public sample data in `/ko/library/`, `/jp/library/`, and `/en/library/`.
+
+The next task will probably be detailed Library pages.
+
+Personally, opening the Design Library or AI Papers listing page first feels most natural.

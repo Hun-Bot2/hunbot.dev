@@ -1,0 +1,675 @@
+---
+title: '스테이터스 아크 개발일지 01'
+description: '현실 RPG 기반 자기관리 앱 기획 정리: Flutter, Android, Codex, Harness Engineering'
+pubDate: '2026-05-12'
+# heroImage: '/images/Status Arc/Status Arc-dev-01.png'
+tags: ['Status Arc', 'flutter', 'android', 'codex', 'harness-engineering', 'devlog']
+category: 'app_devlog'
+series: '스테이터스 아크 개발일지'
+seriesOrder: 1
+---
+
+이번에는 블로그 개발이 아니라, 예전부터 생각만 하던 관리 어플에 대한 기획을 어느정도 정리했습니다.
+
+처음에는 그냥 핸드폰 시간 관리, 알림 관리 어플을 만들 생각이었습니다. 유튜브 숏츠나 인스타, 각종 SNS, 영상 매체, 웹툰 같은 것들이 너무 쉽게 시간을 잡아먹고, 이것들을 줄여나가서 도파민 중독에서 탈출하는데 보조적인 역할을 하는 어플을 만들고 싶었습니다.
+
+근데 이미 이런 어플들은 너무 많고, 그냥 앱 사용 시간 제한하고, 알림 끄고, 통계 보여주는 식이면 내가 굳이 만들 이유가 없다고 생각했습니다.
+
+그래서 내가 내세울 수 있는 차별점을 생각해봤는데, 결국 서브컬쳐였습니다. 자기가 좋아하는 캐릭터를 넣어서 커스터마이징하고, 앱 안에서 화면 우측 하단에 버튜버처럼 나오거나, 앱 아이콘을 캐릭터 얼굴로 바꾸는 식으로, 기존 생산성 앱들이 가지고 있는 차갑고 딱딱한 느낌을 없애고 싶었습니다.
+
+다만 문제는 당연히 있었습니다.
+
+```text
+- 발열
+- 성능
+- 버벅임
+- 오버레이 권한
+- 앱 사용량 감지
+- Android / iOS 차이
+- 캐릭터 리소스 관리
+- Google Play 정책
+- 저작권 / IP 문제
+```
+
+이런 것들이 전부 걸렸습니다.
+
+그리고 이 어플은 그냥 MVP로 대충 내면 안 된다고 생각했습니다. 왜냐하면 차별점이 캐릭터와 현실 RPG 구조인데, 그걸 빼고 그냥 시간 관리 어플로 출시하면 검증할 가치가 없기 때문입니다. 그래서 적어도 내가 원하는 기능이 80% 정도 구현되고, 핵심 버그가 잡힌 상태에서 출시하는 게 맞다고 판단했습니다.
+
+이를 정리하기 위해 AI에게 여러 관점으로 물어봤습니다. 소프트웨어 엔지니어, 게임 이론 전문가, 소비자학과 박사, 심리학 박사, 하드웨어 전문가 관점으로 의견을 달라고 했고, 그 과정에서 전체 방향이 많이 정리되었습니다.
+
+## 처음 나온 결론
+
+처음에는 이 어플을 단순히 “도파민 차단 앱”으로 생각했는데, 대화하면서 생각이 좀 바뀌었습니다.
+
+핵심은 “스마트폰을 덜 쓰게 만드는 앱”이 아니라,
+
+```text
+사용자가 현실에서 더 나은 하루를 완성하게 만드는 앱
+```
+
+이어야 한다는 것이었습니다.
+
+기존 생산성 앱들은 대부분 숫자, 통계, 제한, 그래프 위주입니다.
+
+```text
+오늘 유튜브 2시간 봤다.
+인스타 30분 봤다.
+쇼츠 40분 봤다.
+```
+
+이런 식으로 알려주는데, 사실 이런 건 알고 있어도 사람이 잘 안 바뀝니다. 이미 본인이 많이 쓰는 걸 알고 있고, 줄여야 하는 것도 알고 있습니다. 문제는 그 순간의 선택입니다.
+
+그래서 이 어플은 단순히 사용자를 막는 게 아니라, 그 순간에 캐릭터가 개입해서 다시 한 번 선택하게 만드는 방향이 더 맞다고 생각했습니다.
+
+예를 들면 이런식입니다.
+
+```text
+유튜브를 켰을 때:
+“이 문은 네가 정한 제한 구역이다. 5분만 쓸 건가?”
+
+제한 시간 80% 도달:
+“제한 시간까지 3분 남았다. 지금 닫으면 의지 EXP를 얻는다.”
+
+제한 시간 초과:
+“벽에 균열이 생겼다. 계속 볼 건가, 복구 퀘스트로 돌아갈 건가?”
+```
+
+이런 식으로 감시자가 아니라, 현실 RPG의 동료나 문지기처럼 작동하는 방식이 좋다고 생각했습니다.
+
+## Android 우선으로 결정
+
+처음에는 Flutter를 선택한 이유가 두 플랫폼을 모두 쓰고 싶어서였습니다. iOS와 Android 둘 다 지원하고 싶었고, UI도 빠르게 만들 수 있어서 Flutter가 맞다고 생각했습니다.
+
+그런데 막상 기능을 정리해보니, 이 어플은 iOS와 Android를 동시에 가져가면 초반에 너무 힘들어질 것 같았습니다.
+
+특히 내가 원하는 기능은 이런 것들이었습니다.
+
+```text
+- 앱 사용 시간 감지
+- 특정 앱 실행 감지
+- 제한 앱에서 캐릭터 오버레이 표시
+- 앱 아이콘 변경
+- 알림 관리
+- 사용자 선택 기반 개입
+```
+
+이런 기능들은 Android가 훨씬 자유롭습니다. iOS는 Screen Time API 계열로 어느정도 가능하긴 하지만, 내가 생각하는 캐릭터 오버레이나 세밀한 앱 감지 같은 부분은 제약이 많습니다.
+
+그래서 일단은 Android 우선으로 개발하기로 했습니다.
+
+그리고 저사양 기기는 신경쓰지 않기로 했습니다. 기준은 내 핸드폰인 Galaxy S21 이상으로 잡았습니다. 즉, 모든 기기에서 돌아가는 앱을 만드는 게 아니라, S21 이상에서 고급스럽고 매끄러운 경험을 만드는 방향입니다.
+
+물론 이게 최적화를 안 하겠다는 뜻은 아닙니다.
+
+```text
+저사양 최적화는 안 한다.
+대신 기준 기기 이상에서는 제대로 돌아가야 한다.
+```
+
+이게 더 정확한 표현입니다.
+
+## Flutter를 버릴 필요는 없다고 판단
+
+기기 최적화를 생각하면 특정 언어로 개발하는 게 더 좋지 않을까도 생각했습니다. Android만 생각하면 Kotlin Native로 전부 개발하는 게 맞는 것처럼 보이기도 합니다.
+
+하지만 전체적으로 정리해보니, Flutter를 버릴 필요는 없다고 판단했습니다.
+
+대신 구조를 이렇게 나누기로 했습니다.
+
+```text
+Flutter / Dart:
+- 현실 RPG UI
+- 캐릭터 화면
+- 퀘스트 / 벽 / 스탯 / 성장 시스템
+- 설정 화면
+- 통계 화면
+- 앱 내부 오버레이
+
+Kotlin / Android Native:
+- UsageStatsManager
+- 시간 제한 앱 감지
+- Android 권한 처리
+- 외부 앱 위 오버레이
+- Foreground Service
+- 앱 아이콘 변경
+- 알림 / 시스템 이벤트 처리
+```
+
+즉, 이 앱은 순수 Flutter 앱이 아니라,
+
+```text
+Flutter UI를 가진 Android 시스템 앱
+```
+
+이라고 보는 게 맞습니다.
+
+Dart는 판단하고, Kotlin은 감지하고 실행하는 구조입니다.
+
+예를 들어 Kotlin이 “인스타그램이 foreground로 올라왔다”는 이벤트를 감지하면, Dart 쪽 도메인 로직이 “이 앱은 제한 앱이고, 오늘 사용량이 15분을 넘었다”라고 판단합니다. 그 다음 Kotlin이 오버레이를 띄우는 식입니다.
+
+이렇게 하면 Flutter의 장점과 Android Native의 장점을 둘 다 사용할 수 있습니다.
+
+## 오버레이 설계
+
+오버레이는 처음에 가장 고민했던 기능 중 하나였습니다.
+
+처음에는 캐릭터가 항상 화면 우측 하단에 떠 있는 형태를 생각했는데, 이건 생각할수록 문제가 많았습니다.
+
+```text
+- 배터리 소모
+- 발열
+- 터치 방해
+- 사용자가 피로해짐
+- Google Play 정책 리스크
+- 오버레이 권한 부담
+```
+
+그래서 방향을 바꿨습니다.
+
+기본적으로는 내가 만든 어플 안에 들어갔을 때만 캐릭터가 작동하게 합니다. 이건 Android 시스템 오버레이가 아니라 그냥 Flutter의 `Stack` 같은 구조로 만들면 됩니다.
+
+```dart
+Stack(
+  children: [
+    MainScreen(),
+    Positioned(
+      right: 16,
+      bottom: 24,
+      child: CharacterCompanion(),
+    ),
+  ],
+)
+```
+
+이건 권한도 필요 없고, 정책 리스크도 적고, 성능 제어도 쉽습니다.
+
+그리고 사용자가 선택한 경우에만, 시간 제한을 설정한 앱에서도 캐릭터가 나타나게 할 생각입니다.
+
+즉, 기본값은 이렇습니다.
+
+```text
+기본:
+- 앱 내부에서만 캐릭터 표시
+- 권한 필요 없음
+- 현실 RPG 홈, 퀘스트, 정산 화면에서 캐릭터 작동
+
+선택 기능:
+- 사용자가 제한 앱 오버레이 기능을 켠 경우
+- Usage Access 권한 요청
+- SYSTEM_ALERT_WINDOW 권한 요청
+- 선택한 앱에서만 캐릭터 경고 표시
+```
+
+이 방식이 제품적으로도 맞고, 정책적으로도 더 안전하다고 생각했습니다.
+
+## 현실 RPG라는 컨셉
+
+이 부분이 가장 중요합니다.
+
+나는 RPG 게임을 하는 이유 중 하나가 현실 도피라고 생각합니다. 물론 게임 자체가 나쁘다는 것은 아니지만, 나도 포함해서 많은 사람들이 게임 속 레벨, 장비, 업적에는 열심히 반응하면서, 정작 현실의 몸과 지식, 습관은 방치하는 경우가 많다고 생각했습니다.
+
+그래서 이런 생각이 들었습니다.
+
+```text
+게임 속 캐릭터를 키우는 것보다,
+현실의 내 몸과 지식을 키우는 것이 진짜 성장 아닐까?
+```
+
+내가 말한 “진정한 위버맨쉬” 같은 느낌도 여기서 나왔습니다.
+
+현실에서 자기 몸을 가꾸고, 지식을 쌓고, 습관을 만들고, 하기 싫은 일을 해내는 것이 진짜 RPG라는 생각입니다.
+
+그래서 이 어플의 컨셉은 단순 자기관리 앱이 아니라,
+
+```text
+현실 RPG
+```
+
+로 정했습니다.
+
+핵심 문장은 이겁니다.
+
+```text
+현실이 본편이다.
+```
+
+처음에는 AI가 `MainQuest`, `RealQuest`, `IRLQuest`, `Wallbreak` 같은 이름도 추천해줬는데, 내 머릿속에는 이미 `Hamayang`이라는 이름이 있었습니다.
+
+`Hamayang`은 고물로이드 하마양에서 따온 이름입니다. 물론 그대로 가져오면 IP 문제가 생길 수 있기 때문에, 이건 오마주나 영감 정도로만 두고, 실제 캐릭터와 세계관은 완전히 독립적으로 만들어야 합니다.
+
+결국 구조는 이렇게 정리했습니다.
+
+```text
+Hamayang = 캐릭터 / IP / 브랜드
+Reality RPG = 제품 철학
+Wall System = 핵심 메커니즘
+```
+
+이렇게 나누면 이름도 캐릭터성 있고, 서비스 철학도 따로 살아납니다.
+
+## 벽 시스템
+
+내가 생각한 핵심 시스템은 “벽”입니다.
+
+사용자가 오늘의 목표를 세우고, 그 목표가 하나의 벽이 됩니다.
+
+예를 들면 이런식입니다.
+
+```text
+오늘의 벽:
+- 공부 3시간
+- 운동 30분
+- 유튜브 쇼츠 20분 이하
+- 인스타 15분 이하
+
+벽 HP:
+100
+```
+
+공부를 하면 벽 HP가 줄고, 운동을 하면 벽 HP가 줄고, 제한 앱을 초과하면 벽 HP가 다시 회복되거나 균열이 생깁니다.
+
+```text
+공부 30분:
+- 벽 HP -15
+- 지식 EXP +20
+
+운동 30분:
+- 벽 HP -25
+- 신체 EXP +30
+
+쇼츠 20분 초과:
+- 벽 HP +20
+- 집중력 균열 발생
+```
+
+그리고 실패했다고 하루가 끝나는 게 아니라, 복구 퀘스트가 생깁니다.
+
+```text
+복구 퀘스트:
+- 산책 10분
+- 책 5쪽 읽기
+- 푸시업 20개
+- 오늘 계획 다시 쓰기
+```
+
+이 부분이 중요하다고 생각했습니다.
+
+일반적인 자기관리 앱은 실패하면 그냥 실패로 끝나는 경우가 많습니다. 근데 현실에서 더 중요한 건 완벽한 하루가 아니라, 실패한 뒤에 다시 돌아오는 능력이라고 생각합니다.
+
+그래서 하마양은 사용자를 혼내는 앱이 아니라, 실패 후 복구까지 도와주는 앱이 되어야 합니다.
+
+## 스탯 시스템
+
+처음부터 복잡한 RPG 스탯을 만들면 오히려 관리가 안 될 것 같아서, 첫 버전에서는 단순하게 가져가려고 합니다.
+
+```text
+신체
+지식
+의지
+회복
+```
+
+이 4개면 충분하다고 생각했습니다.
+
+```text
+신체:
+- 운동
+- 산책
+- 스트레칭
+- 수면 루틴
+
+지식:
+- 공부
+- 독서
+- 강의
+- 코딩
+
+의지:
+- 방해 앱 제한 성공
+- 집중 세션 완료
+- 목표 유지
+
+회복:
+- 명상
+- 휴식
+- 수면
+- 정리
+```
+
+처음부터 `STR`, `INT`, `WILL`, `CRAFT`, `SOCIAL` 이렇게 다 넣을 수도 있지만, 너무 복잡하면 오히려 본질이 흐려질 것 같습니다.
+
+일단은 4개로 시작하고, 나중에 필요하면 확장하는 게 맞다고 생각했습니다.
+
+## 첫 공개 버전에 넣을 기능
+
+처음 버전은 작아도 되지만, 차별점은 반드시 들어가야 합니다.
+
+그래서 최소 기능은 이렇게 잡았습니다.
+
+```text
+필수 기능:
+- Android only
+- Flutter 메인 앱
+- Kotlin UsageStats 연동
+- 방해 앱 프리셋
+- 오늘의 벽 시스템
+- 현실 퀘스트
+- 신체 / 지식 / 의지 / 회복 스탯
+- 캐릭터 1명
+- 캐릭터 대사 시스템
+- 하루 정산
+- 복구 퀘스트
+- 앱 아이콘 해금
+- 앱 내부 캐릭터 오버레이
+- 선택형 외부 앱 오버레이
+- 권한 설정 가이드
+- 로컬 저장
+```
+
+반대로 첫 버전에 넣지 않을 것들도 정했습니다.
+
+```text
+제외:
+- iOS 대응
+- 복잡한 AI 대화
+- Live2D 고급 모델 다수
+- 랭킹 시스템
+- 가챠
+- 소셜 길드
+- 모든 앱 완전 차단
+- 웨어러블 연동
+- 클라우드 동기화
+- 유저 커스텀 저작권 캐릭터 업로드
+```
+
+특히 가챠는 넣지 않는 게 맞다고 생각했습니다. 도파민을 줄이는 앱이 또 다른 도파민 구조를 만들면 이상하기 때문입니다.
+
+## 라이선스
+
+GitHub repo를 만들 때 License도 고민했습니다.
+
+처음에는 그냥 MIT로 할까 생각했는데, 이 프로젝트는 단순 오픈소스 라이브러리가 아니라 캐릭터, 세계관, 디자인, 브랜드, 현실 RPG UX가 핵심 경쟁력이 될 가능성이 있습니다.
+
+그래서 초기에는 완전 오픈소스로 공개하지 않는 게 맞다고 판단했습니다.
+
+현재 생각은 이렇습니다.
+
+```text
+repo:
+- public 가능
+
+license:
+- No License
+- 또는 Custom Proprietary / Source-Available
+```
+
+즉,
+
+```text
+Public repo != Open Source
+```
+
+입니다.
+
+코드를 볼 수는 있지만, 가져가서 상업적으로 사용하거나 캐릭터와 브랜드를 재사용하는 권리는 주지 않는 방식입니다.
+
+나중에 오픈할 수 있는 부분은 따로 분리하면 됩니다.
+
+```text
+오픈 가능:
+- 테스트 하네스 일부
+- 개발 워크플로우
+- 일부 상태머신
+- AI 개발 문서 구조
+
+보호:
+- 캐릭터
+- 앱 디자인
+- 세계관
+- 대사
+- 아이콘
+- 브랜드
+- 핵심 UX
+```
+
+초기에는 보호하고, 나중에 일부만 오픈하는 게 더 맞다고 생각했습니다.
+
+## 문서화 방식
+
+개발을 시작하기 전에 문서부터 정리해야 한다고 생각했습니다.
+
+왜냐하면 이 프로젝트는 AI를 활용해서 바이브코딩을 할 예정인데, 그냥 긴 PDF나 DOCX를 AI에게 계속 던지는 방식은 좋지 않다고 생각했습니다.
+
+문서가 길어지면 AI도 내용을 잊고, 매번 전체 문서를 읽히면 컨텍스트도 낭비됩니다.
+
+그래서 문서 구조를 Markdown 기반으로 만들기로 했습니다.
+
+처음에는 Cursor까지 고려했지만, 나는 Codex만 사용할 생각이라서 Cursor 관련 설정은 뺐습니다.
+
+최종적으로 이런 구조를 만들었습니다.
+
+```text
+AGENTS.md
+00_DOCUMENT_RULES.md
+01_CONTEXT_ENGINEERING.md
+02_CODEX_OPERATING_MODEL.md
+03_METHOD_SELECTION.md
+04_BOOTSTRAP_NEXT_STEPS.md
+05_HARNESS_ENGINEERING.md
+SOURCE_AVAILABLE_NOTICE.md
+
+.codex/
+  README.md
+  config.example.toml
+
+.agents/
+  skills/
+    feature-slice/
+    harness-engineering/
+    scenario-coverage/
+    android-permission-review/
+    product-tone-review/
+    hamayang-diff-review/
+
+docs/
+  context/
+  specs/
+  adr/
+  exec-plans/
+  ai/
+  references/
+  quality/
+```
+
+핵심은 `AGENTS.md`를 거대한 매뉴얼로 만드는 것이 아니라, 목차처럼 사용하는 것입니다.
+
+```text
+AGENTS.md:
+- 짧고 안정적인 개발 헌법
+- Codex가 항상 읽어야 하는 규칙
+
+CONTEXT_INDEX.md:
+- 작업별로 어떤 문서를 읽어야 하는지 안내
+
+specs / adr / exec-plans:
+- 실제 세부 지식과 의사결정 기록
+```
+
+즉, AI에게 모든 문서를 매번 읽히는 게 아니라, 필요한 문서만 읽게 만드는 구조입니다.
+
+## Harness Engineering 오해 수정
+
+여기서 한 번 큰 수정이 있었습니다.
+
+처음에는 내가 Harness Engineering을 테스트용 fake나 시나리오 도구 정도로 이해했습니다. 그래서 문서에도 이런 식으로 적었습니다.
+
+```text
+lib/harness/clock.dart
+test/harness/fake_clock_test.dart
+```
+
+근데 이후에 OpenAI의 Harness Engineering 공식 글을 다시 확인해보니, 이건 내가 생각한 개념과 달랐습니다.
+
+공식 글 기준으로 Harness Engineering은 단순히 `FakeClock`을 만드는 게 아니라, Codex가 코드를 이해하고, 실행하고, 검증하고, 수정할 수 있도록 repo-level 개발 환경을 설계하는 것에 가깝습니다.
+
+즉, 내가 처음에 생각한 것은 이랬습니다.
+
+```text
+FakeClock = Harness Engineering
+```
+
+근데 정리하고 보니 이렇게 봐야 했습니다.
+
+```text
+FakeClock = time abstraction / test utility
+Harness Engineering = Codex가 일할 수 있는 repo-level 환경, 도구, 문서, 피드백 루프
+```
+
+그래서 현재 구조도 바꾸는 게 맞다고 정리했습니다.
+
+```text
+현재:
+lib/harness/clock.dart
+test/harness/fake_clock_test.dart
+
+권장:
+lib/core/time/clock.dart
+test_support/time/fake_clock.dart
+test/core/time/fake_clock_test.dart
+```
+
+`Clock`은 도메인 시간 추상화이고, `FakeClock`은 테스트 유틸리티입니다. Harness Engineering이라는 이름을 붙일 대상이 아닙니다.
+
+진짜 Harness Engineering에 해당하는 것은 이런 것들입니다.
+
+```text
+AGENTS.md
+docs/context/CONTEXT_INDEX.md
+docs/specs/harness_engineering.md
+docs/exec-plans/
+docs/quality/
+tools/harness/run_checks.sh
+tools/harness/doctor.sh
+.agents/skills/harness-engineering/SKILL.md
+```
+
+즉, Harness는 앱에 들어가는 기능이 아니라 Codex가 작업을 잘 하기 위한 개발 환경입니다.
+
+이 부분은 이름을 잘못 붙이면 나중에 프로젝트 구조가 계속 꼬일 것 같아서, 초반에 바로 잡는 게 맞다고 생각했습니다.
+
+## Codex에게 줄 작업 방식
+
+Codex에게 작업을 시킬 때도 그냥 “이거 만들어줘”라고 하면 안 되고, 범위를 확실하게 줘야 합니다.
+
+대략 이런 형식이 좋다고 정리했습니다.
+
+```text
+Follow AGENTS.md.
+Read:
+- docs/specs/harness_engineering.md
+- docs/specs/time_abstraction.md
+- docs/migrations/MIGRATION-0001-clock-harness-to-time.md
+
+Task: Correct the current misuse of harness terminology.
+
+Current files:
+- lib/harness/clock.dart
+- test/harness/fake_clock_test.dart
+
+Goal:
+- Move Clock/SystemClock to lib/core/time/clock.dart.
+- Move FakeClock into test_support/time/fake_clock.dart or keep it test-only.
+- Rename the test to test/core/time/fake_clock_test.dart.
+- Update imports.
+- Do not create app-facing harness features.
+
+Done when:
+- lib/harness/clock.dart no longer exists.
+- flutter analyze passes.
+- flutter test passes.
+- No production source imports a test fake.
+```
+
+이런식으로 Goal, Context, Constraints, Done when을 적어줘야 Codex가 딴 길로 덜 샙니다.
+
+그리고 반복적으로 Codex가 같은 실수를 하면, 프롬프트만 고치는 게 아니라 문서나 스크립트나 테스트를 고치는 게 맞다고 생각했습니다.
+
+예를 들면,
+
+```text
+실패:
+Codex가 계속 FakeClock을 lib/harness에 넣음
+
+해결:
+docs/specs/time_abstraction.md 추가
+MIGRATION 문서 추가
+AGENTS.md에 naming rule 추가
+```
+
+이런 식입니다.
+
+이게 Harness Engineering의 핵심에 더 가깝다고 이해했습니다.
+
+## 다음 구현
+
+이제 정리된 방향은 어느정도 명확합니다.
+
+```text
+프로젝트 이름:
+Hamayang
+
+repo 이름 후보:
+hamayang
+hamayang-app
+
+플랫폼:
+Android 우선
+
+기술:
+Flutter + Dart
+Kotlin Android Native
+Codex 기반 개발
+
+컨셉:
+현실 RPG
+캐릭터 동반자
+벽 시스템
+현실 성장
+```
+
+다음 단계는 실제 repo를 만들고, 문서 패키지를 루트에 넣고, Flutter 프로젝트를 생성하는 것입니다.
+
+초기 작업은 대략 이렇게 갈 생각입니다.
+
+1. GitHub repo 생성
+2. Source-Available / Proprietary notice 추가
+3. Codex용 `AGENTS.md`와 문서 패키지 추가
+4. Flutter 프로젝트 생성
+5. `lib/core/time/clock.dart`부터 정리
+6. `flutter analyze`, `flutter test`가 돌아가는 최소 구조 만들기
+7. 오늘의 벽 / 퀘스트 / 스탯 도메인 모델 작성
+8. FakeClock 기반 자정 정산 테스트 작성
+9. 앱 내부 캐릭터 오버레이 UI 구현
+10. Android UsageStats 연동은 그 다음 단계에서 진행
+
+아직 실제 앱 개발은 시작 전이지만, 이번에 정리를 하면서 프로젝트가 그냥 아이디어에서 개발 가능한 형태로 조금 바뀐 것 같습니다.
+
+처음에는 “도파민 줄이는 관리 어플” 정도였는데, 지금은 다음 문장으로 정리할 수 있을 것 같습니다.
+
+```text
+Hamayang은 게임으로 도망가던 사람에게,
+현실 자체를 성장형 RPG로 되돌려주는 앱이다.
+```
+
+좀 거창하긴 한데, 내가 만들고 싶은 건 이쪽에 가깝습니다.
+
+다음 글에서는 실제로 repo를 만들고, Codex 문서 구조를 적용한 뒤에 Flutter 초기 세팅을 진행한 내용을 정리할 예정입니다.
+
+## 참고 링크
+
+- OpenAI Harness Engineering: https://openai.com/index/harness-engineering/
+- Codex AGENTS.md: https://developers.openai.com/codex/guides/agents-md
+- Codex Skills: https://developers.openai.com/codex/skills
+- Flutter Platform Channels: https://docs.flutter.dev/platform-integration/platform-channels
+- Android UsageStatsManager: https://developer.android.com/reference/android/app/usage/UsageStatsManager
+- Android SYSTEM_ALERT_WINDOW: https://developer.android.com/reference/android/Manifest.permission#SYSTEM_ALERT_WINDOW

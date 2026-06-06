@@ -1,0 +1,77 @@
+---
+title: 'On-The-Blockサービス開発記 02: Flutter編'
+description: 'On-The-Blockサービス開発記 02: Flutter編'
+pubDate: '2026-04-17'
+heroImage: '/images/ON-THE-BLOCK/Event-Storming-v1-kr.png'
+tags: ['flutter', 'dart', 'on-the-block']
+category: 'on-the-block'
+series: 'on-the-block'
+seriesOrder: 2
+---
+import LocalizedLink from '@/components/LocalizedLink.astro';
+
+中間試験やいろいろな準備をしながら、隙間時間にブログを書くのは思ったより難しいです。
+とにかく、今回はFlutter編です。
+
+## On-The-Blockサービス開発記 02: Flutter編
+まず、私は過去に個人的にサービス化したいアプリがあったため、少しだけFlutterを触ってみた経験があります。私たちが実装するアプリの性質上、React NativeよりFlutterのほうが適していると思い、Flutterで開発することにしました。
+
+iOS、Androidの両方でサービスをリリースできるようにする必要があったため、**「React Native vs Flutter」**で悩みました。AIに聞き、勉強し、周りにも聞いてみましたが、**gRPCベースのリアルタイムチャットシステム**を開発する必要がある点、アプリUIがそれほど複雑ではない点、Flutterで開発するほうが楽そうな点から、Flutterで開発することにしました。
+
+開発前に共通ルールを作るため、チームメンバーと`CLAUDE.md`、`AGENTS.md`、`Design.md`を作成し、これを基に開発することにしました。
+
+まずバックエンドがまだ準備されていなかったため、フロント画面だけを実装するのは難しくなく、バグもあまりありませんでした。ルールを決め、一貫した形のpromptを使って開発を任せると、開発が非常に速く進みました。1日に1〜2時間程度投資し、4日ですべての画面を作りました。
+
+下は使用したプロンプト例です。
+
+```text
+Implement the Step 10 preference survey screen in `client/flutter_client`.
+
+This screen is not finalized yet.
+Use the current survey content(Preference.pdf) only as placeholder/example content. Translate in English to make a preference questions and answer buttons.
+Do not treat the survey text or options as final product logic.
+
+Requirements:
+- Build only the UI structure for the survey flow
+- Keep it easy to replace the content later
+- Do not add backend logic
+- Do not implement final recommendation logic
+- Do not assume the survey schema is finalized
+- Structure it so the survey content can be swapped out later without rewriting the screen
+- Screen flow is Login -> show survey [Onboarding00.html](stitch_export/Onboarding00.html) -> [OnboardingPage.html](stitch_export/OnboardingPage.html) this page will have 10 steps.
+
+Expected behavior:
+- Render the survey screen cleanly
+- Support showing question title, description, selectable options, and next/previous or progress UI if appropriate
+- Treat all current text as placeholder content
+- Minimize scope to this survey UI only
+
+Use the existing app structure and theme.
+```
+
+## Flutterフォルダ構造
+<div style="display: flex; align-items: flex-start; gap: 16px;">
+	<img src="/images/ON-THE-BLOCK/flutter-folder.png" alt="Flutter Folder" width="33%" />
+	<div>
+		- themeにはlight/darkテーマがあり、私たちが作ったdesign.mdファイルの内容が入っています。
+        - featureには各画面別にフォルダがあり、その中に画面を構成するウィジェットがあります。たとえばonboardingフォルダにはオンボーディング画面を構成するウィジェットがあります。
+        - commonにはアプリ全体で共通して使われるウィジェットがあります。たとえばボタンやテキストフィールドなどです。
+	</div>
+</div>
+
+このように構想して開発を進め、私はチャットシステムを担当したため、その画面から開発を始めました。内容はこちらのリンクで確認できます。
+<LocalizedLink href="blog/tech/chat/chatting-system01">Chatting System</LocalizedLink>
+
+## 画面
+ひとまず作っておいた画面にチャットシステムを接続した状態なので、まだ未完成ですが、機能はうまく実装されています。このようにチャットを送ると、私のlocal PostgreSQL DBに内容が保存されます。
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+	<img src="/images/ON-THE-BLOCK/Main-Screen.png" alt="Main Screen" class="w-full aspect-[9/16] rounded-2xl border border-slate-200 shadow-sm object-cover" loading="lazy" decoding="async" />
+	<img src="/images/ON-THE-BLOCK/Chat-List.png" alt="Chat List Screen" class="w-full aspect-[9/16] rounded-2xl border border-slate-200 shadow-sm object-cover" loading="lazy" decoding="async" />
+	<img src="/images/ON-THE-BLOCK/Chat-Room.png" alt="Chat Room Screen" class="w-full aspect-[9/16] rounded-2xl border border-slate-200 shadow-sm object-cover" loading="lazy" decoding="async" />
+</div>
+
+## 実際の画面
+ターミナルでユーザーを立ち上げ、タイピングすると、作っておいたチャットルームに正しく送信される様子です。
+
+![Real-Chat](/images/ON-THE-BLOCK/Real-Chat.png)

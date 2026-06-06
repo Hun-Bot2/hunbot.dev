@@ -1,0 +1,137 @@
+---
+title: 'Blog Devlog 06'
+description: 'Redis view counts and security hardening'
+pubDate: '2026-02-06'
+heroImage: '/images/BLOG/blog-develop06.png'
+tags: ['redis', 'security','view-counter']
+category: 'blog_devlog'
+series: 'Blog Devlog'
+seriesOrder: 6
+---
+
+The last time I updated the blog structure was 2025-12-30. I had been too busy to make changes, but now I am reviewing the whole thing again.
+
+In the previous post, I said I was considering Vercel KV or Supabase for implementing view counts. Supabase is unnecessary for this, so I decided to implement view counts with Vercel KV, which is Redis.
+After checking it, the free tier looks sufficient. Of course, I will study Redis separately and write about it on my personal study blog.
+
+Today I will implement blog security hardening and Redis-based view counts.
+
+The section below is a study note about the contents of `vercel.json`.
+
+---
+# Security Hardening
+
+## X-Content-Type-Options: nosniff
+
+### What if an image is not actually one I uploaded? (Supply-chain attack)
+Even if the blog is statically hosted, **there is no guarantee that only files I directly uploaded are included in the build output**. In the actual build process, many `npm` packages are involved.
+
+Consider this example:
+
+* **Scenario**: Suppose an image optimization library or icon package I use gets compromised.
+* **Attack**: During the build process, malicious script code is subtly inserted into a file called `logo.png`.
+* **Result**:
+    * **No header**: The browser says, "The extension is png, but the content looks like JavaScript. I should run it!" and executes it through **MIME sniffing**. -> **Compromise**
+    * **With `X-Content-Type-Options: nosniff`**: "If the extension is png, just show it as an image. Do not execute scripts." -> **Defense**
+
+In short, this is a countermeasure against the possibility that **unintended files are mixed into the build output**.
+
+#### MIME Sniffing? The Browser Being Too Helpful
+Browsers, especially older or some mobile browsers, sometimes ignore developer settings and guess the content type by inspecting the content itself.
+
+* **Situation**: A user posts a manipulated image link in comments such as Giscus, or an image loaded from an external CDN is tampered with.
+* **Risk**: The browser may mistake it for executable code.
+* **Defense**: The `nosniff` option forcefully tells the browser, **"Do not guess. Process the file only according to the Content-Type provided by the server, Vercel."**
+
+## X-Frame-Options: DENY
+* **Scenario**: An attacker creates a site such as `free-money.com` and overlays `hun-bot.dev` transparently on top of it using an `iframe`.
+* **Attack**: The attacker aligns a "get money" button with some link on `hun-bot.dev`, such as a Giscus login button.
+* **Result**: The user thinks they clicked the money button, but the click actually happens inside my blog. -> **Clickjacking attack**
+* **Defense**: The `X-Frame-Options: DENY` header tells the browser, **"Never display this site inside another site's iframe."**
+
+## Referrer-Policy
+* **Meaning**: Controls how much "where did the user come from?" information is sent when a user follows a link from my blog to another site.
+* **Effect:**
+    * **Same-site navigation**: Shows the full address.
+    * **External navigation**: Shows only the domain, `hun-bot.dev`, and hides the specific page path, such as a private post URL.
+
+## Content-Security-Policy
+**The most important setting.**
+
+It restricts resource loading to allowlisted origins only, including scripts, stylesheets, images, and so on.
+In other words, it enforces that resources are loaded only from domains I explicitly allow, helping defend against XSS attacks.
+
+## Permissions-Policy
+`"value": "camera=(), microphone=(), geolocation=(), interest-cohort=()"`
+
+**Meaning:** Controls modern browser features. Empty parentheses mean **"do not allow."**
+
+**Effect:** My blog has no reason to use camera, microphone, or location data. Even if an XSS attack injects and runs a script, browser-level restrictions block access to camera and microphone, reducing potential damage.
+
+---
+
+# Implementing Redis View Counts
+In Vercel Storage, I selected Redis through Upstash in the database section, chose the Tokyo region, and set it up on the free plan.
+
+After setup, secret keys are generated and the console shows several instructions. Below is an example for Next.js 14.
+
+```javascript
+import { Redis } from '@upstash/redis';
+import { NextResponse } from 'next/server';
+
+// Initialize Redis
+const redis = Redis.fromEnv();
+
+export const POST = async () => {
+  // Fetch data from Redis
+  const result = await redis.get("item");
+  
+  // Return the result in the response
+  return new NextResponse(JSON.stringify({ result }), { status: 200 });
+};
+```
+
+I have a study note about Redis here: https://hun-bot2.github.io/study/Web/redis-01
+
+Install the `@upstash/redis` package from the terminal:
+
+```bash
+npm install @upstash/redis
+```
+
+Then implement the Redis view-count logic in `utils/counter.ts`. The code is not complicated. I added logic so views are not incremented on localhost, and fixed the import style for `.env` in Astro.
+
+```typescript
+try {
+    if (isLocalhost) {
+      // In local development, fetch only without incrementing views
+      const views = await redis.get<number>(`pageviews:${slug}`) || 0;
+      return new Response(JSON.stringify({ views, skipped: true }), { status: 200 });
+    }
+
+    const views = await redis.incr(`pageviews:${slug}`);
+    return new Response(JSON.stringify({ views }), { status: 200 });
+  } catch (error) {
+    console.error(error);
+    return new Response(JSON.stringify({ error: 'DB Error' }), { status: 500 });
+  }
+```
+
+```typescript
+const redis = new Redis({
+  url: import.meta.env.UPSTASH_REDIS_REST_URL,
+  token: import.meta.env.UPSTASH_REDIS_REST_TOKEN,
+});
+```
+
+---
+
+## Closing
+Now I think the blog has Redis-based view counts and somewhat stronger security.
+Possible additions from here:
+
+1. Build a view-count graph.
+2. Build a popular posts ranking.
+3. Add a high-quality language translator.
+
+I will add them one by one when I have time.

@@ -1,0 +1,70 @@
+---
+title: 'Algorithm RAG Revision'
+description: 'I removed the unnecessary FAISS dependency and switched to NumPy calculations.'
+pubDate: '2026-01-15'
+heroImage: '/images/ALGO_RAG/Algo-RAGv2.png'
+tags: ['algorithm', 'RAG', 'LangChain', 'automation']
+category: 'algo_bot'
+series: 'Algorithm Bot'
+seriesOrder: 5
+---
+
+This continues from <u>*[the previous post](../algorithm_bot_04)*</u>.
+
+## Removing FAISS and Introducing NumPy Calculations
+In the previous post, I said I had built a RAG system using LangChain's FAISS. While studying the internals, I realized there was no real reason to use FAISS.
+Because similarity search can be performed more efficiently with simple NumPy calculations in this case, I changed the implementation.
+
+First, I wondered whether NumPy could perform the same role as FAISS. So I ran a small experiment.
+
+## Experiment: Comparing FAISS and NumPy Similarity Search Speed
+FAISS is definitely fast, but as you can see below, the difference was only about 0.005 seconds. That is not a meaningful bottleneck for this project, so I judged that FAISS was unnecessary.
+
+### Performance Comparison (Top-5 Search)
+
+| Method | Elapsed Time | Speed Rank |
+|------|-----------|-----------|
+| **FAISS** | 0.002095 sec | 1st |
+| **NumPy (Pure Python)** | 0.007358 sec | 2nd |
+| **Scikit-learn (Brute Force)** | 0.023916 sec | 3rd |
+
+### Detailed Results
+
+#### [A] FAISS
+- **Elapsed time**: 0.002095 sec
+- **Indexes**: `[0, 160, 2260, 1256, 307]`
+- **Distances (L2)**: `[0.0, 0.364, 0.397, 0.413, 0.415]`
+
+#### [B] Scikit-learn (Brute Force)
+- **Elapsed time**: 0.023916 sec
+- **Indexes**: `[0, 160, 2260, 1256, 307]`
+- **Distances (L2)**: `[0.0, 0.603, 0.630, 0.643, 0.644]`
+
+#### [C] NumPy (Pure Python)
+- **Elapsed time**: 0.007358 sec
+- **Indexes**: `[0, 160, 2260, 1256, 307]`
+- **Distances (Squared L2)**: `[0.0, 0.364, 0.397, 0.413, 0.415]`
+
+## Reducing GitHub Actions Runtime
+
+### Workflow Runtime
+The workflow became almost one minute shorter, so I think this was the right choice.
+
+<div style="display: flex; gap: 2rem; justify-content: center; align-items: flex-start; flex-wrap: wrap; margin-bottom: 3rem;">
+  <div style="flex: 1; min-width: 300px; max-width: 600px; text-align: center;">
+    <p style="font-size: 1.25rem; font-weight: bold; margin-bottom: 1rem; color: #fca5a5;">Before</p>
+    <img src="/images/ALGO_RAG/github_actions_before.png" alt="before" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);" />
+  </div>
+  <div style="flex: 1; min-width: 300px; max-width: 600px; text-align: center;">
+    <p style="font-size: 1.25rem; font-weight: bold; margin-bottom: 1rem; color: #86efac;">After</p>
+    <img src="/images/ALGO_RAG/github_actions_after.png" alt="after" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);" />
+  </div>
+</div>
+
+# Closing
+The remaining tasks are the four items I mentioned in the previous post, plus ongoing fixes as I use the system.
+
+1. Make it usable without initial environment variable setup.
+2. Build it in a form other people can use.
+3. Visualize the built LeetCode problems as a growing tree: when I solve a problem, the tree grows; solved problems become glowing leaves; difficulty is represented with different colors.
+4. Graph network visualization.

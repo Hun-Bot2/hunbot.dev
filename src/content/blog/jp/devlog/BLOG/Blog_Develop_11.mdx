@@ -1,0 +1,200 @@
+---
+title: 'ブログ開発日誌 11'
+description: '検索からLibraryハブまで: ブログを静的ナレッジハブへ拡張する'
+pubDate: '2026-05-25'
+tags: ['blog', 'development', 'devlog', 'search', 'library']
+category: 'blog_devlog'
+series: 'ブログ開発日誌'
+seriesOrder: 11
+---
+
+今回の作業は、単にブログ記事一覧を増やすことではなく、ブログをもう少し**ナレッジハブ**のように使えるよう、基盤を整理する作業でした。
+
+大きな方向性は一つでした。
+
+> Vercel/GitHubベースのstatic-first構造は維持しながら、検索、発表資料、Libraryデータを安全に拡張できるようにする。
+
+そのため今回は、サーバー、DB、ログイン、アップロードのような機能を新しく付けず、リポジトリにある検収済みデータと静的ファイルだけで動作する構造を作りました。
+
+## 1. 多言語ブログURL整理
+
+以前はブログ記事リンクを作るとき、言語パスが混ざる可能性がありました。
+
+たとえば韓国語記事で作ったリンクが英語ページでも`/ko/...`に固定されていると、英語記事を読んでいるユーザーがリンクを押しても、また韓国語記事へ移動してしまいます。
+
+そこでブログ記事URLを作るとき、コンテンツIDから言語を読み取り、常に次のような言語別URLが出るように整理しました。
+
+```text
+/ko/blog/...
+/jp/blog/...
+/en/blog/...
+```
+
+この作業により、今後の検索、sitemap、内部リンク、関連記事移動のような機能も同じ規則に従えるようになりました。
+
+## 2. Pagefindベース検索追加
+
+検索機能も追加しました。
+
+最初は検索UIが出ても実際の結果がうまく出ない問題がありました。原因は、ブラウザで実行されるスクリプトの中にTypeScript専用構文が混ざっていたことでした。
+
+Astroファイル内ではTypeScriptを使えますが、ブラウザにそのまま送られる`<script>`内では次のような文法は動作しません。
+
+```ts
+(window as any).PagefindUI
+```
+
+そのため、ブラウザスクリプトでは通常のJavaScript方式でアクセスするように修正しました。
+
+```js
+const PagefindUI = window.PagefindUI;
+```
+
+そして検索結果は現在の言語の記事だけを探すよう、Pagefindフィルターをかけました。
+
+```js
+search.triggerFilters({ language: [lang] });
+```
+
+つまり`/ko/search`では韓国語記事だけ、`/en/search`では英語記事だけが検索されます。この点がユーザーにわかりにくくならないよう、韓国語検索ページの案内文も変更しました。
+
+```text
+/ko/search에서는 한국어 글만 검색합니다.
+```
+
+## 3. 発表資料埋め込みコンポーネント追加
+
+今後、論文レビュー、実験ノート、技術説明、YouTube companion noteのような記事で発表資料を見せる機会がありそうでした。
+
+ただし重要な制約がありました。
+
+PPTXファイルはリポジトリに上げて静的ファイルとして提供できますが、ブラウザがPPTXをスライドデッキとして安定してレンダリングしてくれるわけではありません。
+
+そのため、次の方式は使わないことにしました。
+
+```html
+<iframe src="/decks/example/deck.pptx"></iframe>
+```
+
+代わりに`PresentationEmbed`コンポーネントを作り、対応範囲を明確に分けました。
+
+1. HTMLデッキは`/decks-html/`以下の信頼できるローカルパスだけiframeで埋め込む。
+2. PDFデッキはブラウザ内蔵ビューアに任せ、「Open PDF」アクションで接続する。
+3. 事前レンダリングしたスライド画像があれば、簡単なスライドビューアで表示する。
+4. PPTXは基本表示方式として使わず、人が検収した場合にだけ補助ダウンロードリンクとして露出する。
+
+ここでの核心はbackendlessでした。
+
+PPTXをPDFへ変換するサーバーも作らず、ブラウザでPPTXをパースすることもしませんでした。Google Slides Viewer、Microsoft Office Viewerのような外部ドキュメントビューアも使いませんでした。
+
+静的ファイルとメタデータだけで安全に見せられる範囲まで実装しました。
+
+## 4. Libraryデータモデル追加
+
+次の段階はLibraryでした。
+
+私が作りたいLibraryは単純なリンク集ではなく、人が直接検収したリソース、論文、トピックを積み上げる空間です。
+
+そこでページを作る前に、まずデータモデルから作りました。
+
+追加したコレクションは3つです。
+
+```text
+src/content/resources/
+src/content/papers/
+src/content/topics/
+```
+
+`resources`はデザインリソース、バイブコーディング資料、開発文書、有用なフィードのような外部リソースを入れます。
+
+`papers`はAI論文カードです。論文全文や長いabstractをコピーして保存せず、人が検収した短い要約だけを保存します。
+
+`topics`は今後、論文推薦、Libraryフィルター、YouTube/ニュースレター企画に活用する関心トピックです。
+
+特に重要な規則はこれです。
+
+```text
+approved状態の公開データは必ずhumanReviewed === trueでなければならない。
+```
+
+AIが草案を作ることはできますが、人がレビューしていない要約は公開データとして扱わないようにしました。
+
+## 5. Libraryハブページ追加
+
+最後に、最初のユーザー-facing Libraryページを作りました。
+
+現在追加されたルートは次の3つです。
+
+```text
+/ko/library/
+/jp/library/
+/en/library/
+```
+
+Astro設定上は韓国語がdefault localeですが、このブログの実際のルーティングとナビゲーションは`/ko/...`を使っています。そのためLibraryも既存規則に従いました。
+
+Libraryハブでは、まだ詳細セクションページへ移動しません。
+
+たとえば`/ko/library/design/`のようなページはまだ作っていません。代わりにハブで、どのセクションが準備中か、現在検収済みサンプルデータが何件あるかだけを見せます。
+
+現在ハブに表示するセクションは次の通りです。
+
+1. Design
+2. Vibe Coding
+3. Developer Docs
+4. AI Papers
+5. Useful Feeds
+6. Decks / Presentations
+
+そして、次のデータだけを画面に表示します。
+
+```text
+resources: status === "approved" && review.humanReviewed === true
+papers: status === "approved" && review.humanReviewed === true
+topics: status === "active"
+```
+
+こうしておけば、draft、pending、rejected状態のデータが誤って公開ページに露出することを防げます。
+
+## 6. 検証スクリプト追加
+
+今回の作業はコンテンツと静的ページが中心だったため、重いテストフレームワークは追加しませんでした。
+
+代わりに小さなNode検証スクリプトを追加しました。
+
+```bash
+npm run routes:validate
+npm run search:validate
+npm run deck:validate
+npm run library:validate
+npm run library-page:validate
+```
+
+特に`library-page:validate`は、Libraryハブが次の規則を守っているか確認します。
+
+1. `/ko`, `/jp`, `/en`ルートが生成されるか。
+2. 承認され、人が検収したresourceだけを表示するか。
+3. 承認され、人が検収したpaperだけを表示するか。
+4. active topicだけを表示するか。
+5. 存在しない詳細Libraryセクションへリンクしないか。
+6. Pagefindメタデータが入っているか。
+
+最後に`npm run build`も実行し、AstroビルドとPagefindインデックス生成まで確認しました。
+
+## まとめ
+
+今回の作業で、ブログは単純な記事一覧から、もう少し構造化された知識保存所へ進む準備ができました。
+
+まだLibrary詳細ページはなく、データもサンプル水準です。しかし安全な基盤はできました。
+
+現在の状態で可能なことは次の通りです。
+
+1. 言語別ブログURLを安定して生成する。
+2. Pagefindで言語別検索ができる。
+3. 発表資料をbackendless方式で埋め込める。
+4. 人が検収したLibraryデータをリポジトリに積み上げられる。
+5. `/ko/library/`, `/jp/library/`, `/en/library/`ハブで公開サンプルデータを表示できる。
+
+次の作業はおそらくLibrary詳細ページになりそうです。
+
+個人的には、まずDesign LibraryかAI Papers一覧ページを開くのが最も自然に見えます。

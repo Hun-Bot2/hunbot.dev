@@ -1,0 +1,232 @@
+---
+title: 'Chat System'
+description: 'Notes for implementing a chat system: features and database design'
+pubDate: '2026-04-24'
+heroImage: '/images/ON-THE-BLOCK/chat-database-erd.png'
+tags: ['Cassandra', 'Redis', 'Chatting System', 'HBase', 'gRPC', 'Kafka', 'RabbitMQ', 'Pub/Sub', 'Message Queue', 'Real-time Chatting System']
+category: 'chatting_system'
+series: 'chatting_system'
+seriesOrder: 1
+---
+import LocalizedLink from '@/components/LocalizedLink.astro';
+
+#### Service entry point: go to <LocalizedLink href="blog/devlog/on-the-block/on-the-block01/">on-the-block-chat</LocalizedLink>
+
+This semester I took the role of implementing the chat system.
+While studying chat-system design, I wanted to organize the technology stack and architecture that fit the system I need to build.
+
+# Design Notes for the Chat System I Want to Build
+
+## How should a group-chat-centered real-time chat service be designed?
+
+When people say "chat," a few products come to mind: KakaoTalk, Instagram DM, Discord, Slack, and so on. They all share the word "chat," but their actual product characteristics are quite different.
+
+Some services focus on one-to-one conversations, while others focus on large-scale group communication. Message types also vary: text, images, files, videos, read receipts, reactions, threaded replies, notifications, deletion, and archiving all differ by product.
+
+These services are easy to use casually, but once I try to implement one myself, there are many things to consider. In this post I want to organize:
+
+1. **what kind of chat system I am trying to build**,
+2. **which features, technology stack, and architecture are appropriate**, and
+3. **what database structure is realistic**.
+
+---
+
+## Goals of the Chat System
+
+### Functional Requirements
+
+1. **Only group chat is supported.** Each group chat room can have up to **30 members**.
+2. It should be possible to support both a mobile app and a web app.
+3. Message types are [text, image, file].
+   **Video is not supported** because of file size and operating cost, though it may be considered later.
+4. Text messages are limited to **1,000 characters**.
+5. Required features:
+   - real-time message delivery
+   - read receipts
+   - notifications
+   - nickname tags
+   - chat reactions such as likes and dislikes
+   - replies/comments on messages
+6. **End-to-end encryption is not supported.**
+7. Chat history is stored **without a fixed expiration**.
+   However, chats older than one year are archived.
+8. The initial design assumes **10,000 DAU**.
+9. The architecture should grow from **v1 → v2 → v3**, instead of becoming overly large from day one.
+10. Chat rooms are linked to board posts, and one post can have at most one chat room.
+
+This can be summarized as follows.
+
+| **Included** | **Not Included** |
+| --- | --- |
+| Group chat | One-to-one chat |
+| Real-time delivery | Video messages |
+| Permanent message storage | End-to-end encryption |
+| Read receipts | Overly complex distributed architecture from the start |
+| Reactions | A design that tries to complete every feature in v1 |
+| Replies/comments |  |
+| Notifications |  |
+| Web/app support |  |
+| Future extensibility |  |
+
+---
+
+Given the characteristics of this chat system, the data structure is clear: timestamp, message, user_id, group_id, and so on. That makes an RDB feel appropriate, and among RDBs I think PostgreSQL is the best fit.
+
+I considered MySQL and PostgreSQL, then used **_[PostgreSQL and MySQL feature and performance comparison](https://dlabtech.tistory.com/entry/PostgreSQL-%EA%B3%BC-MySQL-%ED%8A%B9%EC%A7%95-%EB%B0%8F-%EC%84%B1%EB%8A%A5-%EB%B9%84%EA%B5%90)_** as a reference and concluded that PostgreSQL fits this case better.
+
+## Database ERD
+
+![ERD](/images/ON-THE-BLOCK/chat-database-erd.png)
+
+The parts that need explanation are below.
+
+### chat_rooms
+
+#### linked_board_id
+
+`linked_board_id` represents a group chat room linked to a Board post.
+
+- `null` for a normal group chat room
+- stores the Board post ID for a board-linked chat room
+- allows at most one chat room per Board post
+
+#### is_active, deleted_at
+
+Chat room deletion uses soft delete instead of physically deleting the DB row.
+
+- `is_active = false`
+- `deleted_at = deletion timestamp`
+
+The reasons are:
+
+- preserving operational history
+- preserving message history
+- keeping room for future incident, report, or operation handling
+
+## chat_room_members
+
+### user_id
+
+`user_id` is the ID of the user participating in the chat room.
+
+It is an internal user identifier managed by the auth-service. In the chat-service DB, it is used as a logical reference value instead of a direct foreign key to another service database.
+
+### status
+
+`status` indicates the current state of a chat-room member.
+
+| Value | Meaning |
+|---|---|
+| `ACTIVE` | User currently participating in the chat room |
+| `LEFT` | User voluntarily left the room |
+| `REMOVED` | User was removed by the room owner |
+
+In particular, a user with `REMOVED` status cannot re-enter the same room.
+
+### removed_by_user_id
+
+`removed_by_user_id` is **not the ID of the removed user**. It is the ID of the room owner or administrator who removed that user.
+
+The removed user is stored in the `user_id` field of the same row.
+
+Example:
+
+| Field | Meaning |
+|---|---|
+| `user_id` | Removed user |
+| `removed_by_user_id` | Owner/admin who executed the removal |
+| `removed_at` | Removal timestamp |
+| `status` | `REMOVED` |
+
+Preventing re-entry after removal is based on the member row's `status = REMOVED`, not `removed_by_user_id`.
+
+### last_read_sequence_no
+
+`last_read_sequence_no` represents the sequence number of the last message the user read in the chat room.
+
+Messages in a chat room are ordered by `chat_messages.sequence_no`, and the unread count can generally be calculated with:
+
+```sql
+sequence_no > last_read_sequence_no
+```
+
+## chat_messages
+
+### is_deleted, deleted_at, deleted_by_user_id
+
+Message deletion also uses soft delete.
+
+- `is_deleted` = true
+- `deleted_at` = deletion timestamp
+- `deleted_by_user_id` = ID of the user who deleted the message
+
+This is similar to showing "This message was deleted" in KakaoTalk.
+
+## One Board - One Chat Room
+
+PostgreSQL can implement this with a partial unique index. I will record a better approach later if I find one while implementing it.
+
+```sql
+CREATE UNIQUE INDEX uq_board_linked_room
+ON chat_rooms(linked_board_id)
+WHERE room_type = 'BOARD_LINKED_GROUP'
+  AND deleted_at IS NULL;
+```
+
+---
+
+## Policies and Proto
+
+Besides the policies above, there are extra points to consider while designing the Proto.
+
+#### 1. Should `user_id` keep being sent in every gRPC request body, or should it be extracted from gRPC metadata/JWT context?
+
+For now, because another teammate is implementing authentication, I plan to include `user_id` in the gRPC request body for testing.
+
+After authentication is implemented, I plan to refactor it so `user_id` is extracted from gRPC metadata or JWT context.
+
+```json
+{
+  "room_id": "room_1",
+  "sender_user_id": "test_user_1",
+  "content": "hello"
+}
+```
+
+#### 2. Should `LeaveRoom` RPC be explicit now, or should v1 only include owner removal and room deactivation?
+
+```proto
+rpc LeaveRoom(LeaveRoomRequest) returns (LeaveRoomResponse);
+
+message LeaveRoomRequest {
+  string room_id = 1;
+  string user_id = 2;
+}
+```
+
+At first I thought of this shape, but there were more problems to consider when someone leaves a chat room.
+
+1. If the owner leaves, should the room be destroyed or should ownership be delegated to another member?
+   Yes, it should be handled.
+2. If the owner leaves and ownership is delegated, who receives ownership? The oldest member? The most recently active member? Random?
+   The oldest member. If there are multiple oldest members, choose the one with the smallest `user_id`.
+3. If the last member leaves, is the room deactivated?
+   Yes. The room is deactivated with soft delete.
+4. Can a user leave a board-linked room and re-enter later?
+   Yes.
+5. Can a `LEFT` member re-enter?
+   Yes. Re-entry is allowed unless the user was removed.
+
+#### 3. Can a user enter a deactivated chat room and view messages?
+
+When a room is deactivated, even existing members cannot use `GetMessages`. Message rows remain in the DB, but regular user APIs do not expose them.
+
+#### 4. Pagination: should page-token pagination remain, or should messages and chat rooms move to sequence-based pagination?
+
+Messages should use sequence-based pagination, while room lists should use cursor/token pagination.
+
+For now, I will keep the design at this level and update it as needed while implementing.
+
+## Closing
+
+This post focuses on the chat system itself. For screens and Flutter-specific content, see the <LocalizedLink href="blog/devlog/on-the-block/on-the-block02/">on-the-block-flutter</LocalizedLink> post.

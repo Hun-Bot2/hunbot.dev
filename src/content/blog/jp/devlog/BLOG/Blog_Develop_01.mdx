@@ -1,0 +1,102 @@
+---
+title: 'ブログ開発日誌 01'
+description: 'Astroベースのブログ構築、ダークテーマ、レイアウト改善の記録'
+pubDate: '2025-10-27'
+# heroImage: '../../assets/KOSSDA.png'
+tags: ['Devlog', 'Astro', 'Tailwind']
+category: 'blog_devlog'
+series: 'ブログ開発日誌'
+seriesOrder: 1
+---
+
+## プロジェクト
+個人ブログの制作・運営記録
+
+- 期間: 2025.09 - 現在
+- 役割: ブログ運営者
+
+---
+
+## デプロイリンク / リポジトリ
+
+- デプロイリンク: https://hunbot-dev.vercel.app/
+- GitHub: https://github.com/Hun-Bot2/hunbot.dev
+
+---
+
+## ブログ運営者
+
+- 主な作業: コンテンツ作成、デザイン/レイアウト改善、性能とアクセシビリティ改善、デプロイ自動化
+- 使用技術: TypeScript, Astro, Tailwind CSS, MDX
+
+---
+
+## ブログ構築（プラットフォーム・ツール）
+
+- フレームワーク: Astro v5.x（コンテンツ中心、Zero-JS志向、Islands Architecture）
+- スタイル: Tailwind CSS + グローバル`global.css`トークン（色/フォント/間隔）
+- コンテンツ: Markdown/MDX + Astro Content Collections（型安全なFrontmatter検証）
+- 画像: Sharpベースのビルド最適化（WebP/AVIF）、遅延読み込み
+- SEO: `BaseHead.astro`メタタグ、`sitemap.xml.ts`、`rss.xml.js`構成
+
+---
+
+## 主な作業まとめ
+
+1. Header改善（`src/components/Header.astro`）
+  - 全幅（full-bleed） + 上部固定（sticky）
+  - 左側タイトル、右側アイコン（Theme, GitHub, LinkedIn, Blog, RSS, Search, Menu）
+  - `index.astro`と`blog/index.astro`でHeaderを`.global-wrapper`の外へ移動し、幅制限を解消
+
+2. Footer整理（`src/components/Footer.astro`）
+  - 重複レンダリング削除、余白縮小（`mt-20→mt-12`, `py-16→py-8`）
+  - 可読性向上（テキストサイズ拡大、アイコンサイズ調整）
+
+3. ダークテーマシステム（`src/styles/global.css`）
+  - 背景: `rgb(40,40,40)` / 本文: `rgb(248,249,250)`で明確なコントラスト
+  - リンク/フォーカスはオレンジ系に統一し、青系を削除
+  - 見出しに`scroll-margin-top: 5rem`を適用し、sticky headerとの衝突を防止
+
+4. コンテンツ/レイアウト一貫化
+  - `/`, `/blog`, `/about`の視覚的一貫性を確保
+  - BlogPost/TOCコンポーネントのダークパレットを整備し、不要な青アクセントを削除
+
+---
+
+## 技術スタックと構成
+
+- `package.json`: astro, @astrojs/tailwind, @astrojs/mdx, sharp, @fontsource*を含む
+- `tailwind.config.mjs`: `darkMode: 'class'`, 色/フォント拡張
+- フォント: Inter（英語）, Noto Sans/Serif KR（韓国語）, JetBrains Mono（コード）
+- テーマ管理:
+  - サイト: `BaseHead.astro`のインラインスクリプトが`<html class="dark">`をトグル（sessionStorage使用）
+  - 可視化: `public/scripts/themeManager.js`が3Dビジュアル用カラーパレットを提供
+
+---
+
+## 性能・アクセシビリティ
+
+- AstroのZero-JS基本値を維持し、必要な部分だけhydration
+- Sharpベースの画像最適化 + lazy loading
+- 本文の可読性（フォント/間隔/コントラスト）改善、キーボードフォーカススタイル整備予定
+
+---
+
+## 今後の計画
+
+- 色の残り整理と`/about`など一部ページの最終確認
+- テーマロジック統合検討（BaseHeadインライン vs ThemeManager一本化）
+- ビルド/プレビューのスモークテスト自動化追加
+- 簡易CMS導入検討（Netlify/Decap, Supabase, またはHeadless CMS）
+- 検索/フィルター機能、画像アップロードワークフロー改善
+- SEO機能導入
+
+---
+
+## 作業タイムライン（要約）
+- 2025-06-24〜2025-10-14: ブログ開設開始。既存のThree.jsを捨て、読みやすい文章中心のブログレイアウトを適用
+- 2025-10-27: ダークテーマ色トークン確立、Header/Footerレイアウト改善、TOC/BlogPostダークスタイル整理、開発日誌作成
+
+---
+
+作成日: 2025-10-27

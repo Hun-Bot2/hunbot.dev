@@ -1,0 +1,121 @@
+---
+title: 'Blog Devlog 10'
+description: 'Improving blog issues: broken navigation between posts'
+pubDate: '2026-04-23'
+# heroImage: '/images/BLOG/redis-after.png'
+tags: ['blog', 'development','devlog','redis']
+category: 'blog_devlog'
+series: 'Blog Devlog'
+seriesOrder: 10
+---
+
+This issue appeared while I was creating a new folder and writing a new post. When moving to a post in another folder, I had hardcoded redirects like `(/ko/blog/devlog/blog/blog_develop_07/)`.
+
+The problem was that navigation worked in Korean, but after switching to English, `/ko` remained fixed. As a result, the user moved to the Korean post instead of the English one.
+
+With my existing knowledge, two methods came to mind first:
+
+1. Since there are still not many documents, manually open every document and fix them.
+2. Use Vercel middleware.
+
+I asked AI whether there were other approaches, and it suggested three architecture patterns that separate content from routing.
+
+```markdown
+To solve this, here are three architecture patterns for decoupling content and routing.
+
+### Build-Time AST Transformation Architecture (SSG Optimized)
+
+The most Astro-friendly static site generation approach with no performance cost.
+
+  * **Design concept:** Authors do not write language-dependent paths in Markdown. Instead, they write relative paths such as `../blog_develop_07/` or abstract identifiers such as `@post/blog_develop_07`.
+  * **System flow:**
+    1. Astro reads Markdown documents at build time and parses them into an AST.
+    2. A custom Remark or Rehype plugin runs and scans every `<a>` tag.
+    3. It detects the language directory context of the Markdown file being parsed, for example the `en` folder.
+    4. The plugin dynamically assembles the current language prefix, such as `/en/`, in front of abstract links and generates final HTML.
+  * **Pros/cons:** Since no JavaScript runs in the client browser, performance is perfect. However, it requires building an AST plugin in the build pipeline.
+
+### Content Identifier Mapping Architecture (Headless CMS Pattern)
+
+This approach extends Markdown into MDX and controls routing through components.
+
+  * **Design concept:** Treat links not as paths but as unique content IDs. Assign each post a unique `uuid` or `slug` in frontmatter.
+  * **System flow:**
+    1. Instead of standard Markdown links `[]()`, use a custom MDX component such as `<InternalLink id="blog_develop_07" />`.
+    2. The component internally reads the current page's language state through global state or `Astro.url`.
+    3. When rendered, the component combines the injected `id` with the current `locale` and returns a correct hyperlink such as `/en/blog/...`.
+  * **Pros/cons:** The structure is explicit and easy to manage. Even if file paths change, links do not break as long as the unique ID remains the same. However, all existing Markdown links must be replaced with custom components.
+
+### Edge Middleware Routing Architecture (Vercel Specific)
+
+This solves the issue at the network infrastructure layer, Vercel Edge, rather than inside the application layer, Astro.
+
+  * **Design concept:** Keep Korean-based paths such as `/ko/...` in Markdown. When a user clicks a link and sends a request to the server, middleware swaps the destination in the middle.
+  * **System flow:**
+    1. A user viewing an English page clicks a `/ko/blog/devlog_07` link in the body.
+    2. The request reaches Vercel Edge Middleware.
+    3. Middleware analyzes the user's cookie, such as `NEXT_LOCALE=en`, browser `Accept-Language` header, or previous page Referer, and detects that the user prefers English.
+    4. It rewrites the `/ko/` part of the target URL to `/en/`, keeping the address bar unchanged, or sends a 301 redirect, changing the address bar too.
+  * **Pros/cons:** Existing Markdown files do not need to be modified at all. Even when users arrive through wrong external links, the system can route them to the correct language automatically. However, an Edge function runs on every request, so there is a small serverless compute cost.
+
+-----
+
+### Study and Reference Links
+
+Official documents to study these architectures more deeply:
+
+  * **Astro Internationalization (i18n) official routing guide:** Useful for understanding Astro's basic language routing structure.
+      * docs.astro.build/en/guides/internationalization/
+  * **Unified / Remark AST plugin creation guide (for architecture 1):** Helps learn the tree concept for manipulating Markdown syntax programmatically.
+      * [unifiedjs.com/learn/guide/create-a-plugin/](https://unifiedjs.com/learn/guide/create-a-plugin/)
+  * **Vercel Edge Middleware i18n pattern (for architecture 3):** A design pattern for splitting traffic by country and language at the edge network.
+      * [vercel.com/docs/edge-network/middleware](https://www.google.com/search?q=https://vercel.com/docs/edge-network/middleware)
+```
+
+Looking at this, AST and Edge Middleware are too much for what I want to do. I thought controlling routing through a custom component was the most suitable approach, so I implemented it that way.
+Only a few existing posts were hardcoded to Korean posts, so I could fix them without spending much time. The code was not difficult and could be implemented in a very simple way.
+
+`import LocalizedLink from '@/components/LocalizedLink.astro';`
+
+When writing a link, I can wrap it like this:
+
+`<LocalizedLink href="/blog/devlog/blog/blog_develop_07/">Blog Devlog 07 - Using Local LLM for Blog Post Translation</LocalizedLink>`
+
+Then it automatically navigates to the link for the current language. I also updated the existing posts to use this method.
+
+```javascript
+import { getRelativeLocaleUrl } from 'astro:i18n';
+
+interface Props {
+  href: string;
+  class?: string;
+}
+const { href, class: className } = Astro.props as Props;
+
+const currentLocale = Astro.currentLocale || 'ko';
+const isExternal = /^(https?:)?\/\//.test(href) || href.startsWith('mailto:') || href.startsWith('tel:');
+
+let localizedHref = href;
+
+if (!isExternal) {
+  // Normalize internal paths so old hardcoded locale links also work.
+  const withoutLocalePrefix = href.replace(/^\/(ko|jp|en)(?=\/|$)/, '');
+  const route = withoutLocalePrefix.replace(/^\/+/, '');
+  
+  localizedHref = getRelativeLocaleUrl(currentLocale, route);
+}
+if (currentLocale === 'ko' && localizedHref.startsWith('/blog/') && !localizedHref.startsWith('/ko/')) {
+  localizedHref = `/ko${localizedHref}`;
+}
+```
+
+## Next Implementation
+In the previous post, I said I would finish deploying multilingual blog posts, but while implementing it I ended up going deeper into Machine Translation (MT). It will take much longer than the original March 28 target.
+At the time of writing, it is April 23, after midterms.
+
+Here are the implementation tasks I am leaving for myself.
+
+1. Replace the Giscus comment system with a real DB-backed implementation, allowing anyone to comment after a certain level of authentication.
+2. The search feature is currently empty, so I plan to implement it with https://pagefind.app/.
+3. Once view counts increase, add a popular posts feature based on view count.
+4. Add a notice banner, for example when a new post is published, during blog maintenance, or when the introduction section is updated.

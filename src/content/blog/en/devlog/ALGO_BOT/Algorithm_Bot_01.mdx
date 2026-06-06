@@ -1,0 +1,138 @@
+---
+title: 'Making Algorithm Review More Efficient'
+description: 'A small attempt to make algorithm study more efficient for people who started late'
+pubDate: '2025-12-24'
+heroImage: '/images/slack_bot.png'
+tags: ['algorithm', 'bot']
+category: 'algo_bot'
+series: 'Algorithm Bot'
+seriesOrder: 1
+---
+
+## Algorithm Study
+I started studying algorithms relatively late. I knew algorithms were important, but when I saw people solving problems because they genuinely enjoyed it, I realized I was not that type of person. I started algorithm study later while preparing for jobs.
+
+When I studied before, my flow was lecture -> solve problems -> review what I did not know -> organize notes. The problem was that I often forgot problems I had already solved.
+
+This time, I built a bot that decides review intervals based on the Ebbinghaus forgetting curve and automatically tells me which problems to review. It uses a Slack Webhook to send the review list every morning.
+
+I had been organizing algorithm problems with GitHub Pages + Docusaurus, so the bot extracts problems from my Docusaurus notes according to the review cycle and sends them to Slack. It uses the Git log of the GitHub repository to get the first creation date of each problem file, compares it with today's date, and selects the problems due for review.
+
+The code is based on my file structure, so adjust the paths for your own setup.
+
+I will probably need about three months to know whether this is actually efficient. I will write a follow-up on **2025-02-28**.
+
+I solved two problems on the 23rd, so the bot notified me that I should review two problems on the 24th. On the 24th I should review those two and solve additional problems if needed. I am a little worried about the review volume, but I need to try it first.
+
+## Additional Setup
+One more setup step is required. In the relevant GitHub repository, go to Settings -> Secrets and variables -> Actions -> New repository secret, and register your Slack Webhook URL with the name **SLACK_WEBHOOK_URL**.
+
+You can find the Slack Webhook setup guide at [https://api.slack.com/messaging/webhooks](https://api.slack.com/messaging/webhooks).
+
+## Code
+```python
+import os
+import datetime
+import subprocess
+import requests
+
+# [Settings] Review cycle based on the Ebbinghaus forgetting curve
+REVIEW_CYCLES = [1, 3, 7, 14, 30] 
+SLACK_URL = os.environ.get("SLACK_WEBHOOK_URL")
+
+# Docusaurus deployment URL based on your repository
+BASE_DOCS_URL = "https://hun-bot2.github.io/docs"
+
+# Top-level algorithm path to monitor
+TARGET_DIR = "study/docs/Algorithm"
+# Files to exclude
+EXCLUDE_FILES = ["intro.md", "intro.mdx", "_category_.json"]
+
+def get_first_commit_date(filepath):
+    """Extract the first creation date of a file from the Git log."""
+    try:
+        # Use --diff-filter=A to get only the date when the file was first added
+        cmd = ["git", "log", "--diff-filter=A", "--follow", "--format=%as", "--reverse", filepath]
+        output = subprocess.check_output(cmd).decode("utf-8").strip()
+        return output.split('\n')[0] if output else None
+    except:
+        return None
+
+if __name__ == "__main__":
+    today = datetime.date.today()
+    review_list = []
+
+    if not os.path.exists(TARGET_DIR):
+        print(f"Path not found: {TARGET_DIR}")
+        exit(0)
+
+    for root, dirs, files in os.walk(TARGET_DIR):
+        for f in files:
+            # Filter excluded files
+            if f in EXCLUDE_FILES or not (f.endswith(".md") or f.endswith(".mdx")):
+                continue
+            
+            path = os.path.join(root, f)
+            first_date_str = get_first_commit_date(path)
+            
+            if first_date_str:
+                first_date = datetime.datetime.strptime(first_date_str, "%Y-%m-%d").date()
+                diff = (today - first_date).days
+                
+                # Add to Slack only if the problem matches a review cycle
+                if diff in REVIEW_CYCLES:
+                    # Generate Docusaurus URL path
+                    # Example: study/docs/Algorithm/Baekjoon/DP/11660.md 
+                    # -> Algorithm/Baekjoon/DP/11660
+                    rel_path = os.path.relpath(path, "study/docs").replace(".mdx", "").replace(".md", "")
+                    link = f"{BASE_DOCS_URL}/{rel_path}"
+                    
+                    # Extract platform name from the folder directly under Algorithm
+                    # Structure: Algorithm/platform/type/problem.md
+                    path_parts = os.path.relpath(path, TARGET_DIR).split(os.sep)
+                    platform = path_parts[0] if len(path_parts) > 1 else "General"
+                    
+                    review_list.append(f"• [{platform}] <{link}|{f}> (D+{diff} review)")
+
+    if review_list:
+        msg = f"Today's algorithm review list (date: {today})\n" + "\n".join(review_list)
+        if SLACK_URL:
+            requests.post(SLACK_URL, json={"text": msg})
+        else:
+            print("Slack URL is not configured. Printing results only:\n", msg)
+    else:
+        print("There are no problems to review today.")
+```
+### GitHub Actions Workflow
+
+```yml
+name: Algorithm Daily Review Bot
+
+on:
+  schedule:
+    # Run every day at 9 AM Korea time (UTC 00:00)
+    - cron: '0 0 * * *'
+  workflow_dispatch: # Enable manual runs for testing
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Full Git history is required for date calculation
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run notify script
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }} #
+        run: python study/scripts/notify.py
+```

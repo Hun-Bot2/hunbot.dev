@@ -1,0 +1,65 @@
+---
+title: 'Blog Devlog 09'
+description: 'Improving blog issues: duplicate Redis view counts'
+pubDate: '2026-03-18'
+heroImage: '/images/BLOG/redis-after.png'
+tags: ['blog', 'development','devlog','redis']
+category: 'blog_devlog'
+series: 'Blog Devlog'
+seriesOrder: 9
+---
+
+## Redis-Based View Counts
+The problem is that the value keeps increasing on refresh. How can I solve this? The best fit for my blog structure is **Redis + TTL**.
+
+A common way to prevent duplicate view counts is to use sessions. But my blog does not have a backend server or database that keeps state continuously. It runs on Vercel's Edge Serverless environment.
+
+Because it is a stateless architecture that runs only briefly when a client request comes in and then disappears, managing sessions would require a separate session store and the overhead of parsing cookies and verifying signatures every time.
+
+So I plan to implement it using an **IP and TTL (Time-To-Live) based locking technique**.
+
+This is a simple task where I only need to add TTL logic to the existing `views.ts` file, so I did not spend much time on it.
+
+<div class="grid grid-cols-2 gap-4 my-8">
+  <img src="/images/BLOG/redis-before.png" alt="redis-before" class="w-full h-auto rounded-lg border border-gray-200" />
+  <img src="/images/BLOG/redis-after.png" alt="redis-after" class="w-full h-auto rounded-lg border border-gray-200" />
+</div>
+
+### View Count Handling
+Then I wondered: the old way of calculating views and the new way are different, so what happens to the view counts I already have? Apparently this can be solved with `incr()`.
+
+In a normal system, a view count is a data update. A data update usually requires:
+
+1. Read the current value from the DB.
+2. Add 1 in memory.
+3. Write the new value back to the DB.
+
+Redis `incr()` bundles this process into one **atomic** operation, so it can do exactly what I want.
+
+```typescript
+const views = await redis.incr(`pageviews:${slug}`);
+```
+
+https://redis.io/docs/latest/commands/set/
+
+### What About Posts With No View Count?
+
+```typescript
+const isNewView = await redis.set(historyKey, '1', { nx: true, ex: 3600 });
+
+   if (!isNewView) {
+      const views = await redis.get<number>(`pageviews:${slug}`) || 0;
+      return new Response(JSON.stringify({ views, duplicated: true }), { status: 200 });
+    }
+    const views = await redis.incr(`pageviews:${slug}`);
+```
+
+The `isNewView` variable receives either the string `"OK"` or `null`. If it receives OK, `!isNewView` is false, so the code moves directly to incrementing the view count. Otherwise, it enters the block and fetches the number or sets it to 0.
+
+### Previous Closing Notes
+1. Complete the multilingual translation feature.
+2. The current search feature is empty, so I plan to implement it with https://pagefind.app/.
+3. Once view counts increase, add a popular posts feature based on view count.
+4. Add a notice banner, for example when a new post is published, during blog maintenance, or when the introduction section is updated.
+
+The multilingual translator is taking longer than expected. I am quite busy with school, so I am working on it little by little. The deadline is to finish and deploy it by March 28.

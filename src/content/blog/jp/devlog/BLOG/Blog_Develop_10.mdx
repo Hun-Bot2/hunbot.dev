@@ -1,0 +1,117 @@
+---
+title: 'ブログ開発日誌 10'
+description: 'ブログの問題改善: 投稿間リンク移動エラー'
+pubDate: '2026-04-23'
+# heroImage: '/images/BLOG/redis-after.png'
+tags: ['blog', 'development','devlog','redis']
+category: 'blog_devlog'
+series: 'ブログ開発日誌'
+seriesOrder: 10
+---
+
+この問題は、ブログに新しいフォルダを作り、新しく投稿する記事を書いているときに発生しました。別フォルダの記事へ移動するとき、`(/ko/blog/devlog/blog/blog_develop_07/)`のようにredirectするようにしていました。
+
+問題は、韓国語までは移動できるのに、英語へ切り替えて移動すると`/ko`が固定されているため、英語投稿ではなく韓国語投稿へ移動してしまう点でした。
+
+既存知識ではまず2つの方法が思い浮かびました。
+
+1. まだ文書量が少ないので、すべての文書を開いて確認しながら修正する方法。
+2. Vercelのmiddlewareを活用する方法。
+
+これ以外にどんな方法があるかAIに聞いたところ、コンテンツとルーティングを分離（Decoupling）する3つのアーキテクチャパターンを提案されました。
+
+```markdown
+これを解決するため、コンテンツとルーティングを分離(Decoupling)する3つのアーキテクチャパターンを提案します。
+
+### Build-Time AST変換アーキテクチャ（SSG最適化）
+
+最もAstroに親和的で、性能損失のない静的サイト生成(SSG)方式の解決策です。
+
+  * **設計概念:** 作者はMarkdownに言語依存パスを書きません。代わりに相対パス（`../blog_develop_07/`）や抽象化された識別子（`@post/blog_develop_07`）だけを書きます。
+  * **システムフロー:**
+    1. Astroがビルド(Build)時にMarkdown文書を読み、抽象構文木(AST)構造としてパースします。
+    2. カスタムRemarkまたはRehypeプラグインが実行され、すべての`<a>`タグリンクをスキャンします。
+    3. 現在パース中のMarkdownファイルが属する言語ディレクトリ、たとえば`en`フォルダのコンテキストを把握します。
+    4. プラグインが抽象リンクの前に現在コンテキストの言語接頭辞（`/en/`）を動的に組み立て、最終HTMLを生成します。
+  * **長所/短所:** クライアントブラウザで実行されるJavaScriptがないため、性能は完璧です。ただし、ビルドパイプライン(ASTプラグイン)を直接構成する難易度があります。
+
+### Content Identifierマッピングアーキテクチャ（Headless CMSパターン）
+
+MarkdownをMDXへ拡張し、コンポーネントベースでルーティングを制御する方式です。
+
+  * **設計概念:** リンクを「パス」ではなく「コンテンツの固有ID」として扱います。各投稿のFrontmatterに固有の`uuid`や`slug`を付与します。
+  * **システムフロー:**
+    1. 本文作成時、標準Markdownリンク`[]()`の代わりに、カスタムMDXコンポーネント`<InternalLink id="blog_develop_07" />`を使います。
+    2. このコンポーネントは内部的にグローバル状態やAstroの`Astro.url`を通じて、ユーザーが現在見ているページの言語状態(Locale State)を読みます。
+    3. コンポーネントがレンダリングされるとき、注入された`id`と現在の`locale`を結合し、正しい`/en/blog/...`形式のハイパーリンクを動的に返します。
+  * **長所/短所:** 構造が非常に明示的で管理しやすいです。ファイルパスが変わっても固有IDが同じならリンクは壊れません。ただし、既存Markdownリンク構文をすべてカスタムコンポーネントへ置き換える手間があります。
+
+### Edge Middlewareルーティングアーキテクチャ（Vercel特化）
+
+アプリケーション(Astro)側ではなく、ネットワークインフラ(Vercel Edge)側でトラフィックを横取りして解決する方式です。
+
+  * **設計概念:** Markdownには`/ko/...`のような韓国語基準パスをそのまま置きます。代わりにユーザーがリンクをクリックしてサーバーへリクエストが行くとき、途中で目的地を差し替えます。
+  * **システムフロー:**
+    1. 英語ページを見ていたユーザーが本文の`/ko/blog/devlog_07`リンクをクリックします。
+    2. リクエストがVercel Edge Middlewareに到達します。
+    3. MiddlewareがユーザーのCookie（例: `NEXT_LOCALE=en`）またはブラウザの`Accept-Language`ヘッダー、直前ページのRefererを分析し、このユーザーが英語を好むことを把握します。
+    4. 対象URLの`/ko/`部分を`/en/`へRewrite（アドレスバーはそのまま、内容だけ変更）するか、301 Redirect（アドレスバーも変更）して正しいページへ差し込みます。
+  * **長所/短所:** 既に書かれたMarkdownファイルを一文字も修正する必要がありません。外部から間違ったリンクで入っても、正しい言語へ自動ルーティングする強力なユーザー体験を提供します。ただし、毎リクエストごとにEdge関数が実行されるため、わずかながらサーバーレスコンピューティング費用が発生します。
+
+-----
+
+### 学習および参照リンク集
+
+これらのアーキテクチャを深く学び、投稿に反映するために参照すべき公式文書です。
+
+  * **Astro Internationalization (i18n)公式ルーティングガイド:** Astroが基本的に言語別ルーティングをどう処理するか、基礎構造を把握できます。
+      * docs.astro.build/en/guides/internationalization/
+  * **Unified / Remark ASTプラグイン作成ガイド（1番アーキテクチャ用）:** Markdown構文をプログラムで操作するツリー概念を学べます。
+      * [unifiedjs.com/learn/guide/create-a-plugin/](https://unifiedjs.com/learn/guide/create-a-plugin/)
+  * **Vercel Edge Middleware i18nパターン（3番アーキテクチャ用）:** Edgeネットワークで国や言語ごとにトラフィックを分岐する設計パターンです。
+      * [vercel.com/docs/edge-network/middleware](https://www.google.com/search?q=https://vercel.com/docs/edge-network/middleware)
+```
+
+見ると、ASTとEdge Middlewareは自分がやろうとしている機能に対して大げさです。そこで、カスタムコンポーネントを通じてルーティングを制御する方法が最も適していると思い、この方法で実装することにしました。
+既存記事で韓国語投稿に固定されていたものは数個しかなかったので、あまり時間をかけずに修正できました。コード上も難しくなく、とても簡単な方式で実装できました。
+
+`import LocalizedLink from '@/components/LocalizedLink.astro';`
+
+リンクを書くとき、`<LocalizedLink href="/blog/devlog/blog/blog_develop_07/">Blog Devlog 07 - Using Local LLM for Blog Post Translation</LocalizedLink>`のように包んで使うと、自動で言語に合うリンクへ移動するように実装しました。既存記事もこの方式へ修正して適用しました。
+
+```javascript
+import { getRelativeLocaleUrl } from 'astro:i18n';
+
+interface Props {
+  href: string;
+  class?: string;
+}
+const { href, class: className } = Astro.props as Props;
+
+const currentLocale = Astro.currentLocale || 'ko';
+const isExternal = /^(https?:)?\/\//.test(href) || href.startsWith('mailto:') || href.startsWith('tel:');
+
+let localizedHref = href;
+
+if (!isExternal) {
+  // Normalize internal paths so old hardcoded locale links also work.
+  const withoutLocalePrefix = href.replace(/^\/(ko|jp|en)(?=\/|$)/, '');
+  const route = withoutLocalePrefix.replace(/^\/+/, '');
+  
+  localizedHref = getRelativeLocaleUrl(currentLocale, route);
+}
+if (currentLocale === 'ko' && localizedHref.startsWith('/blog/') && !localizedHref.startsWith('/ko/')) {
+  localizedHref = `/ko${localizedHref}`;
+}
+```
+
+## 次の実装
+前の記事で多言語ブログ記事のデプロイを完了すると書きましたが、実装しているうちにMachine Translation分野(MT)まで入ることになり、目標だった3月28日よりかなり長くかかりそうです。
+今この文章を書いている時点は、中間試験が終わった4月23日です。
+
+以下に実装課題を整理しておきます。
+
+1. コメントシステムGiscusを実DBで実装する。一定水準の認証だけ通れば誰でもコメントできるようにする。
+2. 検索機能は今は空なので、https://pagefind.app/ を使って実装する予定です。
+3. 閲覧数が増えたら、閲覧数に基づく人気記事機能を追加したいです。
+4. お知らせバナー機能も追加したいです。（例: 新しい記事が上がったとき、ブログ点検、紹介セクション更新など）

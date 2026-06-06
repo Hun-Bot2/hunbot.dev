@@ -1,0 +1,65 @@
+---
+title: 'ブログ開発日誌 09'
+description: 'ブログの問題改善: Redis重複閲覧数編'
+pubDate: '2026-03-18'
+heroImage: '/images/BLOG/redis-after.png'
+tags: ['blog', 'development','devlog','redis']
+category: 'blog_devlog'
+series: 'ブログ開発日誌'
+seriesOrder: 9
+---
+
+## Redisベースの閲覧数機能
+問題は、リロードすると値がずっと増え続ける点です。これをどう解決できるでしょうか。私のブログ構造に最も合うのは**Redis + TTL**です。
+
+閲覧数の重複防止の代表的な方法としてSessionを活用する方式がありますが、私のブログには常時Stateを維持するバックエンドサーバーやDBがなく、VercelのEdge Serverless環境を基盤として動作します。
+
+クライアントのリクエストが入ったときだけ一時的に実行され、すぐ消えるStatelessアーキテクチャであるため、セッションを管理するには別途セッションストアを構築し、毎回Cookieをパースして署名を検証するオーバーヘッドが発生します。
+
+したがって、**IPおよびTTL(Time-To-Live)ベースのロック(Locking)技法**を使って実装しようと思います。
+
+既存の`views.ts`ファイルにTTLロジックだけ追加すればよい簡単な作業なので、あまり時間はかけませんでした。
+
+<div class="grid grid-cols-2 gap-4 my-8">
+  <img src="/images/BLOG/redis-before.png" alt="redis-before" class="w-full h-auto rounded-lg border border-gray-200" />
+  <img src="/images/BLOG/redis-after.png" alt="redis-after" class="w-full h-auto rounded-lg border border-gray-200" />
+</div>
+
+### 閲覧数処理
+では、既存の閲覧数計算方式と新しい閲覧数計算方式は異なるのに、既に持っている閲覧数はどう処理するのか、という疑問が出ました。これは`incr()`で解決できるそうです。
+
+一般的なシステムで閲覧数のような機能はデータ更新であり、データ更新には:
+
+1. DBから現在値を読む。
+2. メモリで1を足す。
+3. 足した値をDBに追加する。
+
+というロジックが必要です。Redisの`incr()`はこの過程を一つの処理としてまとめ、**Atomic**に実行するため、望む動作を実現できるそうです。
+
+```typescript
+const views = await redis.incr(`pageviews:${slug}`);
+```
+
+https://redis.io/docs/latest/commands/set/
+
+### では閲覧数がない記事は？
+
+```typescript
+const isNewView = await redis.set(historyKey, '1', { nx: true, ex: 3600 });
+
+   if (!isNewView) {
+      const views = await redis.get<number>(`pageviews:${slug}`) || 0;
+      return new Response(JSON.stringify({ views, duplicated: true }), { status: 200 });
+    }
+    const views = await redis.incr(`pageviews:${slug}`);
+```
+
+この`isNewView`変数には文字列`"OK"`または`null`のどちらかが代入されます。OKが返る場合、`!isNewView`はfalseなのでそのままviewへ進んで閲覧数を増やし、そうでなければブロックに入り、数字を取得するか0に設定します。
+
+### 前回の締め
+1. 多言語翻訳機能を完成させたいです。
+2. 検索機能は今は空なので、https://pagefind.app/ を使って実装する予定です。
+3. 閲覧数が増えたら、閲覧数に基づく人気記事機能を追加したいです。
+4. お知らせバナー機能も追加したいです。（例: 新しい記事が上がったとき、ブログ点検、紹介セクション更新など）
+
+多言語翻訳機能は思ったより時間がかかっています。学業の事情でかなり忙しく、少しずつ進めています。締め切りは3月28日までに完成してデプロイすることです。

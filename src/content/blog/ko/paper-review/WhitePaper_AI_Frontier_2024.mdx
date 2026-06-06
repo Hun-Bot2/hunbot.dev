@@ -1,0 +1,98 @@
+---
+title: 'WhitePaper: Navigating the AI Frontier 2024'
+description: '2024년 AI 프론티어를 탐험하는 백서'
+pubDate: '2026-05-19'
+#heroImage: '/images/giscus.png'
+tags: ['AI', 'whitepaper', '2024']
+category: 'ai-frontier'
+series: 'ai-frontier'
+seriesOrder: 1
+---
+
+> **2024년 백서는 AI Agent를 “자율적으로 감지하고 행동하는 시스템”으로 설명했다. 하지만 2026년 현재 AI Agent를 이해하려면 단순한 자율성보다, 어떤 Context를 받고, 어떤 도구에 접근하며, 어떤 규칙 안에서 행동하고, 그 행동을 어떻게 관찰·검증할 것인가가 더 중요해졌다.**
+
+## WhitePaper 핵심 요약
+World Economic Forum과 Capgemini의 2024년 백서 *Navigating the AI Frontier: A Primer on the Evolution and Impact of AI Agents*는 
+AI Agent를 “환경을 감지하고, 목표를 달성하기 위해 행동하며, 그 결과 환경을 바꾸는 자율적 시스템”으로 정의한다. 
+
+백서의 핵심 구성요소는 **user input, environment, sensors, percepts, control centre, effectors, actions**이며, 그림 1은 이 흐름을 “입력 → 환경 인식 → 의사결정 → 행동 → 환경 변화”의 순환 구조로 보여준다.
+
+백서는 AI Agent의 발전을 **simple reflex agent → model-based reflex agent → goal-based agent → utility-based agent → advanced AI agent → AI agent system → multi-agent system**으로 설명한다. 즉, 단순 조건-행동 규칙에서 출발해, 내부 모델, 목표, 효용 함수, 기억, 계획, 도구 사용, 다중 에이전트 협업으로 확장되는 흐름이다. 이 관점은 Russell & Norvig식 고전적 agent taxonomy를 LLM/LMM 시대에 맞게 재해석한 것이다.  
+
+Advanced AI Agent의 핵심은 LLM/LMM 자체가 아니라, 그 모델을 둘러싼 **control centre, decision-making and planning, memory management, tools, effectors**의 조합이다. 백서의 그림 3은 agent가 단순 답변 생성기가 아니라, 입력을 받고, 계획을 세우고, 기억을 유지하며, 외부 도구를 호출하고, 디지털 또는 물리 환경에서 행동하는 시스템임을 보여준다. 
+
+백서가 가장 중요하게 보는 미래 방향은 **multi-agent system, MAS**이다. MAS에서는 여러 agent 또는 agent system이 협력·경쟁·협상하며 복잡한 목표를 달성한다. 백서는 스마트시티 교통관리 사례를 통해 차량, 신호등, 응급 서비스, 주차 시스템이 서로 정보를 교환하며 교통 흐름을 최적화하는 그림을 제시한다. 
+
+그러나 백서는 동시에 위험을 강조한다. AI Agent는 생산성, 맞춤형 지원, 의료·교육·금융·고객지원 효율을 높일 수 있지만, 오작동, 악의적 사용, 목표 불일치, 설명 가능성 부족, 책임 소재 불명확성, 고용 변화, 과의존 같은 위험을 만든다. 특히 백서는 AI Agent의 위험이 **적용 환경과 Context에 따라 달라진다**고 본다. 의료나 자율주행처럼 고위험 환경에서는 작은 오류도 큰 피해가 되지만, 고객지원처럼 저위험 환경에서는 같은 오류의 위험도가 낮아질 수 있다. 
+
+## 2025~2026년에 바뀐 점
+
+2024년 백서가 “AI Agent의 개념 지도”를 제공했다면, 2025~2026년의 변화는 그 개념이 실제 인프라, 표준, 평가, 규제로 옮겨갔다는 점이다.
+
+| 구분         | 2024년 백서 관점                | 2025~2026년 업데이트                                                    |
+| ---------- | -------------------------- | ------------------------------------------------------------------ |
+| Agent 정의   | 환경을 감지하고 행동하는 자율 시스템       | “모델 + 도구 + 기억 + 실행환경 + 권한 + 감시체계”를 갖춘 작업 수행 시스템으로 구체화              |
+| Context    | 환경, percept, memory 정도로 설명 | **Context Engineering**이라는 별도 연구·실무 프레임워크로 정립                      |
+| 도구 연결      | agent가 tools를 사용한다는 구조적 설명 | **MCP**가 LLM/agent와 외부 데이터·도구·워크플로 연결 표준으로 부상                      |
+| Agent 간 통신 | MAS는 미래 방향                 | **A2A**가 agent-to-agent 협업 프로토콜로 등장                                |
+| 평가         | 위험과 거버넌스 필요성 제기            | Agent Index, HAL 등 실제 agent 평가·투명성·재현성 문제가 연구 주제로 부상               |
+| 규제         | 윤리·책임·투명성 강조               | EU AI Act, International AI Safety Report 2026 등에서 배포·감시·책임 체계 구체화 |
+
+가장 큰 변화는 **Prompt Engineering에서 Context Engineering으로의 이동**이다. 2025년 arXiv에 공개된 *A Survey of Context Engineering for Large Language Models*는 Context Engineering을 단순 프롬프트 설계를 넘어, LLM 추론 시점에 제공되는 정보 payload를 체계적으로 최적화하는 분야로 정의한다. 이 survey는 Context Engineering을 **context retrieval/generation, context processing, context management**로 나누고, 이를 RAG, memory system, tool-integrated reasoning, multi-agent system과 연결한다. ([arXiv][1])
+
+두 번째 변화는 **MCP와 A2A의 등장**이다. MCP는 AI 애플리케이션이 파일, 데이터베이스, 검색엔진, 계산기, 워크플로 같은 외부 시스템에 연결되도록 하는 오픈 표준으로 설명된다. 공식 문서는 MCP를 “AI applications를 external systems에 연결하는 open-source standard”라고 정의한다. ([Model Context Protocol][2]) 2025년 6월 MCP specification은 MCP를 LLM 애플리케이션과 외부 데이터 소스·도구를 통합하는 open protocol로 정리했다. ([Model Context Protocol][3])
+
+A2A는 MCP와 다른 층위의 표준이다. MCP가 **agent-to-tool / model-to-context** 연결이라면, A2A는 **agent-to-agent** 연결이다. 공식 A2A 문서는 A2A를 서로 다른 프레임워크와 벤더에서 만들어진 AI Agent들이 안전하게 소통하고 협업하기 위한 open standard라고 설명하며, Google이 개발한 뒤 Linux Foundation에 기여했다고 설명한다. ([A2A Protocol][4]) Google의 발표도 A2A가 MCP를 보완하며, 대규모 multi-agent system 배포 문제를 해결하기 위한 프로토콜이라고 설명한다. ([Google Developers Blog][5])
+
+세 번째 변화는 **agent 개발 인프라의 제품화**다. 2025년 OpenAI는 Responses API를 agentic application을 위한 API primitive로 설명하며, web search, file search, computer use 같은 built-in tools를 한 번의 API 흐름 안에서 결합할 수 있게 했다고 밝혔다. ([OpenAI][6]) 이후 2025년에는 remote MCP server 지원, Code Interpreter, file search 개선, background mode, reasoning summaries, encrypted reasoning items 같은 기능이 추가되었다. ([OpenAI][7]) 2026년에는 Agents SDK가 파일 검사, 명령 실행, 코드 편집, long-horizon task, sandbox execution을 지원하는 방향으로 확장되었다. ([OpenAI][8])
+
+네 번째 변화는 **평가와 관찰 가능성의 중요성**이다. 2026년에 공개된 *2025 AI Agent Index*는 agentic AI 생태계가 빠르게 변하고 문서화가 불균일하여 연구자와 정책입안자가 추적하기 어렵다고 지적하며, 30개의 state-of-the-art AI agents의 설계, 기능, 생태계, 안전 기능을 문서화했다. 특히 많은 개발자가 safety, evaluation, societal impacts에 대한 정보를 충분히 공개하지 않는다고 지적한다. ([arXiv][9]) 또한 Holistic Agent Leaderboard 논문은 기존 agent benchmark가 실제로 agent가 얼마나 잘 작동하는지 이해하는 데 한계가 있으며, 실제 환경에서 신뢰성 있게 작동하는 agent를 평가하는 방향으로 이동해야 한다고 주장한다. ([arXiv][10])
+
+다섯 번째 변화는 **규제와 배포 맥락의 구체화**다. EU AI Act는 2024년 8월 발효되었고, 금지 AI 관행과 AI literacy 의무는 2025년 2월부터, GPAI 모델 관련 governance와 obligations는 2025년 8월부터 적용되었으며, 전체 적용은 2026년 8월로 예정되어 있다. ([Digital Strategy Europe][11]) 이는 백서가 말한 “윤리와 거버넌스 필요성”이 2025~2026년에는 실제 법적·조직적 의무로 옮겨갔다는 의미다.
+
+## Context 정리: 교수님이 강조하신 부분
+
+블로그에서 가장 중요한 파트는 **Context**를 단순히 “프롬프트에 넣는 추가 정보”로 설명하지 않는 것이다. AI Agent에서 Context는 다음을 모두 포함한다.
+
+**첫째, 환경 Context**다. 백서에서 environment는 agent가 동작하는 경계이며, physical infrastructure와 digital infrastructure를 모두 포함한다. Sensor는 환경을 감지하고, effector는 환경을 바꾸며, action은 그 변경 자체다. 즉 Context는 텍스트가 아니라 agent가 “무엇을 볼 수 있고, 어디까지 행동할 수 있는가”를 정하는 작동 조건이다. 
+
+**둘째, 기억 Context**다. Advanced AI Agent에서 memory management는 이전 상호작용을 기억하고, 대화 맥락이나 과거 데이터를 활용해 다음 의사결정의 관련성을 유지하는 역할을 한다. 이 때문에 agent는 단발성 질의응답 시스템이 아니라, 과거 상태를 이어받는 동적 시스템이 된다. 
+
+**셋째, 도구 Context**다. Agent가 어떤 도구를 사용할 수 있는지, 그 도구의 입력·출력 형식은 무엇인지, 도구 호출 결과를 어떻게 해석할 것인지가 모두 Context다. 2025년 이후 MCP가 중요해진 이유도 여기에 있다. MCP는 LLM 애플리케이션이 필요한 context를 얻기 위해 외부 데이터와 도구에 표준 방식으로 연결되도록 한다. ([Model Context Protocol][3])
+
+**넷째, 사회적·위험 Context**다. 같은 agent라도 의료, 금융, 교육, 고객지원, 엔터테인먼트 중 어디에 배치되느냐에 따라 허용 가능한 오류율과 필요한 감시 수준이 달라진다. 백서 역시 AI Agent의 잠재적 피해 위험은 특정 application과 environment, 그리고 영향을 받는 stakeholder를 이해해야 평가할 수 있다고 말한다. 
+
+**다섯째, 상호작용 Context**다. 사용자의 목표, 선호, 제약, 현재 상태, 대화 이력, 조직 정책, 권한 수준이 모두 agent 행동을 제한하거나 가능하게 한다. 2025년 Context Engineering survey가 말하듯, 최신 LLM 시스템의 성능은 추론 시점에 어떤 contextual information을 제공하느냐에 근본적으로 의존한다. ([arXiv][1])
+
+이 부분을 보조하기 위해 업로드한 *No Pervasive Computing Without Intelligent Systems*도 연결하면 좋다. 이 논문은 pervasive computing이 사용자를 압도하고, 접근을 방해하고, 끊임없이 제어를 요구하는 시스템이 될 수 있다고 경고한 뒤, 이를 해결하려면 **understandability, integration, adaptivity**가 필요하다고 정리한다.   이 세 가지는 2026년 AI Agent에도 그대로 적용된다. 이해 가능하지 않은 agent는 신뢰받기 어렵고, 통합되지 않은 agent는 업무 흐름을 방해하며, 적응하지 못하는 agent는 사용자에게 계속 수정을 요구한다.
+
+따라서 블로그에서는 Context를 다음 문장으로 정리하면 좋습니다.
+
+> **AI Agent의 Context란 모델이 답을 생성하기 위해 참고하는 텍스트 정보만이 아니라, agent가 놓인 환경, 사용자의 목표와 제약, 기억, 도구 접근권한, 사회적 위험도, 그리고 행동을 감시하는 규칙까지 포함하는 전체 작동 조건이다.**
+
+## 블로그용 결론 문단
+
+2024년 백서는 AI Agent를 이해하기 위한 기본 지도를 제공한다. Agent는 환경을 감지하고, 목표를 세우고, 기억과 도구를 활용하며, 행동을 통해 환경을 바꾸는 시스템이다. 그러나 2026년 현재 이 설명만으로는 충분하지 않다. 이제 AI Agent의 핵심은 “얼마나 자율적인가”보다 “어떤 Context 안에서 자율적인가”에 있다.
+
+2025~2026년의 변화는 크게 세 방향이다. 첫째, Prompt Engineering은 Context Engineering으로 확장되었다. 둘째, MCP와 A2A 같은 표준이 등장하면서 agent의 도구 연결과 agent 간 통신이 구체화되었다. 셋째, agent의 위험은 추상적 윤리 문제가 아니라 평가, 로그, 모니터링, sandbox, human-in-the-loop, 법적 책임의 문제로 바뀌었다.
+
+결국 AI Agent를 제대로 이해하려면 모델 자체보다 그 모델을 둘러싼 Context를 봐야 한다. 어떤 데이터를 볼 수 있는가, 어떤 도구를 사용할 수 있는가, 어떤 권한을 갖는가, 어떤 환경에서 행동하는가, 실패했을 때 누가 책임지는가가 agent의 실제 능력과 위험을 결정한다. 이 점에서 2024년 백서는 출발점이고, 2026년의 핵심 키워드는 **Context Engineering, Interoperability, Observability, Governance**라고 정리할 수 있다.
+
+[1]: https://arxiv.org/abs/2507.13334 "[2507.13334] A Survey of Context Engineering for Large Language Models"
+[2]: https://modelcontextprotocol.io/docs/getting-started/intro "What is the Model Context Protocol (MCP)? - Model Context Protocol"
+[3]: https://modelcontextprotocol.io/specification/2025-06-18 "Specification - Model Context Protocol"
+[4]: https://a2a-protocol.org/latest/ "A2A Protocol"
+[5]: https://developers.googleblog.com/en/a2a-a-new-era-of-agent-interoperability/ "
+            
+            Announcing the Agent2Agent Protocol (A2A)
+            
+            
+            \- Google Developers Blog
+            
+        "
+[6]: https://openai.com/index/new-tools-for-building-agents/ "New tools for building agents | OpenAI"
+[7]: https://openai.com/index/new-tools-and-features-in-the-responses-api/ "New tools and features in the Responses API | OpenAI"
+[8]: https://openai.com/index/the-next-evolution-of-the-agents-sdk/ "The next evolution of the Agents SDK | OpenAI"
+[9]: https://arxiv.org/abs/2602.17753 "[2602.17753] The 2025 AI Agent Index: Documenting Technical and Safety Features of Deployed Agentic AI Systems"
+[10]: https://arxiv.org/abs/2510.11977 "[2510.11977] Holistic Agent Leaderboard: The Missing Infrastructure for AI Agent Evaluation"
+[11]: https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai "AI Act | Shaping Europe’s digital future"

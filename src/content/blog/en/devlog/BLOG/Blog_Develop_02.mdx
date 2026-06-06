@@ -1,0 +1,218 @@
+---
+title: 'Blog Devlog 02'
+description: 'Implementation notes for multilingual i18n support and image path optimization'
+pubDate: '2025-10-28'
+heroImage: '/images/blog-placeholder-about.jpg'
+tags: ['Devlog', 'Astro', 'i18n', 'Refactoring']
+category: 'blog_devlog'
+series: 'Blog Devlog'
+seriesOrder: 2
+---
+
+## Project
+Multilingual support and image system improvements for my personal blog.
+
+- Period: 2025-10-28
+- Role: Blog developer
+
+---
+
+## Main Work
+
+- Configured Astro i18n and implemented multilingual routing
+- Structured blog content by language
+- Improved image path system from `src/assets` to `public/images`
+- Improved type safety and simplified code
+
+---
+
+## Key Work Summary
+
+### 1. Astro i18n Configuration (`astro.config.mjs`)
+
+```javascript
+i18n: {
+  defaultLocale: 'ko',
+  locales: ['ko', 'jp', 'en'],
+  routing: {
+    prefixDefaultLocale: false
+  }
+}
+```
+
+- **Korean**: `/` (default language, no prefix)
+- **Japanese**: `/jp/`
+- **English**: `/en/`
+
+### 2. Translation System (`src/i18n/ui.ts`)
+
+- Created translation dictionaries for three languages: ko, jp, en
+- Added a type-safe `useTranslations()` helper
+- Fully translated UI text for navigation, blog pages, and About page
+
+**Main translation keys**:
+- `nav`: home, blog, about
+- `blog`: all-posts, read-more, no-posts, tags, category
+- `about`: title, greeting, intro, background, interests, skills, contact
+
+### 3. LanguagePicker Component (`src/components/LanguagePicker.astro`)
+
+- Dropdown-style language selector
+- Shows current language state with an icon and language name
+- Keeps the same path when changing language, for example `/blog` -> `/jp/blog`
+
+### 4. Language-Specific Page Routing (`src/pages/[lang]/`)
+
+New page structure:
+
+```text
+src/pages/
+  ├── index.astro (/ → /ko/ redirect)
+  ├── about.astro (/about → /ko/about redirect)
+  └── [lang]/
+      ├── index.astro (language-specific home)
+      ├── about.astro (language-specific about)
+      └── blog/
+          ├── index.astro (language-specific blog list)
+          └── [...slug].astro (language-specific post page)
+```
+
+**Main logic**:
+- Generate ko, jp, en paths with `getStaticPaths()`
+- Filter posts by language using `post.id.startsWith(lang + '/')`
+- Use `useTranslations(lang)` on each page
+
+### 5. Blog Content Restructure
+
+Before:
+
+```text
+src/content/blog/
+  ├── devlog/
+  ├── review/
+  └── contemplation/
+```
+
+After:
+
+```text
+src/content/blog/
+  ├── ko/
+  │   ├── devlog/
+  │   ├── review/
+  │   └── contemplation/
+  ├── jp/
+  │   └── sample.md
+  └── en/
+      └── sample.md
+```
+
+### 6. Image System Improvement
+
+**Problems**:
+- Referencing images in `src/assets/` from content collections with relative paths caused errors
+- Type conflicts between the `image()` helper and public folder paths
+- Image type-checking logic was too complex
+
+**Solution**:
+1. Move all images to `public/images/`
+2. Remove the `image()` helper from `content.config.ts` and simplify it to `z.string().optional()`
+3. Remove the Image component from `BaseHead.astro` and `BlogPost.astro`
+4. Standardize on plain `<img>` tags
+
+**Changed files**:
+- `src/content.config.ts`: simplified `heroImage` schema
+- `src/components/BaseHead.astro`: removed ImageMetadata, changed to string URL
+- `src/layouts/BlogPost.astro`: removed Image import and conditional rendering
+- `src/pages/[lang]/about.astro`: removed image import and used direct URL
+
+**Image path format**:
+
+```markdown
+# Correct path
+heroImage: '/images/KOSSDA.png'
+
+# Wrong paths
+heroImage: 'images/KOSSDA.png'  # missing slash
+heroImage: '../../assets/KOSSDA.png'  # nonexistent path
+```
+
+### 7. Legacy Code Cleanup
+
+- Fully removed the old `/blog` folder
+- Removed duplicate blog posts
+- Removed unused image imports
+
+---
+
+## Tech Stack Changes
+
+### Added Configuration
+- `astro.config.mjs`: i18n settings
+- `src/i18n/ui.ts`: translation system
+
+### Modified Components
+- `Header.astro`: integrated LanguagePicker
+- `BaseHead.astro`: simplified image types
+- `BlogPost.astro`: simplified image handling logic
+
+### Removed Dependencies
+- `astro:assets` Image component from blog posts
+- ImageMetadata type checks
+
+---
+
+## Troubleshooting
+
+### Issue 1: Content Collection Image Path Error
+**Symptom**: `ImageNotFound: Could not find requested image`
+
+**Cause**: The content collection `image()` helper did not resolve relative paths correctly in the nested folder structure.
+
+**Solution**:
+- Stop using `src/assets`
+- Move images to `public/images`
+- Change `heroImage` to a string type
+
+### Issue 2: BaseHead Image Type Conflict
+**Symptom**: `Property 'src' does not exist on type 'string'`
+
+**Cause**: BaseHead expected ImageMetadata but received a string URL.
+
+**Solution**:
+- Change image prop type to `string`
+- Replace `image.src` with `image`
+- Set fallback to `/images/blog-placeholder-1.jpg`
+
+### Issue 3: About Page Build Failure
+**Symptom**: `Rollup failed to resolve import "/images/my_photo.png"`
+
+**Cause**: Tried to import an image from the public folder.
+
+**Solution**:
+- Remove the import statement
+- Use direct URL string: `src="/images/my_photo.jpeg"`
+- Fix file extension from `.png` to `.jpeg`
+
+---
+
+## Lessons Learned
+
+### Limits of Astro Content Collections
+- The `image()` helper is stable only in simple folder structures.
+- In nested language-specific structures, using the public folder is safer.
+- A balance is needed between type safety and simplicity.
+
+### i18n Strategy
+- URL-based routing is better for SEO.
+- Keep the default language prefix-free to preserve existing URLs.
+- Centralized translation dictionaries are easier to manage.
+
+### Importance of Refactoring
+- A simple structure is more stable than complex type checking.
+- Build errors should be fixed immediately to avoid technical debt.
+- Proceed in small testable steps: dev -> build -> deploy.
+
+---
+
+Written on: 2025-10-28

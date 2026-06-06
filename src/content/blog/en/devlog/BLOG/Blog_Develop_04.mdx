@@ -1,0 +1,69 @@
+---
+title: 'Blog Devlog 04'
+description: 'CSS fixes'
+pubDate: '2025-11-28'
+# heroImage: '/images/giscus.png'
+tags: ['Devlog', 'Bug Fix']
+category: 'blog_devlog'
+series: 'Blog Devlog'
+seriesOrder: 4
+---
+
+This continues from <u>*[the previous post](../blog_develop_03)*</u>.  
+In the previous post, I mentioned that code blocks were hard to see in the light theme. This turned out to be a CSS styling problem, so I was able to fix it relatively easily.  
+After about two to three hours of trial and error, I finished the CSS fix and made the code blocks render clearly as below.
+
+```css
+.prose pre.astro-code {
+  margin: var(--spacing-8) 0;
+  padding: var(--spacing-4);
+  border-radius: 0.75rem;
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
+}
+```
+
+## Problem
+- Shiki already handles the code highlighting theme, but I was adding separate colors and backgrounds to `code` and `pre` in `global.css`.
+- Those styles assumed **dark background + white text**, so in light mode the text was almost invisible.
+
+## Old Code
+```css
+code {
+  padding: 2px 5px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  font-family: 'JetBrains Mono', Monaco, Consolas, 'Courier New', monospace;
+  font-size: 0.85em;
+  color: rgb(248, 249, 250);
+}
+
+pre {
+  padding: var(--spacing-4);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.3);
+  overflow-x: auto;
+  margin-bottom: var(--spacing-8);
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+```
+
+## Current Code
+```css
+.prose pre.astro-code {
+  margin: var(--spacing-8) 0;
+  padding: var(--spacing-4);
+  border-radius: 0.75rem;
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
+}
+```
+
+## What I Fixed
+- **Removed forced colors**: I removed the parts that forced white text and dark backgrounds on `code` and `pre`. Now Shiki's light/dark theme colors are used as-is.
+- **Narrowed the target**: I scoped the styling to `.prose pre.astro-code`, so only blog post code blocks are styled.
+- **Kept only visual guidance**: Instead of colors, I added spacing, rounded corners, and a thin border so the boundary is visible even in light mode. Dark mode keeps the existing theme colors.
+
+### Additional Fix After Exams
+- I need to rebuild the view counter.

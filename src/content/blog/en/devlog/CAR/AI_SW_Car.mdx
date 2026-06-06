@@ -1,0 +1,252 @@
+---
+title: 'AI-SW Car Development and Driving Retrospective'
+description: 'The first development and driving retrospective for the AI-SW Car project.'
+pubDate: '2026-01-20'
+heroImage: '/images/AUTO/Car.png'
+tags: ['autonomous', 'ai', 'car', 'development', 'log']
+category: 'autonomous_car'
+---
+
+**"The most important thing is data."**
+
+## Trouble Shooting
+
+### 1. Hardware Issues
+I think I spent almost six to seven hours solving this hardware issue. I tested by replacing parts such as the motor, variable resistor, motor driver, and jumper cables. In the end, the issue was solved when I replaced the Arduino board with an official one.
+
+The same was true for port conversion and the issue where `tty/AC*` did not appear.
+
+**-> Solved by replacing the Arduino board with an official one.**
+
+### 2. Software Issues
+
+- Depending on the ROS2 program being run, some wheels rotated while others did not.
+
+**-> This was caused by mixed-up variable names and serial ports in the code. I reset the numbering and rebuilt to solve it.**
+
+- Data collection was delayed, so we failed to secure enough data.
+
+**-> Trained together with a dataset from two years ago.**
+
+**Lane recognition**
+- The car must not touch the white lane line. Avoiding the lane line is better than returning after touching it.
+- During labeling, the lane line should have been excluded.
+- Traffic light color recognition needs improvement through HSV range adjustment.
+
+**Model training**
+- YOLOv8 struggles to recognize distant objects, so the labeling range needs to be reduced.
+- The labeled `className` and the code-side `className` must match.
+- Python code needed more modification than expected.
+- The lane2 and traffic_light data were imbalanced. lane2 had about five times more examples, making effective training difficult.
+
+## Roboflow & Colab
+Total dataset: about 1,500 images  
+lane2: about 1,350 images  
+traffic_light: about 150 images
+
+### First Dataset
+
+**Dataset Split**
+
+| Type | Percentage | Count | Unit |
+|------|-----------|-------|------|
+| Train Set | 91% | 2634 | Images |
+| Valid Set | 9% | 249 | Images |
+| Test Set | 0% | 0 | Images |
+
+**Preprocessing**
+
+| Item | Configuration |
+|------|---|
+| Auto-Orient | Applied |
+| Resize | Stretch to 640x480 |
+
+**Augmentations**
+
+| Item | Configuration |
+|------|---|
+| Outputs per training example | 3 |
+| Flip | Horizontal |
+| Crop | 8% Minimum Zoom, 22% Maximum Zoom |
+| Brightness | Between -24% and +24% |
+| Noise | Up to 1.53% of pixels |
+
+### Second Dataset
+
+**Dataset Split**
+
+| Type | Percentage | Count | Unit |
+|------|-----------|-------|------|
+| Train Set | 91% | 2667 | Images |
+| Valid Set | 9% | 249 | Images |
+| Test Set | 0% | 0 | Images |
+
+**Preprocessing**
+
+| Item | Configuration |
+|------|---|
+| Auto-Orient | Applied |
+| Resize | Stretch to 640x480 |
+
+**Augmentations**
+
+| Item | Configuration |
+|------|---|
+| Outputs per training example | 3 |
+| Crop | 8% Minimum Zoom, 22% Maximum Zoom |
+| Brightness | Between -24% and +24% |
+
+### Third Dataset
+
+**Dataset Split**
+
+| Type | Percentage | Count | Unit |
+|------|-----------|-------|------|
+| Train Set | 82% | 1779 | Images |
+| Valid Set | 18% | 384 | Images |
+| Test Set | 0% | 0 | Images |
+
+**Preprocessing**
+
+| Item | Configuration |
+|------|---|
+| Auto-Orient | Applied |
+| Resize | Fit, with black edges, in 640x480 |
+
+**Augmentations**
+
+| Item | Configuration |
+|------|---|
+| Outputs per training example | 3 |
+| Crop | 0% Minimum Zoom, 30% Maximum Zoom |
+| Hue | Between -10° and +10° |
+| Brightness | Between 0% and +25% |
+| Exposure | Between -5% and +5% |
+| Blur | Up to 2px |
+| Noise | Up to 1.5% of pixels |
+
+All three datasets above were trained with YOLOv8, and the third training run showed the best performance.
+
+When training the dataset created in Roboflow on Colab, the following code was required:
+
+1. Because our data labeling was done with polygons, the task had to be set as a segmentation task.
+2. A normal `yolov8n.pt` only knows how to find boxes, while a model with **-seg** at the end has an additional neural network head that draws masks, or shapes, as well as boxes.
+
+```python
+task=segment mode=train model=yolov8n-seg.pt
+```
+
+## Training Result
+![result](/images/AUTO/result.png)
+
+### Result Interpretation
+
+#### A. Loss Functions: Lower Is Better
+
+These scores show how wrong the model is compared to the correct answer. The closer to 0, the better.
+
+**`box_loss` (Bounding Box Loss)**
+- Meaning: "How accurately did the model draw the box?"
+- Detail: Calculated based on how much the predicted box overlaps with the ground-truth box, using IoU.
+
+**`cls_loss` (Classification Loss)**
+- Meaning: "Did the model identify the object's class correctly?"
+- Detail: Increases when a lane is misclassified as a traffic light, or background is recognized as an object.
+
+**`dfl_loss` (Distribution Focal Loss)**
+- Meaning: "Are the box boundaries clear?"
+- Detail: A loss value that helps compensate when object edges are blurry.
+
+#### B. Metrics: Higher, Closer to 1.0, Is Better
+
+**`Precision`**
+- Meaning: "Of everything the model claimed to find, how many were actually correct?"
+- Example: If the model detected traffic lights 100 times and 90 were real, precision = 0.9.
+
+**`Recall`**
+- Meaning: "Of all real answers that exist, what percentage did the model find?"
+- Example: If there are 100 traffic lights on the track and the model finds only 80, recall = 0.8.
+
+**`mAP50` (mean Average Precision @ IoU=0.5)**
+- Meaning: A prediction is considered correct when the predicted box and ground-truth box overlap by **50% or more**.
+- Result: **0.948**
+- Analysis: val_loss increased after epoch 20, so the model appears to have overfit the training data.
+
+> **Actual driving evaluation**
+> - In autonomous driving, `mAP50` is the most important metric.
+> - Goal: complete two laps of the track within four minutes.
+> - Result: the car touched the white line but did not deviate significantly. mAP50 of 94.8% is sufficiently good.
+> - Improvement: after avoiding the white line, aim for better performance by driving closer to the center.
+
+**`mAP50-95` (mean Average Precision @ IoU=0.5:0.95)**
+- Meaning: The average calculated while increasing the correctness threshold from 50% to 95% in 5% increments.
+- Feature: Because this is a stricter standard, the score appears much lower.
+
+---
+
+### 2. Mathematical Formula for mAP
+
+mAP is calculated in the order **IoU -> Precision/Recall -> AP -> mAP**.
+
+#### Step 1: IoU (Intersection over Union)
+
+Calculate how much two boxes, the predicted box and the ground-truth box, overlap.
+
+$$
+IoU = \frac{\text{Intersection area}}{\text{Union area}}
+$$
+
+- If the IoU value exceeds a certain threshold, such as 0.5, it is judged as a True Positive.
+- The higher the value, the more accurately the boxes match.
+
+#### Step 2: Precision and Recall
+
+- **TP (True Positive):** Correctly found
+- **FP (False Positive):** Incorrectly found
+- **FN (False Negative):** Missed
+
+$$
+Precision = \frac{TP}{TP + FP} \text{ (precision)}
+$$
+
+$$
+Recall = \frac{TP}{TP + FN} \text{ (recall)}
+$$
+
+---
+
+### Result Values
+
+| Class | Images | Instances | Box(P) | R | mAP50 | mAP50-95 |
+| --- | --- | --- | --- | --- | --- | --- |
+| **all** | 249 | 276 | 0.901 | 0.963 | **0.948** | 0.803 |
+| **lane2** | 231 | 236 | 0.978 | 0.951 | **0.974** | 0.829 |
+| **traffic light** | 39 | 40 | 0.823 | 0.975 | **0.923** | 0.777 |
+
+- **Note:** `Precision(0.823)` is lower than `Recall(0.975)`.
+This can be interpreted as: **"The model almost never misses traffic lights, since recall is high, but sometimes mistakes non-traffic-lights for traffic lights, since precision is low."**
+
+## What Was Lacking
+
+### Control Part (Motion Planner)
+
+**Lane control signal**
+- In `motion_planner.py`, both slope and coordinates should have been used when generating the lane control signal for accurate operation.
+- The slope value changes depending on the camera's field of view, such as near distance vs far distance.
+- It is not possible to generate the control signal with slope alone.
+
+**LiDAR sensor**
+- Test environment: range 0-70°, min_dist = 0.5m, max_dist = 1.0m
+- Worked normally in the test environment.
+- Did not work in the real driving environment, so parameter readjustment is needed.
+
+## Closing
+This was my first autonomous driving project, covering data collection, preprocessing, model training and evaluation, code fixes, and actual driving over four days during vacation: Friday, Saturday, Monday, and Tuesday.
+
+On Friday and Saturday, we collected and preprocessed data, labeled it, and trained the model. On Monday, we tried a test drive, but the trained model could not drive properly. So we re-labeled sample data, trained again, and drove again.
+
+Through this process, we confirmed that the model trained on the final dataset could drive normally. However, issues with `traffic_light` and LiDAR were only discovered on Tuesday. After finishing late on Monday night, we came back Tuesday, made fixes for about two hours, and then performed the actual run.
+
+The result was somewhat disappointing, an encouragement prize, but if I participate in a similar competition later, I think I can achieve a better result based on the trial and error I learned here.
+
+**[1/16 ~ 1/20] AI-SW Car development and driving retrospective completed.**

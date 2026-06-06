@@ -1,0 +1,218 @@
+---
+title: 'ブログ開発日誌 02'
+description: '多言語(i18n)対応の実装と画像パス最適化の記録'
+pubDate: '2025-10-28'
+heroImage: '/images/blog-placeholder-about.jpg'
+tags: ['Devlog', 'Astro', 'i18n', 'Refactoring']
+category: 'blog_devlog'
+series: 'ブログ開発日誌'
+seriesOrder: 2
+---
+
+## プロジェクト
+個人ブログの多言語対応と画像システム改善
+
+- 期間: 2025-10-28
+- 役割: ブログ開発者
+
+---
+
+## 主な作業
+
+- Astro i18n設定と多言語ルーティング実装
+- ブログコンテンツを言語別に構造化
+- 画像パスシステム改善（`src/assets` → `public/images`）
+- 型安全性改善とコード簡素化
+
+---
+
+## 主な作業まとめ
+
+### 1. Astro i18n設定（`astro.config.mjs`）
+
+```javascript
+i18n: {
+  defaultLocale: 'ko',
+  locales: ['ko', 'jp', 'en'],
+  routing: {
+    prefixDefaultLocale: false
+  }
+}
+```
+
+- **韓国語**: `/`（基本言語、prefixなし）
+- **日本語**: `/jp/`
+- **英語**: `/en/`
+
+### 2. 翻訳システム構築（`src/i18n/ui.ts`）
+
+- 3言語（ko, jp, en）の翻訳辞書を作成
+- `useTranslations()`ヘルパーで型安全な翻訳アクセス
+- ナビゲーション、ブログ、AboutページなどのUIテキストを完全翻訳
+
+**主な翻訳キー**:
+- `nav`: home, blog, about
+- `blog`: all-posts, read-more, no-posts, tags, category
+- `about`: title, greeting, intro, background, interests, skills, contact
+
+### 3. LanguagePickerコンポーネント（`src/components/LanguagePicker.astro`）
+
+- ドロップダウン形式の言語選択
+- 現在の言語状態を表示（アイコン + 言語名）
+- 言語変更時に同じパスを維持（例: `/blog` → `/jp/blog`）
+
+### 4. 言語別ページルーティング（`src/pages/[lang]/`）
+
+新しいページ構造:
+
+```text
+src/pages/
+  ├── index.astro (/ → /ko/ リダイレクト)
+  ├── about.astro (/about → /ko/about リダイレクト)
+  └── [lang]/
+      ├── index.astro (言語別ホーム)
+      ├── about.astro (言語別紹介)
+      └── blog/
+          ├── index.astro (言語別ブログ一覧)
+          └── [...slug].astro (言語別個別投稿)
+```
+
+**主なロジック**:
+- `getStaticPaths()`でko, jp, enパス生成
+- `post.id.startsWith(lang + '/')`で言語別投稿をフィルタリング
+- 各ページで`useTranslations(lang)`を使用
+
+### 5. ブログコンテンツ構造再編
+
+既存:
+
+```text
+src/content/blog/
+  ├── devlog/
+  ├── review/
+  └── contemplation/
+```
+
+変更後:
+
+```text
+src/content/blog/
+  ├── ko/
+  │   ├── devlog/
+  │   ├── review/
+  │   └── contemplation/
+  ├── jp/
+  │   └── sample.md
+  └── en/
+      └── sample.md
+```
+
+### 6. 画像システム改善
+
+**問題点**:
+- `src/assets/`の画像をcontent collectionから相対パスで参照するとエラー
+- `image()`ヘルパーとpublicフォルダパスの間で型衝突
+- 複雑な画像タイプチェックロジック
+
+**解決方法**:
+1. すべての画像を`public/images/`へ移動
+2. `content.config.ts`で`image()`ヘルパーを削除し、`z.string().optional()`へ簡素化
+3. `BaseHead.astro`と`BlogPost.astro`からImageコンポーネントを削除
+4. 標準`<img>`タグへ統一
+
+**変更ファイル**:
+- `src/content.config.ts`: heroImageスキーマ簡素化
+- `src/components/BaseHead.astro`: ImageMetadata削除、string URLへ変更
+- `src/layouts/BlogPost.astro`: Image import削除、条件付きレンダリング削除
+- `src/pages/[lang]/about.astro`: 画像import削除、直接URL使用
+
+**画像パス形式**:
+
+```markdown
+# 正しいパス
+heroImage: '/images/KOSSDA.png'
+
+# 間違ったパス
+heroImage: 'images/KOSSDA.png'  # スラッシュ不足
+heroImage: '../../assets/KOSSDA.png'  # 存在しないパス
+```
+
+### 7. レガシーコード整理
+
+- `/blog`フォルダ完全削除
+- 重複ブログ投稿削除
+- 使っていない画像import削除
+
+---
+
+## 技術スタック変更点
+
+### 追加設定
+- `astro.config.mjs`: i18n設定
+- `src/i18n/ui.ts`: 翻訳システム
+
+### 修正コンポーネント
+- `Header.astro`: LanguagePicker統合
+- `BaseHead.astro`: 画像型簡素化
+- `BlogPost.astro`: 画像処理ロジック簡素化
+
+### 削除した依存性
+- `astro:assets` Imageコンポーネント（ブログ投稿内）
+- ImageMetadata型チェック
+
+---
+
+## 問題解決過程
+
+### Issue 1: Content Collection画像パスエラー
+**症状**: `ImageNotFound: Could not find requested image`
+
+**原因**: Content collectionの`image()`ヘルパーが、ネストされたフォルダ構造で相対パスを正しく解釈できなかった。
+
+**解決**:
+- `src/assets`使用をやめる
+- 画像を`public/images`へ移動
+- `heroImage`を文字列型へ変更
+
+### Issue 2: BaseHead画像型衝突
+**症状**: `Property 'src' does not exist on type 'string'`
+
+**原因**: BaseHeadがImageMetadataを期待していたが、文字列URLを受け取っていた。
+
+**解決**:
+- image prop型を`string`へ変更
+- `image.src` → `image`へ修正
+- fallbackを`/images/blog-placeholder-1.jpg`に設定
+
+### Issue 3: Aboutページビルド失敗
+**症状**: `Rollup failed to resolve import "/images/my_photo.png"`
+
+**原因**: Publicフォルダの画像をimportしようとした。
+
+**解決**:
+- import文削除
+- 直接URL文字列を使用: `src="/images/my_photo.jpeg"`
+- ファイル拡張子修正（.png → .jpeg）
+
+---
+
+## 学んだこと
+
+### Astro Content Collectionsの限界
+- `image()`ヘルパーは単純なフォルダ構造でのみ安定する。
+- ネストされた言語別構造ではpublicフォルダ使用のほうが安全。
+- 型安全性と単純さのバランスが必要。
+
+### i18n実装戦略
+- URLベースルーティングはSEOに有利。
+- 基本言語はprefixなしで使用し、既存URLを維持。
+- 翻訳辞書は中央化して管理しやすくする。
+
+### リファクタリングの重要性
+- 複雑な型チェックより単純な構造のほうが安定する。
+- ビルドエラーはすぐ解決して技術的負債を防ぐ。
+- 小さな単位でテストしながら進める（dev → build → deploy）。
+
+---
+
+作成日: 2025-10-28

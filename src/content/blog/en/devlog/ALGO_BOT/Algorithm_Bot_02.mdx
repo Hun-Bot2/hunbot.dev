@@ -1,0 +1,82 @@
+---
+title: 'Algorithm Study Automation + alpha: A RAG-Based Similar Problem Recommendation System'
+description: 'Designing AI-based study automation that goes beyond simple review and helps knowledge stick'
+pubDate: '2025-12-30'
+heroImage: '/images/ALGO_RAG/algo-RAG.svg'
+tags: ['algorithm', 'RAG', 'LLM', 'automation']
+category: 'algo_bot'
+series: 'Algorithm Bot'
+seriesOrder: 2
+---
+
+## Why Build This?
+
+The Slack reminder bot I built around the Ebbinghaus forgetting curve was successful at making me revisit **problems I had already solved**.
+However, to keep the knowledge in long-term memory and actually improve algorithm skill, I need to solve **variant problems** or **problems from the same category**.
+
+During review, I was manually giving the problem to an AI and asking, "Find problems similar to this." Now I want to automate that step.
+
+After about a week of solving and studying problems, the current pain points are:
+
+**Platform and language differences**: After solving a Baekjoon problem, I have to ask an AI again to find similar problems from foreign platforms such as LeetCode or Codeforces.
+
+**Search noise**: A similar title or statement does not necessarily mean the same algorithm is required.
+There can be many possible solution strategies, but for review I want to find problems that are as close as possible to the logic I practiced.
+
+---
+
+## Finding Algorithm Problems
+
+For algorithm problems, the data I need to match looks like this:
+
+* **Unnecessary parts (story)**: Story text attached to the problem, such as "Cheolsu buying apples." This is search noise and should be removed.
+* **Algorithm form and tags**: The core data structure and algorithmic logic, such as prefix sums on a two-dimensional array.
+* **Constraints**: Time complexity and memory limits.
+
+---
+
+## Technology: RAG-Based Architecture
+
+Instead of simple keyword matching, I want to build a **RAG (Retrieval-Augmented Generation)** system that judges semantic similarity.
+I had been looking for a project where RAG would make sense, and this is a good opportunity.
+
+The initial development flow is planned as follows.
+
+### 1. Knowledge Base (Vector Database)
+
+Collect LeetCode and Codeforces problem datasets and store them in a vector database such as Pinecone or ChromaDB. Instead of embedding the full problem statement, embed an **algorithm summary** preprocessed by an LLM to improve search accuracy.
+
+### 2. Three-Step Pipeline
+
+To improve matching quality, use the following process:
+
+**Metadata Filtering**: First filter candidates using Baekjoon difficulty levels such as Gold and Silver, plus tags.
+
+**Semantic Search**: Use OpenAI's `text-embedding-3-small` model to compute similarity between problem structures.
+
+**LLM Re-Ranking**: Send the top five candidates to GPT-4o mini and let it select the best first-ranked problem, including constraint compatibility.
+
+---
+
+## Cost and Efficiency Analysis (Written with GPT)
+
+Because this system runs inside the infrastructure of my personal blog, mainly GitHub Actions, it is expected to have almost no maintenance cost. Of course, I will only know after running it.
+There was some recent issue around GitHub Actions, but if Actions cannot be used, I can probably run it with Jenkins.
+
+| Item | Technology | Cost for 30 Problems |
+| --- | --- | --- |
+| **Storage** | Pinecone Starter Plan | $0 (Free) |
+| **Embedding** | text-embedding-3-small | About $0.0006 |
+| **Inference/Verification** | GPT-4o mini | About $0.15 |
+| **Compute** | GitHub Actions | $0 (Public Repo) |
+| **Total** |  | **About $0.15, roughly 200 KRW** |
+
+---
+
+## Future Plan
+
+Instead of only receiving a message that says "It is time to review," I want an environment where Slack tells me, "Here is a LeetCode Medium problem similar to the Baekjoon problem you solved yesterday."
+
+Once this automation is complete, I will no longer need to copy a problem link and throw it at an AI just to find something similar.
+
+One Slack message should be enough to continue studying. When the system is ready, I will share the concrete vector DB upload script and prompt engineering process.

@@ -1,0 +1,72 @@
+---
+title: 'Blog Devlog 08'
+description: 'Listing posts by category, implementing series, and fixing URL errors'
+pubDate: '2026-02-08'
+heroImage: '/images/BLOG/category.png'
+tags: ['blog', 'category', 'development','devlog']
+category: 'blog_devlog'
+series: 'Blog Devlog'
+seriesOrder: 8
+---
+
+## Today's Work
+1. I added a category listing feature because posts were not listed by category and were hard to browse.
+2. I fixed an error that occurred when clicking the previous post link. This was related to dynamic routes.
+
+I will first write about the simpler fix.
+
+## Bug Fix: Dynamic Routes Issue
+I found an issue where clicking the previous post link caused a dynamic routes error.
+
+1. When clicking the previous post link, the URL was generated incorrectly in a form like `.../ALGO_BOT/Algorithm_Bot_05.mdx/Algorithm_Bot_04`.
+2. To fix this, I changed the previous post link to use a relative path like `../Algorithm_Bot_04.mdx`.
+3. Because slugify generated URLs in lowercase, not uppercase, the same 404 error still occurred.
+
+When I asked AI, it suggested two options: rename all file names to lowercase, or force a slug in the frontmatter.
+
+But I wondered whether that was necessary. I changed the link itself to lowercase, like `[Previous post](../algorithm_bot_04)`, and the issue was solved.
+I need to build the habit of thinking through the problem myself before asking AI, and only ask when I cannot find an answer.
+
+## Adding Category-Based Post Listing
+I thought about how to build this. At first, I decided to create folders based on category names in the frontmatter and put posts inside those folders. Since categories were mixed up, I first reassigned categories by devlog type, then created folder-style pages by category.
+
+### Using Astro Dynamic Routing
+I wanted not only to list posts, but also to make them accessible through URLs like `/blog/categories/[category]`. For this, I used Astro's **Dynamic Routing** feature.
+
+Through `getStaticPaths`, I loaded all posts with `getCollection('blog')`, then collected the `category` information from each post's frontmatter.
+I used a `Set` to remove duplicate categories and generated page paths for each category. Thanks to this, even when categories increase, pages are created automatically without separate work.
+
+### Detail: Assigning Unique Pastel Colors with Server-Side Hashing
+The hardest part was the **folder color**. If every folder is the same blue, it is hard to distinguish them. But if JavaScript assigns random colors every time, there can be a flash of color during page load, a FOUC issue.
+
+To solve this, I introduced **server-side hashing**.
+The category name string is converted to ASCII codes and summed, then divided by the number of predefined **pastel palette** colors to pick a stable unique index.
+
+```typescript
+// Logic that assigns a stable color based on category name
+let hash = 0;
+for (let i = 0; i < categoryValue.length; i++) {
+    hash = categoryValue.charCodeAt(i) + ((hash << 5) - hash);
+}
+const colorIndex = Math.abs(hash) % PALETTE.length;
+
+```
+
+Because of this, colors are determined at build time without client scripts, there is no performance cost, and each category keeps a consistent color.
+
+## Adding Series
+I added a **Series** feature so multi-part posts can be shown as one flow. By adding `series` and `seriesOrder` to frontmatter, posts with the same series name can be grouped and sorted.
+
+- **Sort rule**: ascending `seriesOrder`, then `pubDate` when the order is the same
+- **Progress display**: show where the current post sits within the series, for example `8 / 10`
+- **Navigation**: provide previous/next post links at the bottom of the body
+
+Thanks to this, continuous posts such as devlogs can be explored naturally, and readers can navigate them more comfortably.
+
+### Closing
+I am very satisfied that posts I write can now be found easily by category. Below is the list of features I plan to build next.
+
+1. Complete the multilingual translation feature.
+2. The current search feature is empty, so I plan to implement it with https://pagefind.app/.
+3. Once view counts increase, add a popular posts feature based on view count.
+4. Add a notice banner, for example when a new post is published, during blog maintenance, or when the introduction section is updated.

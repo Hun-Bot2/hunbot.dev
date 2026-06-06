@@ -1,0 +1,192 @@
+---
+title: 'Local LLM開発日誌 01'
+description: 'ブログ記事翻訳のためのローカルLLM開発記'
+pubDate: '2026-02-12'
+heroImage: '/images/LOCAL_LLM/local-llm.png'
+tags: ['local llm', 'development', 'translation']
+category: 'local_llm_devlog'
+series: 'Local LLM開発日誌'
+seriesOrder: 1
+---
+
+import LocalizedLink from '@/components/LocalizedLink.astro';
+
+参考記事: <LocalizedLink href="/blog/devlog/blog/blog_develop_07/">ブログ開発日誌 07 - Local LLMを活用したブログ記事自動翻訳機能</LocalizedLink>
+
+## 概要
+ローカルで実行される大規模言語モデル(Local LLM)を活用し、ブログ記事を自動翻訳する機能を開発しています。既存のブログ記事には書いていなかった実装部分を記録し、エラーを修正する過程を残そうと思います。
+
+### プロジェクト構造
+```text
+local-llm-observability
+├─ LICENSE
+├─ README.md
+├─ database
+│  └─ init.sql
+├─ docker-compose.yml
+├─ requirements.txt
+└─ src
+   ├─ main.py
+   ├─ monitor_agent.py
+   └─ translation_agent.py
+```
+
+このように分かれており、`translation_agent.py`ファイルにブログ記事翻訳に関する核心ロジックが入っています。
+
+## SQL
+```sql
+CREATE TABLE IF NOT EXISTS translation_logs (
+    id SERIAL PRIMARY KEY,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    model_name VARCHAR(50),
+    source_lang VARCHAR(10),
+    target_lang VARCHAR(10),
+    input_length INT,
+    output_length INT,
+    latency_ms FLOAT,
+    tokens_per_sec FLOAT,
+    similarity_score FLOAT,
+    input_text TEXT,
+    output_text TEXT
+);
+
+CREATE INDEX idx_model ON translation_logs(model_name);
+CREATE INDEX idx_timestamp ON translation_logs(timestamp);
+```
+
+## 初期実験
+ブログに書いた内容のように作って回してみましたが、翻訳品質、Frontmatter形式、翻訳できない単語、不自然な内容などが出てきました。そのため、まずLLMモデルがどこを難しく感じているのかを見ようと思います。
+
+### 文書からキーワードを抽出する
+順序は次の通りです。
+
+1. 既存の韓国語ブログを読み、Ollamaモデルが難しく感じる単語や文を抽出する。
+2. `glossary.json`に記録する。SQLに記録しなかった理由は、量が多くなく、データも頻繁に変わらないため、あえてDBに入れる必要がないと判断したからです。
+3. その記録をもとに翻訳を試みる。
+
+以下は私が書くブログFrontmatter構造です。
+
+```markdown
+---
+title: 'ブログ開発日誌 07'
+description: 'Local LLMを活用したブログ記事自動翻訳機能'
+pubDate: '2026-02-07'
+heroImage: '/images/BLOG/blog-arch-v2.png'
+tags: ['Local LLM', '自動翻訳', 'ブログ']
+category: 'blog_devlog'
+series: 'ブログ開発日誌'
+seriesOrder: 7
+---
+```
+
+半日以上つかまり、ずっと実験していますが、アルゴリズムボット開発記シリーズの3番と4番の記事で翻訳が難しい問題がありました。
+
+Markdown形式の表が崩れたり、コードブロックが変に変形したり、Markdown形式自体をうまく維持できなかったり、スペースが変になったり、さまざまな問題がありました。これをどう解決するか悩んでいましたが、お金がたくさんあるならClaudeのような超大規模モデルで翻訳するのが良さそうだと思いました。
+
+私はお金がないので、Hugging Faceにあるオープンモデルのうち2つでテストしました。一つはQwen2.5:14b、もう一つはfacebook/nllb-200-distilled-600Mです。
+
+結果は次の通りです。本文が長いため一部だけ抜粋しました。
+
+### 原文
+```markdown
+## なぜ作ろうとしているのか？
+既存に構築したエビングハウス忘却曲線ベースのSlack通知ボットは、**すでに解いた問題**をもう一度見るようにする点では成功していました。
+しかし、長期記憶として維持し、アルゴリズム力を伸ばすには、解いたタイプに対する**派生問題**や**同じタイプの問題**を解く必要があるため、
+復習時に復習対象の問題をAIへ投げ、「これと似た問題を探して」という方式で類似問題を解いていました。この部分を自動化しようとしています。
+```
+
+私の日本語力がまだ不十分なので、日本人として見たときの微妙な不自然さまでは見つけられません。
+
+### Qwen2.5:14bモデル翻訳結果
+```markdown
+## なぜ作ろうとしているのか？
+これまでに構築したエbbinghausの忘却曲線に基づいたSlack通知BOTは、**既に解いた問題を再検討する**という点では成功しました。しかし、長期的な記憶に維持し、アルゴリズムのスキルを向上させるためには、解決済みの形式に対する**変形問題の解法**や**同様の形式の問題の解法**が必要です。
+
+そのため、復習する際はAIに対して「この問題と似た問題を見つけて」というように類似した問題を探し、これを自動化しようと考えています。
+```
+
+#### エラー一覧
+エビングハウス、通知の表現、**すでに解いた問題**だけを強調すべきなのに、その後まで強調表現を使っている点。
+
+---
+
+### nllb-200-distilled-600Mモデル翻訳結果
+```markdown
+## なぜ作ろうとしているのか?
+しかし,長期記憶を保ち,アルゴリズムの効率性を高めるために,解決されたタイプの問題について,変数式問題解決法や,解決されたタイプの問題解決法のような問題解決法が必要だと考えるとき,私は AIに復習する問題を投げ出し,類似の問題を"これのような問題を探す"という方法で解決し,この部分を自動化しようとしています.
+```
+
+#### エラー一覧
+「しかし」が先に出ている、エビングハウスがない、コンマが多すぎる、「変数式問題解決」など変な単語が出る、「問題解決法のような問題解決法」のような表現になる。
+
+---
+
+いろいろなエラーがありましたが、個人的な文体を残してくれるのはQwen2.5:14bモデルのほうが良いと感じました。上の文章は簡単な文章での比較で、下は文の形が複雑になったときの応答です。
+
+### 原文
+```markdown
+## データ収集および前処理 (Data Acquisition and Preprocessing)
+
+* **LeetCode:** Leetcode GraphQL APIを通じて2025年基準の全問題セット（約3,500問以上）
+
+* **Baekjoon:** solved.ac APIおよびWebクローリング
+
+それぞれ100件のデータを収集し、収集されたデータは埋め込み性能を最大化するため、次のような前処理を行いました。
+
+* **HTMLおよびノイズ除去:** HTMLタグと不要な叙述語を整理しました。
+
+* **検索最適化テキスト構成:** Title, Tags, Contentを結合し、モデルが問題のカテゴリと制約条件を明確に認識できるよう`embedding_text`フィールドを生成しました。
+
+* **Logical Skeleton:** 問題の核心アルゴリズム論理を要約した`logical_skeleton`フィールドをLLMで生成しました。
+```
+
+### Qwen2.5:14bモデル翻訳結果
+```markdown
+## データ収集および前処理 (Data Acquisition and Preprocessing)
+
+* **LeetCode:** Leetcode GraphQL API を利用し、2025年時点の全問題セット（約3,500問以上）
+
+* **Baekjoon:** solved.ac API とウェブスクレイピング
+
+それぞれ100件のデータを収集しました。収集したデータは埋め込み性能を最大化するために以下の前処理を行いました。
+
+* **HTMLおよびノイズ除去:** HTMLタグや不要な記述語を取り除きました。
+
+* **検索最適化用テキスト構成:** Title, Tags, Content を組み合わせ、モデルが問題のカテゴリと制約条件を明確に理解できるように `embedding_text` フィールドを作成しました。
+
+* **論理的スケleton:** (AIにとってこの説明が大好きです) 問題の核心的なアルゴリズム論理を要約した `logical_skeleton` フィールドをLLMを使用して生成しました（Baekjoonは韓国語ベースであるため、英訳された内容を含んでいます）
+```
+
+#### エラー一覧
+一番下に私が書いていない説明が付くことがありました。その他は表現が少しずつ変な部分はありますが、大きく外れてはいません。
+
+---
+
+### facebook/nllb-200-distilled-600Mモデル翻訳結果
+```markdown
+##データ収集・事前処理
+
+* **LeetCode:** Leetcode GraphQL APIを介して2025年までには,全体の問題集 (約3,500個以上) を設定しています.
+
+* **Baekjoon:** solved.ac APIとウェブクロール
+
+それぞれ100個のデータを収集し,集めたデータは,埋め込み性能を最大限に高めるために以下の処理を行いました.
+
+**HTMLとノイズ削除:** HTMLタグと不必要な語彙を削除しました.
+
+* **検索最適化テキスト構成:** タイトル,タグ,コンテンツを組み合わせ,モデルが問題のカテゴリーと制限条件を明確に認識できるように `embedding_text`フィールドを作成しました.
+```
+
+#### エラー一覧
+形式が崩れ、文が消え、翻訳の不自然な部分が目立ちました。
+
+---
+
+## 結論
+「アルゴリズムボット」シリーズ5本を翻訳させてみましたが、どちらのモデルも満足できませんでした。Qwen2.5:14bモデルのほうが良かったものの、それでも完璧ではありませんでした。
+
+Claudeを契約して使っていれば、ここまで時間はかからなかったと思います。ローカルLLMを活用しているため、いろいろな問題が発生しているようです。それでもいつか役に立つ気がして、なんとか進めてみました。
+
+まず、ローカルモデルを実行するとMacBookがかなり熱くなるため、GPUサーバーを購入してそこで回す予定です。Local LLMを回しながら得たpromptや、データベースにある特定単語の翻訳セット、そうして集めた資料を整理し、GPUサーバーへ一緒に上げて翻訳を実行すれば、かなり良い品質の翻訳が出るのではないかと期待しています。
+
+次の記事では、翻訳品質を高めるために構築したglossary databaseと、アーキテクチャ修正案について書きます。ありがとうございました。

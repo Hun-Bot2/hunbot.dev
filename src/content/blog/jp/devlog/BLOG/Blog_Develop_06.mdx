@@ -1,0 +1,137 @@
+---
+title: 'ブログ開発日誌 06'
+description: 'Redis閲覧数機能とセキュリティ強化'
+pubDate: '2026-02-06'
+heroImage: '/images/BLOG/blog-develop06.png'
+tags: ['redis', 'security','view-counter']
+category: 'blog_devlog'
+series: 'ブログ開発日誌'
+seriesOrder: 6
+---
+
+最後にブログ構造を更新したのは2025-12-30でしたが、その後忙しくて修正できず、今あらためて全体を点検しています。
+
+前の記事ではVercel KVやSupabaseを使って閲覧数機能を実装する方法を検討していると書きましたが、Supabaseまでは必要なく、Vercel KV、つまりRedisを使って閲覧数機能を実装する方向に決めました。
+調べてみると、無料ティアで十分使えそうです。もちろんRedisについては勉強して、個人Studyブログにも載せる予定です。
+
+今日はブログのセキュリティ強化とRedis閲覧数機能を実装してみます。
+
+以下は`vercel.json`というファイルの内容を勉強しながら整理したものです。
+
+---
+# セキュリティ強化
+
+## X-Content-Type-Options: nosniff
+
+### 自分がアップロードした画像ではない可能性？（サプライチェーン攻撃）
+ブログを静的にホスティングしているとしても、**自分が直接アップロードしたファイルだけがビルド成果物に含まれる保証はありません**。実際のビルド過程には多くの`npm`パッケージが関与します。
+
+次の例を見てみます。
+
+* **シナリオ**: 使用中の画像最適化ライブラリやアイコンパッケージの一つがハッキングされたと仮定します。
+* **攻撃**: ビルド過程で`logo.png`というファイル内部に巧妙に悪性スクリプトコードを埋め込んで配布します。
+* **結果**:
+    * **ヘッダーなし**: ブラウザが「拡張子はpngだけど内容はJavaScriptっぽい。実行しよう」と判断して実行する **MIME Sniffing**。-> **侵害**
+    * **`X-Content-Type-Options: nosniff`あり**: 「拡張子がpngなら画像としてだけ表示する。スクリプト実行は禁止。」-> **防御**
+
+つまり、**意図しないファイルがビルド成果物に混ざる可能性**への対策です。
+
+#### MIME Sniffingとは？ブラウザの過剰な親切さ
+ブラウザ、特に古いブラウザや一部モバイルブラウザは、開発者の設定を無視してコンテンツ内容を見て形式を推測しようとすることがあります。
+
+* **状況**: ユーザーがコメント（Giscus）に細工された画像リンクを投稿したり、外部CDNから読み込んだ画像が改ざんされたりした場合。
+* **危険**: ブラウザがそれを実行可能なコードだと誤認する可能性があります。
+* **防御**: `nosniff`オプションはブラウザに**「推測せず、サーバー（Vercel）が教えたContent-Type通りにだけ処理しろ」**と強制するものです。
+
+## X-Frame-Options: DENY
+* **シナリオ**: 攻撃者が`free-money.com`のようなサイトを作り、その上に透明な`hun-bot.dev`を重ねます（`iframe`）。
+* **攻撃**: 攻撃者サイトの「お金を受け取る」ボタンの位置と、`hun-bot.dev`内の何らかのリンク、たとえばGiscusログインボタンの位置を重ねます。
+* **結果**: ユーザーはお金を受け取るボタンを押したと思いますが、実際には私のブログ内でクリックが発生します。-> **クリックジャッキング攻撃**
+* **防御**: `X-Frame-Options: DENY`ヘッダーはブラウザに**「このサイトは絶対に他サイトのiframe内に表示するな」**と指示します。
+
+## Referrer-Policy
+* **意味**: ユーザーが私のブログリンクから他サイトへ移動するとき、「どこから来たか」という情報をどの程度知らせるかを決めます。
+* **効果:**
+    * **同一サイト内移動**: 全体の住所を表示。
+    * **外部サイトへ移動**: ドメイン（hun-bot.dev）だけを表示し、具体的なページパス、たとえば非公開記事URLなどは隠す。
+
+## Content-Security-Policy
+**最も重要な設定です。**
+
+許可リスト方式で、許可された出所からのみリソースを読み込むよう制限します。スクリプト、スタイルシート、画像などが対象です。
+つまり、私が直接許可したドメインからだけリソースを読み込むよう強制し、XSS攻撃を防ぎます。
+
+## Permissions-Policy
+`"value": "camera=(), microphone=(), geolocation=(), interest-cohort=()"`
+
+**意味:** 最新ブラウザ機能の制御です。空の括弧`()`は**「使用禁止」**を意味します。
+
+**効果:** 私のブログでカメラ、マイク、位置情報を使うことはありません。もしXSSによってスクリプトが実行されたとしても、ブラウザレベルでカメラやマイクへのアクセスを遮断し、被害を最小化します。
+
+---
+
+# Redis閲覧数機能実装
+Vercel Storageに入ると、databaseでUpstash経由のRedisを選択できます。RegionはTokyo、Free Planを選んで設定しました。
+
+設定が完了するとsecret keyが生成され、いろいろな案内が出ます。以下はNext.js 14版の例です。
+
+```javascript
+import { Redis } from '@upstash/redis';
+import { NextResponse } from 'next/server';
+
+// Initialize Redis
+const redis = Redis.fromEnv();
+
+export const POST = async () => {
+  // Fetch data from Redis
+  const result = await redis.get("item");
+  
+  // Return the result in the response
+  return new NextResponse(JSON.stringify({ result }), { status: 200 });
+};
+```
+
+Redisが何かについては、個人Studyブログにあります: https://hun-bot2.github.io/study/Web/redis-01
+
+terminalで次のコマンドを使い、`@upstash/redis`パッケージをインストールします。
+
+```bash
+npm install @upstash/redis
+```
+
+その後、`utils/counter.ts`ファイルにRedis閲覧数ロジックを実装します。コード自体は特別ではなく、localhostでは閲覧数を集計しない部分を追加し、Astroでは`.env`ファイルのimport方法が異なるため、その部分を修正しました。
+
+```typescript
+try {
+    if (isLocalhost) {
+      // ローカルでは閲覧数を増やさず、値だけ取得する（テスト用）
+      const views = await redis.get<number>(`pageviews:${slug}`) || 0;
+      return new Response(JSON.stringify({ views, skipped: true }), { status: 200 });
+    }
+
+    const views = await redis.incr(`pageviews:${slug}`);
+    return new Response(JSON.stringify({ views }), { status: 200 });
+  } catch (error) {
+    console.error(error);
+    return new Response(JSON.stringify({ error: 'DB Error' }), { status: 500 });
+  }
+```
+
+```typescript
+const redis = new Redis({
+  url: import.meta.env.UPSTASH_REDIS_REST_URL,
+  token: import.meta.env.UPSTASH_REDIS_REST_TOKEN,
+});
+```
+
+---
+
+## おわりに
+これでブログにRedis閲覧数機能が追加され、セキュリティも強化されたと思います。
+今後追加する部分は:
+
+1. 閲覧数グラフを作る。
+2. 人気記事ランキングを作る。
+3. 性能の良い言語翻訳機を追加する。
+
+などになりそうです。時間があるたびに一つずつ追加していきます。

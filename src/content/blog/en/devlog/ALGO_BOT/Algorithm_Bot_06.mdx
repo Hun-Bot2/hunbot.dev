@@ -1,0 +1,220 @@
+---
+title: 'New Update: Baekjoon Is Gone...'
+description: 'After Baekjoon disappeared, what direction should this project take?'
+pubDate: '2026-05-08'
+heroImage: '/images/ALGO_RAG/ralph.png'
+tags: ['algorithm', 'ralph','SDD']
+category: 'algo_bot'
+series: 'Algorithm Bot'
+seriesOrder: 6
+---
+
+# After Baekjoon Disappeared, I Had to Reconsider the Direction of the Algorithm RAG Project
+After Baekjoon disappeared, I had a lot to think about regarding how to continue the existing project.
+
+Originally, this project was closer to a simple "problem recommender."
+
+When I solved a problem on Baekjoon and organized what I learned in a personal blog post, written in MDX, GitHub Actions would automatically trigger.
+Then, based on the prebuilt LeetCode problem vector index, the RAG system would use the OpenAI API to search for similar problems and send the three closest problems to my personal Slack.
+
+The full flow looked like this:
+
+```text
+Solve a Baekjoon problem
+→ Upload blog post (MDX)
+→ Run GitHub Actions
+→ Generate OpenAI Embedding
+→ Search NumPy-based LeetCode RAG
+→ Generate recommendation reasons with GPT-4o-mini
+→ Send personal Slack notification
+```
+
+At the time, I thought "recommending English LeetCode problems based on Korean Baekjoon solution records" was a fairly interesting personal project.
+
+In practice, I was able to experiment with several elements:
+
+* GitHub Actions automation
+* Docker heavy/light separation
+* NumPy-based vector search
+* Slack automatic notifications
+* OpenAI Embedding-based retrieval
+* LangSmith tracing
+
+It also helped me review algorithms personally.
+
+---
+
+# Baekjoon Service Shutdown
+
+After Baekjoon disappeared, the study flow from "Baekjoon -> LeetCode" no longer existed.
+
+Now I solve problems directly on LeetCode, so simply recommending "similar LeetCode problems" is not as meaningful as before.
+
+Previously, the flow felt natural:
+
+* Learn a specific algorithm pattern on Baekjoon
+* Extend the study with LeetCode-style problems
+
+But now that I start directly on LeetCode:
+
+**"Recommending another LeetCode problem to someone already solving LeetCode"**
+does not have much learning impact.
+
+So I started reconsidering the direction of the project itself.
+
+---
+
+# What Matters in Algorithm Study
+
+When I think about it, the hardest part of algorithm study was not simply "finding the next problem."
+
+The harder questions were:
+
+* Which algorithm patterns am I weak at?
+* Why did I get this problem wrong?
+* Can I solve a similar but slightly different problem again?
+* Will I still remember the same pattern a few days later?
+* Did I really understand it, or did I just memorize it?
+
+In other words, I began to think that what matters more than simple recommendations is **personalized review and weakness analysis**.
+
+---
+
+# New Direction
+So I decided to completely change the direction of the project.
+
+Personally, I thought "CodeTree" was a very good platform for algorithm practice.
+
+It does not only provide problems; its curriculum and review flow are also well designed.
+
+However, I am not from a partner university, and the price is fairly burdensome for an individual user.
+
+That naturally led me to this question:
+
+> "What really matters in algorithm study?"
+
+When I think about solving algorithm problems, the core is not simply writing the correct code.
+
+Whether the problem is easy or difficult, the important process is:
+
+```text
+Read the problem
+→ Think about which data structure or algorithm pattern is needed
+→ Create test cases myself
+→ Think about counterexamples
+→ Calculate time complexity
+→ Implement the solution
+```
+
+But recently, AI has become so powerful that many people ask AI for the solution immediately before thinking enough about the problem, or copy the answer code and move on without understanding it.
+
+I also use AI very often.
+Precisely because of that, I have felt that this can be dangerous.
+
+Especially in algorithm study, the thinking process below is very important:
+
+```md
+* "Why should I think of this algorithm?"
+* "Why should I use this data structure?"
+* "What counterexamples exist?"
+* "Where does the time limit fail?"
+```
+
+But it is easy to skip that process entirely.
+
+I also felt that solving many problems and actually improving are two different things.
+
+For example:
+
+```md
+* Failing to solve a similar type again a few days later
+* Solving many DP problems but still being unable to define a recurrence myself
+* Solving graph problems but not having a clear criterion for choosing BFS or DFS
+```
+
+I kept experiencing cases like these.
+
+In the end, what was missing was not:
+
+```md
+* Number of problems
+* Correct answer code
+* Memorized explanations
+```
+
+It was more like:
+
+> "A system that analyzes which concepts an individual is weak at,
+> and makes them review at the right time."
+
+So I wanted to change the existing project from a simple "problem recommender" into something more personalized.
+
+Going forward, I want to track:
+
+* Which algorithm patterns I am weak at
+* Which types of counterexamples I often miss
+* Which difficulty levels block me
+* Whether I look at hints too quickly
+* Whether I actually understood the concept
+
+And use AI not as a simple answer generator, but as:
+
+**a tool that supports learning**.
+
+For example:
+
+* If I fully understand a problem, it generates a similar variant problem.
+* If I keep missing a certain concept, it makes me review it again.
+* If I check the answer too quickly, it reflects that as lower mastery.
+* It tracks repeatedly weak patterns over time.
+
+It is still a small personal project, but I want to develop it into something closer to:
+
+**a personalized algorithm training system**
+
+rather than a simple online judge.
+
+### 1. Personalized Algorithm Weakness Analysis
+
+Based on a user's solution history, track concept-level mastery such as:
+
+* Prefix Sum
+* Graph
+* DP
+* Binary Search
+* Greedy
+
+Instead of simple solved/unsolved status, I plan to also include:
+
+* Solving time
+* Hint usage
+* Number of failures
+* Review interval
+* Leaving the screen
+
+### 2. Online Judge + Real-Time Code Execution
+
+Previously, the project only recommended problems. Going forward, I also plan to build an environment where users can solve problems directly.
+
+However, the goal is not to build a huge online judge from the start.
+
+First, I want to implement a small judge system that includes only:
+
+* Python/C++ execution
+* Sandbox-based code execution
+* Hidden tests
+* Time limit / memory limit
+
+### 3. AI-Based Variant Problem Generation
+
+I probably need to use an AI model specialized for algorithms. I will cover that in a later development post.
+
+## Future Goal
+For now, I plan to use it myself and recruit two or three classmates as beta testers.
+
+### Why There Is a Ralph Photo
+<u>https://x.com/ryancarson/status/2008548371712135632</u>: Step-by-step guide to get Ralph working and shipping code
+
+I included it because I want to introduce the Ralph Loop when implementing this project.
+
+In the next post, I will share the initial documentation and implementation process.

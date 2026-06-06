@@ -1,0 +1,40 @@
+---
+title: 'Blog Devlog 03'
+description: 'Domain update and a fix for 404 errors when translated posts do not exist'
+pubDate: '2025-11-15'
+heroImage: '/images/giscus.png'
+tags: ['Devlog', 'Bug Fix']
+category: 'blog_devlog'
+series: 'Blog Devlog'
+seriesOrder: 3
+---
+
+## Path Issue Found
+When opening a blog post and trying to switch translations from that post, a 404 page appeared. This happened because I had not created the translated MD file for that post in the other language. To fix it, I refactored the structure as follows.
+
+### Solution: Hide Missing Languages in the Language Picker
+- In `getStaticPaths`, I collected whether other language versions exist for the same slug using a `Map`, then passed an `availableLangs` array as props for each post.
+- The `BlogPost` layout receives this array and passes it to `FloatingLanguagePicker`. The picker now filters and shows only languages that actually exist.
+
+## Buying hun-bot.dev Through Cloudflare DNS
+- Until now, the site was served through `.vercel.app`, but I bought `hun-bot.dev` through Cloudflare Registrar and configured DNS.
+- I updated all static links, including `site` in `astro.config.mjs`, `SITE_URL` in `src/consts.ts`, and `robots.txt`, to use `https://hun-bot.dev` so the build output points to the proper domain.
+
+## SEO & Discovery Cleanup
+
+Since I changed the domain today, I also cleaned up the entire SEO pipeline.
+
+1. **BaseHead refactor**
+   - Reworked logic to calculate `hreflang` sets, canonical URLs, Open Graph locale, JSON feed links, and Search Console verification meta tags in one place.
+   - Integrated language-specific country codes into the `SupportedLanguage` type and a mapping table, so `ko/jp/en` reliably output `ko-KR`, `ja-JP`, and `en-US`.
+
+2. **Sitemap/Robots rewrite**
+   - Added both `sitemap.xml` and `sitemap-index.xml` to `public/robots.txt`, and explicitly set the `Host` header to the new domain.
+   - Confirmed that `dist/sitemap-0.xml` generated during build is filled with the new URL.
+
+## Added Giscus Comments
+- Created `src/components/GiscusComments.astro` and attached it to the bottom of the `BlogPost` layout. If the Giscus environment variables are filled in `.env`, GitHub Discussions threads are created automatically.
+- If environment variables such as `PUBLIC_GISCUS_REPO_ID` and `PUBLIC_GISCUS_CATEGORY_ID` are empty, it only renders a "comments disabled" information box.
+
+## TODO
+- Code block contrast is too low in light mode, making the content hard to read. I plan to fix the style in v04.

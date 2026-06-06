@@ -1,0 +1,256 @@
+---
+title: 'KOSSDA Student Competition Review: Why Did Korea Become a Convenience Store Republic?'
+description: 'A review of the KOSSDA student competition and the Korean convenience-store phenomenon through data, AI forecasting theory, and dynamical-systems thinking.'
+pubDate: '2025-06-25'
+heroImage: '/images/KOSSDA.png'
+tags: ['competition', 'data-analysis', 'AI', 'convenience-store', 'social-science']
+category: 'SNU_KOSSDA'
+---
+
+# SNU KOSSDA Competition Review
+
+## Competition Overview
+
+The theme of the 2025 KOSSDA Student Competition was:
+
+> Reading Korean society through data: drawing change and the future
+
+The question we chose was **"Why did Korea become a convenience store republic?"** Rather than merely explaining why there are so many convenience stores, we wanted to examine how Korea's labor market, self-employment structure, urban density, consumption patterns, and gaps in the social safety net are compressed into one form of retail business.
+
+This post is both a review of participating in the competition and a problem-definition note for the next analysis. In the latter half, I also organize how AI could be used to forecast the future of Korea's convenience-store market from mathematical and physics-inspired perspectives.
+
+---
+
+## Motivation for Participating
+
+As I entered my senior year, I felt that I could no longer postpone job preparation. I lacked experiences that could go on a resume, and I did not have many concrete outputs showing that I could define a real problem and analyze it to the end.
+
+I was also not someone who had studied data analysis professionally. I could use Python, but I lacked experience connecting statistical inference, modeling, and data interpretation into a real project. I had taken machine learning and deep learning courses, but I was still weak at translating theory into project-level problems.
+
+For me, the competition had two meanings.
+
+1. Create a real output that would be evaluated externally.
+2. Train myself to apply data analysis as problem solving rather than just study.
+
+When I study alone, it is easy for the pace to become loose. I thought that with a competition deadline and a required submission format, I would at least be able to finish a result even if it was imperfect.
+
+## Team Formation and Time Constraints
+
+I formed a team with friends in similar situations. However, none of us had enough experience with data-analysis projects, and the schedule overlapped with final exams. The only realistic time for us to discuss together was around the weekend.
+
+The risks were already clear from that point.
+
+- Time to define the research question
+- Time to find and clean data
+- Time to build and validate models
+- Time to structure the presentation material
+
+All of this had to be compressed into roughly two to three weeks. In the end, the biggest limitation of this competition was not just skill, but the lack of time and density to push the problem deeply.
+
+---
+
+## Topic Selection: Why Convenience Stores?
+
+At first, we considered several social issues: low birth rates, aging, real estate, education, political conflict, and self-employment. All of them were important, but it was difficult to turn them into a distinctive phenomenon that clearly represented "change and the future of Korean society."
+
+Low birth rates and aging are also experienced by other developed countries, and real-estate problems repeat across major cities around the world. Political conflict is also not unique to Korea. We needed a phenomenon that was Korean in character and observable through data.
+
+That is when convenience stores caught our attention.
+
+A convenience store is not just a retail shop. In Korea, convenience stores reflect several phenomena at once.
+
+- High urban density and a 24-hour lifestyle rhythm
+- A labor-market structure in which people move into self-employment after retirement
+- Low entry barriers and intense competitive pressure
+- The spread of single-person households, instant consumption, and small-quantity purchasing
+- Regional commercial-area gaps and rent pressure
+
+In that sense, convenience stores looked like small observation devices for Korean society. If we look at convenience-store density and survival rates, the question is not simply "Is this business profitable?" but "What social structure pushes people into this market?"
+
+So we organized our final question as follows.
+
+> Why did Korea become a convenience store republic, and can this structure continue?
+
+---
+
+## Analytical Perspective
+
+The important point in this topic is not the number of convenience stores itself. Store count is an outcome variable. What matters more is the structural pressure that produces that number.
+
+To explain the increase in convenience stores, at least three layers should be considered together.
+
+1. **Population and urban structure**: population density, floating population, single-person households, housing forms
+2. **Economic structure**: rent, income, employment instability, entry into self-employment
+3. **Consumption structure**: instant consumption, small purchases, night-time consumption, delivery and platform use
+
+These variables are not independent. For example, as single-person households increase, demand for small-quantity purchases rises. When urban density is high, store accessibility becomes important. On the other hand, if there are too many convenience stores, sales are divided among stores and closure pressure grows.
+
+Therefore, the convenience-store market is not a simple linear-growth problem. It is closer to a **dynamical system where demand, supply, competition, and saturation operate at the same time**.
+
+---
+
+## If AI Were Used to Forecast the Future of Korean Convenience Stores
+
+Using AI to forecast the "future of Korean convenience stores" does not simply mean predicting next year's store count. More precisely, it means modeling questions like these:
+
+- In which regions will convenience-store density increase further?
+- Which regions are already saturated?
+- What socioeconomic changes affect the survival rate of convenience stores?
+- Does new store entry improve local consumption convenience, or does it damage the profitability of existing stores?
+- How do single-person households, aging, online consumption, and delivery platforms change convenience-store demand?
+
+Mathematically, let $y_{r,t}$ be the convenience-store density or number of stores in region $r$ at time $t$.
+
+$$
+y_{r,t} = f(X_{r,t}, S_{r,t}, C_{r,t}) + \epsilon_{r,t}
+$$
+
+Each term can be interpreted as follows.
+
+- $X_{r,t}$: regional characteristics such as population, income, household structure, and rent
+- $S_{r,t}$: surrounding store count, competitive intensity, and commercial-area saturation
+- $C_{r,t}$: consumption patterns, night-time floating population, and delivery/platform effects
+- $\epsilon_{r,t}$: unobserved shocks or noise
+
+However, this equation is closer to a static explanation. To forecast the future, time dynamics must be added.
+
+$$
+y_{r,t+1} = y_{r,t} + \Delta y_{r,t}
+$$
+
+The change term can be expressed as follows.
+
+$$
+\Delta y_{r,t}
+= g(X_{r,t}, S_{r,t}, C_{r,t})
+- h(y_{r,t}, S_{r,t})
++ \eta_{r,t}
+$$
+
+Here, $g$ is the force that pushes new store entry upward, while $h$ is the force that suppresses growth through saturation and competition. $\eta_{r,t}$ represents external shocks such as policy changes, business-cycle changes, or a pandemic.
+
+An AI model approximates the functions $f$, $g$, and $h$ from data. For example, the following models could be compared.
+
+1. Regression models: good for interpretability and basic hypothesis testing
+2. Random Forest and Gradient Boosting: good at capturing nonlinear relationships and variable interactions
+3. Time-series models: useful for analyzing regional temporal change and trends
+4. Graph Neural Networks: can model commercial-area effects and spatial spillovers between neighboring regions
+5. Bayesian models: can represent predictive uncertainty together with the forecast
+
+At a competition level, it is more persuasive to start with an interpretable baseline model and then compare it with nonlinear models, rather than forcing one complex model into the analysis.
+
+---
+
+## A Physics-Inspired View: The Convenience-Store Market as a Dynamical System
+
+The convenience-store market can also be viewed like a **particle system** or a **diffusion-saturation system** in physics.
+
+If each convenience store is treated as one particle, stores tend to gather in regions with high demand. Floating population, residential density, and transport accessibility act like a potential field.
+
+$$
+P(r,t) = \alpha D_{r,t} + \beta M_{r,t} + \gamma A_{r,t} - \lambda R_{r,t}
+$$
+
+Here, $P(r,t)$ is the attractiveness of opening a store in region $r$.
+
+- $D_{r,t}$: demand density
+- $M_{r,t}$: floating population or accessibility
+- $A_{r,t}$: consumption convenience
+- $R_{r,t}$: rent or cost pressure
+
+Store entry tends to move toward areas where $P(r,t)$ is high. However, when there are already many stores, competitive pressure increases. This can be expressed like a repulsive force.
+
+$$
+F_{competition}(r,t) = -\kappa y_{r,t}
+$$
+
+In other words, the more stores exist in the same region, the lower the net benefit of additional entry becomes. The overall change can be seen as the sum of attractiveness and competitive pressure.
+
+$$
+\frac{dy_{r,t}}{dt}
+= aP(r,t) - b y_{r,t} - c y_{r,t}^{2}
+$$
+
+The term $c y_{r,t}^{2}$ represents a saturation effect. When the store count is low, there is room for growth. But as store count increases, competition grows nonlinearly.
+
+This perspective prevents us from seeing the convenience-store market only as "many" or "few." The more important question is: "Which regions are close to the saturation point?"
+
+---
+
+## Accuracy Is Not the Only Thing That Matters in Forecasting
+
+When building an AI forecasting model, people often look only at metrics such as RMSE and MAE.
+
+$$
+MAE = \frac{1}{n}\sum_{i=1}^{n} |y_i - \hat{y}_i|
+$$
+
+$$
+RMSE = \sqrt{\frac{1}{n}\sum_{i=1}^{n}(y_i - \hat{y}_i)^2}
+$$
+
+However, in social data analysis, interpretability matters as much as prediction error. Especially in competitions or policy analysis, the important point is not only "the model predicted well" but also "why the model made that prediction."
+
+A good analysis therefore needs all three of the following:
+
+1. **Predictive power**: how well it forecasts future store count or density
+2. **Interpretability**: which variables strongly affect the prediction
+3. **Social explanatory power**: how the result connects to the structure of Korean society
+
+Suppose a model predicts that convenience stores will increase in a certain region. We should be able to explain whether the reason is simply population size, the single-person household ratio, low rent, or weak surrounding competition.
+
+Tools such as SHAP, permutation importance, and partial dependence plots can be used for this purpose. However, these tools do not automatically reveal the truth. The final interpretation must still be reviewed by a person who understands the context of the data.
+
+## Retrospective
+
+### 1. We Should Have Finished Problem Definition Earlier
+
+Topic selection took too long. Finding a good question is important, but in a competition, enough time must remain for analysis and validation.
+
+Because we finalized the question late, time for data collection, modeling, visualization, and presentation design all became compressed.
+
+### 2. The Analysis Lacked Depth
+
+Collecting data and drawing graphs is not enough. We need to statistically test relationships between variables, compare alternative hypotheses, and explain the limitations of the model.
+
+The convenience-store problem in particular cannot be concluded from simple correlations. A region may have many convenience stores because demand is high, or it may already be in a state of excessive competition. To distinguish between the two, we need temporal and regional analysis.
+
+### 3. Even With AI Models, the Question Comes First
+
+What I learned from this experience is that the design of the question matters more than the AI model itself.
+
+A model can approximate data as a function, but a person must decide which variables to include, which unit of analysis to use, and which result is socially meaningful.
+
+In the end, differentiated data analysis comes from this question:
+
+> What new perspective can this data create?
+
+---
+
+## Plan for the Next Analysis
+
+If I revisit this topic, I want to analyze it in the following order.
+
+1. Build regional convenience-store density data
+2. Combine population, single-person household, income, rent, and floating-population variables
+3. Analyze the relationship between convenience-store density and closure rate or survival rate
+4. Establish a baseline with a linear regression model
+5. Compare predictive performance with nonlinear ML models
+6. Interpret variable importance and regional differences
+7. Connect the "convenience store republic" phenomenon to the structure of Korean society
+
+If this process is done properly, the result could develop beyond a competition presentation into a social data analysis article or paper-review style post.
+
+---
+
+## Closing
+
+Regardless of the result, this KOSSDA competition became an important turning point for me.
+
+I had thought of data analysis simply as using tools. But after actually doing it, I realized that the important parts are problem definition, variable selection, model interpretation, and social context.
+
+AI does not "prophesy" the future as if it were a correct answer. AI estimates a distribution of possible futures based on patterns in the past and present.
+
+Therefore, forecasting the future of Korean convenience stores is not about predicting one store-count number. It is about modeling how Korea's consumption structure, labor market, urban space, and self-employment pressure may move in the future.
+
+This time, I did not reach that level. Next time, I want to connect theory, data, models, and interpretation more firmly and try again.

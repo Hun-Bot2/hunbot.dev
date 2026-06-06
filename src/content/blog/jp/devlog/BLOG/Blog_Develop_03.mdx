@@ -1,0 +1,40 @@
+---
+title: 'ブログ開発日誌 03'
+description: 'ドメイン更新と、ブログ記事がないときに発生する404エラーの修正'
+pubDate: '2025-11-15'
+heroImage: '/images/giscus.png'
+tags: ['Devlog', 'Bug Fix']
+category: 'blog_devlog'
+series: 'ブログ開発日誌'
+seriesOrder: 3
+---
+
+## 現在見つかったパス問題
+ブログ記事に入り、その記事で翻訳を押そうとすると404ページが表示される。これは、その記事を別言語へ翻訳したMDファイルが存在しないために発生していた問題で、この修正のため次の構造へリファクタリングした。
+
+### 解決: 言語選択で存在しない言語を隠す
+- `getStaticPaths`で同じslugの他言語版があるかを`Map`で集め、各投稿へ`availableLangs`という配列をpropsとして渡すように変更した。
+- `BlogPost`レイアウトがこの配列を受け取り、`FloatingLanguagePicker`へ渡す。Pickerは実際に存在する言語だけをフィルタリングして表示するようにロジックを修正した。
+
+## hun-bot.devをCloudflare DNSで購入
+- これまでは`.vercel.app`でサービスしていたが、Cloudflare Registrarで`hun-bot.dev`を新しく購入し、DNS設定を行った。
+- `astro.config.mjs`の`site`、`src/consts.ts`の`SITE_URL`、`robots.txt`など、すべての静的リンクを`https://hun-bot.dev`基準に再設定し、ビルド成果物が正式ドメインへ向くようにした。
+
+## SEO & Discovery整備
+
+今日ドメインを変えたついでに、SEOパイプライン全体も整理した。
+
+1. **BaseHeadリファクタリング**
+   - `hreflang`セット、canonical、Open Graph locale、JSON feedリンク、Search Console検証メタタグを一度に計算するようにロジックを修正した。
+   - 言語別国コードも`SupportedLanguage`型とマッピングテーブルへ統合し、`ko/jp/en`がそれぞれ`ko-KR`, `ja-JP`, `en-US`を安定して出力するようにした。
+
+2. **Sitemap/Robots書き直し**
+   - `public/robots.txt`に`sitemap.xml`と`sitemap-index.xml`の両方を入れ、`Host`ヘッダーも新しいドメインで明示した。
+   - ビルド時に生成される`dist/sitemap-0.xml`が新URLで埋まることまで確認した。
+
+## Giscusコメント追加
+- `src/components/GiscusComments.astro`を作り、`BlogPost`レイアウト下部に付けた。`.env`にGiscus環境変数を入れるだけでGitHub Discussionsスレッドが自動で作成される。
+- `PUBLIC_GISCUS_REPO_ID`, `PUBLIC_GISCUS_CATEGORY_ID`などの環境変数が空の場合は、「コメント無効化」案内ボックスだけを出力するロジックを入れた。
+
+## TODO
+- ライトモードでコードブロックのコントラストが不足しており、内容を確認しにくい。v04でスタイル修正予定。

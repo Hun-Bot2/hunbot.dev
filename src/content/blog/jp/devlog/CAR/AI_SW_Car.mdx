@@ -1,0 +1,252 @@
+---
+title: 'AI-SW Car開発および走行回顧'
+description: 'AI-SW Carプロジェクトの最初の開発および走行回顧です。'
+pubDate: '2026-01-20'
+heroImage: '/images/AUTO/Car.png'
+tags: ['autonomous', 'ai', 'car', 'development', 'log']
+category: 'autonomous_car'
+---
+
+**「最も重要なのはデータだ。」**
+
+## Trouble Shooting
+
+### 1. ハードウェア問題
+このハードウェア問題を解決するのに、ほぼ6〜7時間は使ったと思います。モーター、可変抵抗、モータードライバー、ジャンパーケーブルなど、使う部品を変えながらテストしましたが、最終的にはArduinoボードを正規品に変えたことで解決しました。
+
+ポート変換や`tty/AC*`が出てこない問題も同じように解決されました。
+
+**-> Arduinoボードを正規品に交換したら解決。**
+
+### 2. ソフトウェア問題
+
+- ROS2で実行するプログラムごとに、回る車輪と回らない車輪の問題が発生。
+
+**-> コード内の変数名とserial portが混ざって発生した問題だったため、番号を再設定し、rebuildして解決。**
+
+- データ収集が遅れ、十分なデータを確保できなかった。
+
+**-> 2年前の過去データセットと一緒に学習。**
+
+**車線認識関連**
+- 白い車線に触れてはいけない。車線復帰よりも、車線に触れないことのほうが良い。
+- ラベリング時に車線を除外して進めるべきだった。
+- HSV範囲調整で信号機の色範囲認識を改善する必要がある。
+
+**モデル学習関連**
+- YOLOv8は遠距離オブジェクト認識が難しいため、ラベリング範囲を縮小する必要がある。
+- ラベリングされた`className`とコード上の`className`の一致が必須。
+- Pythonコード修正が予想より多く必要だった。
+- lane2とtraffic_lightのデータ不均衡。lane2が約5倍多く、効果的な学習が難しかった。
+
+## Roboflow & Colab
+総データセット: 約1,500枚  
+lane2: 約1,350枚  
+traffic_light: 約150枚
+
+### 1次データセット構成
+
+**Dataset Split**
+
+| Type | Percentage | Count | Unit |
+|------|-----------|-------|------|
+| Train Set | 91% | 2634 | Images |
+| Valid Set | 9% | 249 | Images |
+| Test Set | 0% | 0 | Images |
+
+**Preprocessing**
+
+| Item | Configuration |
+|------|---|
+| Auto-Orient | Applied |
+| Resize | Stretch to 640x480 |
+
+**Augmentations**
+
+| Item | Configuration |
+|------|---|
+| Outputs per training example | 3 |
+| Flip | Horizontal |
+| Crop | 8% Minimum Zoom, 22% Maximum Zoom |
+| Brightness | Between -24% and +24% |
+| Noise | Up to 1.53% of pixels |
+
+### 2次データセット構成
+
+**Dataset Split**
+
+| Type | Percentage | Count | Unit |
+|------|-----------|-------|------|
+| Train Set | 91% | 2667 | Images |
+| Valid Set | 9% | 249 | Images |
+| Test Set | 0% | 0 | Images |
+
+**Preprocessing**
+
+| Item | Configuration |
+|------|---|
+| Auto-Orient | Applied |
+| Resize | Stretch to 640x480 |
+
+**Augmentations**
+
+| Item | Configuration |
+|------|---|
+| Outputs per training example | 3 |
+| Crop | 8% Minimum Zoom, 22% Maximum Zoom |
+| Brightness | Between -24% and +24% |
+
+### 3次データセット構成
+
+**Dataset Split**
+
+| Type | Percentage | Count | Unit |
+|------|-----------|-------|------|
+| Train Set | 82% | 1779 | Images |
+| Valid Set | 18% | 384 | Images |
+| Test Set | 0% | 0 | Images |
+
+**Preprocessing**
+
+| Item | Configuration |
+|------|---|
+| Auto-Orient | Applied |
+| Resize | Fit (black edges) in 640x480 |
+
+**Augmentations**
+
+| Item | Configuration |
+|------|---|
+| Outputs per training example | 3 |
+| Crop | 0% Minimum Zoom, 30% Maximum Zoom |
+| Hue | Between -10° and +10° |
+| Brightness | Between 0% and +25% |
+| Exposure | Between -5% and +5% |
+| Blur | Up to 2px |
+| Noise | Up to 1.5% of pixels |
+
+上の3つのデータセットはすべてYOLOv8で学習を行い、3次学習が最も良い性能を示しました。
+
+Roboflowで作成したデータセットをColabで学習させるときは、次のコードが必須でした。
+
+1. データラベリングをpolygonで行ったため、segmentation taskとして設定する必要がある。
+2. 通常の`yolov8n.pt`は箱を探す方法だけを知っており、末尾に**-seg**が付いたモデルは箱だけでなくマスク、つまり形状を描くニューラルネットワークHeadが追加で付いている。
+
+```python
+task=segment mode=train model=yolov8n-seg.pt
+```
+
+## 学習結果
+![result](/images/AUTO/result.png)
+
+### 結果解釈
+
+#### A. 損失関数 (Loss Functions) - 低いほど良い
+
+モデルが正解とどれだけ違うかを示すスコアです。0に近いほど完璧です。
+
+**`box_loss` (Bounding Box Loss)**
+- 意味: 「箱をどれだけ正確な位置に描いたか？」
+- 詳細: 予測した箱と正解箱が重なる程度、IoUを基準に計算。
+
+**`cls_loss` (Classification Loss)**
+- 意味: 「物体の種類(Class)を正しく当てたか？」
+- 詳細: 車線を信号機と誤分類したり、背景を物体として認識したりすると増加。
+
+**`dfl_loss` (Distribution Focal Loss)**
+- 意味: 「箱の境界線が明確か？」
+- 詳細: 物体の輪郭がぼやけているとき、それを補正する損失値。
+
+#### B. 評価指標 (Metrics) - 高いほど、1.0に近いほど良い
+
+**`Precision` (適合率)**
+- 意味: 「モデルが見つけたと主張したもののうち、本当に正解はいくつか？」
+- 例: モデルが信号機を100回発見し、そのうち実際は90個なら、適合率 = 0.9。
+
+**`Recall` (再現率)**
+- 意味: 「実際に存在する正解のうち、モデルが見つけた割合はどれくらいか？」
+- 例: トラックに信号機が100個あるのに80個だけ発見したなら、再現率 = 0.8。
+
+**`mAP50` (mean Average Precision @ IoU=0.5)**
+- 意味: 予測箱と正解箱が**50%以上重なったとき**を正解として認める。
+- 結果: **0.948**
+- 分析: val_lossがepoch 20以降増加しており、モデルが訓練データへ過学習したように見える。
+
+> **実走行評価**
+> - 自律走行では`mAP50`が最も重要な指標。
+> - 目標: トラック2周を4分以内に走行。
+> - 結果: 白線を踏んだが、大きく外れなかった。mAP50 94.8%は十分良い性能。
+> - 改善課題: 白線回避後、中央走行でより良い性能を目指す。
+
+**`mAP50-95` (mean Average Precision @ IoU=0.5:0.95)**
+- 意味: 正解認定基準を50%から95%まで5%単位で高めながら計算した平均。
+- 特徴: より厳格な基準なので、点数はかなり低く出る。
+
+---
+
+### 2. mAP (mean Average Precision) の数学的算出公式
+
+mAPは**IoU -> Precision/Recall -> AP -> mAP**の順に計算されます。
+
+#### Step 1: IoU (Intersection over Union)
+
+2つの箱、予測箱と正解箱がどれだけ重なるかを計算します。
+
+$$
+IoU = \frac{\text{交差部分の面積}}{\text{和集合の面積}}
+$$
+
+- IoU値が特定しきい値、たとえば0.5を超えると「当てた(True Positive)」と判断。
+- 高いほど箱が正確に一致。
+
+#### Step 2: Precision(適合率)とRecall(再現率)
+
+- **TP (True Positive):** 正しく見つけた
+- **FP (False Positive):** 誤って見つけた
+- **FN (False Negative):** 見逃した
+
+$$
+Precision = \frac{TP}{TP + FP} \text{ (適合率)}
+$$
+
+$$
+Recall = \frac{TP}{TP + FN} \text{ (再現率)}
+$$
+
+---
+
+### 結果値
+
+| Class | Images | Instances | Box(P) | R | mAP50 | mAP50-95 |
+| --- | --- | --- | --- | --- | --- | --- |
+| **all** | 249 | 276 | 0.901 | 0.963 | **0.948** | 0.803 |
+| **lane2** | 231 | 236 | 0.978 | 0.951 | **0.974** | 0.829 |
+| **traffic light** | 39 | 40 | 0.823 | 0.975 | **0.923** | 0.777 |
+
+- **特記事項:** `Precision(0.823)`が`Recall(0.975)`より低い。
+これは、**「信号機はほとんど見逃さないが（Recall高い）、時々信号機ではないものを信号機だと誤認する（Precision低い）」**と解釈できます。
+
+## 不足した点
+
+### 制御部 (Motion Planner)
+
+**車線制御信号**
+- `motion_planner.py`で車線制御信号を生成するとき、傾きと座標の両方を使うべきだった。そうして初めて正確に動作できる。
+- カメラ視野によって傾き値が変わる。近距離と遠距離で異なる。
+- 傾きだけでは制御信号を生成できない。
+
+**LiDARセンサー**
+- テスト環境: 範囲 0〜70°, min_dist = 0.5m, max_dist = 1.0m
+- テスト環境では正常動作。
+- 実走行環境では動作しなかったため、パラメータ再調整が必要。
+
+## おわりに
+データ収集から前処理、モデル学習と評価、コード修正、実走行まで、休暇中の金・土・月・火の4日間で進めた最初の自律走行プロジェクトでした。
+
+金・土曜日はデータ収集と前処理、ラベリングを行い、モデル学習まで進めました。月曜日にテスト走行をしましたが、学習したモデルでは走行できなかったため、sample dataで再ラベリングを行い、再学習して走行させました。
+
+その過程で、最後のデータセットで学習したモデルが正常に走行することを確認できました。しかしtraffic_lightやLiDARの問題は火曜日当日に発見したため、月曜日の夜遅くに終え、火曜日に来て約2時間修正したあと実走行しました。
+
+結果は少し残念でしたが、奨励賞でした。次に似た大会に参加することがあれば、今回学んだ試行錯誤をもとに、より良い成績を出せると思います。
+
+**[1/16 ~ 1/20] AI-SW Car開発および走行回顧 作成完了**

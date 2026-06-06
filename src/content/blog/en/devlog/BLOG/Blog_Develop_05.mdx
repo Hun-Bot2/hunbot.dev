@@ -1,0 +1,37 @@
+---
+title: 'Blog Devlog 05'
+description: 'View-count feature fixes and future plans'
+pubDate: '2025-12-30'
+#heroImage: '/images/giscus.png'
+tags: ['Devlog', 'Bug Fix']
+category: 'blog_devlog'
+series: 'Blog Devlog'
+seriesOrder: 5
+---
+
+## Planned View-Count Fix
+The temporary view-count feature I added also works on localhost, so every time I develop locally, the view count increases. I want to fix that.
+As of 2025-12-30, the site uses hits.sh for counting views, which is causing the issue.
+
+I wanted to study view-count implementation a little before working on it, so I made the following plan.
+First, my blog is hosted on Vercel and is a static site built with Astro Static Site Generator.
+
+The plan for implementing view counts is as follows. AI generated this plan.
+
+1. **Use serverless functions**: Build a view-count API using Vercel Serverless Functions, AWS Lambda, or similar. This function increments the view count for a specific blog post and returns the current count.
+2. **Choose a database**: Choose a database to store view counts. For a simple implementation, Firebase, Supabase, or a NoSQL database such as DynamoDB could be used.
+3. **Implement API endpoints**: Implement API endpoints for increasing and reading views inside the serverless function. For example, `GET /api/views?slug=post-slug` could fetch views, and `POST /api/views?slug=post-slug` could increment them.
+4. **Integrate into blog posts**: Call the API from blog post pages and display the view count. Astro can call the API client-side through an `onMount`-style flow.
+5. **Consider caching**: If the view-count API is called frequently, consider caching strategies to optimize performance.
+
+There are many recommendations, such as using <strong>Vercel KV (Redis)</strong> or **Supabase**, but I wondered whether I really need to go that far just to implement view counts on my blog. So I plan to study the feature a little more before implementing it.
+
+## Future Plans
+What comes to mind:
+
+1. Add a notice banner, for example when a new post is published or the blog is under maintenance.
+2. Add tag filtering to blog posts, for example showing only posts with a selected tag.
+3. Improve the RSS feed, for example by providing category-specific RSS feeds.
+4. Add social media share buttons to blog posts.
+5. Improve the About page.
+6. Add a popular posts section based on view count. Right now, I am probably the only person reading my blog, so this can wait.
