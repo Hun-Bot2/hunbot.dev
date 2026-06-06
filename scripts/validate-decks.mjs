@@ -102,7 +102,7 @@ assertInvalid({ ...validBaseDeck, language: 'kr' }, 'deck language must use supp
 assertInvalid({ ...validBaseDeck, pdfPageCount: 0 }, 'pdfPageCount must be positive when provided');
 assertInvalid({ ...validBaseDeck, htmlUrl: '/decks/fixture-deck/index.html' }, 'htmlUrl must use /decks-html/');
 assertInvalid(
-	{ ...validBaseDeck, type: 'pdf', htmlUrl: null, pdfUrl: '/decks-html/fixture-deck/deck.pdf' },
+	{ ...validBaseDeck, type: 'pdf', htmlUrl: null, pdfUrl: '/decks-html/fixture-deck/fixture-deck.pdf' },
 	'pdfUrl must use /decks/',
 );
 assertInvalid(
@@ -112,7 +112,7 @@ assertInvalid(
 
 assert.equal(
 	isPptxDownloadEnabled({
-		pptxUrl: '/decks/source-deck/deck.pptx',
+		pptxUrl: '/decks/source-deck/source-deck.pptx',
 		sourceAvailable: true,
 		sourceReviewed: false,
 	}),
@@ -120,7 +120,7 @@ assert.equal(
 );
 assert.equal(
 	isPptxDownloadEnabled({
-		pptxUrl: '/decks/source-deck/deck.pptx',
+		pptxUrl: '/decks/source-deck/source-deck.pptx',
 		sourceAvailable: true,
 		sourceReviewed: true,
 	}),

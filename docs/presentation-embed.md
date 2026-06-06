@@ -6,7 +6,7 @@ Deck support is part of the broader product direction in [`docs/service-plans/00
 
 ## Why PPTX Is Not Embedded
 
-PPTX files committed to this repository can be served as static files, but browsers do not reliably render PPTX files as slide decks. An iframe such as `<iframe src="/decks/example/deck.pptx"></iframe>` usually becomes a download, a blank frame, or a browser-specific fallback.
+PPTX files committed to this repository can be served as static files, but browsers do not reliably render PPTX files as slide decks. An iframe such as `<iframe src="/decks/example/example.pptx"></iframe>` usually becomes a download, a blank frame, or a browser-specific fallback.
 
 For that reason, PPTX is treated as an optional source download only. The primary viewing options are local HTML decks, PDF fallback links, or pre-rendered slide images.
 
@@ -35,7 +35,7 @@ PDF is the recommended fallback for most decks because it is static, easy to ins
 PPTX downloads are optional and must not be the primary viewing experience. A PPTX link is shown only when all three metadata fields are set:
 
 ```ts
-pptxUrl: '/decks/example/deck.pptx',
+pptxUrl: '/decks/example/example.pptx',
 sourceAvailable: true,
 sourceReviewed: true,
 ```
@@ -52,13 +52,13 @@ Keep presentation files grouped by deck ID under `public/decks/{deck-id}/`. If a
 
 ```text
 public/decks/my-deck/
-  ko/deck.pdf
-  ko/source.pptx
-  en/deck.pdf
+  ko/my-deck-ko.pdf
+  ko/my-deck-ko.pptx
+  en/my-deck-en.pdf
   slides/
 ```
 
-Use `deck.pdf` for the PDF fallback, `source.pptx` for an optional reviewed PPTX source, and `slides/` for pre-rendered slide images. HTML decks still use `public/decks-html/`.
+Use a file name that matches the deck folder, such as `my-deck.pdf`. If a deck has language-specific files, include the language suffix, such as `my-deck-ko.pdf` and `my-deck-ko.pptx`. Use `slides/` for pre-rendered slide images. HTML decks still use `public/decks-html/`.
 
 ```ts
 {
@@ -69,7 +69,7 @@ Use `deck.pdf` for the PDF fallback, `source.pptx` for an optional reviewed PPTX
 	type: 'html',
 	aspectRatio: '16:9',
 	htmlUrl: '/decks-html/my-deck/index.html',
-	pdfUrl: '/decks/my-deck/deck.pdf',
+	pdfUrl: '/decks/my-deck/my-deck.pdf',
 	pdfPageCount: null,
 	pptxUrl: null,
 	sourceAvailable: false,
@@ -93,7 +93,7 @@ Use `deck.pdf` for the PDF fallback, `source.pptx` for an optional reviewed PPTX
 	type: 'slides',
 	aspectRatio: '16:9',
 	htmlUrl: null,
-	pdfUrl: '/decks/my-slide-deck/deck.pdf',
+	pdfUrl: '/decks/my-slide-deck/my-slide-deck.pdf',
 	pdfPageCount: null,
 	pptxUrl: null,
 	sourceAvailable: false,
@@ -121,7 +121,7 @@ Use PDF-only metadata when no HTML deck or slide images are available:
 	type: 'pdf',
 	aspectRatio: '16:9',
 	htmlUrl: null,
-	pdfUrl: '/decks/my-pdf-deck/deck.pdf',
+	pdfUrl: '/decks/my-pdf-deck/my-pdf-deck.pdf',
 	pdfPageCount: 24,
 	pptxUrl: null,
 	sourceAvailable: false,
@@ -145,9 +145,9 @@ Only expose PPTX as a secondary source download:
 	type: 'pdf',
 	aspectRatio: '16:9',
 	htmlUrl: null,
-	pdfUrl: '/decks/my-source-deck/deck.pdf',
+	pdfUrl: '/decks/my-source-deck/my-source-deck.pdf',
 	pdfPageCount: 24,
-	pptxUrl: '/decks/my-source-deck/deck.pptx',
+	pptxUrl: '/decks/my-source-deck/my-source-deck.pptx',
 	sourceAvailable: true,
 	sourceReviewed: true,
 	slides: [],
