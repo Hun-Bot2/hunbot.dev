@@ -1,0 +1,160 @@
+---
+title: 'On-The-Block 서비스 개발기 04 : 채팅 버그 고치기'
+description: 'On-The-Block 서비스 개발기 04: 채팅 버그 고치기'
+pubDate: '2026-06-23'
+heroImage: '/images/ON-THE-BLOCK/otb-chatroom.png'
+tags: ['chatting', 'on-the-block']
+category: 'on-the-block'
+series: 'on-the-block'
+seriesOrder: 4
+---
+
+채팅 서비스를 만드는 과정 + 완성하고 나서, 생겼던 버그들과 그 버그들을 어떻게 고쳤는지 작성하고자 합니다. 많은 버그가 생긴 것은 아니고, 주로 Flutter 화면에서 발생한 버그였기에
+AI에서 벡엔드 서비스의 동작 방식 및 전체 코드 + 프론트인 Flutter 화면의 전체 코드 및 동작 방식을 통합적으로 이해하고 있어야 이런 버그가 발생하지 않거나 해결하기 쉽다는 것을 알았습니다.
+
+# 실제 채팅 사용 중 발견한 문제들
+채팅과 연관되어 있는 repo는 아래와 같습니다.
+
+- `../chat-service`: 사람 간 그룹 채팅 gRPC 백엔드
+- `../client/flutter_client`: Flutter 채팅 화면
+- `../on-the-block-infra/proto/chat/v1/chat.proto`: Flutter가 생성하는 공유 chat proto 원본
+- `../gateway-service`: API gateway, gRPC 라우팅과 인증 처리 담당
+
+## 1. 엔터로 메시지를 보낼 때 화면이 위로 튀는 문제
+사용자가 채팅 입력창에서 타이핑 후 엔터를 누르면, 화면이 새로고침되는 것처럼 느껴지고 메시지 리스트가 위쪽으로 튀는 현상이 있었다.
+
+Flutter 채팅방 화면에서 텍스트 전송 후 `sendTextMessage`만 호출하고, 그 다음 `_loadMessages()`로 전체 메시지 목록을 다시 가져왔다. 
+즉, 새 메시지 하나를 추가해야 하는 상황에서 전체 히스토리를 다시 로드하면서 스크롤 위치와 렌더링 상태가 흔들렸다.
+
+수정 방향은 단순했다.
+
+- `ChatRepository.sendTextMessage`가 `void` 대신 서버가 반환한 `GroupchatMessage`를 반환하도록 변경했다.
+- 채팅방 화면은 전송 성공 후 `_loadMessages()`를 다시 호출하지 않고, 반환된 메시지만 `_appendOrReplaceMessage`로 현재 리스트에 추가한다.
+- 중복 메시지는 `messageId` 또는 `sequenceNo` 기준으로 제거한다.
+- 입력창은 `TextInputAction.send`와 `onSubmitted`를 사용해 엔터/전송 액션이 실제 전송으로 이어지도록 했다.
+- 초기 로딩 또는 새 메시지 수신 시에는 명시적으로 하단으로 스크롤한다.
+
+벡엔드에서 돌고 있던 chat repo문제가 아닌 Flutter 화면에서의 메시지 추가 방식과 입력창 설정이 원인이었다.
+
+변경된 파일은
+`groupchat_room_screen.dart`, `chat_input_bar.dart`, `chat_repository.dart` 였다.
+
+## 2. 이미지와 파일이 전송되지 않고 `grpc INTERNAL`로 실패하는 문제
+
+### 증상
+
+Flutter 로그는 다음과 같은 상태였다.
+
+```text
+DEV_UPLOAD_MIME: op=send_image create_content_type=image/png put_content_type=image/png
+DEV_ERROR_JSONL: ... operation="send_image" ... technicalMessage="grpc INTERNAL"
+
+DEV_UPLOAD_MIME: op=send_file create_content_type=application/pdf put_content_type=application/pdf
+DEV_ERROR_JSONL: ... operation="send_file" ... technicalMessage="grpc INTERNAL"
+```
+로그상 `create_content_type`과 `put_content_type`은 일치했다.
+
+### 원인
+
+`chat-service`는 첨부 파일을 직접 저장하지 않고 Google Cloud Storage signed URL을 사용한다.
+이미지/파일 메시지를 보낼 때 흐름은 다음과 같다.
+
+1. 클라이언트가 `CreateAttachmentUploadURL` 호출
+2. 클라이언트가 signed PUT URL로 바이너리 업로드
+3. 클라이언트가 `SendMessage`에 object URL 전달
+4. 서버가 trusted bucket/path를 검증하고 내부 object name으로 정규화
+5. 서버가 클라이언트 전달용 signed read URL을 생성해서 응답
+
+이때 GCS signer 설정, 서비스 계정 권한, bucket 설정, read URL signer 중 하나가 실패하면 기존 코드에서는 일반 오류가 gRPC `INTERNAL`로 매핑되었다. 
+클라이언트 입장에서는 원인이 "서버 내부 오류" 외에는 보이지 않았다.
+
+또한 Flutter 쪽에서는 이미지/파일 메시지 전송 실패 시 같은 전송을 한 번 더 무조건 재시도했다.
+
+이 방식은 원인이 설정/권한 문제일 때 중복 호출만 만들고, 문제를 더 명확하게 만들지 못한다.
+
+### 해결
+
+- `chat-service`에 `ErrAttachmentUnavailable`을 추가했다.
+- upload/read signed URL 생성 실패는 `ErrAttachmentUnavailable`로 감싸고 gRPC `UNAVAILABLE`로 매핑했다.
+- Flutter는 이미지/파일 전송 시 무조건 중복 재시도하지 않고, 서버가 반환한 메시지를 append한다.
+- Flutter 개발 로그는 gRPC code뿐 아니라 message도 포함하도록 했다.
+- 이미지/파일 전송 후에도 전체 히스토리를 다시 불러오지 않고 서버 응답 메시지를 현재 리스트에 추가한다.
+
+이 문제의 핵심은 "파일 업로드 실패" 하나가 아니라, 실패 지점이 관측되지 않는다는 점이었다. `INTERNAL`은 서버 버그처럼 보이지만, signed URL signer 설정 문제는 클라이언트가 같은 요청을
+반복한다고 해결되지 않는다. 그래서 `UNAVAILABLE`로 바꿔 "현재 attachment signer 경로가 사용 불가능하다"는 의미를 드러내고, 로그에 실제 gRPC message를 남기는 방향을 통해서, 버그를 잡아냈다.
+
+## 3. 채팅방을 읽었는데 읽음 풍선이 사라지지 않는 문제
+채팅방에 들어가서 메시지를 읽었는데도 채팅 탭/목록의 unread bubble이 계속 남는 문제가 있었다.
+
+### 원인
+
+채팅방 화면은 `_markRoomRead()`를 호출해 서버에는 읽음 상태를 동기화했다. 하지만 App shell의 전체 unread badge 상태는 별도로 관리되고 있었고, 
+채팅방 내부에서 읽음 처리가 성공해도 상위 상태에 "다시 unread count를 가져와라"는 신호가 전달되지 않았다.
+
+### 해결
+
+- `GroupchatRoomScreen`에 `onRoomRead` callback을 추가했다.
+- `_markRoomRead()` 성공 후 `onRoomRead`를 호출한다.
+- `main.dart`의 app shell은 이 callback을 받아 `_refreshChatUnreadCount()`를 실행한다.
+
+변경된 파일 : `groupchat_room_screen.dart`, `main.dart`
+
+## 참고 자료
+
+- Flutter `TextField.onSubmitted` 공식 문서: https://api.flutter.dev/flutter/material/TextField/onSubmitted.html
+- gRPC status codes 공식 문서: https://grpc.io/docs/guides/status-codes/
+- gRPC error handling 공식 문서: https://grpc.io/docs/guides/error/
+- Google Cloud Storage signed URLs 공식 문서: https://cloud.google.com/storage/docs/access-control/signed-urls
+- Google Cloud Storage V4 signed upload URL 예제: https://cloud.google.com/storage/docs/samples/storage-generate-upload-signed-url-v4
+- Protocol Buffers best practices 공식 문서: https://protobuf.dev/best-practices/dos-donts/
+
+## 요약
+
+이번 문제는 하나의 버그가 아니라 네 가지 계층 문제가 함께 나타난 것이다.
+
+1. 전송 후 전체 메시지 재로딩 때문에 화면이 튀었다.
+2. 서버가 멤버 수를 내려주지 않아 Flutter가 placeholder를 잘못 표시했다.
+3. attachment signer 실패가 `INTERNAL`로 숨겨져 이미지/파일 실패 원인을 알기 어려웠다.
+4. 읽음 상태는 서버에 반영됐지만 상위 Flutter unread badge가 갱신되지 않았다.
+
+해결 방향은 공통적으로 같다. 서버가 소유한 상태는 서버가 내려주고, Flutter는 그 상태를 표시한다.
+전송처럼 즉시 반영 가능한 이벤트는 서버 응답 메시지를 append하고, 전체 reload는 보정 경로로만 둔다.
+운영 오류는 `INTERNAL`로 숨기지 않고 클라이언트와 로그에서 구분 가능한 gRPC 상태로 노출한다.
+
+## 추가적으로 고려한 문제점
+
+### 방 단위 메시지 시퀀싱 강화
+
+첫 번째 문제는 동시성 상황에서의 메시지 순서를 고려해야 했고, 각 방은 단조 증가하는 `sequence_no`를 사용하며, `(room_id, sequence_no)` 조합은 고유해야 한다. 라는 정책이 있었는데,
+단순히 `MAX(sequence_no) + 1`을 사용하는 방식은 단일 사용자 테스트에서는 동작하지만, 여러 사용자가 거의 동시에 같은 방에 메시지를 보낼 때는 안전하기 때문에 추가적인 구현이 필요했습니다.
+
+### 문제
+동시에 발생한 두 개의 send 요청은 다음과 같은 상황을 만들 수 있습니다.
+
+1. 같은 현재 max sequence를 읽음
+2. 같은 next sequence를 계산함
+3. insert 과정에서 race condition이 발생
+
+그 결과 duplicate-key error가 발생하거나 메시지 순서에 문제가 생길 수 있습니다.
+
+### 해결
+PostgreSQL repository를 수정하여 다음 sequence를 transaction 내부에서 할당하고, `room_id`를 key로 하는 transaction-scoped advisory lock으로 보호했습니다.
+
+advisory lock은 PostgreSQL에서 제공하는 lightweight lock으로, 특정 key에 대해 transaction 단위로 lock을 걸 수 있습니다.
+
+이를 통해 같은 방에 대한 메시지 전송이 동시에 발생하더라도, 한 번에 하나의 transaction만 sequence를 할당할 수 있게 됩니다.
+
+```go
+if _, err := t.q.ExecContext(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`, msg.RoomID); err != nil {
+		return domain.ChatMessage{}, err
+	}
+```
+
+#### 왜 이 방식을 택했나?
+가장 간단하게 해결할 수 있는 방법이였고, 확장을 하기 전에 Redis나 별도의 sequencing system을 도입하지 않을 수 있었습니다.
+
+
+## 마무리
+이걸로 채팅 시스템에 대한 내용이 어느 정도 마무리 되었고, 학기가 종료되면 이 시스템을 버리긴 아까워서 다른 프로젝트로 재사용해서 추가적으로 개선하는 작업을 진행할 예정입니다.
+
+GCP의 무료 크레딧 또한 모두 소진했기 때문에, 비용을 최소화 시키고 싶은 입장에서는 참 여러가지를 고려해서 설계해야 할 듯 합니다.
