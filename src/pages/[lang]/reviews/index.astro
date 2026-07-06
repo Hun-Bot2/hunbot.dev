@@ -1,0 +1,167 @@
+---
+import { getCollection } from 'astro:content';
+import BaseHead from '../../../components/BaseHead.astro';
+import Header from '../../../components/Header.astro';
+import Footer from '../../../components/Footer.astro';
+import FloatingLanguagePicker from '../../../components/FloatingLanguagePicker.astro';
+import FormattedDate from '../../../components/FormattedDate.astro';
+import {
+	getReviewTopicStats,
+	getReviewTopicsForTags,
+} from '../../../data/reviewTopics';
+import { type UILanguage } from '../../../i18n/ui';
+import {
+	ACADEMIC_REVIEW_LANGUAGES,
+	formatPaperAuthors,
+	getAcademicReviewDescription,
+	getAcademicReviewUrlFromEntry,
+	getAcademicReviewsByLanguage,
+} from '../../../utils/academic-review-routing';
+import '../../../styles/academic-review.css';
+
+export function getStaticPaths() {
+	return ACADEMIC_REVIEW_LANGUAGES.map((lang) => ({ params: { lang } }));
+}
+
+const lang = (Astro.params.lang ?? 'ko') as UILanguage;
+const allReviews = await getCollection('academicReviews');
+const reviews = getAcademicReviewsByLanguage(allReviews, lang);
+const reviewTopicStats = getReviewTopicStats(reviews);
+const title = 'Academic Reviews';
+const description = 'Academic paper reviews and in-depth technical reviews.';
+---
+
+<!doctype html>
+<html lang={lang}>
+	<head>
+		<BaseHead
+			title={`${title} | Hun-Bot`}
+			description={description}
+			lang={lang}
+			canonicalURL={new URL(`/${lang}/reviews/`, Astro.site).href}
+		/>
+		<meta data-pagefind-meta="title[content]" content={title} />
+		<meta data-pagefind-meta="description[content]" content={description} />
+		<meta data-pagefind-filter="language[content]" content={lang} />
+		<meta data-pagefind-filter="section[content]" content="academic-review" />
+	</head>
+	<body>
+		<Header />
+		<FloatingLanguagePicker />
+		<main id="main-content" class="academic-review-index" data-pagefind-body>
+			<header class="review-index-header">
+				<p class="review-kicker">Academic Reviews</p>
+				<h1>{title}</h1>
+				<p>{description}</p>
+			</header>
+
+			{reviewTopicStats.length > 0 && (
+				<section class="review-topic-filter" aria-labelledby="review-topic-filter-title">
+					<div class="review-topic-filter-header">
+						<h2 id="review-topic-filter-title">Review Topics</h2>
+						<p>Filter by research area, method, task, or application.</p>
+					</div>
+					<div class="review-topic-filter-list" aria-label="Review topic filters">
+						<button
+							type="button"
+							class="review-topic-filter-button is-active"
+							data-review-topic-filter="all"
+							aria-pressed="true"
+						>
+							<span>All</span>
+							<strong>{reviews.length}</strong>
+						</button>
+						{reviewTopicStats.map((topic) => (
+							<button
+								type="button"
+								class="review-topic-filter-button"
+								data-review-topic-filter={topic.slug}
+								aria-pressed="false"
+							>
+								<span>{topic.label}</span>
+								<strong>{topic.count}</strong>
+							</button>
+						))}
+					</div>
+					<p class="review-topic-filter-status" data-review-topic-filter-status aria-live="polite">
+						Showing all {reviews.length} reviews.
+					</p>
+				</section>
+			)}
+
+			{reviews.length > 0 ? (
+				<div class="review-index-list">
+					{reviews.map((review) => {
+						const paperSource = [
+							review.data.paper.venue,
+							review.data.paper.year ? String(review.data.paper.year) : null,
+						].filter(Boolean).join(' · ');
+						const reviewTopics = getReviewTopicsForTags(review.data.tags);
+						const topicSlugs = reviewTopics.map((topic) => topic.slug).join(' ');
+
+						return (
+							<article
+								class="review-index-item"
+								data-review-index-item
+								data-review-topic-slugs={topicSlugs}
+							>
+								<a href={getAcademicReviewUrlFromEntry(review)}>
+									<div class="review-index-item-meta">
+										<span><FormattedDate date={review.data.pubDate} /></span>
+										{paperSource && <span>{paperSource}</span>}
+									</div>
+									<h2>{review.data.title}</h2>
+									<p>{getAcademicReviewDescription(review)}</p>
+									<p class="review-index-authors">{formatPaperAuthors(review.data.paper.authors)}</p>
+									{reviewTopics.length > 0 && (
+										<ul class="review-tags" aria-label="Review topics">
+											{reviewTopics.map((topic) => <li>{topic.label}</li>)}
+										</ul>
+									)}
+								</a>
+							</article>
+						);
+					})}
+				</div>
+			) : (
+				<p class="review-index-empty">No academic reviews are published yet.</p>
+			)}
+		</main>
+		<Footer />
+		<script>
+			const topicButtons = Array.from(document.querySelectorAll('[data-review-topic-filter]'));
+			const reviewItems = Array.from(document.querySelectorAll('[data-review-index-item]'));
+			const status = document.querySelector('[data-review-topic-filter-status]');
+
+			function applyReviewTopicFilter(topicSlug) {
+				let visibleCount = 0;
+
+				for (const item of reviewItems) {
+					const itemTopics = (item.getAttribute('data-review-topic-slugs') ?? '').split(/\s+/).filter(Boolean);
+					const isVisible = topicSlug === 'all' || itemTopics.includes(topicSlug);
+					item.toggleAttribute('hidden', !isVisible);
+					if (isVisible) visibleCount += 1;
+				}
+
+				for (const button of topicButtons) {
+					const isActive = button.getAttribute('data-review-topic-filter') === topicSlug;
+					button.classList.toggle('is-active', isActive);
+					button.setAttribute('aria-pressed', String(isActive));
+				}
+
+				if (status) {
+					status.textContent = topicSlug === 'all'
+						? `Showing all ${visibleCount} reviews.`
+						: `Showing ${visibleCount} matching reviews.`;
+				}
+			}
+
+			for (const button of topicButtons) {
+				button.addEventListener('click', () => {
+					const topicSlug = button.getAttribute('data-review-topic-filter') ?? 'all';
+					applyReviewTopicFilter(topicSlug);
+				});
+			}
+		</script>
+	</body>
+</html>

@@ -3,6 +3,7 @@ import { getCollection } from 'astro:content';
 import { SITE_URL, SUPPORTED_LANGUAGES } from '../consts';
 import { getBlogUrlFromId } from '../utils/blog-routing';
 import { getBlogPageUrl, getPostsByLanguage, getTotalBlogPages } from '../utils/blog';
+import { getAcademicReviewUrlFromId } from '../utils/academic-review-routing';
 import { getLibrarySectionPath, librarySections } from '../utils/library';
 import { learningPaths } from '../data/learningPaths';
 import { getLearningPathUrl, getPublishedLearningPaths } from '../utils/learning-paths';
@@ -10,6 +11,7 @@ import { getLearningPathUrl, getPublishedLearningPaths } from '../utils/learning
 export const GET: APIRoute = async ({ site }) => {
   const siteUrl = site ?? new URL(SITE_URL);
   const posts = await getCollection('blog');
+  const academicReviews = await getCollection('academicReviews');
   const now = new Date().toISOString();
   const blogPaginationPages = SUPPORTED_LANGUAGES.flatMap((lang) => {
     const totalPages = getTotalBlogPages(getPostsByLanguage(posts, lang));
@@ -30,6 +32,7 @@ export const GET: APIRoute = async ({ site }) => {
       `/${lang}/blog/`,
       `/${lang}/blog/categories/`,
       `/${lang}/blog/tags/`,
+      `/${lang}/reviews/`,
       `/${lang}/library/`,
       `/${lang}/search/`,
       ...librarySections.map((section) => getLibrarySectionPath(lang, section.id)),
@@ -54,6 +57,15 @@ export const GET: APIRoute = async ({ site }) => {
   <url>
     <loc>${new URL(getBlogUrlFromId(post.id), siteUrl).href}</loc>
     <lastmod>${post.data.updatedDate?.toISOString() || post.data.pubDate.toISOString()}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>`).join('')}
+
+  <!-- Academic reviews -->
+  ${academicReviews.map(review => `
+  <url>
+    <loc>${new URL(getAcademicReviewUrlFromId(review.id), siteUrl).href}</loc>
+    <lastmod>${review.data.pubDate.toISOString()}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>`).join('')}

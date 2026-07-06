@@ -193,6 +193,45 @@ const searchUrl = lang === 'ko' ? '/ko/search' : `/${lang}/search`;
 	</div>
 </header>
 
+<script>
+	document.addEventListener('DOMContentLoaded', () => {
+		const skipLink = document.querySelector<HTMLAnchorElement>('.skip-link');
+		const mainContent = document.getElementById('main-content');
+
+		if (!skipLink || !mainContent) return;
+
+		const focusMainContent = () => {
+			if (!mainContent.hasAttribute('tabindex')) {
+				mainContent.setAttribute('tabindex', '-1');
+			}
+
+			mainContent.scrollIntoView({ block: 'start' });
+			skipLink.blur();
+
+			requestAnimationFrame(() => {
+				mainContent.focus({ preventScroll: true });
+			});
+		};
+
+		skipLink.addEventListener('click', (event) => {
+			event.preventDefault();
+			focusMainContent();
+			window.history.replaceState(null, '', '#main-content');
+		});
+
+		window.addEventListener('pointerdown', () => {
+			if (document.activeElement === skipLink) {
+				skipLink.blur();
+			}
+		});
+
+		window.addEventListener('scroll', () => {
+			if (document.activeElement === skipLink) {
+				skipLink.blur();
+			}
+		});
+	});
+</script>
 <script type="module" src="/scripts/header-menu.js"></script>
 
 <style>

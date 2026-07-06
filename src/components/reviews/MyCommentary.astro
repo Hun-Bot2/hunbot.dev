@@ -1,0 +1,17 @@
+---
+interface Props {
+	title?: string;
+	kind?: 'interpretation' | 'critique' | 'project';
+}
+
+const { title = 'My Commentary', kind = 'critique' } = Astro.props as Props;
+const label = kind === 'project' ? 'Project Relevance' : kind === 'interpretation' ? 'My Interpretation' : 'My Critique';
+---
+
+<section class={`review-component review-my-commentary review-my-commentary-${kind}`} aria-label={title}>
+	<p class="review-component-label">{label}</p>
+	<h3>{title}</h3>
+	<div>
+		<slot />
+	</div>
+</section>

@@ -9,6 +9,11 @@ import FormattedDate from '../../components/FormattedDate.astro';
 import { useTranslations } from '../../i18n/ui';
 import type { UILanguage } from '../../i18n/ui';
 import { decks } from '../../data/decks';
+import {
+	formatPaperAuthors,
+	getAcademicReviewsByLanguage,
+	getAcademicReviewUrlFromEntry,
+} from '../../utils/academic-review-routing';
 import { getBlogUrlFromId } from '../../utils/blog-routing';
 import {
 	getHomepageLibraryPicks,
@@ -36,16 +41,19 @@ const t = useTranslations(currentLang);
 const languageBasePath = `/${currentLang}`;
 const blogUrl = `${languageBasePath}/blog`;
 const libraryUrl = `${languageBasePath}/library`;
+const reviewsUrl = `${languageBasePath}/reviews`;
 
 const allPosts = await getCollection('blog');
 const allResources = await getCollection('resources');
 const allPapers = await getCollection('papers');
+const allAcademicReviews = await getCollection('academicReviews');
 
 const posts = getPostsForLanguage(allPosts, currentLang);
 const latestBriefs = getLatestBriefPosts(posts, 3);
 const latestPosts = getLatestBlogPosts(posts, 6);
 const libraryPicks = getHomepageLibraryPicks(allResources, allPapers, 3);
 const sectionCounts = getHomepageSectionCounts(allResources, allPapers, decks);
+const academicReviews = getAcademicReviewsByLanguage(allAcademicReviews, currentLang).slice(0, 3);
 
 const sectionCards = librarySections.map((section) => {
 	const title = t(`library.section.${section.translationKey}.title` as Parameters<typeof t>[0]);
@@ -125,32 +133,71 @@ const getPickSectionLabel = (pick: (typeof libraryPicks)[number]) => {
 					)}
 				</section>
 
-				<section class="home-section home-picks" aria-labelledby="home-picks-title">
-					<div class="home-section-heading">
-						<div>
-							<h2 id="home-picks-title">{t('home.picks.title')}</h2>
+				<section class="home-feature-row" aria-label={t('home.feature-row-label')}>
+					<section class="home-feature-panel home-picks" aria-labelledby="home-picks-title">
+						<div class="home-section-heading">
+							<div>
+								<h2 id="home-picks-title">{t('home.picks.title')}</h2>
+							</div>
 						</div>
-					</div>
-					{libraryPicks.length > 0 ? (
-						<div class="home-pick-grid">
-							{libraryPicks.map((pick) => (
-								<a
-									href={getPickHref(pick)}
-									target="_blank"
-									rel="noopener noreferrer"
-									class="home-pick-card"
-								>
-									<span class="home-pick-label">{getPickSectionLabel(pick)}</span>
-									<h3>{getPickTitle(pick)}</h3>
-									<span class="home-card-icon-button" aria-hidden="true">
-										<LibraryIcon name="external" class="home-action-icon" />
-									</span>
-								</a>
-							))}
+						{libraryPicks.length > 0 ? (
+							<div class="home-pick-grid">
+								{libraryPicks.map((pick) => (
+									<a
+										href={getPickHref(pick)}
+										target="_blank"
+										rel="noopener noreferrer"
+										class="home-pick-card"
+									>
+										<span class="home-pick-label">{getPickSectionLabel(pick)}</span>
+										<h3>{getPickTitle(pick)}</h3>
+										<span class="home-card-icon-button" aria-hidden="true">
+											<LibraryIcon name="external" class="home-action-icon" />
+										</span>
+									</a>
+								))}
+							</div>
+						) : (
+							<div class="home-empty">{t('home.picks.empty')}</div>
+						)}
+					</section>
+
+					<section class="home-feature-panel home-reviews" aria-labelledby="home-reviews-title">
+						<div class="home-section-heading">
+							<div>
+								<h2 id="home-reviews-title">{t('home.reviews.title')}</h2>
+							</div>
+							<a href={reviewsUrl} class="home-text-link home-text-link-review">
+								<LibraryIcon name="article" class="home-action-icon" />
+								<span>{t('home.reviews.view-all')}</span>
+								<LibraryIcon name="arrow-right" class="home-action-icon" />
+							</a>
 						</div>
-					) : (
-						<div class="home-empty">{t('home.picks.empty')}</div>
-					)}
+						{academicReviews.length > 0 ? (
+							<div class="home-review-list">
+								{academicReviews.map((review) => {
+									const paper = review.data.paper;
+									const source = [paper.venue, paper.year ? String(paper.year) : null].filter(Boolean).join(' · ');
+									return (
+										<a href={getAcademicReviewUrlFromEntry(review)} class="home-review-card">
+											<div class="home-review-topline">
+												<span>{source || t('home.reviews.paper')}</span>
+												<FormattedDate date={review.data.pubDate} />
+											</div>
+											<h3>{review.data.title}</h3>
+											<p>{paper.title}</p>
+											<div class="home-review-footer">
+												<span>{formatPaperAuthors(paper.authors)}</span>
+												<LibraryIcon name="arrow-right" class="home-action-icon" />
+											</div>
+										</a>
+									);
+								})}
+							</div>
+						) : (
+							<div class="home-empty">{t('home.reviews.empty')}</div>
+						)}
+					</section>
 				</section>
 
 				<section class="home-section home-library" aria-labelledby="home-library-title">
@@ -356,6 +403,21 @@ const getPickSectionLabel = (pick: (typeof libraryPicks)[number]) => {
 		box-shadow: 0 14px 32px rgba(16, 185, 129, 0.16);
 	}
 
+	.home-text-link-review {
+		border-color: rgba(125, 211, 252, 0.28);
+		background: linear-gradient(180deg, rgba(14, 165, 233, 0.14), rgba(2, 132, 199, 0.1));
+		color: #bae6fd !important;
+		box-shadow: 0 10px 26px rgba(14, 165, 233, 0.1);
+	}
+
+	.home-text-link-review:hover,
+	.home-text-link-review:focus-visible {
+		border-color: rgba(125, 211, 252, 0.48);
+		background: linear-gradient(180deg, rgba(14, 165, 233, 0.22), rgba(2, 132, 199, 0.16));
+		color: #e0f2fe !important;
+		box-shadow: 0 14px 32px rgba(14, 165, 233, 0.14);
+	}
+
 	:global(body.light-theme) .home-text-link-primary {
 		border-color: rgba(194, 65, 12, 0.28);
 		background: linear-gradient(180deg, rgba(249, 115, 22, 0.16), rgba(255, 247, 237, 0.96));
@@ -384,7 +446,21 @@ const getPickSectionLabel = (pick: (typeof libraryPicks)[number]) => {
 		color: #065f46 !important;
 	}
 
-	.home-action-icon {
+	:global(body.light-theme) .home-text-link-review {
+		border-color: rgba(3, 105, 161, 0.22);
+		background: linear-gradient(180deg, rgba(14, 165, 233, 0.12), rgba(240, 249, 255, 0.98));
+		color: #0369a1 !important;
+		box-shadow: 0 12px 26px rgba(3, 105, 161, 0.08);
+	}
+
+	:global(body.light-theme) .home-text-link-review:hover,
+	:global(body.light-theme) .home-text-link-review:focus-visible {
+		border-color: rgba(3, 105, 161, 0.34);
+		background: linear-gradient(180deg, rgba(14, 165, 233, 0.18), rgba(240, 249, 255, 1));
+		color: #075985 !important;
+	}
+
+	:global(.home-page .home-action-icon) {
 		width: 1rem;
 		height: 1rem;
 		flex: 0 0 auto;
@@ -392,6 +468,7 @@ const getPickSectionLabel = (pick: (typeof libraryPicks)[number]) => {
 	}
 
 	.home-pick-card,
+	.home-review-card,
 	.home-section-card {
 		border: 1px solid var(--home-border);
 		border-radius: 0.5rem;
@@ -409,6 +486,21 @@ const getPickSectionLabel = (pick: (typeof libraryPicks)[number]) => {
 
 	.home-section {
 		margin-top: 2.65rem;
+	}
+
+	.home-feature-row {
+		display: grid;
+		gap: 1.2rem;
+		margin-top: 2.65rem;
+	}
+
+	.home-feature-panel {
+		min-width: 0;
+	}
+
+	.home-feature-panel .home-section-heading {
+		align-items: center;
+		min-height: 2.45rem;
 	}
 
 	.home-section-heading {
@@ -438,6 +530,7 @@ const getPickSectionLabel = (pick: (typeof libraryPicks)[number]) => {
 	}
 
 	.home-pick-card,
+	.home-review-card,
 	.home-section-card,
 	.home-brief-card,
 	.home-post-card {
@@ -473,11 +566,34 @@ const getPickSectionLabel = (pick: (typeof libraryPicks)[number]) => {
 	}
 
 	.home-pick-card:hover,
+	.home-review-card:hover,
 	.home-section-card:hover {
 		transform: translateY(-2px);
 		border-color: var(--home-border-strong);
 		background: var(--home-surface-strong);
 		text-decoration: none;
+	}
+
+	.home-review-card {
+		border-color: rgba(125, 211, 252, 0.18);
+		background: linear-gradient(180deg, rgba(14, 165, 233, 0.095), rgba(255, 255, 255, 0.04));
+	}
+
+	.home-review-card:hover,
+	.home-review-card:focus-visible {
+		border-color: rgba(125, 211, 252, 0.34);
+		background: linear-gradient(180deg, rgba(14, 165, 233, 0.14), rgba(255, 255, 255, 0.06));
+	}
+
+	:global(body.light-theme) .home-review-card {
+		border-color: rgba(3, 105, 161, 0.16);
+		background: linear-gradient(180deg, rgba(240, 249, 255, 0.92), rgba(255, 255, 255, 0.96));
+	}
+
+	:global(body.light-theme) .home-review-card:hover,
+	:global(body.light-theme) .home-review-card:focus-visible {
+		border-color: rgba(3, 105, 161, 0.28);
+		background: linear-gradient(180deg, rgba(224, 242, 254, 0.96), rgba(255, 255, 255, 1));
 	}
 
 	.home-pick-card:hover .home-card-icon-button,
@@ -507,6 +623,61 @@ const getPickSectionLabel = (pick: (typeof libraryPicks)[number]) => {
 		text-transform: uppercase;
 	}
 
+	.home-review-list {
+		display: grid;
+		gap: 0.55rem;
+	}
+
+	.home-review-topline,
+	.home-review-footer {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem;
+		color: var(--home-faint);
+		font-size: 0.74rem;
+		line-height: 1.25;
+	}
+
+	.home-review-topline {
+		font-family: var(--font-heading);
+		font-weight: 800;
+		text-transform: uppercase;
+	}
+
+	.home-review-topline span,
+	.home-review-footer span {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.home-review-footer {
+		margin-top: auto;
+		border-top: 1px solid rgba(125, 211, 252, 0.16);
+		padding-top: 0.62rem;
+		color: var(--home-muted);
+	}
+
+	:global(.home-page .home-review-footer .home-action-icon) {
+		color: #bae6fd;
+		transition: transform 160ms ease;
+	}
+
+	:global(.home-page .home-review-card:hover .home-review-footer .home-action-icon),
+	:global(.home-page .home-review-card:focus-visible .home-review-footer .home-action-icon) {
+		transform: translateX(2px);
+	}
+
+	:global(body.light-theme) .home-review-footer {
+		border-top-color: rgba(3, 105, 161, 0.14);
+	}
+
+	:global(body.light-theme .home-page .home-review-footer .home-action-icon) {
+		color: #0369a1;
+	}
+
 	.home-pick-label {
 		min-width: 0;
 		max-width: 7.5rem;
@@ -522,6 +693,7 @@ const getPickSectionLabel = (pick: (typeof libraryPicks)[number]) => {
 	}
 
 	.home-pick-card h3,
+	.home-review-card h3,
 	.home-section-card h3,
 	.home-brief-card h3,
 	.home-post-card h3 {
@@ -543,12 +715,18 @@ const getPickSectionLabel = (pick: (typeof libraryPicks)[number]) => {
 		-webkit-line-clamp: 1;
 	}
 
-	.home-pick-card .home-action-icon {
+	.home-review-card h3 {
+		font-size: 1rem;
+		line-height: 1.28;
+	}
+
+	:global(.home-page .home-pick-card .home-action-icon) {
 		width: 0.88rem;
 		height: 0.88rem;
 	}
 
 	.home-pick-card > p,
+	.home-review-card > p,
 	.home-section-card > p,
 	.home-brief-card > p,
 	.home-post-card p:last-child {
@@ -748,6 +926,11 @@ const getPickSectionLabel = (pick: (typeof libraryPicks)[number]) => {
 			padding-inline: 1.5rem;
 		}
 
+		.home-feature-row {
+			grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 0.85fr);
+			align-items: start;
+		}
+
 		.home-section-grid {
 			grid-template-columns: repeat(3, minmax(0, 1fr));
 		}
@@ -768,10 +951,18 @@ const getPickSectionLabel = (pick: (typeof libraryPicks)[number]) => {
 			margin-top: 2.25rem;
 		}
 
+		.home-feature-row {
+			margin-top: 2.25rem;
+		}
+
 		.home-section-heading {
 			display: grid;
 			align-items: start;
 			gap: 0.7rem;
+		}
+
+		.home-feature-panel .home-section-heading {
+			min-height: 0;
 		}
 
 		.home-text-link {

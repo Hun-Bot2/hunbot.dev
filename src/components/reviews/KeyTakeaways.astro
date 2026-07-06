@@ -1,0 +1,21 @@
+---
+interface Props {
+	title?: string;
+	items?: string[];
+}
+
+const { title = 'Key Takeaways', items = [] } = Astro.props as Props;
+---
+
+<section class="review-component review-key-takeaways" aria-label={title}>
+	<h3>{title}</h3>
+	{items.length > 0 ? (
+		<ul>
+			{items.map((item) => <li>{item}</li>)}
+		</ul>
+	) : (
+		<div>
+			<slot />
+		</div>
+	)}
+</section>

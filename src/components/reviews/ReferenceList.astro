@@ -1,0 +1,40 @@
+---
+type ReferenceItem = {
+	id?: string;
+	title: string;
+	authors?: string[];
+	year?: number | string;
+	venue?: string;
+	url?: string;
+};
+
+interface Props {
+	title?: string;
+	items?: ReferenceItem[];
+}
+
+const { title = 'References', items = [] } = Astro.props as Props;
+---
+
+<section class="review-component review-reference-list" aria-label={title}>
+	<h3>{title}</h3>
+	{items.length > 0 && (
+		<ol>
+			{items.map((item) => (
+				<li id={item.id}>
+					<span class="review-reference-title">{item.title}</span>
+					{item.authors && item.authors.length > 0 && (
+						<span>{item.authors.join(', ')}</span>
+					)}
+					{(item.venue || item.year) && (
+						<span>{[item.venue, item.year].filter(Boolean).join(', ')}</span>
+					)}
+					{item.url && (
+						<a href={item.url} target="_blank" rel="noopener noreferrer">{item.url}</a>
+					)}
+				</li>
+			))}
+		</ol>
+	)}
+	<slot />
+</section>

@@ -1,0 +1,64 @@
+---
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import AcademicReviewPost from '../../../layouts/AcademicReviewPost.astro';
+import type { UILanguage } from '../../../i18n/ui';
+import {
+	ACADEMIC_REVIEW_LANGUAGES,
+	getAcademicReviewLanguageFromId,
+	getAcademicReviewSlugFromId,
+} from '../../../utils/academic-review-routing';
+
+export async function getStaticPaths() {
+	const reviews = await getCollection('academicReviews');
+	const slugMap = new Map<string, UILanguage[]>();
+
+	for (const review of reviews) {
+		try {
+			const lang = getAcademicReviewLanguageFromId(review.id) as UILanguage;
+			const slug = getAcademicReviewSlugFromId(review.id);
+			const langs = slugMap.get(slug) ?? [];
+			langs.push(lang);
+			slugMap.set(slug, langs);
+		} catch {
+			continue;
+		}
+	}
+
+	return ACADEMIC_REVIEW_LANGUAGES.flatMap((lang) => {
+		const languageReviews = reviews.filter((review) => {
+			try {
+				return getAcademicReviewLanguageFromId(review.id) === lang;
+			} catch {
+				return false;
+			}
+		});
+
+		return languageReviews.map((review) => {
+			const slug = getAcademicReviewSlugFromId(review.id);
+			return {
+				params: { lang, slug },
+				props: { review, lang, availableLangs: slugMap.get(slug) ?? [lang] },
+			};
+		});
+	});
+}
+
+type Props = {
+	review: CollectionEntry<'academicReviews'>;
+	lang: UILanguage;
+	availableLangs: UILanguage[];
+};
+
+const { review, lang, availableLangs } = Astro.props as Props;
+const { Content, headings } = await render(review);
+---
+
+<AcademicReviewPost
+	{...review.data}
+	lang={lang}
+	availableLangs={availableLangs}
+	reviewId={review.id}
+	headings={headings}
+>
+	<Content />
+</AcademicReviewPost>

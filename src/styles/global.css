@@ -533,7 +533,7 @@ p {
 }
 
 .prose p {
-	margin-bottom: 2em;
+	margin-bottom: 0.5em;
 }
 
 /* Keep list-item paragraphs compact and remove extra trailing gap. */

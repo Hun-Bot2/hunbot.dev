@@ -1,0 +1,16 @@
+---
+interface Props {
+	title?: string;
+	severity?: 'minor' | 'major' | 'open';
+}
+
+const { title = 'Limitation', severity = 'open' } = Astro.props as Props;
+---
+
+<section class={`review-component review-limitation-block review-limitation-${severity}`} aria-label={title}>
+	<p class="review-component-label">Limitation</p>
+	<h3>{title}</h3>
+	<div>
+		<slot />
+	</div>
+</section>

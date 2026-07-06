@@ -31,6 +31,8 @@ assert.match(sitemapRoute, /learningPaths/);
 assert.match(sitemapRoute, /getPublishedLearningPaths/);
 assert.match(sitemapRoute, /getLearningPathUrl/);
 assert.match(sitemapRoute, /getLibrarySectionPath/);
+assert.match(sitemapRoute, /getAcademicReviewUrlFromId/);
+assert.match(sitemapRoute, /\/reviews\//);
 
 for (const outputRoot of [join(root, 'dist/client'), join(root, '.vercel/output/static')]) {
 	if (!existsSync(outputRoot)) continue;

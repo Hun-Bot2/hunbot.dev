@@ -1,0 +1,14 @@
+---
+interface Props {
+	label?: string;
+}
+
+const { label = 'Equation Note' } = Astro.props as Props;
+---
+
+<figure class="review-component review-equation-note">
+	<figcaption>{label}</figcaption>
+	<div class="review-equation-body">
+		<slot />
+	</div>
+</figure>

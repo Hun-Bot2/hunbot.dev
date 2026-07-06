@@ -12,6 +12,14 @@ import {
   getBlogUrlFromPost,
   isBlogLanguage,
 } from '../src/utils/blog-routing.ts';
+import {
+  getAcademicReviewLanguageFromContentPath,
+  getAcademicReviewLanguageFromId,
+  getAcademicReviewLanguageFromRouteParam,
+  getAcademicReviewSlugFromId,
+  getAcademicReviewUrlFromId,
+  isAcademicReviewLanguage,
+} from '../src/utils/academic-review-routing.ts';
 
 const root = process.cwd();
 const expectedUrls = [
@@ -60,6 +68,18 @@ assert.equal(
 
 assert.throws(() => getBlogUrlFromId('research/ai-agents/example'), /Invalid blog content id/);
 assert.throws(() => getBlogLanguageFromRouteParam('fr'), /Invalid blog language/);
+
+assert.equal(isAcademicReviewLanguage('ko'), true);
+assert.equal(isAcademicReviewLanguage('fr'), false);
+assert.equal(getAcademicReviewLanguageFromId('ko/papers/example'), 'ko');
+assert.equal(getAcademicReviewLanguageFromRouteParam('en'), 'en');
+assert.equal(
+  getAcademicReviewLanguageFromContentPath('/Users/example/src/content/academic-reviews/jp/papers/example.mdx'),
+  'jp',
+);
+assert.equal(getAcademicReviewSlugFromId('ko/papers/example'), 'papers/example');
+assert.equal(getAcademicReviewUrlFromId('ko/papers/example'), '/ko/reviews/papers/example/');
+assert.throws(() => getAcademicReviewUrlFromId('papers/example'), /Invalid academic review content id/);
 
 for (const [, url] of expectedUrls) {
   assert.equal(url.endsWith('/'), true, `${url} should keep a trailing slash`);

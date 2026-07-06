@@ -201,6 +201,22 @@ const papers = defineCollection({
 		}),
 });
 
+const academicReviews = defineCollection({
+	loader: glob({ base: './src/content/academic-reviews', pattern: '**/*.{md,mdx}' }),
+	schema: z.object({
+		title: z.string().min(1),
+		pubDate: z.coerce.date(),
+		tags: z.array(z.string().min(1)).default([]),
+		paper: z.object({
+			title: z.string().min(1),
+			authors: z.array(z.string().min(1)).min(1),
+			venue: z.string().min(1).optional(),
+			year: z.coerce.number().int().min(1900).max(2100).optional(),
+			url: httpUrl,
+		}),
+	}),
+});
+
 const topics = defineCollection({
 	loader: glob({ base: './src/content/topics', pattern: '**/*.{md,mdx}' }),
 	schema: z.object({
@@ -228,4 +244,4 @@ const topics = defineCollection({
 	}),
 });
 
-export const collections = { blog, resources, papers, topics };
+export const collections = { blog, resources, papers, topics, academicReviews };

@@ -1,0 +1,181 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import FloatingLanguagePicker from '../components/FloatingLanguagePicker.astro';
+import Breadcrumb from '../components/Breadcrumb.astro';
+import FormattedDate from '../components/FormattedDate.astro';
+import GiscusComments from '../components/GiscusComments.astro';
+import ViewCounter from '../components/ViewCounter.astro';
+import { AUTHOR, AUTHOR_EMAIL, SITE_TITLE, SOCIAL_LINKS } from '../consts';
+import { getReviewTopicsForTags } from '../data/reviewTopics';
+import type { UILanguage } from '../i18n/ui';
+import { formatPaperAuthors } from '../utils/academic-review-routing';
+import '../styles/academic-review.css';
+
+type ReviewHeading = {
+	depth: number;
+	slug: string;
+	text: string;
+};
+
+type Props = CollectionEntry<'academicReviews'>['data'] & {
+	lang?: UILanguage;
+	availableLangs?: UILanguage[];
+	reviewId?: string;
+	headings?: ReviewHeading[];
+};
+
+const {
+	title,
+	pubDate,
+	tags = [],
+	paper,
+	lang = 'ko',
+	availableLangs,
+	reviewId,
+	headings = [],
+} = Astro.props as Props;
+
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+const descriptionParts = [paper.venue, paper.year ? String(paper.year) : null].filter(Boolean);
+const sourceLabel = descriptionParts.length > 0 ? ` (${descriptionParts.join(', ')})` : '';
+const description = `Academic review of "${paper.title}"${sourceLabel}.`;
+const visibleHeadings = headings.filter((heading) => heading.depth >= 2 && heading.depth <= 4);
+const headingId = 'review-title';
+const slug = reviewId ?? `${lang}/${Astro.url.pathname.split('/reviews/')[1]?.replace(/\/$/g, '') ?? ''}`;
+const authorNames = formatPaperAuthors(paper.authors);
+const paperSource = [paper.venue, paper.year ? String(paper.year) : null].filter(Boolean).join(' · ');
+const reviewTopics = getReviewTopicsForTags(tags);
+const schema = {
+	'@context': 'https://schema.org',
+	'@type': 'Review',
+	name: title,
+	headline: title,
+	description,
+	url: canonicalURL.href,
+	datePublished: pubDate.toISOString(),
+	author: {
+		'@type': 'Person',
+		name: AUTHOR,
+		email: AUTHOR_EMAIL,
+		sameAs: [SOCIAL_LINKS.github, SOCIAL_LINKS.linkedin],
+	},
+	publisher: {
+		'@type': 'Organization',
+		name: SITE_TITLE,
+		logo: {
+			'@type': 'ImageObject',
+			url: new URL('/favicon.svg', Astro.site).href,
+		},
+	},
+	itemReviewed: {
+		'@type': 'ScholarlyArticle',
+		name: paper.title,
+		author: paper.authors.map((name) => ({ '@type': 'Person', name })),
+		isPartOf: paper.venue,
+		datePublished: paper.year ? String(paper.year) : undefined,
+		url: paper.url,
+	},
+};
+---
+
+<html lang={lang}>
+	<head>
+		<BaseHead
+			title={`${title} | Academic Review`}
+			description={description}
+			canonicalURL={canonicalURL.href}
+			lang={lang}
+			availableLangs={availableLangs}
+		/>
+		<script type="application/ld+json" set:html={JSON.stringify(schema)} />
+		<meta property="og:type" content="article" />
+		<meta property="article:author" content={AUTHOR} />
+		<meta property="article:published_time" content={pubDate.toISOString()} />
+		{reviewTopics.map((topic) => <meta property="article:tag" content={topic.label} />)}
+		<meta data-pagefind-meta="title[content]" content={title} />
+		<meta data-pagefind-meta="description[content]" content={description} />
+		<meta data-pagefind-filter="language[content]" content={lang} />
+		<meta data-pagefind-filter="section[content]" content="academic-review" />
+		{paper.venue && <meta data-pagefind-filter="venue[content]" content={paper.venue} />}
+		{paper.year && <meta data-pagefind-filter="paper-year[content]" content={String(paper.year)} />}
+		{reviewTopics.map((topic) => <meta data-pagefind-filter="topic[content]" content={topic.label} />)}
+	</head>
+	<body>
+		<Header />
+		<FloatingLanguagePicker availableLangs={availableLangs} />
+		<main id="main-content" class="academic-review-page">
+			<article aria-labelledby={headingId}>
+				<Breadcrumb items={[
+					{ name: 'Home', href: `/${lang}/` },
+					{ name: 'Reviews', href: `/${lang}/reviews/` },
+					{ name: title },
+				]} />
+
+				<header class="review-header">
+					<p class="review-kicker">Academic Review</p>
+					<h1 id={headingId} data-pagefind-body data-pagefind-meta="title">{title}</h1>
+					<p class="review-paper-title">{paper.title}</p>
+					<div class="review-published-meta">
+						<span><FormattedDate date={pubDate} /></span>
+						<span aria-hidden="true">/</span>
+						<ViewCounter slug={slug} />
+					</div>
+					{reviewTopics.length > 0 && (
+						<ul class="review-tags" aria-label="Review topics">
+							{reviewTopics.map((topic) => <li>{topic.label}</li>)}
+						</ul>
+					)}
+				</header>
+
+				<section class="review-paper-meta" aria-labelledby="paper-metadata-title">
+					<h2 id="paper-metadata-title">Paper Metadata</h2>
+					<dl>
+						<div>
+							<dt>Authors</dt>
+							<dd>{authorNames}</dd>
+						</div>
+						{paperSource && (
+							<div>
+								<dt>Source</dt>
+								<dd>{paperSource}</dd>
+							</div>
+						)}
+						<div>
+							<dt>Original Paper</dt>
+							<dd>
+								<a href={paper.url} target="_blank" rel="noopener noreferrer">{paper.url}</a>
+							</dd>
+						</div>
+					</dl>
+				</section>
+
+				<div class="review-reading-grid">
+					{visibleHeadings.length > 0 && (
+						<aside class="review-toc" aria-labelledby="review-toc-title">
+							<h2 id="review-toc-title">Contents</h2>
+							<nav aria-label="Review table of contents">
+								<ol>
+									{visibleHeadings.map((heading) => (
+										<li class={`review-toc-depth-${heading.depth}`}>
+											<a href={`#${heading.slug}`}>{heading.text}</a>
+										</li>
+									))}
+								</ol>
+							</nav>
+						</aside>
+					)}
+
+					<div class="review-prose" data-pagefind-body>
+						<slot />
+					</div>
+				</div>
+
+				<GiscusComments lang={lang} />
+			</article>
+		</main>
+		<Footer />
+	</body>
+</html>

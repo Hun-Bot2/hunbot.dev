@@ -1,0 +1,44 @@
+---
+interface Props {
+	label?: string;
+	metric?: string;
+	value?: string;
+	baseline?: string;
+	delta?: string;
+}
+
+const {
+	label = 'Experimental Result',
+	metric,
+	value,
+	baseline,
+	delta,
+} = Astro.props as Props;
+---
+
+<section class="review-component review-result-highlight" aria-label={label}>
+	<div class="review-result-main">
+		<p class="review-component-label">{label}</p>
+		{metric && <h3>{metric}</h3>}
+		{value && <strong>{value}</strong>}
+	</div>
+	{(baseline || delta) && (
+		<dl>
+			{baseline && (
+				<div>
+					<dt>Baseline</dt>
+					<dd>{baseline}</dd>
+				</div>
+			)}
+			{delta && (
+				<div>
+					<dt>Delta</dt>
+					<dd>{delta}</dd>
+				</div>
+			)}
+		</dl>
+	)}
+	<div class="review-result-detail">
+		<slot />
+	</div>
+</section>

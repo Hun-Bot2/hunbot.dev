@@ -3,6 +3,7 @@ import { extname, join, relative, sep } from 'node:path';
 
 const root = process.cwd();
 const blogRoot = join(root, 'src/content/blog');
+const academicReviewRoot = join(root, 'src/content/academic-reviews');
 const libraryRoots = {
 	resources: join(root, 'src/content/resources'),
 	papers: join(root, 'src/content/papers'),
@@ -11,6 +12,9 @@ const libraryRoots = {
 
 const blogFiles = existsSync(blogRoot)
 	? walk(blogRoot).filter((filePath) => ['.md', '.mdx'].includes(extname(filePath)))
+	: [];
+const academicReviewFiles = existsSync(academicReviewRoot)
+	? walk(academicReviewRoot).filter((filePath) => ['.md', '.mdx'].includes(extname(filePath)))
 	: [];
 
 const blogSummary = {
@@ -22,6 +26,11 @@ const blogSummary = {
 	duplicateTitles: [],
 };
 const titlesByLanguage = new Map();
+const academicReviewSummary = {
+	total: academicReviewFiles.length,
+	byLanguage: new Map(),
+	emptyBodies: [],
+};
 
 for (const filePath of blogFiles) {
 	const relativePath = relative(blogRoot, filePath);
@@ -55,11 +64,25 @@ for (const filePath of blogFiles) {
 	}
 }
 
+for (const filePath of academicReviewFiles) {
+	const relativePath = relative(academicReviewRoot, filePath);
+	const language = relativePath.split(sep)[0] || 'unknown';
+	const source = readFileSync(filePath, 'utf8');
+	const body = source.replace(/^---\r?\n[\s\S]*?\r?\n---/, '').trim();
+
+	increment(academicReviewSummary.byLanguage, language);
+
+	if (!body) {
+		academicReviewSummary.emptyBodies.push(relative(root, filePath));
+	}
+}
+
 const librarySummary = Object.fromEntries(
 	Object.entries(libraryRoots).map(([name, directory]) => [name, summarizeJsonFrontmatterCollection(directory)]),
 );
 
 printBlogSummary(blogSummary);
+printAcademicReviewSummary(academicReviewSummary);
 printLibrarySummary(librarySummary);
 
 function summarizeJsonFrontmatterCollection(directory) {
@@ -130,6 +153,16 @@ function printBlogSummary(summary) {
 
 	if (summary.emptyBodies.length > 0) {
 		console.log(`Empty body samples: ${summary.emptyBodies.slice(0, 8).join(', ')}`);
+	}
+}
+
+function printAcademicReviewSummary(summary) {
+	console.log(`Academic review files: ${summary.total}`);
+	console.log(`Academic reviews by language: ${formatMap(summary.byLanguage)}`);
+	console.log(`Academic review empty bodies: ${summary.emptyBodies.length}`);
+
+	if (summary.emptyBodies.length > 0) {
+		console.log(`Academic review empty body samples: ${summary.emptyBodies.slice(0, 8).join(', ')}`);
 	}
 }
 
