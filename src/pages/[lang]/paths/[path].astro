@@ -7,6 +7,7 @@ import FormattedDate from '../../../components/FormattedDate.astro';
 import LibraryIcon from '../../../components/library/LibraryIcon.astro';
 import LibraryPageStyles from '../../../components/library/LibraryPageStyles.astro';
 import { getCollection } from 'astro:content';
+import { getAllPosts } from '../../../utils/blog';
 import { decks, getDeckById } from '../../../data/decks';
 import { learningPaths } from '../../../data/learningPaths';
 import { useTranslations, type UILanguage } from '../../../i18n/ui';
@@ -40,7 +41,7 @@ if (!learningPath) {
 	throw new Error(`Unknown learning path route: ${pathId}`);
 }
 
-const allPosts = await getCollection('blog');
+const allPosts = await getAllPosts();
 const allResources = await getCollection('resources');
 const allPapers = await getCollection('papers');
 

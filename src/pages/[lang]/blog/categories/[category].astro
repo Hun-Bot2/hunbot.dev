@@ -3,13 +3,12 @@ import BaseHead from '../../../../components/BaseHead.astro';
 import Header from '../../../../components/Header.astro';
 import Footer from '../../../../components/Footer.astro';
 import FloatingLanguagePicker from '../../../../components/FloatingLanguagePicker.astro';
-import { getCollection } from 'astro:content';
 import { useTranslations, type UILanguage } from '../../../../i18n/ui';
 import { getBlogLanguageFromId, getBlogUrlFromId } from '../../../../utils/blog-routing';
-import { filterPostsByLanguage, getCategoryKey, sortPostsByDateDesc } from '../../../../utils/blog';
+import { getAllPosts, filterPostsByLanguage, getCategoryKey, sortPostsByDateDesc } from '../../../../utils/blog';
 
 export async function getStaticPaths() {
-    const allPosts = await getCollection('blog');
+    const allPosts = await getAllPosts();
     const categoryKeys = new Set<string>();
 
     allPosts.forEach((post) => {
@@ -30,7 +29,7 @@ const currentLang = lang as UILanguage;
 const t = useTranslations(currentLang);
 const categoryValue = category ? decodeURIComponent(String(category)) : 'uncategorized';
 
-const allPosts = await getCollection('blog');
+const allPosts = await getAllPosts();
 const posts = sortPostsByDateDesc(
     filterPostsByLanguage(allPosts, currentLang).filter((post) => getCategoryKey(post) === categoryValue),
 );

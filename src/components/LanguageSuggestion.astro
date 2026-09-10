@@ -1,0 +1,86 @@
+---
+import { ui } from '../i18n/ui';
+
+/**
+ * Suggests a translation instead of redirecting to one.
+ *
+ * The signal is the reader's own browser language, not their IP address: IP says
+ * where someone is, browser language says what they read. It also never moves the
+ * reader, which matters because many posts exist in Korean only.
+ *
+ * Labels are rendered in the target language, so the invitation is readable by the
+ * person it is aimed at.
+ */
+const suggestions = (['ko', 'jp', 'en'] as const).map((code) => ({
+	code,
+	label: ui[code]['language.suggest'],
+	dismiss: ui[code]['language.suggest-dismiss'],
+}));
+---
+
+<div class="language-suggestion" data-language-suggestion hidden>
+	<a class="language-suggestion-link" data-language-suggestion-link href="#"></a>
+	<button type="button" class="language-suggestion-dismiss" data-language-suggestion-dismiss></button>
+</div>
+
+{suggestions.map((suggestion) => (
+	<template
+		data-language-suggestion-copy={suggestion.code}
+		data-label={suggestion.label}
+		data-dismiss={suggestion.dismiss}
+	></template>
+))}
+
+<style>
+	.language-suggestion {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem;
+		margin: 0 auto 1.5rem;
+		width: min(100%, 56rem);
+		border: 1px solid rgba(249, 115, 22, 0.4);
+		border-radius: 0.7rem;
+		background: rgba(249, 115, 22, 0.1);
+		padding: 0.7rem 0.9rem;
+	}
+
+	.language-suggestion[hidden] {
+		display: none;
+	}
+
+	.language-suggestion-link {
+		color: rgb(255, 237, 213);
+		font-size: 0.9rem;
+		font-weight: 700;
+		text-decoration: underline;
+	}
+
+	.language-suggestion-dismiss {
+		min-height: 2rem;
+		border: 1px solid rgba(148, 163, 184, 0.4);
+		border-radius: 999px;
+		background: transparent;
+		padding: 0.25rem 0.75rem;
+		color: rgba(226, 232, 240, 0.9);
+		font: inherit;
+		font-size: 0.8rem;
+		font-weight: 700;
+		cursor: pointer;
+	}
+
+	:global(body.light-theme) .language-suggestion {
+		border-color: rgba(194, 65, 12, 0.3);
+		background: rgba(249, 115, 22, 0.09);
+	}
+
+	:global(body.light-theme) .language-suggestion-link {
+		color: rgb(154, 52, 18);
+	}
+
+	:global(body.light-theme) .language-suggestion-dismiss {
+		border-color: rgb(203, 213, 225);
+		color: rgb(51, 65, 85);
+	}
+</style>

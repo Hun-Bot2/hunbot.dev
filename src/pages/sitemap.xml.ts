@@ -2,7 +2,6 @@ import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 import { SITE_URL, SUPPORTED_LANGUAGES } from '../consts';
 import { getBlogUrlFromId } from '../utils/blog-routing';
-import { getBlogPageUrl, getPostsByLanguage, getTotalBlogPages } from '../utils/blog';
 import { getAcademicReviewUrlFromId } from '../utils/academic-review-routing';
 import { getLibrarySectionPath, librarySections } from '../utils/library';
 import { learningPaths } from '../data/learningPaths';
@@ -13,12 +12,6 @@ export const GET: APIRoute = async ({ site }) => {
   const posts = await getCollection('blog', ({ data }) => !data.draft);
   const academicReviews = await getCollection('academicReviews');
   const now = new Date().toISOString();
-  const blogPaginationPages = SUPPORTED_LANGUAGES.flatMap((lang) => {
-    const totalPages = getTotalBlogPages(getPostsByLanguage(posts, lang));
-    return Array.from({ length: Math.max(0, totalPages - 1) }, (_, index) =>
-      getBlogPageUrl(lang, index + 2),
-    );
-  });
   const learningPathPages = SUPPORTED_LANGUAGES.flatMap((lang) => [
     `/${lang}/paths/`,
     ...getPublishedLearningPaths(learningPaths).map((path) => getLearningPathUrl(lang, path.id)),
@@ -37,7 +30,6 @@ export const GET: APIRoute = async ({ site }) => {
       `/${lang}/search/`,
       ...librarySections.map((section) => getLibrarySectionPath(lang, section.id)),
     ]),
-    ...blogPaginationPages,
     ...learningPathPages,
   ];
   

@@ -47,6 +47,18 @@ Recommended flow for blog posts:
 
 The current owner workflow intentionally keeps MDX review separate. Framework, route, schema, and UI commits should not accidentally include `.mdx` files.
 
+## Frontmatter Quality Gate
+
+A post with `draft: false` (or no `draft` field) still will not publish if its frontmatter still looks like an unedited template. `getAllPosts()` in `src/utils/blog.ts` excludes a post when any of the following hold:
+
+- `description` is one of the known placeholder strings (`설명 입력`, `Enter description`, `説明を入力`), or is shorter than 10 characters
+- `tags` contains `tag1`, `tag2`, or `tag`
+- `category` is exactly `category`
+- `series` is exactly `series 이름` or `series name`
+- another post shares the same language, `title`, and `pubDate` (always a copy-paste mistake — every copy is excluded, not just the extras)
+
+This is not a build failure: `scripts/validate-blog-content.mjs` prints a warning listing every excluded file and the reason, so the backlog stays visible without blocking work on unrelated content. Fix the real values (or set `draft: true` until you do) to get a post published.
+
 ## Translation Review
 
 AI-assisted translation is allowed as a draft aid, but published translations must be human reviewed.

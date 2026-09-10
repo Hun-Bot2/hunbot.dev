@@ -1,9 +1,25 @@
 ---
+import { useTranslations, type UILanguage } from '../i18n/ui';
+
 export interface Props {
   category: string;
 }
 
 const { category } = Astro.props;
+
+const lang = (Astro.currentLocale ?? 'ko') as UILanguage;
+const t = useTranslations(lang);
+
+const CATEGORY_LABEL_KEYS = {
+  ai: 'blog.category-ai',
+  devlog: 'blog.category-devlog',
+  review: 'blog.category-review',
+  misc: 'blog.category-misc',
+} as const;
+
+const labelKey = CATEGORY_LABEL_KEYS[category as keyof typeof CATEGORY_LABEL_KEYS];
+// Unknown keys fall back to the raw value rather than silently reading as "misc".
+const label = labelKey ? t(labelKey) : category;
 
 const categoryColors: Record<string, string> = {
   ai: 'text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800',
@@ -16,5 +32,5 @@ const colorClass = categoryColors[category] || categoryColors.misc;
 ---
 
 <span class={`px-2.5 py-1 text-xs font-medium rounded-full border ${colorClass}`}>
-  {category}
+  {label}
 </span>

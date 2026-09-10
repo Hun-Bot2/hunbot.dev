@@ -12,6 +12,10 @@ const files = existsSync(blogRoot)
 	? walk(blogRoot).filter((filePath) => ['.md', '.mdx'].includes(extname(filePath)))
 	: [];
 
+// Frontmatter records for the placeholder/duplicate report below, gathered
+// alongside the per-file checks so we don't re-read every file.
+const frontmatterRecords = [];
+
 for (const filePath of files) {
 	const label = relative(root, filePath);
 	const language = relative(blogRoot, filePath).split(sep)[0];
@@ -48,6 +52,120 @@ for (const filePath of files) {
 	validateStringField(frontmatter, 'series', label);
 	validateSeriesOrder(frontmatter, label);
 	validateTags(frontmatter, label);
+
+	frontmatterRecords.push({
+		label,
+		language,
+		draft: getField(frontmatter, 'draft') === 'true',
+		title: getField(frontmatter, 'title'),
+		description: getField(frontmatter, 'description'),
+		pubDate: getField(frontmatter, 'pubDate'),
+		category: getField(frontmatter, 'category'),
+		series: getField(frontmatter, 'series'),
+		tags: getField(frontmatter, 'tags'),
+	});
+}
+
+// Placeholder / duplicate frontmatter report.
+// Mirrors getFrontmatterIssues() / excludeDuplicates() in src/utils/blog.ts —
+// posts these rules exclude never render, but the backlog should stay visible
+// here rather than silently disappearing.
+const PLACEHOLDER_DESCRIPTIONS = new Set(['설명 입력', 'Enter description', '説明を入力']);
+const PLACEHOLDER_TAGS = new Set(['tag1', 'tag2', 'tag']);
+const PLACEHOLDER_CATEGORY = 'category';
+const PLACEHOLDER_SERIES = new Set(['series 이름', 'series name']);
+
+const placeholderReport = [];
+
+for (const record of frontmatterRecords) {
+	if (record.draft) continue;
+
+	const reasons = [];
+	const trimmedDescription = (record.description ?? '').trim();
+
+	if (PLACEHOLDER_DESCRIPTIONS.has(trimmedDescription)) {
+		reasons.push('placeholder description');
+	}
+
+	if (record.tags && parseTagList(record.tags).some((tag) => PLACEHOLDER_TAGS.has(tag.trim().toLowerCase()))) {
+		reasons.push('placeholder tags');
+	}
+
+	if (record.category && record.category.trim().toLowerCase() === PLACEHOLDER_CATEGORY) {
+		reasons.push('placeholder category');
+	}
+
+	if (record.series && PLACEHOLDER_SERIES.has(record.series.trim().toLowerCase())) {
+		reasons.push('placeholder series');
+	}
+
+	if (reasons.length > 0) {
+		placeholderReport.push({ record, reasons });
+	}
+}
+
+const duplicateCounts = new Map();
+for (const record of frontmatterRecords) {
+	if (record.draft || !record.title || !record.pubDate) continue;
+	const key = `${record.language}::${record.title.trim()}::${record.pubDate.trim()}`;
+	duplicateCounts.set(key, (duplicateCounts.get(key) ?? 0) + 1);
+}
+
+for (const record of frontmatterRecords) {
+	if (record.draft || !record.title || !record.pubDate) continue;
+	const key = `${record.language}::${record.title.trim()}::${record.pubDate.trim()}`;
+	if (duplicateCounts.get(key) > 1) {
+		const existing = placeholderReport.find((entry) => entry.record === record);
+		if (existing) {
+			existing.reasons.push('duplicate title+pubDate');
+		} else {
+			placeholderReport.push({ record, reasons: ['duplicate title+pubDate'] });
+		}
+	}
+}
+
+if (placeholderReport.length > 0) {
+	warnings.push(
+		`${placeholderReport.length} post(s) excluded from publishing by the frontmatter quality gate ` +
+			'(see getAllPosts() in src/utils/blog.ts):\n  ' +
+			placeholderReport
+				.map(({ record, reasons }) => `${record.label}: ${reasons.join(', ')}`)
+				.join('\n  '),
+	);
+}
+
+// Draft leak guard.
+// `draft: true` must remove a post from every public surface. `getAllPosts()` in
+// src/utils/blog.ts is the only helper that filters drafts, so any route reading the
+// blog collection directly must pass its own `!data.draft` predicate.
+const routeFiles = [];
+(function collectRoutes(directory) {
+	if (!existsSync(directory)) return;
+
+	for (const entry of readdirSync(directory, { withFileTypes: true })) {
+		const entryPath = join(directory, entry.name);
+
+		if (entry.isDirectory()) {
+			collectRoutes(entryPath);
+			continue;
+		}
+
+		if (['.astro', '.ts', '.js'].includes(extname(entry.name))) {
+			routeFiles.push(entryPath);
+		}
+	}
+})(join(root, 'src/pages'));
+
+for (const routeFile of routeFiles) {
+	const source = readFileSync(routeFile, 'utf8');
+	if (!source.includes("getCollection('blog')")) continue;
+
+	if (!/getCollection\('blog',\s*\(\{\s*data\s*\}\)\s*=>\s*!data\.draft\)/.test(source)) {
+		errors.push(
+			`${relative(root, routeFile)} reads the blog collection without a draft filter. ` +
+				'Use getAllPosts() from src/utils/blog.ts, or pass ({ data }) => !data.draft.',
+		);
+	}
 }
 
 if (errors.length > 0) {
@@ -117,4 +235,15 @@ function stripQuotes(value) {
 
 function escapeRegExp(value) {
 	return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// Parses a raw `tags: ['a', 'b']` frontmatter value into individual tag strings.
+function parseTagList(rawValue) {
+	const inner = rawValue.trim().replace(/^\[/, '').replace(/\]$/, '');
+	if (!inner.trim()) return [];
+
+	return inner
+		.split(',')
+		.map((entry) => stripQuotes(entry.trim()))
+		.filter((entry) => entry.length > 0);
 }

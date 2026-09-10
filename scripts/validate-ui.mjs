@@ -27,7 +27,6 @@ const pagesWithHeader = [
 	'src/pages/[lang]/blog/categories.astro',
 	'src/pages/[lang]/blog/categories/[category].astro',
 	'src/pages/[lang]/blog/index.astro',
-	'src/pages/[lang]/blog/page/[page].astro',
 	'src/pages/[lang]/blog/tags.astro',
 	'src/pages/[lang]/index.astro',
 	'src/pages/[lang]/library.astro',

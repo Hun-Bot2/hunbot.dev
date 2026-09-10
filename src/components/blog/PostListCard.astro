@@ -1,7 +1,10 @@
 ---
 import type { CollectionEntry } from 'astro:content';
 import FormattedDate from '../FormattedDate.astro';
+import CategoryBadge from '../CategoryBadge.astro';
+import TagList from '../TagList.astro';
 import { getBlogUrlFromId } from '../../utils/blog-routing';
+import { normalizeCategory } from '../../utils/blog';
 
 interface Props {
 	post: CollectionEntry<'blog'>;
@@ -9,15 +12,23 @@ interface Props {
 
 const { post } = Astro.props;
 const postUrl = getBlogUrlFromId(post.id);
-const hero = post.data.heroImage ?? '/images/blank.png';
+// Most posts have no hero image. A shared placeholder would take the card's most
+// prominent slot while carrying no information, so the image is omitted instead.
+const hero = post.data.heroImage;
+const category = normalizeCategory(post.data.category);
+const tags = post.data.tags ?? [];
 ---
 
-<a href={postUrl} class="blog-list-card">
-	<img src={hero} alt={post.data.title} loading="lazy" decoding="async" />
+<a href={postUrl} class:list={['blog-list-card', !hero && 'has-no-hero']}>
+	{hero && <img src={hero} alt="" loading="lazy" decoding="async" />}
 	<div class="blog-list-card-body">
-		<p class="blog-list-card-date"><FormattedDate date={post.data.pubDate} /></p>
+		<div class="blog-list-card-meta">
+			<p class="blog-list-card-date"><FormattedDate date={post.data.pubDate} /></p>
+			<CategoryBadge category={category} />
+		</div>
 		<h2>{post.data.title}</h2>
 		{post.data.description && <p class="blog-list-card-description">{post.data.description}</p>}
+		{tags.length > 0 && <TagList tags={tags} maxTags={3} />}
 	</div>
 </a>
 
@@ -34,6 +45,17 @@ const hero = post.data.heroImage ?? '/images/blank.png';
 		color: inherit;
 		text-decoration: none;
 		transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+	}
+
+	.blog-list-card.has-no-hero {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.blog-list-card-meta {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.5rem;
 	}
 
 	.blog-list-card:hover {

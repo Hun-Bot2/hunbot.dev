@@ -8,6 +8,8 @@ import FormattedDate from '../components/FormattedDate.astro';
 import TableOfContents from '../components/TableOfContents.astro';
 import Breadcrumb from '../components/Breadcrumb.astro';
 import GiscusComments from '../components/GiscusComments.astro';
+import FeedbackBox from '../components/FeedbackBox.astro';
+import LanguageSuggestion from '../components/LanguageSuggestion.astro';
 import ViewCounter from '../components/ViewCounter.astro';
 import { SITE_TITLE, AUTHOR, AUTHOR_EMAIL, SOCIAL_LINKS } from '../consts';
 import type { UILanguage } from '../i18n/ui';
@@ -130,7 +132,13 @@ const schema = {
 	<body>
 		<Header />
 		<FloatingLanguagePicker availableLangs={availableLangs} />
-		<main id="main-content" class="max-w-4xl mx-auto px-6 py-8">
+		<main
+			id="main-content"
+			class="max-w-4xl mx-auto px-6 py-8"
+			data-post-lang={lang}
+			data-available-langs={(availableLangs ?? [lang]).join(",")}
+		>
+			<LanguageSuggestion />
 			<article aria-labelledby={headingId}>
 				<!-- Hero Image -->
 				{heroImage && responsiveHeroImage && (
@@ -236,8 +244,11 @@ const schema = {
 				
 				<TableOfContents lang={lang} />
 				<GiscusComments lang={lang} />
+				<FeedbackBox slug={slug} lang={lang} />
 			</article>
 		</main>
 		<Footer />
+		<script type="module" src="/scripts/feedback-box.js"></script>
+		<script type="module" src="/scripts/language-suggest.js"></script>
 	</body>
 </html>

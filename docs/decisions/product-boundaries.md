@@ -82,6 +82,32 @@ Still prohibited, unchanged:
 
 The distinguishing test: **the site must not be able to tell two readers apart.** A preference the server never sees is a rendering detail. A preference the server stores is a user account with extra steps, and needs the separate product decision described below.
 
+## Anonymous Feedback Carve-Out
+
+Added: 2026-09-10.
+
+`POST /api/feedback` accepts short anonymous notes about a post. This is a narrow exception to the "no database-backed features" guardrail, permitted only under these conditions.
+
+Permitted:
+
+- A write-only endpoint. There is no `GET` handler and no web route that reads submissions.
+- Storage of the message text, the post identifier, and a timestamp, with a 90-day expiry.
+- Rate limiting keyed on a short-lived, separate client-id key.
+- Reading submissions locally through `scripts/read-feedback.mjs`.
+
+Prohibited, and what keeps this from becoming a different product:
+
+- Rendering a submission anywhere public. The moment feedback is displayed, this becomes anonymous public commenting and needs its own plan — moderation queue, HTML sanitizer, and captcha.
+- Storing a raw IP address alongside a message.
+- Any admin page, login, or authenticated route for reading submissions.
+- Any reply, thread, or notification mechanism.
+
+Public discussion stays on Giscus, where a GitHub identity supplies accountability. The anonymous channel exists so readers without a GitHub account can still reach the author — not to replace it.
+
+The reader-indistinguishability test in the previous section still holds: nothing is served back differently per reader, and no submission affects what any page renders.
+
+`scripts/validate-product-boundaries.mjs` enforces the write-only property and the approved API route list.
+
 ## Current Blog Guardrails
 
 Do not add these to the personal blog without explicit approval:
@@ -97,6 +123,7 @@ Do not add these to the personal blog without explicit approval:
 - payment SDKs
 - CRM or lead capture scripts
 - database-backed Library features
+- publicly rendered anonymous comments (private feedback is carved out above)
 
 ## Validation
 

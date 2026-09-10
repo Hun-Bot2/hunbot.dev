@@ -1,0 +1,178 @@
+---
+import { useTranslations, type UILanguage } from '../i18n/ui';
+
+interface Props {
+	slug: string;
+	lang: UILanguage;
+}
+
+const { slug, lang } = Astro.props;
+const t = useTranslations(lang);
+---
+
+<section class="feedback-box" data-feedback-box data-feedback-slug={slug} aria-labelledby="feedback-title">
+	<h2 id="feedback-title">{t('feedback.title')}</h2>
+	<p class="feedback-description">{t('feedback.description')}</p>
+
+	<form class="feedback-form" data-feedback-form>
+		<label class="feedback-label" for="feedback-message">{t('feedback.label')}</label>
+		<textarea
+			id="feedback-message"
+			name="message"
+			rows="4"
+			maxlength="1000"
+			required
+			placeholder={t('feedback.placeholder')}
+			data-feedback-message
+		></textarea>
+		<div class="feedback-actions">
+			<p class="feedback-note">{t('feedback.privacy')}</p>
+			<button type="submit" class="feedback-submit" data-feedback-submit>
+				{t('feedback.submit')}
+			</button>
+		</div>
+	</form>
+
+	<p class="feedback-status" data-feedback-status role="status" aria-live="polite" hidden></p>
+
+	<template
+		data-feedback-messages
+		data-success={t('feedback.success')}
+		data-error={t('feedback.error')}
+		data-rate-limited={t('feedback.rate-limited')}
+		data-unavailable={t('feedback.unavailable')}
+	></template>
+</section>
+
+<style>
+	.feedback-box {
+		margin-top: 2.5rem;
+		border: 1px solid rgba(248, 249, 250, 0.12);
+		border-radius: 0.85rem;
+		background: rgba(255, 255, 255, 0.045);
+		padding: 1.25rem;
+	}
+
+	.feedback-box h2 {
+		margin: 0;
+		color: rgb(248, 249, 250);
+		font-family: var(--font-heading);
+		font-size: 1.05rem;
+		font-weight: 800;
+	}
+
+	.feedback-description {
+		margin: 0.35rem 0 0.9rem;
+		color: rgba(203, 213, 225, 0.78);
+		font-size: 0.88rem;
+		line-height: 1.5;
+	}
+
+	.feedback-label {
+		display: block;
+		margin-bottom: 0.35rem;
+		color: rgba(203, 213, 225, 0.72);
+		font-size: 0.8rem;
+		font-weight: 700;
+	}
+
+	.feedback-form textarea {
+		width: 100%;
+		box-sizing: border-box;
+		border: 1px solid rgba(148, 163, 184, 0.35);
+		border-radius: 0.6rem;
+		background: rgba(15, 23, 42, 0.55);
+		padding: 0.65rem 0.75rem;
+		color: rgb(226, 232, 240);
+		font: inherit;
+		font-size: 0.92rem;
+		line-height: 1.55;
+		resize: vertical;
+	}
+
+	.feedback-actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem;
+		margin-top: 0.7rem;
+	}
+
+	.feedback-note {
+		margin: 0;
+		color: rgba(148, 163, 184, 0.86);
+		font-size: 0.78rem;
+	}
+
+	.feedback-submit {
+		min-height: 2.25rem;
+		border: 1px solid rgba(249, 115, 22, 0.58);
+		border-radius: 999px;
+		background: rgba(249, 115, 22, 0.14);
+		padding: 0.4rem 1rem;
+		color: rgb(255, 237, 213);
+		font: inherit;
+		font-size: 0.86rem;
+		font-weight: 800;
+		cursor: pointer;
+	}
+
+	.feedback-submit:hover:not(:disabled) {
+		background: rgba(249, 115, 22, 0.24);
+	}
+
+	.feedback-submit:disabled {
+		opacity: 0.6;
+		cursor: default;
+	}
+
+	.feedback-status {
+		margin: 0.75rem 0 0;
+		font-size: 0.86rem;
+		font-weight: 700;
+	}
+
+	.feedback-status[data-state='error'] {
+		color: rgb(252, 165, 165);
+	}
+
+	.feedback-status[data-state='success'] {
+		color: rgb(134, 239, 172);
+	}
+
+	:global(body.light-theme) .feedback-box {
+		border-color: rgba(15, 23, 42, 0.12);
+		background: rgba(255, 255, 255, 0.78);
+	}
+
+	:global(body.light-theme) .feedback-box h2 {
+		color: rgb(15, 23, 42);
+	}
+
+	:global(body.light-theme) .feedback-description,
+	:global(body.light-theme) .feedback-label,
+	:global(body.light-theme) .feedback-note {
+		color: rgba(51, 65, 85, 0.86);
+	}
+
+	:global(body.light-theme) .feedback-form textarea {
+		border-color: rgb(203, 213, 225);
+		background: rgb(255, 255, 255);
+		color: rgb(15, 23, 42);
+	}
+
+	:global(body.light-theme) .feedback-submit {
+		border-color: rgba(194, 65, 12, 0.28);
+		background: rgba(249, 115, 22, 0.1);
+		color: rgb(154, 52, 18);
+	}
+
+	:global(body.light-theme) .feedback-status[data-state='error'] {
+		color: rgb(153, 27, 27);
+	}
+
+	:global(body.light-theme) .feedback-status[data-state='success'] {
+		color: rgb(21, 128, 61);
+	}
+</style>
