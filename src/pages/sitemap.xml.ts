@@ -18,10 +18,8 @@ export const GET: APIRoute = async ({ site }) => {
   ]);
   const staticPages = [
     '/',
-    '/about/',
     ...SUPPORTED_LANGUAGES.flatMap((lang) => [
       `/${lang}/`,
-      `/${lang}/about/`,
       `/${lang}/blog/`,
       `/${lang}/blog/categories/`,
       `/${lang}/blog/tags/`,

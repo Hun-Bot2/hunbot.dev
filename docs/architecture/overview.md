@@ -23,9 +23,7 @@ Current route files:
 | Route file | Purpose | Notes |
 | --- | --- | --- |
 | `src/pages/index.astro` | Root redirect | Redirects to `/ko/`. |
-| `src/pages/about.astro` | Root about redirect | Redirects to `/ko/about/`. |
 | `src/pages/[lang]/index.astro` | Localized home | Static paths for `ko`, `jp`, `en`; shows latest posts for that language. |
-| `src/pages/[lang]/about.astro` | Localized about | Static paths for `ko`, `jp`, `en`; text comes from `src/i18n/ui.ts`. |
 | `src/pages/[lang]/blog/index.astro` | Localized blog index | Lists all posts for one language; no pagination. |
 | `src/pages/[lang]/blog/[...slug].astro` | Localized post detail | Generates paths from content IDs. |
 | `src/pages/[lang]/blog/categories.astro` | Category index | Builds category counts per language. |

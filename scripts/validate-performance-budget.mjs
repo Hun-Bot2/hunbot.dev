@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { extname, join, relative } from 'node:path';
+import { extname, join, relative, sep } from 'node:path';
 
 const root = process.cwd();
 const packageJson = JSON.parse(readText('package.json'));
@@ -57,6 +57,57 @@ for (const outputRoot of [join(root, 'dist/client'), join(root, '.vercel/output/
 		);
 	}
 }
+
+// --- Size ratchet guards ------------------------------------------------
+// Scoped to public/images/ specifically (not the wider public/ tree used by
+// the reporting above, which also covers unrelated assets like deck slide
+// JPEGs) — this is the directory the 2026-09 PNG -> WebP conversion targeted.
+// These ceilings are a ratchet, not a target: they were set just above the
+// actual measured numbers right after that conversion (7 legacy PNGs -> WebP,
+// quality 80, capped at 1600px wide). When public/images legitimately shrinks
+// further (more conversions, deletions, etc.), LOWER these constants to match
+// the new actual total / largest file. Do not raise them just to make a
+// regression pass — optimize the offending image(s) instead.
+const publicImagesDirFiles = imageFiles.filter((file) =>
+	file.path.startsWith(join('public', 'images') + sep),
+);
+const TOTAL_IMAGE_BYTES_CEILING = 19_200_000; // ~10% above the ~17.44MB actual total in public/images/ measured right after the WebP conversion.
+const SINGLE_IMAGE_BYTES_CAP = 600 * 1024; // 614,400 bytes. Comfortably above ordinary post images; well below the pre-existing >1MB outliers pending a separate owner decision (see CLAUDE.md history).
+
+const totalPublicImageBytes = sum(publicImagesDirFiles);
+assert.ok(
+	totalPublicImageBytes <= TOTAL_IMAGE_BYTES_CEILING,
+	`Public image budget exceeded: public/images/ totals ${formatBytes(totalPublicImageBytes)}, over the ${formatBytes(TOTAL_IMAGE_BYTES_CEILING)} ceiling. Optimize (compress/convert to WebP) or remove images under public/images/ rather than raising this ceiling.`,
+);
+
+// Known oversized files awaiting an owner decision, not an excuse to skip the cap.
+// All three are unreferenced anywhere in src/ (verified 2026-09-10) and are
+// candidates for deletion rather than conversion. Delete the file, then delete
+// its line here. Nothing may be added to this list without the same rationale.
+const PENDING_REMOVAL = new Set([
+	'public/images/CHAT/chatting-media-en.png',
+	'public/images/ZORO/local-desktop.png',
+	'public/images/ZORO/ver4.png',
+]);
+
+const stillPresentExceptions = [...PENDING_REMOVAL].filter((path) => existsSync(join(root, path)));
+if (stillPresentExceptions.length > 0) {
+	console.warn(
+		`Oversized images pending removal (${stillPresentExceptions.length}): ${stillPresentExceptions.join(', ')}. ` +
+			'These are unreferenced; delete them and remove them from PENDING_REMOVAL.',
+	);
+}
+
+const oversizedByCap = publicImagesDirFiles.filter(
+	(file) => file.size > SINGLE_IMAGE_BYTES_CAP && !PENDING_REMOVAL.has(file.path),
+);
+assert.equal(
+	oversizedByCap.length,
+	0,
+	`Image(s) in public/images/ exceed the per-file cap of ${formatBytes(SINGLE_IMAGE_BYTES_CAP)}: ${oversizedByCap
+		.map((file) => `${file.path} (${formatBytes(file.size)})`)
+		.join(', ')}. Optimize (compress/resize/convert to WebP) these files rather than raising the cap.`,
+);
 
 console.log('Validated performance/media budget inventory.');
 

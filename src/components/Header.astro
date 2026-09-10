@@ -9,7 +9,6 @@ const blogUrl = lang === 'ko' ? '/ko/blog' : `/${lang}/blog`;
 const libraryUrl = lang === 'ko' ? '/ko/library' : `/${lang}/library`;
 const categoriesUrl = lang === 'ko' ? '/ko/blog/categories' : `/${lang}/blog/categories`;
 const tagsUrl = lang === 'ko' ? '/ko/blog/tags' : `/${lang}/blog/tags`;
-const aboutUrl = lang === 'ko' ? '/ko/about' : `/${lang}/about`;
 const searchUrl = lang === 'ko' ? '/ko/search' : `/${lang}/search`;
 ---
 
@@ -56,15 +55,6 @@ const searchUrl = lang === 'ko' ? '/ko/search' : `/${lang}/search`;
 					</svg>
 				</span>
 				<span>{t('nav.tags')}</span>
-			</a>
-			<a href={aboutUrl} class="desktop-nav-link">
-				<span class="nav-icon">
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<circle cx="12" cy="8" r="4"/>
-						<path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
-					</svg>
-				</span>
-				<span>{t('nav.about')}</span>
 			</a>
 		</nav>
 		
@@ -160,14 +150,6 @@ const searchUrl = lang === 'ko' ? '/ko/search' : `/${lang}/search`;
 					<path d="M7 7h.01" />
 				</svg>
 				<span>{t('nav.tags')}</span>
-			</a>
-			<a href={aboutUrl} class="mobile-nav-item">
-				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<circle cx="12" cy="12" r="10"/>
-					<line x1="12" y1="16" x2="12" y2="12"/>
-					<line x1="12" y1="8" x2="12.01" y2="8"/>
-				</svg>
-				<span>{t('nav.about')}</span>
 			</a>
 			<a href={searchUrl} class="mobile-nav-item">
 				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

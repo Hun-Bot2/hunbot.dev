@@ -20,7 +20,11 @@ const tags = post.data.tags ?? [];
 ---
 
 <a href={postUrl} class:list={['blog-list-card', !hero && 'has-no-hero']}>
-	{hero && <img src={hero} alt="" loading="lazy" decoding="async" />}
+	{hero && (
+		<div class="blog-list-card-thumb">
+			<img src={hero} alt="" loading="lazy" decoding="async" />
+		</div>
+	)}
 	<div class="blog-list-card-body">
 		<div class="blog-list-card-meta">
 			<p class="blog-list-card-date"><FormattedDate date={post.data.pubDate} /></p>
@@ -65,13 +69,22 @@ const tags = post.data.tags ?? [];
 		text-decoration: none;
 	}
 
+	/* Fixed-size thumbnail container — image never changes card height */
+	.blog-list-card-thumb {
+		width: 7rem;
+		height: 7.5rem;
+		flex-shrink: 0;
+		align-self: center;   /* vertically center when card is tall */
+		overflow: hidden;
+		border-radius: 0.5rem;
+		background: rgba(15, 23, 42, 0.35);
+	}
+
 	.blog-list-card img {
 		width: 100%;
 		height: 100%;
-		min-height: 6.75rem;
 		object-fit: cover;
-		border-radius: 0.5rem;
-		background: rgba(15, 23, 42, 0.35);
+		display: block;
 	}
 
 	.blog-list-card-body {
@@ -136,9 +149,9 @@ const tags = post.data.tags ?? [];
 			grid-template-columns: 1fr;
 		}
 
-		.blog-list-card img {
-			aspect-ratio: 16 / 9;
-			min-height: 0;
+		.blog-list-card-thumb {
+			width: 100%;
+			height: 10rem;
 		}
 	}
 </style>

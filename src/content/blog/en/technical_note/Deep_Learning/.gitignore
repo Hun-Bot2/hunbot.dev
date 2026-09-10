@@ -1,0 +1,11 @@
+# Dataset
+aclImdb/
+aclImdb_v1.tar.gz
+
+# HW4 Generated Outputs and Model Weights
+hw4_outputs/
+temporary_generated_outputs.csv
+
+# Jupyter/Python Cache
+.ipynb_checkpoints/
+__pycache__/

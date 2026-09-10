@@ -113,7 +113,6 @@ draft: boolean          # optional, default false — hides from site when true
 ```
 src/pages/
 ├── index.astro                          → redirects to /ko/
-├── about.astro                          → redirects to /ko/about/
 ├── api/
 │   ├── feedback.ts                      → POST anonymous feedback, write-only (prerender=false)
 │   └── views.ts                         → POST/GET view counts (prerender=false)
@@ -121,7 +120,6 @@ src/pages/
 ├── sitemap.xml.ts                       → custom XML sitemap
 └── [lang]/
     ├── index.astro                      → /ko/, /jp/, /en/ (home)
-    ├── about.astro                      → /ko/about/ etc.
     ├── search.astro                     → /ko/search/ (Pagefind UI)
     ├── rss.xml.js                       → /ko/rss.xml per-language feed
     ├── library.astro                    → /ko/library/ (Library hub)
@@ -367,11 +365,15 @@ Raw `category` frontmatter values are messy. `normalizeCategory()` in `src/utils
 docs/
 ├── architecture/
 │   ├── overview.md          Full architecture narrative + route table
-│   └── dependency-map.md    NPM packages and their roles
+│   ├── dependency-map.md    NPM packages and their roles
+│   ├── health-audit.md      Code/CSS/component health, stack assessment, tooling candidates
+│   └── design-tokens-and-images.md  Token architecture + image pipeline proposals (staged)
 ├── content/
 │   ├── workflow.md          Content review and publishing workflow
 │   └── public-images.md     Image size/format/naming guidelines
 ├── decisions/
+│   ├── 2026-09-10-site-hardening.md  Session decision log: why each change was made
+│   ├── creative-direction.md  Creative identity, interactive-module boundaries, gimmick test, build order
 │   ├── discover-direction.md  Discover product direction, dynamic taxonomy, phased build order
 │   ├── monetization.md      No monetization — current decision boundary
 │   ├── product-boundaries.md  What stays public vs private (+ local preferences carve-out)

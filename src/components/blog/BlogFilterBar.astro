@@ -20,8 +20,8 @@ const t = useTranslations(lang);
 
 const groups = [
 	{ facet: 'category', label: t('blog.filter-category'), options: categories },
-	{ facet: 'year', label: t('blog.filter-year'), options: years },
-	{ facet: 'series', label: t('blog.filter-series'), options: series },
+	{ facet: 'year',     label: t('blog.filter-year'),     options: years      },
+	{ facet: 'series',   label: t('blog.filter-series'),   options: series     },
 ].filter((group) => group.options.length > 0);
 
 const resultsTemplate = t('blog.filter-results');
@@ -29,38 +29,45 @@ const initialResults = resultsTemplate.replace('{count}', String(totalCount));
 ---
 
 <section class="blog-filter-bar" aria-label={t('blog.filter-label')} data-blog-filters>
-	{groups.map((group) => (
-		<div class="blog-filter-group" role="group" aria-label={group.label}>
-			<h2 class="blog-filter-group-label">{group.label}</h2>
-			<div class="blog-filter-chips">
+	{groups.map((group, i) => (
+		<details class:list={['filter-group', i > 0 && 'has-divider']} open>
+			<summary class="filter-group-summary" role="button">
+				<span class="filter-group-label">{group.label}</span>
+				<svg class="filter-group-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<polyline points="6 9 12 15 18 9"/>
+				</svg>
+			</summary>
+			<div class="filter-options" role="group" aria-label={group.label}>
 				<button
 					type="button"
-					class="blog-filter-chip is-active"
+					class="filter-option is-active"
 					data-facet={group.facet}
 					data-value="all"
 					aria-pressed="true"
 				>
-					{t('blog.filter-all')}
+					<span class="filter-option-dot" aria-hidden="true"></span>
+					<span class="filter-option-label">{t('blog.filter-all')}</span>
 				</button>
 				{group.options.map((option) => (
 					<button
 						type="button"
-						class="blog-filter-chip"
+						class="filter-option"
 						data-facet={group.facet}
 						data-value={option.value}
 						aria-pressed="false"
 					>
-						<span class="blog-filter-chip-label">{option.label}</span>
-						<span class="blog-filter-chip-count">{option.count}</span>
+						<span class="filter-option-dot" aria-hidden="true"></span>
+						<span class="filter-option-label">{option.label}</span>
+						<span class="filter-option-count">{option.count}</span>
 					</button>
 				))}
 			</div>
-		</div>
+		</details>
 	))}
 
-	<div class="blog-filter-status">
+	<div class="filter-status has-divider">
 		<p data-filter-results data-results-template={resultsTemplate} aria-live="polite">{initialResults}</p>
-		<button type="button" class="blog-filter-reset" data-filter-reset hidden>
+		<button type="button" class="filter-reset" data-filter-reset hidden>
 			{t('blog.filter-reset')}
 		</button>
 	</div>
@@ -68,133 +75,165 @@ const initialResults = resultsTemplate.replace('{count}', String(totalCount));
 
 <style>
 	.blog-filter-bar {
-		display: grid;
-		gap: 0.9rem;
-		margin-bottom: 1.75rem;
-		border: 1px solid rgba(248, 249, 250, 0.12);
-		border-radius: 0.85rem;
-		background: rgba(255, 255, 255, 0.045);
-		padding: 1rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0;
 	}
 
-	.blog-filter-group {
-		display: grid;
-		gap: 0.45rem;
+	/* ── collapsible group ── */
+	.filter-group {
+		padding: 0.6rem 0;
 	}
 
-	.blog-filter-group-label {
-		margin: 0;
-		color: rgba(203, 213, 225, 0.72);
+	.filter-group.has-divider {
+		border-top: 1px solid rgba(148, 163, 184, 0.12);
+	}
+
+	/* Remove default <details> marker */
+	.filter-group summary {
+		list-style: none;
+	}
+	.filter-group summary::-webkit-details-marker {
+		display: none;
+	}
+
+	.filter-group-summary {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.4rem;
+		padding: 0.2rem 0;
+		cursor: pointer;
+		user-select: none;
+	}
+
+	.filter-group-label {
+		color: rgba(148, 163, 184, 0.65);
 		font-family: var(--font-heading);
-		font-size: 0.78rem;
+		font-size: 0.7rem;
 		font-weight: 800;
-		letter-spacing: 0.04em;
+		letter-spacing: 0.07em;
 		text-transform: uppercase;
 	}
 
-	.blog-filter-chips {
+	.filter-group-chevron {
+		flex-shrink: 0;
+		color: rgba(148, 163, 184, 0.45);
+		transition: transform 200ms ease;
+	}
+
+	/* Rotate chevron when closed */
+	.filter-group:not([open]) .filter-group-chevron {
+		transform: rotate(-90deg);
+	}
+
+	/* ── options list ── */
+	.filter-options {
 		display: flex;
-		flex-wrap: wrap;
-		gap: 0.5rem;
+		flex-direction: column;
+		gap: 0;
+		margin-top: 0.35rem;
 	}
 
-	/* Matches the established chip pattern in [lang]/search.astro. */
-	.blog-filter-chip {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.4rem;
-		min-height: 2.25rem;
-		border: 1px solid rgba(148, 163, 184, 0.35);
-		border-radius: 999px;
-		background: rgba(15, 23, 42, 0.55);
-		padding: 0.4rem 0.85rem;
-		color: rgb(203, 213, 225);
+	.filter-option {
+		display: flex;
+		align-items: baseline;
+		gap: 0.55rem;
+		width: 100%;
+		padding: 0.3rem 0.25rem;
+		border: none;
+		background: transparent;
+		color: rgba(203, 213, 225, 0.72);
 		font: inherit;
-		font-size: 0.875rem;
-		font-weight: 700;
+		font-size: 0.83rem;
+		font-weight: 500;
+		text-align: left;
 		cursor: pointer;
-		transition:
-			background 160ms ease,
-			border-color 160ms ease,
-			color 160ms ease;
+		transition: color 130ms ease;
 	}
 
-	.blog-filter-chip:hover,
-	.blog-filter-chip.is-active {
-		border-color: rgba(249, 115, 22, 0.58);
-		background: rgba(249, 115, 22, 0.14);
-		color: rgb(255, 237, 213);
+	.filter-option:hover {
+		color: rgba(255, 237, 213, 0.9);
 	}
 
-	.blog-filter-chip-count {
+	.filter-option.is-active {
+		color: rgb(253, 186, 116);
+		font-weight: 700;
+	}
+
+	/* Indicator dot — visible only when active */
+	.filter-option-dot {
+		flex-shrink: 0;
+		display: inline-block;
+		width: 5px;
+		height: 5px;
 		border-radius: 999px;
-		background: rgba(148, 163, 184, 0.18);
-		padding: 0.05rem 0.4rem;
-		font-size: 0.75rem;
-		font-weight: 800;
+		background: transparent;
+		margin-top: 0.15em;
+		transition: background 130ms ease;
 	}
 
-	.blog-filter-chip.is-active .blog-filter-chip-count {
-		background: rgba(249, 115, 22, 0.24);
+	.filter-option.is-active .filter-option-dot {
+		background: rgb(249, 115, 22);
 	}
 
-	.blog-filter-status {
+	.filter-option-label {
+		flex: 1;
+		min-width: 0;
+		word-break: break-word;
+		line-height: 1.4;
+	}
+
+	.filter-option-count {
+		flex-shrink: 0;
+		color: rgba(148, 163, 184, 0.5);
+		font-size: 0.72rem;
+		font-weight: 700;
+	}
+
+	.filter-option.is-active .filter-option-count {
+		color: rgba(253, 186, 116, 0.7);
+	}
+
+	/* ── status bar ── */
+	.filter-status {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
 		justify-content: space-between;
-		gap: 0.75rem;
-		border-top: 1px solid rgba(248, 249, 250, 0.1);
-		padding-top: 0.75rem;
+		gap: 0.4rem;
+		padding-top: 0.6rem;
+		margin-top: 0.1rem;
 	}
 
-	.blog-filter-status p {
+	.filter-status.has-divider {
+		border-top: 1px solid rgba(148, 163, 184, 0.12);
+	}
+
+	.filter-status p {
 		margin: 0;
-		color: rgba(203, 213, 225, 0.82);
-		font-size: 0.86rem;
-		font-weight: 700;
+		color: rgba(203, 213, 225, 0.55);
+		font-size: 0.76rem;
+		font-weight: 600;
 	}
 
-	.blog-filter-reset {
-		min-height: 2.25rem;
-		border: 1px solid rgba(148, 163, 184, 0.35);
-		border-radius: 999px;
+	.filter-reset {
+		border: none;
 		background: transparent;
-		padding: 0.35rem 0.8rem;
-		color: rgba(203, 213, 225, 0.9);
+		padding: 0;
+		color: rgba(249, 115, 22, 0.75);
 		font: inherit;
-		font-size: 0.82rem;
+		font-size: 0.75rem;
 		font-weight: 700;
 		cursor: pointer;
+		text-decoration: underline;
+		text-underline-offset: 2px;
+		transition: color 130ms ease;
 	}
 
-	.blog-filter-reset:hover {
-		border-color: rgba(249, 115, 22, 0.58);
-		color: rgb(255, 237, 213);
+	.filter-reset:hover {
+		color: rgb(249, 115, 22);
 	}
 
-	:global(body.light-theme) .blog-filter-bar {
-		border-color: rgba(15, 23, 42, 0.12);
-		background: rgba(255, 255, 255, 0.78);
-	}
-
-	:global(body.light-theme) .blog-filter-group-label,
-	:global(body.light-theme) .blog-filter-status p {
-		color: rgba(51, 65, 85, 0.86);
-	}
-
-	:global(body.light-theme) .blog-filter-chip,
-	:global(body.light-theme) .blog-filter-reset {
-		border-color: rgb(203, 213, 225);
-		background: rgb(255, 255, 255);
-		color: rgb(51, 65, 85);
-	}
-
-	:global(body.light-theme) .blog-filter-chip:hover,
-	:global(body.light-theme) .blog-filter-chip.is-active,
-	:global(body.light-theme) .blog-filter-reset:hover {
-		border-color: rgba(194, 65, 12, 0.28);
-		background: rgba(249, 115, 22, 0.1);
-		color: rgb(154, 52, 18);
-	}
+	/* light-theme overrides live in global.css */
 </style>

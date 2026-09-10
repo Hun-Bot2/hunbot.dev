@@ -47,15 +47,15 @@ const t = useTranslations(lang);
 <style>
 	.feedback-box {
 		margin-top: 2.5rem;
-		border: 1px solid rgba(248, 249, 250, 0.12);
+		border: 1px solid var(--surface-border);
 		border-radius: 0.85rem;
-		background: rgba(255, 255, 255, 0.045);
+		background: var(--surface-panel);
 		padding: 1.25rem;
 	}
 
 	.feedback-box h2 {
 		margin: 0;
-		color: rgb(248, 249, 250);
+		color: var(--text-primary);
 		font-family: var(--font-heading);
 		font-size: 1.05rem;
 		font-weight: 800;
@@ -63,7 +63,7 @@ const t = useTranslations(lang);
 
 	.feedback-description {
 		margin: 0.35rem 0 0.9rem;
-		color: rgba(203, 213, 225, 0.78);
+		color: var(--text-muted);
 		font-size: 0.88rem;
 		line-height: 1.5;
 	}
@@ -71,7 +71,7 @@ const t = useTranslations(lang);
 	.feedback-label {
 		display: block;
 		margin-bottom: 0.35rem;
-		color: rgba(203, 213, 225, 0.72);
+		color: var(--text-subtle);
 		font-size: 0.8rem;
 		font-weight: 700;
 	}
@@ -79,11 +79,11 @@ const t = useTranslations(lang);
 	.feedback-form textarea {
 		width: 100%;
 		box-sizing: border-box;
-		border: 1px solid rgba(148, 163, 184, 0.35);
+		border: 1px solid var(--field-border);
 		border-radius: 0.6rem;
-		background: rgba(15, 23, 42, 0.55);
+		background: var(--field-surface);
 		padding: 0.65rem 0.75rem;
-		color: rgb(226, 232, 240);
+		color: var(--field-text);
 		font: inherit;
 		font-size: 0.92rem;
 		line-height: 1.55;
@@ -101,17 +101,17 @@ const t = useTranslations(lang);
 
 	.feedback-note {
 		margin: 0;
-		color: rgba(148, 163, 184, 0.86);
+		color: var(--text-faint);
 		font-size: 0.78rem;
 	}
 
 	.feedback-submit {
 		min-height: 2.25rem;
-		border: 1px solid rgba(249, 115, 22, 0.58);
+		border: 1px solid var(--accent-border);
 		border-radius: 999px;
-		background: rgba(249, 115, 22, 0.14);
+		background: var(--accent-surface);
 		padding: 0.4rem 1rem;
-		color: rgb(255, 237, 213);
+		color: var(--accent-text);
 		font: inherit;
 		font-size: 0.86rem;
 		font-weight: 800;
@@ -119,6 +119,7 @@ const t = useTranslations(lang);
 	}
 
 	.feedback-submit:hover:not(:disabled) {
+		/* TODO: needs a hover-state token */
 		background: rgba(249, 115, 22, 0.24);
 	}
 
@@ -134,45 +135,10 @@ const t = useTranslations(lang);
 	}
 
 	.feedback-status[data-state='error'] {
-		color: rgb(252, 165, 165);
+		color: var(--state-error);
 	}
 
 	.feedback-status[data-state='success'] {
-		color: rgb(134, 239, 172);
-	}
-
-	:global(body.light-theme) .feedback-box {
-		border-color: rgba(15, 23, 42, 0.12);
-		background: rgba(255, 255, 255, 0.78);
-	}
-
-	:global(body.light-theme) .feedback-box h2 {
-		color: rgb(15, 23, 42);
-	}
-
-	:global(body.light-theme) .feedback-description,
-	:global(body.light-theme) .feedback-label,
-	:global(body.light-theme) .feedback-note {
-		color: rgba(51, 65, 85, 0.86);
-	}
-
-	:global(body.light-theme) .feedback-form textarea {
-		border-color: rgb(203, 213, 225);
-		background: rgb(255, 255, 255);
-		color: rgb(15, 23, 42);
-	}
-
-	:global(body.light-theme) .feedback-submit {
-		border-color: rgba(194, 65, 12, 0.28);
-		background: rgba(249, 115, 22, 0.1);
-		color: rgb(154, 52, 18);
-	}
-
-	:global(body.light-theme) .feedback-status[data-state='error'] {
-		color: rgb(153, 27, 27);
-	}
-
-	:global(body.light-theme) .feedback-status[data-state='success'] {
-		color: rgb(21, 128, 61);
+		color: var(--state-success);
 	}
 </style>

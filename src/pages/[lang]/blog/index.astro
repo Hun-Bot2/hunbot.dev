@@ -25,8 +25,6 @@ const currentLang = lang as UILanguage;
 const t = useTranslations(currentLang);
 
 const allPosts = await getAllPosts();
-// Reverse-chronological is the primary axis. Category, year and series are
-// facets layered on top, applied client-side over this complete list.
 const posts = getPostsByLanguage(allPosts, currentLang);
 
 const CATEGORY_LABEL_KEYS = {
@@ -67,38 +65,86 @@ const series = getMultiPostSeries(posts).map((entry) => ({
 		<Header />
 		<FloatingLanguagePicker />
 		<main id="main-content" class="blog-index-page">
-			<header class="blog-index-header">
-				<h1>{t('blog.all-posts')}</h1>
-			</header>
-
 			{posts.length > 0 ? (
-				<>
-					<BlogFilterBar
-						lang={currentLang}
-						categories={categories}
-						years={years}
-						series={series}
-						totalCount={posts.length}
-					/>
+				<Fragment>
+					<!-- ── Backdrop (mobile only, fixed overlay — lives outside grid) ── -->
+					<div class="filter-backdrop" id="filter-backdrop" aria-hidden="true"></div>
 
-					<ul class="blog-post-list" data-blog-posts>
-						{posts.map((post) => (
-							<li
-								class="blog-post-item"
-								data-post-card
-								data-post-category={normalizeCategory(post.data.category)}
-								data-post-year={String(post.data.pubDate.getFullYear())}
-								data-post-series={post.data.series?.trim() ?? ''}
+					<!-- ── Two-column grid: filter sidebar | post list ── -->
+					<div class="blog-layout">
+
+						<!-- Left: filter panel -->
+						<aside class="filter-panel" id="filter-panel" aria-label={t('blog.filter-label')}>
+							<div class="filter-panel-inner">
+								<div class="filter-panel-head">
+									<!-- drag grip icon (desktop only) -->
+									<svg class="filter-drag-grip" width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+										<circle cx="5" cy="4" r="1.3"/><circle cx="11" cy="4" r="1.3"/>
+										<circle cx="5" cy="8" r="1.3"/><circle cx="11" cy="8" r="1.3"/>
+										<circle cx="5" cy="12" r="1.3"/><circle cx="11" cy="12" r="1.3"/>
+									</svg>
+									<span class="filter-panel-title">{t('blog.filter-label')}</span>
+									<button class="filter-panel-close" id="filter-close" aria-label="닫기">
+										<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+											<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+										</svg>
+									</button>
+								</div>
+								<BlogFilterBar
+									lang={currentLang}
+									categories={categories}
+									years={years}
+									series={series}
+									totalCount={posts.length}
+								/>
+							</div>
+						</aside>
+
+						<!-- Right: title + mobile toggle + post list -->
+						<div class="blog-content">
+							<header class="blog-index-header">
+								<h1>{t('blog.all-posts')}</h1>
+							</header>
+
+							<!-- Mobile filter toggle -->
+							<button
+								class="filter-toggle"
+								id="filter-toggle"
+								aria-expanded="false"
+								aria-controls="filter-panel"
+								aria-label={t('blog.filter-label')}
 							>
-								<PostListCard post={post} />
-							</li>
-						))}
-					</ul>
+								<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+									<line x1="4" y1="6" x2="20" y2="6"/>
+									<line x1="8" y1="12" x2="20" y2="12"/>
+									<line x1="12" y1="18" x2="20" y2="18"/>
+								</svg>
+								{t('blog.filter-label')}
+							</button>
 
-					<p class="blog-empty" data-blog-empty hidden>{t('blog.filter-no-results')}</p>
-				</>
+							<ul class="blog-post-list" data-blog-posts>
+								{posts.map((post) => (
+									<li
+										class="blog-post-item"
+										data-post-card
+										data-post-category={normalizeCategory(post.data.category)}
+										data-post-year={String(post.data.pubDate.getFullYear())}
+										data-post-series={post.data.series?.trim() ?? ''}
+									>
+										<PostListCard post={post} />
+									</li>
+								))}
+							</ul>
+
+							<p class="blog-empty" data-blog-empty hidden>{t('blog.filter-no-results')}</p>
+						</div>
+					</div>
+				</Fragment>
 			) : (
-				<p class="blog-empty">{t('blog.no-posts')}</p>
+				<div class="blog-no-posts">
+					<h1>{t('blog.all-posts')}</h1>
+					<p class="blog-empty">{t('blog.no-posts')}</p>
+				</div>
 			)}
 		</main>
 		<Footer />
@@ -106,7 +152,180 @@ const series = getMultiPostSeries(posts).map((entry) => ({
 	</body>
 </html>
 
+<script>
+	const toggle   = document.getElementById('filter-toggle');
+	const closeBtn = document.getElementById('filter-close');
+	const panel    = document.getElementById('filter-panel');
+	const backdrop = document.getElementById('filter-backdrop');
+	const dragHandle = document.querySelector('.filter-panel-head') as HTMLElement | null;
+
+	/* ── Mobile drawer ── */
+	function open() {
+		panel?.classList.add('is-open');
+		backdrop?.classList.add('is-open');
+		toggle?.setAttribute('aria-expanded', 'true');
+		document.body.style.overflow = 'hidden';
+	}
+	function close() {
+		panel?.classList.remove('is-open');
+		backdrop?.classList.remove('is-open');
+		toggle?.setAttribute('aria-expanded', 'false');
+		document.body.style.overflow = '';
+	}
+	toggle?.addEventListener('click', () => {
+		toggle.getAttribute('aria-expanded') === 'true' ? close() : open();
+	});
+	closeBtn?.addEventListener('click', close);
+	backdrop?.addEventListener('click', close);
+	document.addEventListener('keydown', (e) => {
+		if (e.key === 'Escape' && panel?.classList.contains('is-open')) close();
+	});
+
+	/* ── Desktop: draggable fixed panel ── */
+	const STORAGE_KEY = 'filter-panel-pos';
+	const DESKTOP_BREAKPOINT = 980;
+
+	function isDesktop() {
+		return window.innerWidth >= DESKTOP_BREAKPOINT;
+	}
+
+	function enableFixed() {
+		if (!panel) return;
+		panel.classList.add('is-fixed');
+	}
+
+	function disableFixed() {
+		if (!panel) return;
+		panel.classList.remove('is-fixed');
+		panel.style.left = '';
+		panel.style.top = '';
+	}
+
+	function setDefaultPosition() {
+		if (!panel) return;
+		// Align with post list top
+		const postList = document.querySelector('[data-blog-posts]') as HTMLElement | null;
+		const page = document.querySelector('.blog-index-page') as HTMLElement | null;
+		if (!postList || !page) return;
+
+		const listRect = postList.getBoundingClientRect();
+		const pageRect = page.getBoundingClientRect();
+
+		panel.style.left = pageRect.left + 'px';
+		panel.style.top  = listRect.top + 'px';
+	}
+
+	function restorePosition() {
+		if (!panel) return;
+		try {
+			const raw = localStorage.getItem(STORAGE_KEY);
+			if (!raw) { setDefaultPosition(); return; }
+			const { left, top } = JSON.parse(raw) as { left: number; top: number };
+			// Clamp to viewport so panel stays visible
+			const maxLeft = window.innerWidth  - panel.offsetWidth  - 8;
+			const maxTop  = window.innerHeight - 120;
+			panel.style.left = Math.max(0, Math.min(left, maxLeft)) + 'px';
+			panel.style.top  = Math.max(0, Math.min(top,  maxTop))  + 'px';
+		} catch {
+			setDefaultPosition();
+		}
+	}
+
+	function savePosition() {
+		if (!panel) return;
+		try {
+			localStorage.setItem(STORAGE_KEY, JSON.stringify({
+				left: parseInt(panel.style.left) || 0,
+				top:  parseInt(panel.style.top)  || 0,
+			}));
+		} catch {}
+	}
+
+	/* Drag state */
+	let dragging = false;
+	let ox = 0, oy = 0;
+
+	function startDrag(clientX: number, clientY: number) {
+		if (!panel) return;
+		dragging = true;
+		const rect = panel.getBoundingClientRect();
+		ox = clientX - rect.left;
+		oy = clientY - rect.top;
+		document.body.style.userSelect = 'none';
+	}
+
+	function moveDrag(clientX: number, clientY: number) {
+		if (!dragging || !panel) return;
+		const x = Math.max(0, Math.min(clientX - ox, window.innerWidth  - panel.offsetWidth  - 4));
+		const y = Math.max(0, Math.min(clientY - oy, window.innerHeight - 60));
+		panel.style.left = x + 'px';
+		panel.style.top  = y + 'px';
+	}
+
+	function endDrag() {
+		if (!dragging) return;
+		dragging = false;
+		document.body.style.userSelect = '';
+		savePosition();
+	}
+
+	/* Mouse drag */
+	dragHandle?.addEventListener('mousedown', (e) => {
+		if (!isDesktop() || e.button !== 0) return;
+		startDrag(e.clientX, e.clientY);
+		if (dragHandle) dragHandle.style.cursor = 'grabbing';
+		e.preventDefault();
+	});
+
+	document.addEventListener('mousemove', (e) => moveDrag(e.clientX, e.clientY));
+
+	document.addEventListener('mouseup', () => {
+		if (!dragging) return;
+		if (dragHandle) dragHandle.style.cursor = '';
+		endDrag();
+	});
+
+	/* Touch drag (tablet / touch laptop ≥ 980px) */
+	dragHandle?.addEventListener('touchstart', (e) => {
+		if (!isDesktop()) return;
+		const t = e.touches[0];
+		startDrag(t.clientX, t.clientY);
+		e.preventDefault(); // prevent scroll while dragging handle
+	}, { passive: false });
+
+	document.addEventListener('touchmove', (e) => {
+		if (!dragging) return;
+		const t = e.touches[0];
+		moveDrag(t.clientX, t.clientY);
+		e.preventDefault();
+	}, { passive: false });
+
+	document.addEventListener('touchend', endDrag);
+
+	/* Init */
+	function init() {
+		if (isDesktop()) {
+			enableFixed();
+			// Wait one frame so layout is complete before measuring
+			requestAnimationFrame(() => restorePosition());
+		}
+	}
+
+	// Re-evaluate on resize crossing breakpoint
+	let wasDesktop = isDesktop();
+	window.addEventListener('resize', () => {
+		const now = isDesktop();
+		if (now === wasDesktop) return;
+		wasDesktop = now;
+		if (now) { enableFixed(); requestAnimationFrame(() => restorePosition()); }
+		else disableFixed();
+	});
+
+	init();
+</script>
+
 <style>
+	/* ── page shell ── */
 	.blog-index-page {
 		width: min(100%, 72rem);
 		margin: 0 auto;
@@ -114,6 +333,7 @@ const series = getMultiPostSeries(posts).map((entry) => ({
 		overflow-x: clip;
 	}
 
+	/* ── page title — inside right column ── */
 	.blog-index-header {
 		margin-bottom: 1.5rem;
 	}
@@ -122,12 +342,115 @@ const series = getMultiPostSeries(posts).map((entry) => ({
 		margin: 0;
 		color: rgb(248, 249, 250);
 		font-family: var(--font-heading);
-		font-size: clamp(2rem, 4vw, 2.65rem);
+		font-size: clamp(1.8rem, 4vw, 2.65rem);
 		font-weight: 800;
-		letter-spacing: 0;
 		line-height: 1.1;
 	}
 
+	/* ── layout wrapper ── */
+	.blog-layout { position: relative; }
+
+	/* ── mobile filter toggle ── */
+	.filter-toggle {
+		display: none; /* shown only on mobile via media query */
+		flex-shrink: 0;
+		align-items: center;
+		gap: 0.4rem;
+		margin-bottom: 1rem;
+		border: 1px solid rgba(148, 163, 184, 0.38);
+		border-radius: 999px;
+		padding: 0.4rem 0.85rem;
+		background: rgba(15, 23, 42, 0.55);
+		color: rgb(203, 213, 225);
+		font: inherit;
+		font-size: 0.82rem;
+		font-weight: 700;
+		cursor: pointer;
+		transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+		white-space: nowrap;
+	}
+	.filter-toggle:hover {
+		border-color: rgba(249, 115, 22, 0.55);
+		background: rgba(249, 115, 22, 0.12);
+		color: rgb(255, 237, 213);
+	}
+
+	/* ── filter panel shell ── */
+	.filter-panel {
+		z-index: 40;
+	}
+
+	.filter-panel-inner {
+		display: flex;
+		flex-direction: column;
+		gap: 0;
+		height: 100%;
+	}
+
+	/* Panel header row (grip + title + close btn) */
+	.filter-panel-head {
+		display: flex;
+		align-items: center;
+		gap: 0.45rem;
+		margin-bottom: 1rem;
+		padding-bottom: 0.75rem;
+		border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+	}
+
+	/* Drag grip — hidden on mobile, shown on desktop via .is-fixed */
+	.filter-drag-grip {
+		display: none;
+		flex-shrink: 0;
+		color: rgba(148, 163, 184, 0.35);
+		transition: color 130ms ease;
+	}
+	.filter-panel.is-fixed .filter-drag-grip {
+		display: block;
+	}
+	.filter-panel.is-fixed .filter-panel-head:hover .filter-drag-grip {
+		color: rgba(148, 163, 184, 0.65);
+	}
+
+	.filter-panel-title {
+		flex: 1;
+		color: rgb(248, 249, 250);
+		font-family: var(--font-heading);
+		font-size: 0.82rem;
+		font-weight: 800;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+	}
+
+	.filter-panel-close {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.75rem;
+		height: 1.75rem;
+		border: 1px solid rgba(148, 163, 184, 0.28);
+		border-radius: 999px;
+		background: transparent;
+		color: rgba(203, 213, 225, 0.8);
+		cursor: pointer;
+		transition: border-color 140ms ease, color 140ms ease;
+	}
+	.filter-panel-close:hover {
+		border-color: rgba(249, 115, 22, 0.5);
+		color: rgb(255, 237, 213);
+	}
+
+	/* ── backdrop ── */
+	.filter-backdrop {
+		display: none;
+		position: fixed;
+		inset: 0;
+		z-index: 39;
+		background: rgba(0, 0, 0, 0.52);
+		backdrop-filter: blur(3px);
+	}
+	.filter-backdrop.is-open { display: block; }
+
+	/* ── post list ── */
 	.blog-post-list {
 		display: grid;
 		gap: 0.75rem;
@@ -135,33 +458,90 @@ const series = getMultiPostSeries(posts).map((entry) => ({
 		padding: 0;
 		list-style: none;
 	}
-
-	/* The hidden attribute must win over the grid item display. */
-	.blog-post-item[hidden] {
-		display: none;
-	}
+	.blog-post-item[hidden] { display: none; }
 
 	.blog-empty {
 		border: 1px solid rgba(248, 249, 250, 0.12);
 		border-radius: 0.65rem;
-		background: rgba(255, 255, 255, 0.045);
-		padding: 1rem;
-		color: rgba(203, 213, 225, 0.82);
+		background: rgba(255, 255, 255, 0.04);
+		padding: 1rem 1.25rem;
+		color: rgba(203, 213, 225, 0.72);
+		font-size: 0.9rem;
 	}
 
-	:global(body.light-theme) .blog-index-header h1 {
-		color: rgb(15, 23, 42);
+	.blog-no-posts h1 {
+		margin: 0 0 1rem;
+		color: rgb(248, 249, 250);
+		font-family: var(--font-heading);
+		font-size: clamp(1.8rem, 4vw, 2.65rem);
+		font-weight: 800;
 	}
 
-	:global(body.light-theme) .blog-empty {
-		border-color: rgba(15, 23, 42, 0.12);
-		background: rgba(255, 255, 255, 0.78);
-		color: rgba(51, 65, 85, 0.86);
+	/* ────────────────────────────────────────────────
+	   DESKTOP  ≥ 980px — draggable fixed panel
+	──────────────────────────────────────────────── */
+	@media (min-width: 980px) {
+		/* Indent content to leave space for the fixed panel */
+		.blog-content {
+			padding-left: calc(16rem + 1.75rem);
+		}
+
+		/* Panel becomes fixed when JS adds .is-fixed */
+		.filter-panel.is-fixed {
+			position: fixed;
+			width: 16rem;
+			max-height: calc(100vh - 5rem);
+			overflow-y: auto;
+			overscroll-behavior: contain;
+			scrollbar-width: thin;
+			scrollbar-color: rgba(148, 163, 184, 0.2) transparent;
+			z-index: 40;
+		}
+
+		/* Drag handle cursor on the panel header */
+		.filter-panel.is-fixed .filter-panel-head {
+			cursor: grab;
+		}
+		.filter-panel.is-fixed .filter-panel-head:active {
+			cursor: grabbing;
+		}
+
+		/* Hide close button on desktop */
+		.filter-panel-close { display: none; }
 	}
+
+	/* ────────────────────────────────────────────────
+	   MOBILE  < 980px — slide-in drawer from left
+	──────────────────────────────────────────────── */
+	@media (max-width: 979px) {
+		.filter-toggle { display: flex; }
+
+		.filter-panel {
+			position: fixed;
+			top: 0;
+			left: 0;
+			bottom: 0;
+			width: min(17rem, 88vw);
+			max-height: 100dvh;
+			overflow-y: auto;
+			overscroll-behavior: contain;
+			border-right: 1px solid rgba(148, 163, 184, 0.18);
+			background: rgb(13, 17, 23);
+			padding: 1.25rem;
+			box-shadow: 6px 0 32px rgba(0, 0, 0, 0.45);
+			transform: translateX(-105%);
+			transition: transform 260ms cubic-bezier(0.4, 0, 0.2, 1),
+						box-shadow 260ms ease;
+		}
+		.filter-panel.is-open {
+			transform: translateX(0);
+			box-shadow: 6px 0 48px rgba(0, 0, 0, 0.55);
+		}
+	}
+
+	/* light-theme overrides for filter panel live in global.css */
 
 	@media (max-width: 720px) {
-		.blog-index-page {
-			padding-inline: 1rem;
-		}
+		.blog-index-page { padding-inline: 1rem; }
 	}
 </style>

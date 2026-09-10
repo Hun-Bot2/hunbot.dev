@@ -222,6 +222,7 @@ body {
 	pointer-events: auto;
 }
 
+
 :where(a, button, input, textarea, select, summary):focus-visible {
 	outline: 2px solid rgba(251, 146, 60, 0.78);
 	outline-offset: 3px;
@@ -411,6 +412,143 @@ body.light-theme .prose :where(h1,h2,h3,h4,h5,h6,li,blockquote,p,strong) {
 body.light-theme .prose blockquote {
 	border-color: #fb923c !important;
 	color: #475569 !important;
+}
+
+/* ── Language picker dropdown — light theme ── */
+body.light-theme .language-menu {
+	background: #ffffff;
+	border-color: rgba(15, 23, 42, 0.12);
+	box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12), 0 2px 6px rgba(15, 23, 42, 0.06);
+}
+
+body.light-theme .lang-option {
+	color: rgba(30, 41, 59, 0.88);
+}
+
+body.light-theme .lang-option:hover {
+	background: rgba(15, 23, 42, 0.06);
+	color: #0f172a;
+}
+
+body.light-theme .lang-option.active {
+	background: rgba(249, 115, 22, 0.1);
+	color: #9a3412;
+}
+
+/* ── Skip link — light theme ── */
+body.light-theme .skip-link {
+	background: #ffffff;
+	border-color: rgba(194, 65, 12, 0.45);
+	color: #9a3412;
+	box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14);
+}
+
+body.light-theme .skip-link:focus-visible {
+	outline-color: rgba(194, 65, 12, 0.7);
+}
+
+/* ════════════════════════════════════════
+   Blog filter panel — light theme
+   (index.astro + BlogFilterBar.astro)
+════════════════════════════════════════ */
+
+/* h1 headings in blog index */
+body.light-theme .blog-index-header h1,
+body.light-theme .blog-no-posts h1 {
+	color: rgb(15, 23, 42);
+}
+
+/* empty-state box */
+body.light-theme .blog-empty {
+	border-color: rgba(15, 23, 42, 0.12);
+	background: rgba(255, 255, 255, 0.78);
+	color: rgba(51, 65, 85, 0.86);
+}
+
+/* mobile filter toggle button */
+body.light-theme .filter-toggle {
+	border-color: rgba(100, 116, 139, 0.4);
+	background: rgb(255, 255, 255);
+	color: rgb(51, 65, 85);
+}
+body.light-theme .filter-toggle:hover {
+	border-color: rgba(194, 65, 12, 0.3);
+	background: rgba(249, 115, 22, 0.09);
+	color: rgb(154, 52, 18);
+}
+
+/* panel shell — only matters for mobile drawer (desktop has no box) */
+body.light-theme .filter-panel {
+	background: rgb(248, 250, 252);
+	border-right-color: rgba(15, 23, 42, 0.12);
+}
+
+/* panel header */
+body.light-theme .filter-panel-head {
+	border-bottom-color: rgba(15, 23, 42, 0.1);
+}
+body.light-theme .filter-panel-title {
+	color: rgb(15, 23, 42);
+}
+
+/* close button */
+body.light-theme .filter-panel-close {
+	border-color: rgba(100, 116, 139, 0.3);
+	color: rgba(51, 65, 85, 0.8);
+}
+body.light-theme .filter-panel-close:hover {
+	border-color: rgba(194, 65, 12, 0.3);
+	color: rgb(154, 52, 18);
+}
+
+/* ── BlogFilterBar — light theme ── */
+body.light-theme .filter-group-label {
+	color: rgba(51, 65, 85, 0.6);
+}
+
+body.light-theme .filter-group-chevron {
+	color: rgba(51, 65, 85, 0.35);
+}
+
+body.light-theme .filter-group.has-divider,
+body.light-theme .filter-status.has-divider {
+	border-color: rgba(15, 23, 42, 0.1);
+}
+
+body.light-theme .filter-option {
+	color: rgba(30, 41, 59, 0.65);
+}
+
+body.light-theme .filter-option:hover {
+	color: rgba(15, 23, 42, 0.95);
+}
+
+body.light-theme .filter-option.is-active {
+	color: rgb(154, 52, 18);
+}
+
+body.light-theme .filter-option.is-active .filter-option-dot {
+	background: rgb(194, 65, 12);
+}
+
+body.light-theme .filter-option-count {
+	color: rgba(51, 65, 85, 0.4);
+}
+
+body.light-theme .filter-option.is-active .filter-option-count {
+	color: rgba(154, 52, 18, 0.65);
+}
+
+body.light-theme .filter-status p {
+	color: rgba(51, 65, 85, 0.55);
+}
+
+body.light-theme .filter-reset {
+	color: rgba(194, 65, 12, 0.8);
+}
+
+body.light-theme .filter-reset:hover {
+	color: rgb(194, 65, 12);
 }
 
 .prose strong, .prose b {
@@ -712,4 +850,63 @@ hr {
   font-family: "M PLUS 1p", system-ui;
   font-weight: 500;
   font-style: normal;
+}
+
+/* ============================================================
+   Semantic Design Tokens (Stage 0)
+   ------------------------------------------------------------
+   See docs/architecture/design-tokens-and-images.md (Part 1).
+
+   This is the ONLY tier of tokens that is theme-aware. The
+   :root block below holds the dark (default) values; the
+   body.light-theme block redefines the SAME token names with
+   light-theme values -- no selector overrides, just new values
+   for the same custom properties.
+
+   Components should consume these tokens (e.g.
+   `color: var(--text-primary)`) instead of writing their own
+   hardcoded colors plus a parallel `body.light-theme .foo { ... }`
+   override block. That per-component override pattern is exactly
+   what this tier replaces.
+
+   Note: --text-muted, --text-subtle, and --text-faint intentionally
+   collapse to the same value (rgba(51, 65, 85, 0.86)) in the light
+   theme. That mirrors the existing hand-written light-theme rules
+   it replaces -- it is not an error or an oversight.
+
+   Nothing in the codebase consumes these tokens yet (Stage 0 only
+   adds the layer); they are wired up to components in later stages.
+   ============================================================ */
+:root {
+	--surface-panel: rgba(255, 255, 255, 0.045);
+	--surface-border: rgba(248, 249, 250, 0.12);
+	--text-primary: rgb(248, 249, 250);
+	--text-muted: rgba(203, 213, 225, 0.78);
+	--text-subtle: rgba(203, 213, 225, 0.72);
+	--text-faint: rgba(148, 163, 184, 0.86);
+	--field-surface: rgba(15, 23, 42, 0.55);
+	--field-text: rgb(226, 232, 240);
+	--field-border: rgba(148, 163, 184, 0.35);
+	--accent-surface: rgba(249, 115, 22, 0.14);
+	--accent-border: rgba(249, 115, 22, 0.58);
+	--accent-text: rgb(255, 237, 213);
+	--state-success: rgb(134, 239, 172);
+	--state-error: rgb(252, 165, 165);
+}
+
+body.light-theme {
+	--surface-panel: rgba(255, 255, 255, 0.78);
+	--surface-border: rgba(15, 23, 42, 0.12);
+	--text-primary: rgb(15, 23, 42);
+	--text-muted: rgba(51, 65, 85, 0.86);
+	--text-subtle: rgba(51, 65, 85, 0.86);
+	--text-faint: rgba(51, 65, 85, 0.86);
+	--field-surface: rgb(255, 255, 255);
+	--field-text: rgb(15, 23, 42);
+	--field-border: rgb(203, 213, 225);
+	--accent-surface: rgba(249, 115, 22, 0.1);
+	--accent-border: rgba(194, 65, 12, 0.28);
+	--accent-text: rgb(154, 52, 18);
+	--state-success: rgb(21, 128, 61);
+	--state-error: rgb(153, 27, 27);
 }

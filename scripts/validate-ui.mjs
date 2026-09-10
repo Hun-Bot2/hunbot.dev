@@ -23,7 +23,6 @@ for (const lang of ['ko', 'jp', 'en']) {
 
 const pagesWithHeader = [
 	'src/layouts/BlogPost.astro',
-	'src/pages/[lang]/about.astro',
 	'src/pages/[lang]/blog/categories.astro',
 	'src/pages/[lang]/blog/categories/[category].astro',
 	'src/pages/[lang]/blog/index.astro',

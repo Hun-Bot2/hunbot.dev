@@ -2,7 +2,7 @@
 title: 'On-The-Block 서비스 개발기 03 : Admin 페이지 & 채팅'
 description: 'On-The-Block 서비스 개발기 03: Admin 페이지 & 채팅'
 pubDate: '2026-06-21'
-heroImage: '/images/ON-THE-BLOCK/otb-chatlist.png'
+heroImage: '/images/ON-THE-BLOCK/otb-chatlist.webp'
 tags: ['chatting', 'Admin', 'on-the-block']
 category: 'on-the-block'
 series: 'on-the-block'
@@ -148,7 +148,7 @@ AND deleted_at IS NULL
 
 ## 5. 실시간 스트림을 붙였다
 
-#### Pub/Sub : <LocalizedLink href="blog/technical_note/pub-sub"> Pub/Sub </LocalizedLink>
+#### Pub/Sub :  Pub/Sub 
 
 `StreamMessages`는 DB polling 대신 pub/sub 형태로 구현했다.
 하지만 Redis는 초기 의존성으로 넣지 않았다.
@@ -177,7 +177,7 @@ AND deleted_at IS NULL
 채팅 미디어는 PostgreSQL에 저장하지 않는다. 대신 private GCS bucket을 사용하고, 클라이언트가 signed upload URL로 직접 object storage에 업로드한다.
 에 대한 이유는 아래 글에 정리되어 있습니다.
 
-#### Chatting Media : <LocalizedLink href="blog/technical_note/chat/chatting-system02/"> Chatting Media </LocalizedLink>
+#### Chatting Media :  Chatting Media 
 
 흐름은 다음과 같다.
 

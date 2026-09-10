@@ -2,6 +2,9 @@
   "name": "hun-bot-blog",
   "type": "module",
   "version": "0.0.1",
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "dev": "astro dev",
     "build": "npm run build:astro && npm run search:index",

@@ -17,7 +17,7 @@ export type ResponsivePublicImage = {
 };
 
 const responsiveImages: Record<string, ResponsiveImageEntry> = {
-	'/images/ON-THE-BLOCK/otb-chatlist.png': {
+	'/images/ON-THE-BLOCK/otb-chatlist.webp': {
 		width: 1206,
 		height: 2622,
 		webp: [

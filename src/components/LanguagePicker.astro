@@ -71,12 +71,12 @@ const languageUrls = Object.keys(languages).reduce((acc, lang) => {
     position: absolute;
     top: calc(100% + 0.5rem);
     right: 0;
-    background: rgb(40, 40, 40);
-    border: 1px solid rgba(248, 249, 250, 0.2);
-    border-radius: 8px;
-    padding: 0.5rem;
+    background: rgb(30, 32, 38);
+    border: 1px solid rgba(248, 249, 250, 0.14);
+    border-radius: 10px;
+    padding: 0.375rem;
     min-width: 150px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.2);
     z-index: 1000;
   }
 
@@ -89,22 +89,27 @@ const languageUrls = Object.keys(languages).reduce((acc, lang) => {
     align-items: center;
     justify-content: space-between;
     padding: 0.5rem 0.75rem;
-    border-radius: 4px;
-    color: rgba(248, 249, 250, 0.8);
+    border-radius: 6px;
+    color: rgba(203, 213, 225, 0.88);
     text-decoration: none;
-    transition: all 0.2s;
+    transition: background 140ms ease, color 140ms ease;
     font-size: 0.875rem;
+    font-weight: 500;
   }
 
   .lang-option:hover {
-    background: rgba(248, 249, 250, 0.1);
+    background: rgba(248, 249, 250, 0.08);
     color: rgb(248, 249, 250);
   }
 
   .lang-option.active {
-    background: rgba(249, 115, 22, 0.1);
-    color: #f97316;
+    background: rgba(249, 115, 22, 0.18);
+    color: rgb(253, 186, 116);
+    font-weight: 700;
   }
+
+  /* Light theme overrides live in global.css — Astro scoped styles can't
+     reliably target body.light-theme ancestor from inside a component. */
 
   .lang-arrow {
     transition: transform 0.2s;
