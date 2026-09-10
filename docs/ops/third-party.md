@@ -30,6 +30,12 @@ Do not add:
 - external upload widgets
 - auth, payment, or newsletter scripts
 
+## First-Party Endpoints
+
+No third-party vendor was added for anonymous feedback. `POST /api/feedback` is first-party and same-origin, already covered by `connect-src 'self'`, and reuses the Upstash Redis instance behind the view counter.
+
+Public discussion stays on Giscus, which requires a GitHub account. The anonymous channel is write-only and never rendered publicly; see the carve-out in [`../decisions/product-boundaries.md`](../decisions/product-boundaries.md).
+
 ## Review Rules
 
 - Keep CSP domains matched to actual usage.

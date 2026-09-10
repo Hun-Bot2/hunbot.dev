@@ -18,13 +18,11 @@ function getBasePath(path: string, lang: string) {
 const basePath = getBasePath(currentPath, currentLang);
 
 // Generate URLs for each language
+// Every language is prefixed, Korean included. Korean pages are only generated at
+// /ko/..., and vercel.json redirects a handful of bare paths, so an unprefixed
+// deep link such as /blog/devlog/x/ has no page and no redirect behind it.
 const languageUrls = Object.keys(languages).reduce((acc, lang) => {
-  if (lang === 'ko') {
-    // Korean is default, no prefix
-    acc[lang] = basePath;
-  } else {
-    acc[lang] = `/${lang}${basePath}`;
-  }
+  acc[lang] = basePath === '/' ? `/${lang}/` : `/${lang}${basePath}`;
   return acc;
 }, {} as Record<string, string>);
 ---

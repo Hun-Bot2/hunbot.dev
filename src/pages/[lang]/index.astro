@@ -5,6 +5,7 @@ import Footer from '../../components/Footer.astro';
 import FloatingLanguagePicker from '../../components/FloatingLanguagePicker.astro';
 import LibraryIcon from '../../components/library/LibraryIcon.astro';
 import { getCollection } from 'astro:content';
+import { getAllPosts } from '../../utils/blog';
 import FormattedDate from '../../components/FormattedDate.astro';
 import { useTranslations } from '../../i18n/ui';
 import type { UILanguage } from '../../i18n/ui';
@@ -47,7 +48,7 @@ const blogUrl = `${languageBasePath}/blog`;
 const libraryUrl = `${languageBasePath}/library`;
 const reviewsUrl = `${languageBasePath}/reviews`;
 
-const allPosts = await getCollection('blog');
+const allPosts = await getAllPosts();
 const allResources = await getCollection('resources');
 const allPapers = await getCollection('papers');
 const allAcademicReviews = await getCollection('academicReviews');

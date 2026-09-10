@@ -33,8 +33,29 @@ for (const dependencyName of Object.keys(dependencies)) {
 	}
 }
 
-const apiRoutes = listFiles('src/pages/api').map((filePath) => relative(root, filePath));
-assert.deepEqual(apiRoutes, ['src/pages/api/views.ts'], 'Only the existing view counter API route is approved.');
+// Approved API routes. Adding to this list is the approval gate described in
+// docs/decisions/product-boundaries.md - widen it only alongside a written
+// carve-out in that document, never to make a build pass.
+const APPROVED_API_ROUTES = ['src/pages/api/feedback.ts', 'src/pages/api/views.ts'];
+const apiRoutes = listFiles('src/pages/api').map((filePath) => relative(root, filePath)).sort();
+assert.deepEqual(apiRoutes, APPROVED_API_ROUTES, 'Only approved API routes may exist.');
+
+// Anonymous feedback is private by construction. If it is ever rendered into a
+// page, it becomes public anonymous comments, which need their own plan.
+const feedbackRoute = read('src/pages/api/feedback.ts');
+assert.doesNotMatch(feedbackRoute, /export const GET/, 'Feedback must not be readable over HTTP.');
+assert.match(feedbackRoute, /Cache-Control': 'no-store/);
+assert.doesNotMatch(feedbackRoute, /console\.error\([^)]*error/);
+
+const feedbackComponents = listFiles('src/components').concat(listFiles('src/layouts'));
+for (const componentPath of feedbackComponents) {
+	const source = readFileSync(componentPath, 'utf8');
+	assert.doesNotMatch(
+		source,
+		/set:html[^\n]*feedback/i,
+		`${relative(root, componentPath)} must not render stored feedback as markup.`,
+	);
+}
 
 const routeFiles = listFiles('src/pages').map((filePath) => relative(root, filePath));
 const forbiddenRouteSegments = new Set([

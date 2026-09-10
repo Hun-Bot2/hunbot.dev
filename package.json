@@ -10,7 +10,7 @@
     "search:validate": "node scripts/validate-search.mjs",
     "blog:validate": "node scripts/validate-blog-content.mjs",
     "reviews:validate": "node scripts/validate-academic-reviews.mjs",
-    "blog:pagination:validate": "node scripts/validate-blog-pagination.mjs",
+    "blog:listing:validate": "node scripts/validate-blog-listing.mjs",
     "content:inventory": "node scripts/inventory-content.mjs",
     "content:validate": "npm run blog:validate && npm run reviews:validate && npm run library:validate && npm run deck:validate && npm run paths:validate && npm run media:validate",
     "deck:validate": "node scripts/validate-decks.mjs",

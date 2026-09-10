@@ -4,7 +4,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 import { getBlogUrlFromId } from '../utils/blog-routing';
 
 export async function GET(context) {
-	const posts = await getCollection('blog');
+	const posts = await getCollection('blog', ({ data }) => !data.draft);
 	return rss({
 		title: SITE_TITLE,
 		description: SITE_DESCRIPTION,

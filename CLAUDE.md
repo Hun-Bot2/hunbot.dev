@@ -102,7 +102,9 @@ draft: boolean          # optional, default false — hides from site when true
 ---
 ```
 
-> **Draft system:** `draft: true` removes a post from all listings, sitemap, and RSS. Remove it or set `draft: false` when a post is ready to publish.
+> **Draft system:** `draft: true` removes a post from all listings, the sitemap, RSS, and its own detail page. Every route reads blog content through `getAllPosts()`; `scripts/validate-blog-content.mjs` fails the build if a route reads the collection without a draft filter.
+>
+> **Frontmatter quality gate:** `getAllPosts()` also excludes a non-draft post when its frontmatter is unedited template content (`getFrontmatterIssues()` in `src/utils/blog.ts`) — a placeholder `description` (or one under 10 characters), `tags` containing `tag1`/`tag2`/`tag`, `category` exactly `'category'`, or `series` exactly `'series 이름'`/`'series name'` — or when it shares the same language, `title`, and `pubDate` as another post (always a copy-paste mistake, so every copy is excluded). A post is published only when it is not a draft **and** has no placeholder frontmatter. `scripts/validate-blog-content.mjs` reports every excluded file and reason as a warning, not a build failure.
 
 ---
 
@@ -113,6 +115,7 @@ src/pages/
 ├── index.astro                          → redirects to /ko/
 ├── about.astro                          → redirects to /ko/about/
 ├── api/
+│   ├── feedback.ts                      → POST anonymous feedback, write-only (prerender=false)
 │   └── views.ts                         → POST/GET view counts (prerender=false)
 ├── rss.xml.js                           → (unused legacy, see [lang]/rss.xml.js)
 ├── sitemap.xml.ts                       → custom XML sitemap
@@ -255,6 +258,9 @@ Translation strings for nav labels, button text, metadata labels, and page title
 | Script | Loaded on | What it does |
 |---|---|---|
 | `header-menu.js` | All pages | Mobile menu open/close + outside-click handler |
+| `blog-filters.js` | `/[lang]/blog/` | Category/year/series filtering; URL params + localStorage |
+| `feedback-box.js` | Blog posts | Posts anonymous feedback to `/api/feedback` |
+| `language-suggest.js` | Blog posts | Suggests an existing translation from `navigator.language`; never redirects |
 | `neuralNetwork.js` | (legacy, dormant) | Three.js neural network 3D visualization |
 | `controlsManager.js` | (legacy, dormant) | Controls for 3D visualization |
 | `themeManager.js` | (legacy, dormant) | Theme management for 3D visualization |
@@ -381,5 +387,6 @@ docs/
     ├── performance.md       Performance budget and build guardrails
     ├── seo.md               SEO/feed checklist and route contract
     ├── third-party.md       Approved third-party services and domains
-    └── ui-conventions.md    UI/accessibility rules and card patterns
+    ├── ui-conventions.md    UI/accessibility rules and card patterns
+    └── ui-ux-plan.md        Blog listing audit (F1-F9) + phased redesign plan
 ```

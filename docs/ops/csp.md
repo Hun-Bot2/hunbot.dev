@@ -23,6 +23,9 @@ Third-party service reference: [`docs/third-party-services.md`](./third-party-se
 | `src/pages/[lang]/index.astro` | Home page interaction script | Home page | No | Candidate for route-specific public module |
 | `src/pages/about.astro`, `src/pages/index.astro` | Root redirects | Root fallback pages | Yes | Keep until converted to static redirect config |
 | `src/components/GiscusComments.astro` | External comments script | Blog posts | No | Third-party script; keep CSP domain explicit |
+| `src/pages/[lang]/blog/index.astro` + `public/scripts/blog-filters.js` | Blog listing category/year/series filters | Blog listing | No | External module script; no CSP change needed |
+| `src/layouts/BlogPost.astro` + `public/scripts/feedback-box.js` | Anonymous feedback submission | Blog posts | No | External module script; same-origin fetch covered by `connect-src 'self'` |
+| `src/layouts/BlogPost.astro` + `public/scripts/language-suggest.js` | Translation suggestion banner | Blog posts | No | External module script; no redirect, no CSP change needed |
 
 ## CSP State
 

@@ -44,6 +44,11 @@
       "source": "/blog/tech/chat/:path*",
       "destination": "/ko/blog/technical_note/chat/:path*",
       "permanent": false
+    },
+    {
+      "source": "/:lang(ko|jp|en)/blog/page/:page",
+      "destination": "/:lang/blog/",
+      "permanent": false
     }
   ],
   "headers": [
