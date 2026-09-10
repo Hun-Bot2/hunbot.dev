@@ -23,3 +23,11 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# Sensitive / private files — must never be committed
+src/content/blog/ko/devlog/DATA_AUTOMATION/Personal_Task.txt
+src/content/blog/ko/devlog/DATA_AUTOMATION/cd.txt
+src/content/blog/ko/devlog/ON-THE-BLOCK/ㄴ㄂ㄈ.md
+src/content/blog/en/technical_note/Deep_Learning/homework#4.ipynb
+src/content/blog/ko/technical_note/Deep_Learning/homework#4.ipynb
+src/content/academic-reviews/ko/papers/temp-automatic-pronunciation-assessment-review.mdx
