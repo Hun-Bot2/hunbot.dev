@@ -1,0 +1,674 @@
+---
+title: 'On-The-Block 서비스 개발기 06 : Chatbot fine-tuning'
+description: 'On-The-Block 서비스 개발기 06: Chatbot fine-tuning'
+pubDate: '2026-04-30'
+# heroImage: '/images/ON-THE-BLOCK/Recommendation-System.png'
+tags: ['chatbot', 'AI', 'on-the-block']
+category: 'on-the-block'
+series: 'on-the-block'
+seriesOrder: 4
+---
+
+# Chatbot fine-tuning
+이번 글에서는 Chatbot fine-tuning에 대한 내용을 공유하려고 합니다.
+
+---
+
+title: "Flutter 앱을 Play Store에 올렸더니 검은 화면이 나온 이유"
+description: "Flutter 앱을 Google Play 내부 테스트에 배포한 뒤 발생한 검은 화면과 Google Sign-In 오류를 adb logcat으로 추적하고 해결한 과정을 정리했습니다."
+pubDate: 2026-06-17
+tags: ['flutter', 'android', 'google-play-console', 'firebase', 'google-sign-in', 'debugging']
+category: retrospective
+series: ontheblock
+seriesOrder: 1
+--------------
+
+## 들어가며
+
+ONTHEBLOCK Flutter 앱을 Google Play Console의 Internal Testing 트랙에 처음 배포했다.
+
+App Bundle 업로드와 내부 테스트 배포까지는 정상적으로 끝났다. Play Store에서 앱을 내려받아 Galaxy S21+에 설치하는 것도 문제없었다.
+
+하지만 앱을 실행하자 화면에는 아무것도 나오지 않았다.
+
+정확히는 앱이 종료되지는 않았지만, 검은 화면만 계속 표시되었다.
+
+로컬 디버그 환경에서는 잘 실행되던 앱이 Play Store에서 설치한 Release 빌드에서만 동작하지 않는 상황이었다.
+
+이 글에서는 다음 두 문제를 추적한 과정을 정리한다.
+
+1. Play Store 설치본이 검은 화면에서 멈춘 문제
+2. 검은 화면을 해결한 뒤 발생한 `PlatformException(sign_in_failed)` 문제
+
+---
+
+## 1. 첫 번째 문제: 앱을 실행했지만 검은 화면만 나왔다
+
+처음에는 다음과 같은 원인을 의심했다.
+
+* Firebase 초기화 실패
+* Google Sign-In 설정 문제
+* Cloud Run API 주소 누락
+* Release 빌드에서만 발생하는 Flutter 예외
+* ProGuard 또는 R8 문제
+* Android 실기기와 에뮬레이터의 환경 차이
+
+하지만 검은 화면만 보고 원인을 추측하는 것은 의미가 없었다.
+
+앱이 실제로 어떤 예외를 발생시키는지 확인하기 위해 Android 기기의 로그를 직접 확인했다.
+
+### 기기 연결 확인
+
+먼저 Galaxy S21+를 Mac에 연결하고 USB 디버깅을 활성화했다.
+
+```bash
+adb devices
+```
+
+출력에 기기가 표시되는 것을 확인했다.
+
+```text
+List of devices attached
+R3CR60TJNWT    device
+```
+
+### 로그 초기화 및 수집
+
+기존 로그가 너무 많았기 때문에 먼저 로그를 초기화했다.
+
+```bash
+adb logcat -c
+```
+
+그다음 Flutter와 Android Runtime 관련 로그만 필터링했다.
+
+```bash
+adb logcat | grep -iE "FATAL|AndroidRuntime|Flutter|Exception|ontheblock"
+```
+
+이 상태에서 앱을 다시 실행했다.
+
+처음에는 시스템 앱과 다른 애플리케이션의 로그까지 함께 출력되어 매우 복잡해 보였다. 그러나 Flutter 프로세스에서 발생한 `Unhandled Exception`을 찾자 원인이 명확해졌다.
+
+```text
+Unhandled Exception: Bad state:
+GATEWAY_BASE_URL must use https:// in release builds
+(got: http://10.0.2.2:8080)
+```
+
+스택 트레이스에는 다음 위치가 표시되었다.
+
+```text
+assertSecureConfig
+package:flutter_client/core/config/app_config.dart
+
+main
+package:flutter_client/main.dart
+```
+
+즉, Flutter가 첫 화면을 렌더링하기 전에 환경설정 검증 과정에서 예외가 발생하고 있었다.
+
+앱이 종료되지 않고 검은 화면처럼 보였던 것은 Android Activity는 실행되었지만 Flutter의 `runApp()`까지 정상적으로 도달하지 못했기 때문이다.
+
+---
+
+## 2. `10.0.2.2`는 왜 Release 앱에서 문제가 되었나
+
+`10.0.2.2`는 일반적인 서버 주소가 아니다.
+
+Android Emulator에서 개발 컴퓨터의 `localhost`에 접근하기 위해 사용하는 특수 주소다.
+
+```text
+Android Emulator
+10.0.2.2
+    ↓
+개발 컴퓨터의 localhost
+```
+
+따라서 개발 중에는 다음 주소가 정상적으로 동작할 수 있다.
+
+```text
+http://10.0.2.2:8080
+```
+
+하지만 실제 스마트폰이나 Play Store에서 설치된 앱에서는 이 주소가 개발 컴퓨터의 서버를 의미하지 않는다.
+
+ONTHEBLOCK의 설정 코드에는 Release 빌드에서 보안이 적용되지 않은 HTTP 주소를 차단하는 검증 로직도 있었다.
+
+```dart
+if (isRelease && !gatewayBaseUrl.startsWith('https://')) {
+  throw StateError(
+    'GATEWAY_BASE_URL must use https:// in release builds',
+  );
+}
+```
+
+결과적으로 다음 두 조건이 동시에 문제를 일으켰다.
+
+1. `GATEWAY_BASE_URL`이 에뮬레이터용 기본값을 사용하고 있었다.
+2. Release 빌드는 HTTPS가 아닌 URL을 허용하지 않았다.
+
+---
+
+## 3. 기존 빌드 명령어에는 서버 설정이 들어가 있었다
+
+처음에는 서버 주소를 빌드할 때 분명히 전달했다고 생각했다.
+
+실제로 다음과 같은 값들을 사용하고 있었다.
+
+```bash
+flutter run \
+  --dart-define=APP_GATEWAY_GRPC_HOST=gateway-service.example.run.app \
+  --dart-define=APP_GATEWAY_GRPC_PORT=443 \
+  --dart-define=APP_GATEWAY_GRPC_TLS=true \
+  --dart-define=AUTH_GRPC_HOST=authorization-service.example.run.app \
+  --dart-define=AUTH_GRPC_PORT=443 \
+  --dart-define=AUTH_GRPC_TLS=true \
+  --dart-define=CHAT_GRPC_HOST=chat-service.example.run.app \
+  --dart-define=CHAT_GRPC_PORT=443 \
+  --dart-define=CHAT_GRPC_TLS=true \
+  --dart-define=SURVEY_GRPC_HOST=survey-service.example.run.app \
+  --dart-define=SURVEY_GRPC_PORT=443 \
+  --dart-define=SURVEY_GRPC_TLS=true \
+  --dart-define=MAP_API_BASE_URL=https://map-service.example.run.app/
+```
+
+문제는 `APP_GATEWAY_GRPC_HOST`와 `GATEWAY_BASE_URL`이 서로 다른 환경변수라는 점이었다.
+
+```text
+APP_GATEWAY_GRPC_HOST
+- gRPC 연결에 사용
+- host만 저장
+- 예: gateway-service.example.run.app
+
+GATEWAY_BASE_URL
+- HTTP 또는 REST 기반 URL에 사용
+- scheme까지 포함
+- 예: https://gateway-service.example.run.app
+```
+
+`--dart-define`은 이름이 정확히 일치해야 한다.
+
+따라서 `APP_GATEWAY_GRPC_HOST`를 전달해도 코드가 `GATEWAY_BASE_URL`을 읽고 있다면 해당 값은 전달되지 않는다.
+
+값이 전달되지 않자 코드에 정의된 기본값이 사용되었다.
+
+```dart
+const gatewayBaseUrl = String.fromEnvironment(
+  'GATEWAY_BASE_URL',
+  defaultValue: 'http://10.0.2.2:8080',
+);
+```
+
+이것이 검은 화면의 직접적인 원인이었다.
+
+---
+
+## 4. 해결: Release 빌드에 실제 HTTPS Gateway URL 전달
+
+기존 명령어에 다음 설정을 추가했다.
+
+```bash
+--dart-define=GATEWAY_BASE_URL=https://gateway-service.example.run.app
+```
+
+전체적으로는 다음과 같은 형태가 되었다.
+
+```bash
+flutter run --release \
+  --dart-define=GATEWAY_BASE_URL=https://gateway-service.example.run.app \
+  --dart-define=APP_GATEWAY_GRPC_HOST=gateway-service.example.run.app \
+  --dart-define=APP_GATEWAY_GRPC_PORT=443 \
+  --dart-define=APP_GATEWAY_GRPC_TLS=true \
+  --dart-define=AUTH_GRPC_HOST=authorization-service.example.run.app \
+  --dart-define=AUTH_GRPC_PORT=443 \
+  --dart-define=AUTH_GRPC_TLS=true \
+  --dart-define=CHAT_GRPC_HOST=chat-service.example.run.app \
+  --dart-define=CHAT_GRPC_PORT=443 \
+  --dart-define=CHAT_GRPC_TLS=true \
+  --dart-define=SURVEY_GRPC_HOST=survey-service.example.run.app \
+  --dart-define=SURVEY_GRPC_PORT=443 \
+  --dart-define=SURVEY_GRPC_TLS=true \
+  --dart-define=BOARD_GRPC_HOST=gateway-service.example.run.app \
+  --dart-define=BOARD_GRPC_PORT=443 \
+  --dart-define=BOARD_GRPC_TLS=true \
+  --dart-define=MAP_API_BASE_URL=https://map-service.example.run.app/
+```
+
+먼저 Play Store에 다시 올리지 않고 Galaxy S21+에서 Release 모드로 직접 실행했다.
+
+```bash
+flutter run --release ...
+```
+
+앱이 정상적으로 첫 화면을 출력하는 것을 확인했다.
+
+검은 화면 문제는 해결되었다.
+
+---
+
+## 5. 같은 문제가 다시 발생하지 않도록 설정 검사하기
+
+이번 문제는 환경변수 하나가 빌드 명령에서 빠져 발생했다.
+
+Flutter 프로젝트에서 사용하는 모든 컴파일 타임 환경변수를 확인하기 위해 다음 명령을 사용할 수 있다.
+
+```bash
+rg "String\.fromEnvironment|bool\.fromEnvironment|int\.fromEnvironment" lib
+```
+
+또는 `ripgrep`이 없다면 다음과 같이 검색할 수 있다.
+
+```bash
+grep -RInE \
+  "String\.fromEnvironment|bool\.fromEnvironment|int\.fromEnvironment" \
+  lib
+```
+
+개발용 주소가 남아 있는지도 확인했다.
+
+```bash
+rg "10\.0\.2\.2|localhost|127\.0\.0\.1|http://" lib
+```
+
+이 검사를 통해 다음과 같은 위험한 기본값을 사전에 찾을 수 있다.
+
+```dart
+defaultValue: 'http://10.0.2.2:8080'
+```
+
+Release 빌드에서는 기본값에 의존하기보다 필수 환경변수가 누락되었을 때 명확하게 실패하도록 만드는 편이 안전하다.
+
+```dart
+const gatewayBaseUrl = String.fromEnvironment(
+  'GATEWAY_BASE_URL',
+);
+
+if (gatewayBaseUrl.isEmpty) {
+  throw StateError('GATEWAY_BASE_URL is required');
+}
+```
+
+다만 예외를 발생시키기만 하면 사용자는 검은 화면만 보게 될 수 있다.
+
+실제 제품에서는 다음 중 하나를 함께 고려해야 한다.
+
+* 설정 오류 전용 화면 표시
+* Crash reporting 도구 연동
+* 앱 시작 로그 기록
+* Release 빌드 전 환경변수 검증 스크립트 실행
+
+---
+
+## 6. 두 번째 문제: `PlatformException(sign_in_failed)`
+
+검은 화면을 해결한 뒤 앱은 정상적으로 실행되었다.
+
+그러나 Google 로그인 버튼을 누르자 새로운 오류가 발생했다.
+
+```text
+PlatformException(sign_in_failed)
+```
+
+이 문제는 앱 실행 설정과는 다른 문제다.
+
+Google Sign-In은 Android 앱을 다음 조합으로 식별한다.
+
+```text
+Package name
++
+Signing certificate SHA fingerprint
++
+OAuth client configuration
+```
+
+ONTHEBLOCK의 Android 패키지명은 다음과 같다.
+
+```text
+com.ontheblockand.app
+```
+
+Release 환경에서는 어떤 방식으로 앱을 설치했는지에 따라 서로 다른 서명 인증서가 사용된다.
+
+### 로컬 Debug 실행
+
+```text
+Debug keystore
+```
+
+### 로컬 Release 실행 또는 직접 APK 설치
+
+```text
+Upload 또는 Release keystore
+```
+
+### Google Play에서 설치
+
+```text
+Google Play App Signing certificate
+```
+
+로컬 Debug에서 Google 로그인이 정상적으로 작동했다고 해서 Play Store 설치본에서도 반드시 작동하는 것은 아니다.
+
+Play Store는 업로드한 App Bundle을 Google Play App Signing 키로 다시 서명할 수 있기 때문이다.
+
+---
+
+## 7. Google Sign-In 오류 해결 절차
+
+### 7.1 로컬 Release 서명 지문 확인
+
+Flutter 프로젝트의 `android` 디렉터리에서 다음 명령을 실행한다.
+
+```bash
+cd android
+./gradlew signingReport
+```
+
+출력에서 `release` Variant의 SHA 값을 확인한다.
+
+```text
+Variant: release
+SHA1: ...
+SHA-256: ...
+```
+
+이 값을 Firebase Console의 Android 앱 설정에 추가한다.
+
+```text
+Firebase Console
+→ Project settings
+→ General
+→ Your apps
+→ Android app
+→ Add fingerprint
+```
+
+등록 대상:
+
+```text
+SHA-1
+SHA-256
+```
+
+### 7.2 Play App Signing 인증서 확인
+
+Play Store에서 설치되는 앱에는 로컬 Release 키가 아니라 Play App Signing 키가 사용될 수 있다.
+
+Play Console에서 다음 메뉴로 이동한다.
+
+```text
+Play Console
+→ Setup
+→ App integrity
+→ App signing
+```
+
+여기서 `App signing key certificate`의 SHA 값을 확인한다.
+
+```text
+SHA-1
+SHA-256
+```
+
+주의할 점은 다음 두 인증서가 서로 다르다는 것이다.
+
+```text
+Upload key certificate
+App signing key certificate
+```
+
+Play Store에서 설치된 앱의 Google Sign-In을 위해서는 일반적으로 `App signing key certificate`의 지문이 필요하다.
+
+해당 SHA-1과 SHA-256도 Firebase 프로젝트의 같은 Android 앱에 등록해야 한다.
+
+### 7.3 Firebase 권한 문제
+
+Firebase 프로젝트를 다른 팀원이 소유하고 있다면 반드시 소유자만 작업해야 하는 것은 아니다.
+
+다만 SHA fingerprint를 추가할 수 있는 수정 권한은 필요하다.
+
+권한이 없다면 프로젝트 소유자에게 다음 중 하나를 요청할 수 있다.
+
+* Firebase 프로젝트에 수정 가능한 역할로 초대
+* 소유자가 직접 SHA-1과 SHA-256 등록
+* 갱신된 `google-services.json` 전달
+
+### 7.4 `google-services.json` 교체
+
+Firebase 설정을 변경한 뒤 새 `google-services.json`을 내려받는다.
+
+파일 위치는 다음과 같다.
+
+```text
+android/app/google-services.json
+```
+
+패키지명이 현재 앱과 일치하는지 확인한다.
+
+```json
+{
+  "package_name": "com.ontheblockand.app"
+}
+```
+
+그다음 다시 빌드한다.
+
+```bash
+flutter clean
+flutter pub get
+```
+
+---
+
+## 8. 새 App Bundle 배포
+
+기존 App Bundle의 `versionCode`는 재사용할 수 없다.
+
+기존 버전이 다음과 같았다.
+
+```yaml
+version: 1.0.0+1
+```
+
+기능 버전 자체는 변경하지 않고 같은 버전의 두 번째 빌드로 배포하기 위해 다음과 같이 수정했다.
+
+```yaml
+version: 1.0.0+2
+```
+
+여기서 각각의 의미는 다음과 같다.
+
+```text
+1.0.0
+- 사용자에게 표시되는 versionName
+
+2
+- Google Play가 빌드를 구분하는 versionCode
+```
+
+빌드 순서는 다음과 같다.
+
+```bash
+flutter clean
+flutter pub get
+```
+
+그다음 실제 배포 설정을 모두 포함해 App Bundle을 생성한다.
+
+```bash
+flutter build appbundle --release \
+  --dart-define=GATEWAY_BASE_URL=https://gateway-service.example.run.app \
+  --dart-define=APP_GATEWAY_GRPC_HOST=gateway-service.example.run.app \
+  --dart-define=APP_GATEWAY_GRPC_PORT=443 \
+  --dart-define=APP_GATEWAY_GRPC_TLS=true
+```
+
+생성된 파일은 다음 경로에 있다.
+
+```text
+build/app/outputs/bundle/release/app-release.aab
+```
+
+Play Console에서는 기존 Release를 수정하는 것이 아니라 Internal Testing에 새로운 Release를 생성했다.
+
+```text
+Test and release
+→ Internal testing
+→ Create new release
+→ App Bundle 업로드
+→ Review release
+→ Start rollout
+```
+
+---
+
+## 9. 긴 `dart-define` 명령어의 문제
+
+서비스가 늘어나면서 빌드 명령어도 길어졌다.
+
+ONTHEBLOCK은 다음 설정을 각각 전달하고 있었다.
+
+* Gateway gRPC
+* Authorization gRPC
+* Chat gRPC
+* Survey gRPC
+* Board gRPC
+* Map API
+* Kakao API
+
+이 방식은 한 줄만 빠져도 Release 앱이 잘못된 기본값을 사용할 수 있다는 문제가 있다.
+
+재발을 줄이기 위해 설정 파일을 사용할 수 있다.
+
+```json
+{
+  "GATEWAY_BASE_URL": "https://gateway-service.example.run.app",
+  "APP_GATEWAY_GRPC_HOST": "gateway-service.example.run.app",
+  "APP_GATEWAY_GRPC_PORT": "443",
+  "APP_GATEWAY_GRPC_TLS": "true",
+  "AUTH_GRPC_HOST": "authorization-service.example.run.app",
+  "AUTH_GRPC_PORT": "443",
+  "AUTH_GRPC_TLS": "true"
+}
+```
+
+예를 들어 `config/staging.json`으로 저장한 뒤 다음과 같이 실행한다.
+
+```bash
+flutter run --release \
+  --dart-define-from-file=config/staging.json
+```
+
+App Bundle도 같은 파일로 생성한다.
+
+```bash
+flutter build appbundle --release \
+  --dart-define-from-file=config/staging.json
+```
+
+주의할 점은 `dart-define` 값이 앱 바이너리에 포함된다는 것이다.
+
+따라서 다음 정보는 넣으면 안 된다.
+
+* DB 비밀번호
+* 서비스 계정 JSON
+* JWT 서명 키
+* 서버 내부 Secret
+* 외부에 노출되면 안 되는 API Secret
+
+클라이언트 앱에 포함되는 값은 사용자가 추출할 수 있다고 가정해야 한다.
+
+---
+
+## 10. 이번 문제에서 배운 점
+
+### Debug 성공은 Release 성공을 의미하지 않는다
+
+Flutter Debug 모드와 Play Store Release 빌드는 다음 요소가 다르다.
+
+* 컴파일 방식
+* 환경변수
+* 서명 인증서
+* OAuth 클라이언트
+* 네트워크 보안 정책
+* 난독화와 최적화
+* 설치 경로
+
+따라서 배포 전에는 반드시 실제 기기에서 Release 모드를 실행해야 한다.
+
+```bash
+flutter run --release
+```
+
+### 검은 화면은 증상일 뿐이다
+
+검은 화면만 보고 Firebase나 UI 코드를 수정했다면 시간을 크게 낭비했을 것이다.
+
+이번 문제는 UI가 아니라 `main()` 실행 중 발생한 환경설정 예외였다.
+
+가장 먼저 해야 할 일은 로그를 확인하는 것이다.
+
+```bash
+adb logcat -c
+adb logcat | grep -iE \
+  "FATAL|AndroidRuntime|Flutter|Exception|패키지명"
+```
+
+### 환경변수 이름은 정확히 일치해야 한다
+
+다음 두 변수는 비슷해 보이지만 완전히 별개의 값이다.
+
+```text
+APP_GATEWAY_GRPC_HOST
+GATEWAY_BASE_URL
+```
+
+빌드 명령에 비슷한 설정이 있다고 해서 코드가 요구하는 설정까지 전달된 것은 아니다.
+
+### Play Store 앱에는 별도의 서명이 적용될 수 있다
+
+Google Sign-In과 같은 인증 기능에서는 다음 인증서를 모두 구분해야 한다.
+
+```text
+Debug certificate
+Upload certificate
+Play App Signing certificate
+```
+
+로컬에서 로그인된다는 사실만으로 Play Store 설치본의 로그인을 보장할 수 없다.
+
+---
+
+## 마무리
+
+이번 배포에서는 하나의 문제를 해결하자 바로 다음 문제가 나타났다.
+
+```text
+검은 화면
+→ Release 환경변수 누락
+
+PlatformException(sign_in_failed)
+→ Android 서명 인증서와 OAuth 설정 확인 필요
+```
+
+그러나 두 문제 모두 추측이 아니라 실행 환경의 차이를 순서대로 확인하면서 원인을 좁힐 수 있었다.
+
+최종적으로 정리한 배포 전 확인 목록은 다음과 같다.
+
+```text
+[ ] pubspec.yaml의 versionCode 증가
+[ ] 모든 String.fromEnvironment 확인
+[ ] localhost, 10.0.2.2 기본값 검사
+[ ] 실제 HTTPS 서버 주소 전달
+[ ] flutter run --release 실기기 테스트
+[ ] Google Sign-In용 Release SHA 등록
+[ ] Play App Signing SHA 등록
+[ ] google-services.json 패키지명 확인
+[ ] 새 App Bundle 생성
+[ ] Internal Testing에서 업데이트 테스트
+```
+
+Play Store 배포는 단순히 `flutter build appbundle`을 실행하는 작업이 아니었다.
+
+개발 환경, Release 환경, Google Play 서명 환경을 각각 분리해서 이해해야 실제 사용자 기기에서도 동일하게 동작하는 앱을 만들 수 있었다.

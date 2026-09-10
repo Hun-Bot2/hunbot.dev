@@ -1,0 +1,464 @@
+---
+title: '26년 반기를 돌아보면서'
+description: '설명 입력'
+pubDate: '2026-06-12'
+#heroImage: '/images/giscus.png'
+tags: ['tag1', 'tag2']
+category: 'category'
+series: 'series 이름'
+seriesOrder: 1
+---
+
+# 추천 엔진 제작기 04: GCP 배포와 survey-service 연결에서 배운 것
+
+앞선 글에서는 세 가지를 정리했다.
+
+- [`blog-kr01.mdx`](./blog-kr01.mdx): 우리가 실제로 만든 추천 엔진의 기능과 한계
+- [`blog-kr02.mdx`](./blog-kr02.mdx): 술 추천과 장소 추천을 수학적으로 보는 방법
+- [`blog-kr03.mdx`](./blog-kr03.mdx): 추천 시스템 논문을 우리 서비스 로드맵으로 바꾸는 방법
+
+이번 글은 조금 더 운영에 가깝다. 주제는 Plan 012다.
+
+> `survey-service`가 이미 배포된 상태에서, `recommendation-service`를 GCP Cloud Run에 올리고 Flutter가 호출할 수 있는 staging backend로 만드는 과정.
+
+결론부터 말하면, 배포는 단순히 컨테이너를 올리는 일이 아니었다. recommendation-service에서는 다음 네 가지를 동시에 지켜야 했다.
+
+1. survey-service의 raw answer를 직접 소유하지 않는다.
+2. auth-service의 JWT/user identity를 직접 발급하지 않는다.
+3. PostgreSQL은 recommendation-owned state의 canonical store로 둔다.
+4. Qdrant는 rebuild 가능한 vector index로만 둔다.
+
+즉 배포의 핵심은 "GCP에 띄우기"가 아니라 "서비스 경계를 지킨 채로 띄우기"였다.
+
+## Plan 012의 목표
+
+Plan 012의 목표는 다음 문장으로 요약할 수 있다.
+
+```text
+deployed survey-service -> recommendation-service derived profile
+-> deployed recommendation gRPC -> Flutter integration
+```
+
+하지만 여기서 중요한 조건이 있다.
+
+추천 서비스가 설문 데이터를 쓰려면 survey-service DB를 직접 읽으면 안 된다. 반드시 survey-service API/gRPC contract를 통해 읽어야 한다.
+
+그래서 Plan 012는 다음 순서로 진행됐다.
+
+1. deployed survey-service의 실제 protocol 확인
+2. deployed auth-service의 token validation 방식 확인
+3. recommendation-owned PostgreSQL/Qdrant 준비
+4. migration, beverage seed, Qdrant rebuild 실행
+5. recommendation-service를 Cloud Run gRPC로 배포
+6. Flutter handoff 문서화
+7. safe user/token이 준비되면 최종 acceptance runner 실행
+
+## 실제 survey-service는 HTTP가 아니라 gRPC였다
+
+처음 user가 준 survey URL은 다음이었다.
+
+```text
+https://survey-service-44649239380.asia-northeast3.run.app
+```
+
+GCP Cloud Run에서 확인한 canonical URL은 다음이었다.
+
+```text
+https://survey-service-vcuepibcwq-du.a.run.app
+```
+
+처음 HTTP health나 내부 survey event path를 쳤을 때는 Cloud Run `502 protocol error`가 났다. 이때 중요한 판단은 "서비스가 죽었다"가 아니라 "HTTP JSON endpoint가 아닐 수 있다"였다.
+
+gRPC health를 확인하니 서비스는 살아 있었다.
+
+```text
+survey-service-vcuepibcwq-du.a.run.app:443
+grpc.health.v1.Health/Check => SERVING
+```
+
+reflection으로 보이는 RPC는 다음이었다.
+
+```text
+ontheblock.survey.v1.SurveyService.GetSurveyQuestions
+ontheblock.survey.v1.SurveyService.GetSurveyResult
+ontheblock.survey.v1.SurveyService.GetSurveyResultByUser
+ontheblock.survey.v1.SurveyService.SubmitSurvey
+```
+
+하지만 우리가 production sync에서 원했던 RPC는 아직 없었다.
+
+```text
+ListSurveyEvents
+GetSurveyResponse
+```
+
+이 차이가 Plan 012에서 가장 중요한 blocker다.
+
+## 왜 GetSurveyResult adapter는 production sync가 아닌가
+
+현재 deployed survey-service는 `GetSurveyResult`와 `GetSurveyResultByUser`를 제공한다. 이것으로 특정 safe test user의 최신 설문 결과를 가져와 derived profile을 만들 수는 있다.
+
+그래서 우리는 controlled adapter를 만들었다.
+
+```bash
+SURVEY_SERVICE_GRPC_ADDR=survey-service-vcuepibcwq-du.a.run.app:443 \
+python3 -m app.tools.survey_result_adapter \
+  --external-user-id <safe-user-id> \
+  --dry-run
+```
+
+하지만 이 adapter는 production sync가 아니다.
+
+이유는 다음이다.
+
+| 필요한 sync 속성 | `GetSurveyResult` adapter | production sync 요구 |
+|---|---:|---:|
+| cursor | 없음 | 필요 |
+| event id | 없음 | 필요 |
+| response revision | 없음 | 필요 |
+| retry/dead-letter | 제한적 | 필요 |
+| revoke/update event | 없음 | 필요 |
+| replay 가능성 | 약함 | 필요 |
+
+Production sync는 다음과 같은 contract가 필요하다.
+
+```proto
+rpc ListSurveyEvents(ListSurveyEventsRequest)
+    returns (ListSurveyEventsResponse);
+
+rpc GetSurveyResponse(GetSurveyResponseRequest)
+    returns (GetSurveyResponseResponse);
+```
+
+즉 adapter는 staging bridge다. 안전한 테스트 유저로 profile generation을 검증하기 위한 임시 통로이지, 정식 이벤트 동기화가 아니다.
+
+## survey answer key 변경 대응
+
+중간에 survey-service의 answer key 체계도 바뀌었다.
+
+이전에는 질문 번호 중심이었다.
+
+```text
+q3_answer
+q4_answer
+q5_answer
+...
+```
+
+현재는 category 기반 값이다.
+
+```json
+{
+  "level": "expert",
+  "categories": ["whiskey", "wine", "cognac", "beer", "cocktail"],
+  "whiskey": ["bourbon_character", "sherry_character"],
+  "wine": ["full_red", "sparkling"],
+  "flavor_keywords": ["vanilla_caramel", "dried_choco"],
+  "budget": "over_200k"
+}
+```
+
+이 변경은 추천 서비스 입장에서는 mapper version 변경이다.
+
+그래서 `survey_mapper_v1_1`을 추가했다.
+
+핵심 normalization:
+
+| deployed survey value | recommendation internal value |
+|---|---|
+| `cognac` | `brandy_cognac` |
+| `under_30k` | `under_30000` |
+| `30k_100k` | `30000_100000` |
+| `100k_200k` | `100000_200000` |
+| `over_200k` | `over_200000` |
+
+`cognac`는 category에는 올 수 있지만 별도 하위 선호 배열이 없다. 그래서 category normalization만 하고 category trait은 비워 둔다.
+
+이런 변경을 mapper version으로 다루는 이유는 추천 결과 재현성 때문이다.
+
+## 재현성 관점의 profile generation
+
+사용자 `u`의 profile vector는 단순히 "현재 설문 결과"에서만 나오지 않는다. 실제로는 다음 tuple이 필요하다.
+
+```latex
+P_u =
+f(
+survey\_result,
+mapper\_version,
+vector\_schema\_version,
+generation\_time
+)
+```
+
+추천 결과는 다시 다음 조건에 의존한다.
+
+```latex
+R =
+\left(
+profile\_revision,
+catalog\_revision,
+vector\_schema\_version,
+mapper\_version,
+scoring\_config\_version,
+request\_filters
+\right)
+```
+
+같은 `R`이면 같은 ranking이 나와야 한다. 그래서 배포 중 mapper가 바뀌면 migration과 seed/rebuild도 함께 검증해야 한다.
+
+Plan 012에서 실제로 적용된 migration은 다음이다.
+
+```text
+0001_initial_foundation
+0002_beverage_engine
+0003_venue_recs
+0004_survey_mapper_v1_1
+```
+
+## GCP에서 recommendation-service가 소유해야 하는 것
+
+배포 전에 가장 먼저 확인한 것은 "어느 DB를 쓸 것인가"였다.
+
+처음 GCP에는 이미 다른 서비스 DB가 있었다.
+
+```text
+auth-postgres
+ontheblock-chat-staging
+```
+
+이것을 recommendation-service가 쓰면 빠르기는 하다. 하지만 틀린 선택이다. auth DB나 chat DB에 recommendation-owned state를 넣으면 서비스 경계가 바로 무너진다.
+
+그래서 dedicated recommendation DB를 만들었다.
+
+```text
+Cloud SQL instance = recommendation-postgres-staging
+database = recommendation_service
+user = recommendation_user
+secret = recommendation-db-dsn-staging
+```
+
+Qdrant도 recommendation-owned staging resource로 분리했다.
+
+```text
+service = recommendation-qdrant-staging
+url secret = recommendation-qdrant-url-staging
+api key secret = recommendation-qdrant-api-key-staging
+storage policy = ephemeral_rebuild_from_postgresql
+```
+
+여기서 storage policy가 중요하다.
+
+> Qdrant는 없어져도 PostgreSQL canonical vector에서 다시 만들 수 있어야 한다.
+
+이 원칙 때문에 Qdrant는 편리한 검색 인덱스이지 source of truth가 아니다.
+
+## Cloud Run gRPC 배포
+
+recommendation-service는 Cloud Run에서 gRPC service로 뜬다.
+
+배포 entrypoint:
+
+```text
+python -m app.grpc.main
+```
+
+Cloud Run container port:
+
+```text
+8080
+```
+
+이전에 "8080이 이미 쓰이면 바꿔야 하나?"라는 질문이 있었다. Cloud Run에서는 서비스별 컨테이너가 분리되어 있으므로 다른 서비스가 8080을 쓴다고 해서 이 서비스 port를 바꿀 필요는 없다. Cloud Run이 각 서비스로 routing한다.
+
+중요한 것은 container 내부에서 Cloud Run이 기대하는 port를 listen하는 것이다.
+
+```text
+GRPC_HOST=0.0.0.0
+GRPC_PORT=8080
+```
+
+배포된 recommendation-service는 다음 host로 확인됐다.
+
+```text
+recommendation-service-vcuepibcwq-du.a.run.app:443
+```
+
+health-only smoke:
+
+```bash
+RECOMMENDATION_SMOKE_GRPC_ADDR=recommendation-service-vcuepibcwq-du.a.run.app:443 \
+RECOMMENDATION_SMOKE_HEALTH_ONLY=true \
+SMOKE_GRPC_TLS=1 \
+SMOKE_GRPC_TIMEOUT_SECONDS=30 \
+python3 -m app.tools.deployed_smoke --mode recommendation
+```
+
+결과:
+
+```text
+grpc_health = SERVING
+```
+
+## Auth도 gRPC-first였다
+
+auth-service도 HTTP JWKS endpoint가 정상 HTTP API처럼 동작하지 않았다.
+
+HTTP:
+
+```text
+/.well-known/jwks.json -> 415 Content-Type is missing from the request
+```
+
+gRPC reflection:
+
+```text
+AuthService.GetPublicKeys
+AuthService.ValidateToken
+```
+
+그래서 recommendation-service는 deployed mode에서 다음 설정을 사용한다.
+
+```text
+AUTH_SERVICE_GRPC_ADDR=authorization-service-vcuepibcwq-du.a.run.app:443
+AUTH_SERVICE_GRPC_TLS=true
+AUTH_TOKEN_VALIDATION_MODE=grpc
+JWT_ISSUER=on-the-block-auth
+JWT_AUDIENCE=recommendation-service
+```
+
+중요한 점은 recommendation-service가 JWT를 발급하지 않는다는 것이다. bearer token을 받으면 auth-service `ValidateToken`으로 external user id를 확인한다.
+
+검증된 것:
+
+```text
+GetProfileStatus without bearer token = UNAUTHENTICATED
+GetProfileStatus with invalid bearer token = UNAUTHENTICATED TOKEN_INVALID
+```
+
+이것은 recommendation-service가 client-supplied user id를 믿지 않고 auth-service를 통해 identity를 확인한다는 증거다.
+
+## 배포 후 남은 마지막 gate
+
+Plan 012는 많은 부분이 끝났지만 아직 complete는 아니다.
+
+남은 gate는 다음이다.
+
+```text
+- safe survey user ID 또는 survey response ID
+- 같은 user로 resolve되는 safe auth JWT
+- staging profile write 승인
+- smoke impression event write 승인
+```
+
+이게 있어야 다음 runner를 실행할 수 있다.
+
+```bash
+PLAN012_SAFE_SURVEY_EXTERNAL_USER_ID=<safe-user-id> \
+SMOKE_AUTH_BEARER_TOKEN=<safe-staging-token-for-same-user> \
+SMOKE_GRPC_TIMEOUT_SECONDS=30 \
+PLAN012_ALLOW_PROFILE_WRITE=1 \
+PLAN012_ALLOW_EVENT_WRITE=1 \
+GCP_PROJECT=on-the-block-2026 \
+bash scripts/deploy/gcp-run-plan-012-acceptance.sh
+```
+
+이 runner는 네 가지를 한 번에 검증한다.
+
+1. auth-service `GetPublicKeys`와 `ValidateToken`
+2. survey-service gRPC health와 `SurveyResult` mapper contract
+3. survey adapter Cloud Run Job으로 derived profile 생성
+4. deployed recommendation `GetProfileStatus`, `GetBeverageRecommendations`, `RecordRecommendationEvent`
+
+즉 Flutter에 "이제 추천 붙여도 된다"고 말하려면 단순 health check가 아니라 이 end-to-end acceptance가 필요하다.
+
+## 운영에서 배운 점
+
+### 1. Health check와 contract check는 다르다
+
+gRPC health가 `SERVING`이어도, 필요한 RPC가 없으면 production sync는 아직 안 된다.
+
+이번 경우:
+
+```text
+health = pass
+GetSurveyResult = available
+ListSurveyEvents = missing
+```
+
+그래서 문서에는 `pass`와 `pending`을 분리해서 기록해야 한다.
+
+### 2. Cloud Run cold start는 smoke timeout에 반영해야 한다
+
+처음 10초 timeout으로 auth/survey smoke가 실패했다. 30초로 늘리니 통과했다.
+
+이것은 서비스 로직 장애가 아니라 deployed Cloud Run cold start와 네트워크 latency 문제일 수 있다.
+
+그래서 acceptance runner는 기본값을 다음처럼 둔다.
+
+```text
+SMOKE_GRPC_TIMEOUT_SECONDS=30
+```
+
+### 3. Job과 Service를 구분해야 한다
+
+Cloud Run에는 계속 떠 있어야 하는 service와 필요할 때만 실행하는 job이 있다.
+
+recommendation-service 관점:
+
+| Resource | Type | 계속 필요? | 이유 |
+|---|---|---:|---|
+| `recommendation-service` | service | yes | Flutter/gateway가 호출하는 gRPC API |
+| `recommendation-qdrant-staging` | service | yes, 현재는 | vector lookup index |
+| `recommendation-qdrant-rebuild-staging` | job | no | 필요할 때만 rebuild |
+| `recommendation-migrate-staging` | job | no | migration 실행용 |
+| `recommendation-seed-staging` | job | no | seed promotion 실행용 |
+
+따라서 Cloud Run 목록이 지저분해 보일 때 삭제 후보는 runtime service가 아니라 일회성 job이다.
+
+### 4. "빨리 붙이기"보다 "잘못 붙이지 않기"가 중요하다
+
+가장 쉬운 shortcut은 survey DB를 직접 읽거나 auth DB의 user id를 직접 확인하는 것이다.
+
+하지만 이러면 나중에 문제가 생긴다.
+
+- survey schema가 바뀔 때 recommendation-service가 깨진다.
+- auth migration이 recommendation release와 묶인다.
+- raw answer 소유권이 흐려진다.
+- user deletion/privacy policy 대응이 어려워진다.
+
+그래서 이번 배포에서는 속도보다 boundary를 우선했다.
+
+## 정리
+
+Plan 012에서 recommendation-service는 실제로 GCP에 올라갔다.
+
+현재 증거:
+
+```text
+recommendation Cloud Run gRPC health = pass
+auth gRPC public keys smoke = pass
+invalid bearer rejected by auth-service = pass
+dedicated recommendation PostgreSQL = pass
+Qdrant staging index = pass
+beverage seed/catalog audit/rebuild = pass
+Flutter handoff docs = pass
+```
+
+아직 남은 것:
+
+```text
+safe survey user/result
++ matching safe auth JWT
++ profile generation
++ deployed recommendation RPC smoke
+```
+
+이 남은 부분이 끝나면 Plan 012는 "배포했다"가 아니라 "Flutter가 붙을 수 있는 추천 backend를 검증했다"라고 말할 수 있다.
+
+## 참고 문서
+
+- [`docs/plans/012.md`](./docs/plans/012.md)
+- [`docs/operations/gcp-deployment.md`](./docs/operations/gcp-deployment.md)
+- [`docs/recommendation/sync-flow.md`](./docs/recommendation/sync-flow.md)
+- [`docs/api/flutter-handoff.md`](./docs/api/flutter-handoff.md)
+- [`docs/human-effort.md`](./docs/human-effort.md)

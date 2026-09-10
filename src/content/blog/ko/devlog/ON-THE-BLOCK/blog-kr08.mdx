@@ -1,0 +1,405 @@
+---
+title: '26년 반기를 돌아보면서'
+description: '설명 입력'
+pubDate: '2026-06-12'
+#heroImage: '/images/giscus.png'
+tags: ['tag1', 'tag2']
+category: 'category'
+series: 'series 이름'
+seriesOrder: 1
+---
+
+# ONTHEBLOCK 추천엔진: 술 추천을 앱에 보여주기 위한 production 준비 기록
+
+## 1. 결론부터
+
+이번 작업의 핵심은 단순히 “술 추천 결과에 이미지 URL을 붙였다”가 아니다.
+
+정확히 말하면, 추천엔진이 Flutter 앱과 챗봇에 넘겨줄 술 추천 결과를 더
+production-ready하게 만들기 위해 다음을 정리했다.
+
+```text
+1. 술 추천 결과가 display-ready metadata를 갖도록 만들었다.
+2. 모든 active beverage가 이미지 URL과 license metadata를 갖도록 audit를 강화했다.
+3. 이미지가 추천 점수에 영향을 주지 않도록 service boundary를 명확히 했다.
+4. 외부 이미지 URL이 실제로 살아 있는지 확인하는 optional smoke를 추가했다.
+5. Wikimedia direct URL hotlink/rate-limit 문제를 발견했다.
+6. 그래서 앱 표시 URL과 원본 licensed source URL을 분리할 수 있게 만들었다.
+7. 나중에 GCS / Cloud CDN을 붙일 수 있도록 cache key와 CDN base URL 구조를 추가했다.
+```
+
+솔직히 말하면, 이건 화려한 ML 작업은 아니다.
+
+하지만 실제 앱에 추천 결과를 띄우려면 이런 작업이 훨씬 중요하다.
+추천 결과가 좋아도 이미지가 깨지고, license 출처가 없고, 앱이 어떤 필드를
+믿어야 하는지 모르면 production이라고 보기 어렵다.
+
+## 2. 왜 이미지까지 신경 써야 했나
+
+추천엔진은 결국 Flutter 앱에서 카드 형태로 보인다.
+
+사용자는 이런 걸 기대한다.
+
+```text
+술 이름
+카테고리
+스타일
+추천 이유
+가격대
+이미지
+```
+
+기술적으로 추천 점수만 잘 나오면 끝이라고 생각할 수 있다. 하지만 앱에서는 다르다.
+
+이미지가 없으면 추천 카드가 허전해지고, 이미지가 깨지면 서비스 신뢰도가 바로 떨어진다.
+그리고 술 이미지는 저작권 문제가 있다. 아무 검색 이미지나 가져와서 DB에 넣으면 안 된다.
+
+그래서 이번 작업의 기준은 다음이었다.
+
+```text
+이미지는 추천 점수 근거가 아니다.
+이미지는 앱 표시 metadata다.
+이미지는 source, license, attribution을 반드시 보존해야 한다.
+Flutter는 image_url을 보여주되, attribution이 필요한 경우 credits surface를 준비해야 한다.
+```
+
+## 3. 현재 beverage catalog 상태
+
+현재 MVP beverage catalog는 60개 active beverage를 기준으로 한다.
+
+release gate 기준으로 확인된 상태는 다음과 같다.
+
+```text
+active_beverages = 60
+priced_beverages = 49
+price_observations = 50
+image_url_coverage = 1.0
+image_license_metadata_coverage = 1.0
+image_cache_metadata_coverage = 1.0
+critical = 0
+warnings = 0
+```
+
+이 말은 모든 active beverage가 다음 조건을 만족한다는 뜻이다.
+
+```text
+1. 앱에 보여줄 image_url이 있다.
+2. Korean alt text가 있다.
+3. source URL이 있다.
+4. license 정보가 있다.
+5. attribution 정보가 있다.
+6. display policy가 있다.
+7. review status가 있다.
+8. cache key가 있다.
+9. 원본 이미지 URL과 앱 표시 URL을 분리할 수 있다.
+```
+
+## 4. 이미지 metadata 구조
+
+추천 결과의 metadata는 이런 식으로 앱에 전달된다.
+
+```json
+{
+  "image_url": "https://<display-url>",
+  "image_alt_text_ko": "위스키 잔 대표 이미지",
+  "image": {
+    "policy_version": "beverage_image_v1",
+    "image_candidate_id": "bev_image_whiskey_category_representative_001",
+    "image_kind": "category_representative",
+    "image_url": "https://<display-url>",
+    "original_image_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Glass_of_whisky.jpg",
+    "cache_key": "beverage-images/v1/bev_image_whiskey_category_representative_001.jpg",
+    "cache_policy": "operator_managed_image_cache_v1",
+    "display_url_source": "licensed_source_url",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Glass_of_whisky.jpg",
+    "source_type": "wikimedia_commons",
+    "license": "Public Domain",
+    "license_url": "https://commons.wikimedia.org/wiki/File:Glass_of_whisky.jpg",
+    "attribution": "Chris huh / Wikimedia Commons",
+    "attribution_required": false,
+    "display_policy": "allowed_mvp_display_with_license_metadata",
+    "review_status": "source_checked_mvp_seed"
+  }
+}
+```
+
+여기서 중요한 필드는 세 개다.
+
+```text
+metadata.image_url
+  Flutter가 실제로 보여줄 display URL
+
+metadata.image.original_image_url
+  원본 licensed image URL
+
+metadata.image.cache_key
+  나중에 GCS / Cloud CDN에 mirror할 때 사용할 deterministic object key
+```
+
+즉, Flutter는 `metadata.image_url`만 보여주면 된다.
+원본 출처나 license 처리는 `metadata.image` 아래에 보존된다.
+
+## 5. 왜 original URL과 display URL을 분리했나
+
+처음에는 Wikimedia Commons의 `Special:FilePath` URL을 그대로 `image_url`로 사용했다.
+
+이 방식은 MVP에서는 빠르다. 하지만 optional smoke를 돌려보니 문제가 있었다.
+
+```text
+첫 실행:
+  60개 URL 전부 403
+
+User-Agent 추가 후:
+  일부 통과
+  이후 대량 요청에서 429 rate limit 발생
+
+dedupe + request interval 추가 후:
+  23개 unique URL 중 일부 통과
+  이전 rate limit window 영향으로 429 지속
+```
+
+이 결과는 코드가 틀렸다는 의미보다는, production 앱이 third-party image host에
+직접 의존하면 위험하다는 신호다.
+
+앱 사용자가 추천 카드를 볼 때마다 Wikimedia direct URL을 때리는 구조는 안정적이지 않다.
+그래서 구조를 이렇게 바꿀 수 있게 했다.
+
+```text
+local / development:
+  metadata.image_url = licensed source image URL
+
+staging / production:
+  metadata.image_url = ONTHEBLOCK-managed CDN URL
+  metadata.image.original_image_url = licensed source image URL
+  metadata.image.source_url = license/source page URL
+```
+
+## 6. CDN base URL 설정
+
+새 설정은 다음이다.
+
+```text
+BEVERAGE_IMAGE_CDN_BASE_URL=
+```
+
+비워두면 기존처럼 source-checked image URL을 display URL로 쓴다.
+
+값을 넣으면 seed promotion 시점에 display URL이 이렇게 바뀐다.
+
+```text
+BEVERAGE_IMAGE_CDN_BASE_URL=https://cdn.ontheblock.example
+
+metadata.image_url =
+  https://cdn.ontheblock.example/beverage-images/v1/<image_candidate_id>.<ext>
+```
+
+예를 들면:
+
+```text
+https://cdn.ontheblock.example/beverage-images/v1/bev_image_whiskey_buffalo_trace_bourbon_product_001.jpg
+```
+
+중요한 점은 original source를 지우지 않는다는 것이다.
+
+```text
+metadata.image.original_image_url = Wikimedia file image URL
+metadata.image.source_url = Wikimedia source/license page
+metadata.image.license = license name
+metadata.image.attribution = attribution text
+```
+
+이렇게 해야 나중에 앱에서 credits를 보여줄 수 있고, 운영자가 이미지 출처를 다시 검증할 수 있다.
+
+## 7. Release gate 강화
+
+이번 작업에서 release gate도 강화했다.
+
+이제 beverage catalog audit는 단순히 `image_url` 존재 여부만 보지 않는다.
+
+```text
+image_url_coverage = 1.0
+image_license_metadata_coverage = 1.0
+image_cache_metadata_coverage = 1.0
+```
+
+`image_cache_metadata_coverage`가 추가된 이유는, production에서 CDN으로 바꾸려면
+모든 술 이미지가 cache key와 원본 URL을 가지고 있어야 하기 때문이다.
+
+즉, 지금은 CDN bucket을 아직 붙이지 않았더라도 catalog 자체는 CDN 전환 가능한 구조여야 한다.
+
+## 8. 추천 점수와 이미지의 경계
+
+이미지는 추천 품질을 높여주는 UI metadata이지, 추천 점수의 feature가 아니다.
+
+이 경계는 중요하다.
+
+```text
+이미지가 있는 술이라고 더 높은 점수를 주면 안 된다.
+product image가 있다고 더 좋은 술이라고 판단하면 안 된다.
+category fallback image라고 추천 confidence를 낮추면 안 된다.
+이미지 URL이 깨졌다고 추천 후보에서 제외하면 안 된다.
+```
+
+추천은 다음 데이터로 결정되어야 한다.
+
+```text
+사용자 taste profile
+beverage flavor vector
+category/style fit
+budget fit
+experience fit
+diversity mode
+reason code
+scoring config version
+```
+
+이미지는 recommendation result를 앱에서 보기 좋게 만드는 display layer다.
+
+## 9. Flutter와 gateway 계약
+
+Flutter 쪽 계약은 단순하게 유지했다.
+
+```text
+Flutter:
+  metadata.image_url을 보여준다.
+  실패하면 local placeholder를 보여준다.
+  attribution_required가 true면 detail/credits surface에서 attribution을 보여줄 준비를 한다.
+  추천 순서나 필터링을 이미지로 판단하지 않는다.
+```
+
+Gateway 계약도 마찬가지다.
+
+```text
+Gateway:
+  image_url을 rewrite하지 않는다.
+  metadata.image를 그대로 pass-through 한다.
+  이미지 presence로 ranking, inventory, availability를 추론하지 않는다.
+```
+
+이렇게 해야 ownership이 깨지지 않는다.
+
+```text
+recommendation-service = recommendation truth + catalog display metadata owner
+gateway = mobile-facing routing / pass-through
+Flutter = display client
+```
+
+## 10. 챗봇 입장에서의 의미
+
+챗봇은 이미지를 직접 사용해서 추천을 만들면 안 된다.
+
+하지만 추천 결과를 설명할 때, 카드와 함께 보여줄 수 있는 metadata는 필요하다.
+
+예를 들어 chatbot-service가 recommendation-service 결과를 받으면:
+
+```text
+술 이름
+추천 이유
+가격대
+이미지 URL
+이미지 attribution metadata
+```
+
+를 그대로 Flutter에 넘길 수 있다.
+
+챗봇은 여기서 술을 새로 고르거나 이미지를 보고 판단하는 게 아니라,
+recommendation-service가 고른 결과를 자연어로 설명하는 역할만 한다.
+
+## 11. 이번 변경에서 실제로 좋아진 점
+
+이번 변경으로 좋아진 점은 다음이다.
+
+```text
+1. 앱 카드에 필요한 image_url 계약이 명확해졌다.
+2. 모든 active beverage가 image metadata를 갖는지 release gate에서 검증한다.
+3. license / attribution 누락을 release 전에 잡을 수 있다.
+4. direct image와 category fallback image를 구분할 수 있다.
+5. CDN 전환을 위한 cache_key가 deterministic하게 생긴다.
+6. 원본 licensed URL과 앱 display URL을 분리할 수 있다.
+7. Gateway와 Flutter가 image field를 어떻게 다뤄야 하는지 문서화됐다.
+8. 추천 점수와 이미지 display metadata의 경계가 명확해졌다.
+```
+
+이건 “AI 모델 고도화”는 아니지만, production 추천 서비스에서는 꼭 필요한 기반 작업이다.
+
+## 12. 아직 남은 문제
+
+아직 끝난 건 아니다.
+
+남은 작업은 명확하다.
+
+```text
+1. 원본 image URL을 실제로 GCS bucket에 mirror하는 export job 만들기
+2. GCS object metadata에 source/license/attribution 정보 보존하기
+3. Cloud CDN 또는 public bucket URL을 BEVERAGE_IMAGE_CDN_BASE_URL로 설정하기
+4. staging seed promotion을 CDN base URL로 다시 실행하기
+5. DB active catalog 기준 image URL smoke 실행하기
+6. Flutter에서 실제 카드 이미지 로딩 확인하기
+```
+
+특히 1번이 중요하다.
+
+현재 DB metadata는 CDN URL을 만들 준비가 됐지만, 실제 이미지 binary를 GCS에 올리는
+작업은 아직 운영 단계로 남아 있다.
+
+## 13. 추천엔진 전체 방향에서 이 작업의 위치
+
+우리가 만들고 있는 추천엔진의 최종 목표는 이거다.
+
+```text
+survey profile
+  -> precise beverage recommendation
+  -> map/place/inventory/price/distance recommendation
+  -> chatbot explanation
+  -> Flutter display
+```
+
+이번 작업은 이 중 Flutter display와 production catalog quality에 해당한다.
+
+즉, 추천 점수 자체를 바꾼 작업은 아니지만, 추천 결과를 실제 사용자에게 보여줄 수 있게
+만드는 작업이다.
+
+술 추천엔진은 다음 순서로 더 production에 가까워지고 있다.
+
+```text
+1. curated beverage catalog
+2. deterministic flavor vector scoring
+3. budget-aware scoring
+4. diversity follow-up contract
+5. recommendation evaluation fixtures
+6. display-ready image metadata
+7. source/license/cache audit
+8. later map-service distance and venue recommendation
+9. later chatbot grounded explanation
+10. later SFT/QLoRA response model
+```
+
+여기서 중요한 건, 아직 데이터가 부족한 상태에서 억지로 ML ranking model을 붙이는 게 아니라는 점이다.
+
+지금은 deterministic engine을 production 품질로 올리고, 나중에 실제 interaction data가 쌓이면
+그때 ML 모델을 feature-level로 붙이는 게 맞다.
+
+## 14. 정리
+
+이번 변경은 보기에는 “이미지 URL 추가”처럼 보일 수 있다.
+
+하지만 실제로는 다음 문제를 해결한 것이다.
+
+```text
+앱에 보여줄 수 있는가?
+이미지가 깨지면 어떻게 할 것인가?
+license와 attribution은 보존되는가?
+외부 이미지 host에 직접 의존해도 되는가?
+나중에 CDN으로 바꿀 수 있는가?
+release 전에 누락을 잡을 수 있는가?
+Flutter와 gateway가 어떤 필드를 믿어야 하는가?
+```
+
+내 결론은 이렇다.
+
+```text
+추천엔진은 점수만 잘 내면 production이 아니다.
+추천 결과를 앱, 챗봇, 운영자가 모두 신뢰할 수 있는 형태로 전달해야 production이다.
+```
+
+이번 작업은 그 방향으로 한 단계 더 간 것이다.

@@ -1,0 +1,27 @@
+---
+draft: true
+title: 'Fine-tuning에 대해서 01'
+description: 'Fine-tuning은 무엇이고, 어떤 방식이 있는지에 대해서 정리한 글입니다.'
+pubDate: '2026-06-07'
+# heroImage: '/images/TECH/head-first-swa.png'
+tags: ['fine-tuning', 'LLM', 'AI', 'machine-learning']
+category: 'technical-note'
+series: 'fine-tuning'
+seriesOrder: 1
+---
+
+import LocalizedLink from '@/components/LocalizedLink.astro';
+
+이번 학기 On-the-Block 서비스에서 챗봇을 개발하면서, 챗봇의 성능을 개선하기 위해서 fine-tuning을 진행하게 되었습니다. 
+이번 글에서는 fine-tuning이 무엇이고, 어떤 방식이 있는지에 대해서 정리한 글입니다.
+
+On-the-Block 서비스 개발기 06 : Chatbot fine-tuning 글에서는 실제로 fine-tuning을 진행한 과정과 결과에 대해서 공유하려고 합니다.
+
+해당 글 : <LocalizedLink href="/blog/devlog/blog/on-the-block/on-the-block06/">On-The-Block 서비스 개발기 06 : Chatbot fine-tuning</LocalizedLink>
+
+# Fine-tuning이란?
+Fine-tuning은 사전 학습된 모델을 특정 작업이나 도메인에 맞게 조정하는 과정입니다. 일반적으로 대규모 언어 모델(LLM)은 방대한 양의 텍스트 데이터를 사용하여 사전 학습되며, 다양한 언어 이해 및 생성 작업에 활용될 수 있습니다.
+
+그러나 특정 작업에 최적화된 성능을 발휘하기 위해서는, 사전 학습된 모델을 해당 작업에 맞게 추가로 학습시키는 과정이 필요합니다. 이 과정이 바로 fine-tuning입니다.
+
+저희 서비스 같은 경우는 주류 추천, 장소 추천이나 주류 설명, 주류와 장소에 대한 질문 답변 등이 존재하고, 사용자가 다른 질문을 할 수도 있기 때문에, 그걸 방지하고자 Rule-based 방식

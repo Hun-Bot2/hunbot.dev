@@ -1,0 +1,235 @@
+---
+draft: true
+title: 'チャットシステム'
+description: 'チャットシステム実装のための整理：機能とデータベース'
+pubDate: '2026-04-24'
+heroImage: '/images/ON-THE-BLOCK/chat-database-erd.png'
+tags: ['Cassandra', 'Redis', 'Chatting System', 'HBase', 'gRPC', 'Kafka', 'RabbitMQ', 'Pub/Sub', 'Message Queue', 'Real-time Chatting System']
+category: 'chatting_system'
+series: 'chatting_system'
+seriesOrder: 1
+---
+import LocalizedLink from '@/components/LocalizedLink.astro';
+
+#### サービス開始：<LocalizedLink href="blog/devlog/on-the-block/on-the-block01/">on-the-block-chat</LocalizedLink>へ移動
+
+今学期、チャットシステムを実装する役割を担当することになりました。
+チャットシステムについて学びながら、自分が作るシステムに合う技術スタックとアーキテクチャを整理しておきます。
+
+# 実装したいチャットシステムの設計整理
+
+## グループチャット中心のリアルタイムチャットサービスをどう設計するか
+
+チャットと聞くと、KakaoTalk、Instagram DM、Discord、Slackなどが思い浮かびます。どれも「チャット」という共通点はありますが、実際の性格はかなり違います。
+
+あるサービスは1対1の会話が中心で、別のサービスは大規模なグループコミュニケーションが重要です。メッセージ形式もテキスト、画像、ファイル、動画などさまざまで、既読表示、リアクション、返信、通知、メッセージ削除、アーカイブなどの機能もサービスごとに異なります。
+
+普段は気軽に使っていますが、自分で実装しようとすると考慮すべき要素が非常に多いです。そこでこの記事では、
+
+1. **自分が実装しようとしているチャットシステムがどのような性格を持つのか**
+2. **どの機能が必要で、どの技術スタックとアーキテクチャが適切か**
+3. **どのDB構造が現実的か**
+
+を整理します。
+
+---
+
+## 実装するチャットシステムの目標
+
+### 機能要件
+
+1. **グループチャットのみ対応する。** 各グループチャットルームは最大 **30人** まで参加できる。
+2. **モバイルアプリとWebアプリの両方に対応可能**にする。
+3. メッセージ形式は [テキスト、画像、ファイル] をサポートする。
+   ただし、**動画は容量と運用コストの問題でサポートしない**。将来的には検討する。
+4. テキストメッセージの最大長は **1,000文字** に制限する。
+5. 必要な機能:
+   - リアルタイムメッセージ受信
+   - 既読表示
+   - 通知
+   - ニックネームタグ
+   - いいね・よくないねなどのリアクション
+   - メッセージへのコメント/返信
+6. **エンドツーエンド暗号化(E2EE)はサポートしない。**
+7. チャット履歴は **無期限で保存**する。
+   ただし、**1年以上前のチャットはアーカイブ扱い**にする。
+8. 初期DAUは **10,000人** を想定して設計する。
+9. アーキテクチャは最初から過度に大きくせず、**v1 → v2 → v3へ成長に応じて拡張する構造**を目指す。
+10. 掲示板にチャットルームが連動する構造で、同じ投稿から作れるチャットルームは1つだけにする。
+
+まとめると次のようになります。
+
+| **含めるもの** | **含めないもの** |
+| --- | --- |
+| グループチャット | 1対1チャット |
+| リアルタイム送信 | 動画メッセージ |
+| メッセージ永続保存 | エンドツーエンド暗号化 |
+| 既読表示 | 初期段階から過度に複雑な分散構造 |
+| リアクション | 最初からすべての機能を完成形で入れる設計 |
+| 返信/コメント |  |
+| 通知 |  |
+| Web/アプリ対応 |  |
+| 将来拡張可能な構造 |  |
+
+---
+
+今回作ろうとしているチャットシステムは、timestamp、message、user_id、group_idなどデータ構造が明確なので、RDBを使うのが良さそうです。その中でもPostgreSQLが最も適していると考えました。
+
+MySQLとPostgreSQLのどちらを使うか迷いましたが、**_[PostgreSQLとMySQLの特徴および性能比較](https://dlabtech.tistory.com/entry/PostgreSQL-%EA%B3%BC-MySQL-%ED%8A%B9%EC%A7%95-%EB%B0%8F-%EC%84%B1%EB%8A%A5-%EB%B9%84%EA%B5%90)_** を参考にして、PostgreSQLのほうが適していると結論づけました。
+
+## データベースERD
+
+![ERD](/images/ON-THE-BLOCK/chat-database-erd.png)
+
+この図で説明が必要な部分は次の通りです。
+
+### chat_rooms
+
+#### linked_board_id
+
+`linked_board_id`はBoard投稿と紐づいたグループチャットルームを表します。
+
+- 通常のグループチャットルームなら`null`
+- Board連動チャットルームなら該当Board投稿のIDを保存
+- Board投稿1つにつきチャットルームは最大1つだけ許可
+
+#### is_active, deleted_at
+
+チャットルーム削除はDB rowを物理削除せず、soft deleteで処理します。
+
+- `is_active = false`
+- `deleted_at = 削除処理時刻`
+
+理由は次の通りです。
+
+- 運用履歴の保存
+- メッセージ記録の保存
+- 将来の障害・通報・運用対応の余地を残す
+
+## chat_room_members
+
+### user_id
+
+`user_id`は、そのチャットルームに参加したユーザーIDです。
+
+これはauth-serviceで管理される内部ユーザー識別子であり、chat-service DBでは外部サービスDBに直接FKを張らず、論理的な参照値として使います。
+
+### status
+
+`status`はチャットルームメンバーの現在状態を表します。
+
+| 値 | 意味 |
+|---|---|
+| `ACTIVE` | 現在チャットルームに参加中のユーザー |
+| `LEFT` | ユーザーが自発的に退出した状態 |
+| `REMOVED` | ルームオーナーによって強制退室された状態 |
+
+特に`REMOVED`状態のユーザーは、同じチャットルームに再入室できません。
+
+### removed_by_user_id
+
+`removed_by_user_id`は **強制退室されたユーザーのIDではなく**、そのユーザーを強制退室させたルームオーナーまたは管理者のIDです。
+
+強制退室されたユーザーは、同じrowの`user_id`に保存されます。
+
+例:
+
+| フィールド | 意味 |
+|---|---|
+| `user_id` | 強制退室されたユーザー |
+| `removed_by_user_id` | 強制退室を実行したオーナー/管理者 |
+| `removed_at` | 強制退室時刻 |
+| `status` | `REMOVED` |
+
+強制退室後の再入室防止は`removed_by_user_id`ではなく、そのメンバーrowの`status = REMOVED`を基準に処理します。
+
+### last_read_sequence_no
+
+`last_read_sequence_no`は、ユーザーがそのチャットルームで最後に読んだメッセージの順序番号を表します。
+
+チャットルームのメッセージは`chat_messages.sequence_no`で整列され、unread countは一般的に次の条件で計算できます。
+
+```sql
+sequence_no > last_read_sequence_no
+```
+
+## chat_messages
+
+### is_deleted, deleted_at, deleted_by_user_id
+
+メッセージ削除もsoft deleteで処理します。
+
+- `is_deleted` = true
+- `deleted_at` = 削除処理時刻
+- `deleted_by_user_id` = 削除を実行したユーザーID
+
+KakaoTalkで見られる「削除されたメッセージです」の表示に近いものです。
+
+## One Board - One Chat Room
+
+PostgreSQLではpartial unique indexを使って実装できるようです。実際に作りながらより良い方法があれば追記します。
+
+```sql
+CREATE UNIQUE INDEX uq_board_linked_room
+ON chat_rooms(linked_board_id)
+WHERE room_type = 'BOARD_LINKED_GROUP'
+  AND deleted_at IS NULL;
+```
+
+---
+
+## ポリシーとProto
+
+上に書いたポリシー以外にも、Protoを設計しながら追加で考えるべき点があります。
+
+#### 1. gRPCリクエストで`user_id`を毎回request bodyに入れるのか、それともgRPC metadata/JWT contextから取り出すのか？
+
+まず、認証実装は別のメンバーが進めているため、テスト用としてgRPC request bodyに`user_id`を入れる方式で進める予定です。
+
+将来的に認証が実装されたら、gRPC metadataやJWT contextから`user_id`を取り出す方式へリファクタリングします。
+
+```json
+{
+  "room_id": "room_1",
+  "sender_user_id": "test_user_1",
+  "content": "hello"
+}
+```
+
+#### 2. `LeaveRoom` RPCを今明示的に作るのか、それともv1では保留してオーナーによる強制退室 + ルーム非アクティブ化だけにするのか？
+
+```proto
+rpc LeaveRoom(LeaveRoomRequest) returns (LeaveRoomResponse);
+
+message LeaveRoomRequest {
+  string room_id = 1;
+  string user_id = 2;
+}
+```
+
+最初はこのように考えましたが、チャットルームを退出するときに考慮すべき問題がさらにありました。
+
+1. オーナーが退出したら、ルームを解散するのか、他のメンバーへ委任するのか？
+   対応が必要です。
+2. オーナーが退出し他のメンバーへ委任する場合、誰へ権限を渡すのか？最も古いメンバーか、直近で活動したメンバーか、ランダムか？
+   最も古いメンバーにします。もし最も古いメンバーが複数いれば、その中で`user_id`が最も小さいメンバーへ委任します。
+3. 最後のメンバーが退出するとルームは非アクティブになるのか？
+   soft deleteで非アクティブ化します。
+4. Board-linked roomでユーザーが退出したあと、再入室できるのか？
+   できます。
+5. `LEFT`は再入室可能か？
+   可能です。強制退室でなければ再入室できます。
+
+#### 3. 非アクティブ化されたチャットルームにユーザーが入ってメッセージを確認できるのか？
+
+ルームが非アクティブになると、既存メンバーでも`GetMessages`は使えません。メッセージrowはDBに残りますが、一般ユーザーAPIでは閲覧できません。
+
+#### 4. Pagination：page_tokenベースを維持するのか、それともメッセージ/チャットルームに対してsequenceベースへ切り替えるのか？
+
+messagesはsequence-based pagination、room listはcursor/token paginationで進める方針にします。
+
+まずはこの程度で整理しておき、実装しながら必要な部分があれば更新します。
+
+## おわりに
+
+この投稿はチャットシステムそのものを扱う内容なので、機能画面やFlutter関連の内容は <LocalizedLink href="blog/devlog/on-the-block/on-the-block02/">on-the-block-flutter</LocalizedLink> の投稿で確認できます。

@@ -1,0 +1,200 @@
+---
+title: '블로그 개발일지 11'
+description: '검색부터 라이브러리 허브까지: 블로그를 정적 지식 허브로 확장하기'
+pubDate: '2026-05-25'
+tags: ['blog', 'development', 'devlog', 'search', 'library']
+category: 'blog_devlog'
+series: '블로그 개발일지'
+seriesOrder: 11
+---
+
+이번 작업은 단순히 블로그 글 목록을 늘리는 일이 아니라, 블로그를 조금 더 **지식 허브**처럼 사용할 수 있도록 기반을 정리하는 작업이었다.
+
+큰 방향은 하나였다.
+
+> Vercel/GitHub 기반의 정적-first 구조는 유지하면서, 검색, 발표 자료, Library 데이터를 안전하게 확장할 수 있게 만들기.
+
+그래서 이번에는 서버, DB, 로그인, 업로드 같은 기능을 새로 붙이지 않고, 저장소에 있는 검수된 데이터와 정적 파일만으로 동작하는 구조를 만들었다.
+
+## 1. 다국어 블로그 URL 정리
+
+이전에는 블로그 글 링크를 만들 때 언어 경로가 섞일 수 있는 문제가 있었다.
+
+예를 들어 한국어 글에서 만든 링크가 영어 페이지에서도 `/ko/...`로 고정되어 있으면, 영어 글을 보고 있던 사용자가 링크를 눌러도 다시 한국어 글로 이동하는 문제가 생긴다.
+
+그래서 블로그 글 URL을 만들 때 콘텐츠 ID에서 언어를 읽고, 항상 아래처럼 언어별 URL이 나오도록 정리했다.
+
+```text
+/ko/blog/...
+/jp/blog/...
+/en/blog/...
+```
+
+이 작업 덕분에 이후 검색, sitemap, 내부 링크, 관련 글 이동 같은 기능도 같은 규칙을 따라갈 수 있게 되었다.
+
+## 2. Pagefind 기반 검색 추가
+
+검색 기능도 추가했다.
+
+처음에는 검색 UI가 떠도 실제로 결과가 잘 나오지 않는 문제가 있었는데, 원인은 브라우저에서 실행되는 스크립트 안에 TypeScript 전용 문법이 섞여 있던 부분이었다.
+
+Astro 파일 안에서는 TypeScript를 쓸 수 있지만, 브라우저에 그대로 내려가는 `<script>` 안에서는 아래 같은 문법이 동작하지 않는다.
+
+```ts
+(window as any).PagefindUI
+```
+
+그래서 브라우저 스크립트에서는 일반 JavaScript 방식으로 접근하도록 수정했다.
+
+```js
+const PagefindUI = window.PagefindUI;
+```
+
+그리고 검색 결과는 현재 언어의 글만 찾도록 Pagefind 필터를 걸었다.
+
+```js
+search.triggerFilters({ language: [lang] });
+```
+
+즉 `/ko/search`에서는 한국어 글만, `/en/search`에서는 영어 글만 검색된다. 이 점이 사용자에게 헷갈리지 않도록 한국어 검색 페이지 안내 문구도 바꿨다.
+
+```text
+/ko/search에서는 한국어 글만 검색합니다.
+```
+
+## 3. 발표 자료 임베드 컴포넌트 추가
+
+앞으로 논문 리뷰, 실험 노트, 기술 설명, YouTube companion note 같은 글에서 발표 자료를 보여줄 일이 생길 것 같았다.
+
+다만 중요한 제약이 있었다.
+
+PPTX 파일은 저장소에 올려서 정적 파일로 제공할 수는 있지만, 브라우저가 PPTX를 슬라이드 덱처럼 안정적으로 렌더링해주지는 않는다.
+
+그래서 아래 방식은 사용하지 않기로 했다.
+
+```html
+<iframe src="/decks/example/deck.pptx"></iframe>
+```
+
+대신 `PresentationEmbed` 컴포넌트를 만들고, 지원 범위를 명확히 나눴다.
+
+1. HTML 덱은 `/decks-html/` 아래의 신뢰 가능한 로컬 경로만 iframe으로 임베드한다.
+2. PDF 덱은 브라우저 내장 뷰어에 맡기고, “Open PDF” 액션으로 연결한다.
+3. 미리 렌더링한 슬라이드 이미지가 있으면 간단한 슬라이드 뷰어로 보여준다.
+4. PPTX는 기본 보기 방식으로 쓰지 않고, 사람이 검수한 경우에만 보조 다운로드 링크로 노출한다.
+
+여기서 핵심은 backendless였다.
+
+PPTX를 PDF로 변환하는 서버도 만들지 않았고, 브라우저에서 PPTX를 파싱하지도 않았다. Google Slides Viewer, Microsoft Office Viewer 같은 외부 문서 뷰어도 쓰지 않았다.
+
+정적 파일과 메타데이터만으로 안전하게 보여줄 수 있는 범위까지만 구현했다.
+
+## 4. Library 데이터 모델 추가
+
+다음 단계는 Library였다.
+
+내가 만들고 싶은 Library는 단순 링크 모음이 아니라, 사람이 직접 검수한 리소스와 논문, 토픽을 쌓아두는 공간이다.
+
+그래서 먼저 페이지를 만들기 전에 데이터 모델부터 만들었다.
+
+추가한 컬렉션은 세 가지다.
+
+```text
+src/content/resources/
+src/content/papers/
+src/content/topics/
+```
+
+`resources`는 디자인 리소스, 바이브 코딩 자료, 개발 문서, 유용한 피드 같은 외부 리소스를 담는다.
+
+`papers`는 AI 논문 카드다. 논문 전문이나 긴 abstract를 복사해서 저장하지 않고, 사람이 검수한 짧은 요약만 저장한다.
+
+`topics`는 나중에 논문 추천, Library 필터, YouTube/뉴스레터 기획에 활용할 관심 주제다.
+
+특히 중요한 규칙은 이것이다.
+
+```text
+approved 상태의 공개 데이터는 반드시 humanReviewed === true 여야 한다.
+```
+
+AI가 초안을 만들 수는 있지만, 사람이 검토하지 않은 요약은 공개 데이터로 취급하지 않도록 했다.
+
+## 5. Library 허브 페이지 추가
+
+마지막으로 첫 사용자-facing Library 페이지를 만들었다.
+
+현재 추가된 경로는 아래 세 개다.
+
+```text
+/ko/library/
+/jp/library/
+/en/library/
+```
+
+Astro 설정상 Korean이 기본 locale이지만, 이 블로그의 실제 라우팅과 네비게이션은 `/ko/...`를 사용하고 있다. 그래서 Library도 기존 규칙을 따랐다.
+
+Library 허브에서는 아직 상세 섹션 페이지로 이동하지 않는다.
+
+예를 들어 `/ko/library/design/` 같은 페이지는 아직 만들지 않았다. 대신 허브에서 어떤 섹션이 준비 중인지, 현재 검수된 샘플 데이터가 몇 개인지만 보여준다.
+
+현재 허브에 표시하는 섹션은 다음과 같다.
+
+1. Design
+2. Vibe Coding
+3. Developer Docs
+4. AI Papers
+5. Useful Feeds
+6. Decks / Presentations
+
+그리고 아래 데이터만 화면에 표시한다.
+
+```text
+resources: status === "approved" && review.humanReviewed === true
+papers: status === "approved" && review.humanReviewed === true
+topics: status === "active"
+```
+
+이렇게 해두면 draft, pending, rejected 상태의 데이터가 실수로 공개 페이지에 노출되는 일을 막을 수 있다.
+
+## 6. 검증 스크립트 추가
+
+이번 작업은 콘텐츠와 정적 페이지가 중심이라서 무거운 테스트 프레임워크는 추가하지 않았다.
+
+대신 작은 Node 검증 스크립트들을 추가했다.
+
+```bash
+npm run routes:validate
+npm run search:validate
+npm run deck:validate
+npm run library:validate
+npm run library-page:validate
+```
+
+특히 `library-page:validate`는 Library 허브가 아래 규칙을 지키는지 확인한다.
+
+1. `/ko`, `/jp`, `/en` 경로가 생성되는지
+2. 승인되고 사람이 검수한 resource만 보여주는지
+3. 승인되고 사람이 검수한 paper만 보여주는지
+4. active topic만 보여주는지
+5. 존재하지 않는 상세 Library 섹션으로 링크하지 않는지
+6. Pagefind 메타데이터가 들어갔는지
+
+마지막으로 `npm run build`도 실행해서 Astro 빌드와 Pagefind 색인 생성까지 확인했다.
+
+## 정리
+
+이번 작업으로 블로그는 단순 글 목록에서 조금 더 구조화된 지식 저장소로 갈 준비를 하게 되었다.
+
+아직 Library 상세 페이지는 없고, 데이터도 샘플 수준이다. 하지만 이제 안전한 기반은 생겼다.
+
+현재 상태에서 가능한 것들은 다음과 같다.
+
+1. 언어별 블로그 URL을 안정적으로 생성한다.
+2. Pagefind로 언어별 검색을 할 수 있다.
+3. 발표 자료를 backendless 방식으로 임베드할 수 있다.
+4. 사람이 검수한 Library 데이터를 저장소에 쌓을 수 있다.
+5. `/ko/library/`, `/jp/library/`, `/en/library/` 허브에서 공개 샘플 데이터를 보여줄 수 있다.
+
+다음 작업은 아마 Library 상세 페이지가 될 것 같다.
+
+개인적으로는 먼저 Design Library나 AI Papers 목록 페이지를 여는 게 가장 자연스러워 보인다.

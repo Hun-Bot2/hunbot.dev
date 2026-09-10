@@ -1,0 +1,1422 @@
+---
+title: '26년 반기를 돌아보면서'
+description: '설명 입력'
+pubDate: '2026-06-12'
+#heroImage: '/images/giscus.png'
+tags: ['tag1', 'tag2']
+category: 'category'
+series: 'series 이름'
+seriesOrder: 1
+---
+
+# 추천 엔진 제작기 07: rule-based baseline에서 학습형 AI 추천 모델로 가는 길
+
+이 글은 [`blog-kr06.mdx`](./blog-kr06.mdx)에서 이어진다.
+
+앞선 글에서는 현재 recommendation-service의 실제 상태를 정리했다.
+
+```text
+현재 사용자 추천 serving path = PostgreSQL deterministic ranking
+현재 Qdrant = 준비된 derived index, serving path에는 아직 미연결
+현재 chatbot = 아직 구현 전, 추천 결과를 설명할 UX layer
+```
+
+그 다음 중요한 질문이 나왔다.
+
+> 우리가 rule-based 방식이냐?
+
+솔직한 답은 다음이다.
+
+```text
+현재는 순수 ML 모델이 아니다.
+현재는 rule/mapper 기반 profile 생성 + vector similarity + weighted scoring 기반 deterministic recommendation baseline이다.
+```
+
+그리고 더 중요한 정정은 이것이다.
+
+> 최종 목표가 진짜 AI 추천 모델이라면, 학습된 ranking model을 만들고 serving하는 단계가 필요하다.
+
+이 글은 그 목표를 기준으로, 현재 baseline이 어디에 있고 앞으로 어떤 구조로 발전해야 하는지 정리한다.
+
+## 내가 원래 만들고 싶었던 것
+
+목표는 단순히 "설문 결과에 맞는 술 리스트"를 보여주는 것이 아니다.
+
+진짜 목표는 다음에 가깝다.
+
+```text
+사용자의 설문 취향
+지도 기반 위치
+바/펍/매장의 고유한 분위기
+메뉴와 판매 술
+가격대
+거리
+방문/클릭/저장 같은 행동 로그
+현재 서비스가 가진 장소/메뉴/가격 snapshot
+```
+
+이 모든 정보를 추천엔진에 넣고, 사용자에게 가장 어울리는 선택지를 추천하는 것이다.
+
+그리고 UI/UX 관점에서 모든 정보를 카드에 다 보여주면 화면이 복잡해진다. 그래서 chatbot을 붙인다.
+
+```text
+Flutter UI = 핵심 추천 결과를 빠르게 보여주는 layer
+Chatbot = 왜 추천됐는지, 가격/거리/분위기 tradeoff가 무엇인지 설명하는 layer
+```
+
+이 방향은 맞다. 다만 여기서 두 가지 모델을 분리해서 봐야 한다.
+
+## 추천 모델과 챗봇 LLM은 다르다
+
+우리가 앞으로 만들 모델은 최소 두 종류다.
+
+| 구분 | 역할 | 예시 |
+|---|---|---|
+| 추천 ranking model | 후보 술/장소/메뉴에 점수를 매김 | LightGBM, XGBoost, CatBoost, two-tower, neural reranker |
+| 챗봇 LLM | 추천 결과와 근거를 자연어로 설명 | Qwen, Llama, Gemini, GPT-compatible endpoint |
+
+LLM이 추천 ranking을 직접 하면 안 된다.
+
+나쁜 구조:
+
+```text
+User asks
+  -> LLM이 기억과 상상으로 바/술을 추천
+```
+
+좋은 구조:
+
+```text
+User asks
+  -> recommendation-service가 데이터 기반으로 추천 결정
+  -> chatbot-service가 추천 결과를 grounded context로 구성
+  -> LLM이 그 context만 사용해서 한국어로 설명
+```
+
+즉:
+
+```text
+Recommendation model decides.
+LLM explains.
+```
+
+이 boundary가 무너지면 추천 결과를 재현하기 어렵고, 가격/위치/재고/분위기 같은 최신 데이터를 모델이 지어낼 수 있다.
+
+## 현재 방식은 정확히 무엇인가
+
+현재 recommendation-service의 추천 방식은 다음에 가깝다.
+
+```text
+survey answer
+  -> mapper/rules
+  -> taste profile vector
+  -> PostgreSQL beverage catalog vector와 비교
+  -> similarity + scoring config
+  -> deterministic ranking
+  -> reason code/template explanation
+```
+
+수식으로 쓰면 다음과 같다.
+
+```latex
+P_u = M(survey_u)
+```
+
+```latex
+score(u, i) =
+w_s \cdot sim(P_u, V_i)
++ w_c \cdot categoryFit(u, i)
++ w_b \cdot budgetFit(u, i)
++ w_e \cdot experienceFit(u, i)
+```
+
+여기서:
+
+- `P_u`: 사용자 `u`의 taste profile vector
+- `M`: survey mapper
+- `V_i`: item `i`의 beverage vector
+- `sim`: cosine similarity 또는 weighted similarity
+- `w_*`: scoring config의 가중치
+
+이 방식은 AI 추천의 시작점으로는 괜찮다. 하지만 "학습된 모델"은 아니다.
+
+왜냐하면 아직 다음이 없기 때문이다.
+
+```text
+real user labels
+training dataset
+model training
+offline evaluation
+model registry
+model serving
+shadow/canary comparison
+```
+
+따라서 현재 방식을 정확히 표현하면:
+
+```text
+deterministic content-based recommendation baseline
+```
+
+이다.
+
+## 왜 baseline이 먼저 필요했는가
+
+학습형 추천 모델을 만들기 전에 baseline이 필요하다.
+
+이유는 단순하다.
+
+```text
+학습할 label이 아직 없기 때문이다.
+```
+
+추천 모델은 보통 다음 데이터를 보고 배운다.
+
+```text
+impression
+click
+detail_view
+save
+dismiss
+purchase
+visit
+chat follow-up
+```
+
+하지만 앱이 아직 충분히 사용되지 않았다면 label이 없다. label이 없는데 바로 deep model을 만들면, 실제 사용자 선호를 학습하는 것이 아니라 사람이 만든 rule을 복잡하게 흉내 내는 모델이 된다.
+
+그래서 순서는 이렇게 가야 한다.
+
+```text
+1. deterministic baseline으로 추천을 안정적으로 제공
+2. Flutter에서 impression/click/save/detail_view/dismiss 로그 수집
+3. recommendation result와 user action을 연결
+4. training dataset 생성
+5. offline ranking model 학습
+6. baseline과 shadow comparison
+7. 충분히 이기면 serving path에 투입
+```
+
+baseline은 임시방편이 아니라 기준점이다.
+
+```latex
+Lift =
+Metric(Model_{ML}) - Metric(Baseline_{deterministic})
+```
+
+ML 모델이 baseline보다 낫다는 것을 증명하지 못하면 production에 넣으면 안 된다.
+
+## 우리가 학습해야 하는 추천 문제
+
+우리 추천 문제는 단순한 술 추천이 아니다.
+
+사용자 `u`, 장소 `p`, 메뉴/술 `m`, 현재 context `c`가 있을 때 점수를 내야 한다.
+
+```latex
+\hat{y}_{u,p,m,c} =
+f_{\theta}(X_u, X_p, X_m, X_c)
+```
+
+여기서:
+
+- `X_u`: user feature
+- `X_p`: place/bar/pub feature
+- `X_m`: menu/beverage feature
+- `X_c`: context feature
+- `f_\theta`: 학습된 ranking model
+- `\hat{y}`: 추천 점수 또는 action probability
+
+목표 label은 여러 개가 될 수 있다.
+
+```latex
+P(click | u,p,m,c)
+```
+
+```latex
+P(save | u,p,m,c)
+```
+
+```latex
+P(detail\_view | u,p,m,c)
+```
+
+```latex
+E[value | u,p,m,c]
+```
+
+MVP에서는 하나의 label로 시작할 수 있다.
+
+예:
+
+```text
+positive = click, save, detail_view
+negative = impression only, dismiss
+```
+
+조금 더 정교하게는 event별 weight를 줄 수 있다.
+
+```latex
+y =
+1.0 \cdot save
++ 0.7 \cdot detail\_view
++ 0.5 \cdot click
+- 0.5 \cdot dismiss
+```
+
+이때 중요한 것은 impression이 있어야 negative를 정의할 수 있다는 점이다. 보여주지도 않은 아이템을 클릭하지 않았다고 negative로 보면 안 된다.
+
+## 필요한 feature들
+
+학습형 추천 모델에는 feature가 필요하다. 이 feature는 아무 DB나 직접 join해서 만들면 안 되고, service boundary를 지켜서 recommendation-service가 소유할 수 있는 read model이나 snapshot으로 가져와야 한다.
+
+### User features
+
+사용자 feature는 survey-service의 raw answer가 아니라 recommendation-service가 만든 derived profile에서 나온다.
+
+예:
+
+```text
+experience_level
+preferred_categories
+flavor vector
+budget bucket
+exploration tendency
+liked reason code history
+saved category distribution
+clicked style distribution
+```
+
+중요한 원칙:
+
+```text
+raw survey answer는 survey-service 소유다.
+recommendation-service는 derived taste profile만 소유한다.
+```
+
+### Beverage/menu features
+
+술 또는 메뉴 feature는 recommendation-service catalog와 map/place read model에서 온다.
+
+예:
+
+```text
+category
+style
+substyle
+flavor vector
+ABV
+body/acidity/smoky/sweet/bitter dimensions
+beginner friendliness
+popularity hint
+menu availability
+menu price
+```
+
+### Place/bar/pub features
+
+사용자가 말한 "바의 느낌"은 실제로 매우 중요하다. 이걸 feature로 만들어야 한다.
+
+예:
+
+```text
+place_type
+vibe tags
+music/noise level
+lighting mood
+solo friendly
+date friendly
+group friendly
+expert friendly
+beginner friendly
+price tier
+signature menu presence
+menu category coverage
+operator verified quality
+```
+
+다만 이런 정보는 map/place-service 또는 place owner/admin workflow가 canonical owner여야 한다. recommendation-service는 snapshot/read model만 받아야 한다.
+
+### Context features
+
+추천은 항상 context에 따라 달라진다.
+
+예:
+
+```text
+lat/lng
+distance
+requested radius
+time of day
+weekday/weekend
+budget mode
+selected beverage
+intent: drink now / buy bottle / explore / date / group
+```
+
+거리와 가격은 특히 사용자가 말한 핵심 조건이다.
+
+거리 점수 예:
+
+```latex
+distanceFit(d) =
+e^{-\lambda d}
+```
+
+가격 점수 예:
+
+```latex
+budgetFit(u, i) =
+1 - min\left(1, \frac{|price_i - budget_u|}{budget_u}\right)
+```
+
+하지만 production에서는 가격이 없거나 오래된 경우가 있다. 그때는 가격을 지어내면 안 되고 confidence를 feature로 넣어야 한다.
+
+```text
+price_value
+price_confidence
+price_snapshot_age
+inventory_confidence
+place_snapshot_age
+```
+
+## Candidate retrieval와 ranking을 분리해야 한다
+
+추천 시스템은 보통 두 단계다.
+
+```text
+1. Candidate retrieval
+2. Ranking / reranking
+```
+
+Candidate retrieval은 넓게 후보를 찾는 단계다.
+
+예:
+
+```text
+Qdrant vector search
+category filter
+nearby place filter
+available menu filter
+```
+
+Ranking은 후보를 정교하게 점수화하는 단계다.
+
+예:
+
+```text
+ML ranker
+price/distance/vibe/user preference features
+business rules
+freshness/confidence filtering
+```
+
+수식으로 보면:
+
+```latex
+C_{u,c} = Retrieve(u, c, k)
+```
+
+```latex
+R_{u,c} = Sort_{f_\theta}(C_{u,c})
+```
+
+여기서 Qdrant는 `Retrieve`에 잘 맞고, 학습된 ranking model은 `Sort`에 잘 맞다.
+
+Qdrant가 최종 추천 모델이 아니다.
+
+```text
+Qdrant = fast approximate candidate retrieval
+ML ranker = final preference scoring
+PostgreSQL = canonical source + hydration + logging
+```
+
+## 어떤 ML 모델부터 시작해야 하는가
+
+추천 모델이라고 해서 처음부터 큰 neural network가 필요하지 않다.
+
+현실적인 순서는 다음이다.
+
+### Stage 1: Gradient boosted tree ranker
+
+첫 모델은 다음 중 하나가 좋다.
+
+```text
+LightGBM
+XGBoost
+CatBoost
+```
+
+이유:
+
+- tabular feature에 강하다.
+- 가격, 거리, 분위기 tag, category 같은 feature를 잘 다룬다.
+- CPU serving이 가능하다.
+- feature importance를 볼 수 있다.
+- 운영 비용이 낮다.
+- baseline과 비교하기 쉽다.
+
+초기 model target:
+
+```text
+predict engagement score for candidate recommendation
+```
+
+### Stage 2: Learning-to-rank
+
+데이터가 쌓이면 ranking objective로 바꾼다.
+
+예:
+
+```text
+LambdaMART
+pairwise ranking
+listwise ranking
+```
+
+목표 metric:
+
+```text
+NDCG@K
+MAP@K
+Recall@K
+CTR@K
+SaveRate@K
+```
+
+NDCG는 추천 순서 품질을 보는 데 적합하다.
+
+```latex
+DCG@K = \sum_{i=1}^{K} \frac{rel_i}{\log_2(i+1)}
+```
+
+```latex
+NDCG@K = \frac{DCG@K}{IDCG@K}
+```
+
+### Stage 3: Two-tower retrieval model
+
+catalog와 장소 수가 커지면 two-tower를 고려할 수 있다.
+
+```text
+User tower -> user embedding
+Item/place tower -> item/place embedding
+nearest neighbor search -> candidates
+```
+
+이때 Qdrant가 더 중요해진다.
+
+```latex
+z_u = f_u(X_u)
+```
+
+```latex
+z_i = f_i(X_i)
+```
+
+```latex
+score(u,i) = z_u^\top z_i
+```
+
+하지만 이 단계는 충분한 interaction data가 있을 때 의미가 있다.
+
+## 모델 serving은 어디에서 해야 하는가
+
+여기서 Hugging Face와 GCP 이야기가 나온다.
+
+중요한 구분:
+
+```text
+추천 ranking model serving
+챗봇 LLM serving
+```
+
+### 추천 ranking model serving
+
+첫 번째 추천 ranking model은 GPU가 필요 없을 가능성이 높다.
+
+추천:
+
+```text
+Cloud Run CPU
+or Vertex AI custom prediction endpoint
+```
+
+Cloud Run CPU가 좋은 경우:
+
+```text
+model이 작다
+traffic이 아직 크지 않다
+cost를 줄이고 싶다
+container로 직접 제어하고 싶다
+```
+
+Vertex AI가 좋은 경우:
+
+```text
+model registry, endpoint, monitoring을 GCP managed로 쓰고 싶다
+팀이 MLOps를 Vertex 중심으로 운영하고 싶다
+```
+
+### 챗봇 LLM serving
+
+Qwen 같은 LLM은 추천 ranker가 아니라 설명 모델이다.
+
+여기는 GPU가 필요할 수 있다.
+
+가능한 선택:
+
+```text
+Cloud Run GPU + vLLM
+Vertex AI / Model Garden
+Hugging Face Inference Endpoint
+```
+
+GCP를 무료 크레딧으로 쓸 수 있다면 Cloud Run GPU 또는 Vertex AI를 먼저 검토하는 게 맞다.
+
+다만 비용 관점에서 가장 중요한 원칙은:
+
+```text
+LLM은 추천 결과 설명에만 쓰고,
+ranking은 작은 CPU 모델부터 시작한다.
+```
+
+## MLflow는 어디에 들어가는가
+
+MLflow는 model training과 experiment tracking에 들어간다.
+
+역할:
+
+```text
+experiment tracking
+params logging
+metrics logging
+artifact logging
+model registry
+model versioning
+```
+
+추천 모델 개발 흐름:
+
+```text
+training dataset export
+  -> train.py
+  -> MLflow experiment
+  -> metrics 비교
+  -> model artifact 저장
+  -> model registry 등록
+  -> staging serving
+  -> shadow evaluation
+  -> canary
+```
+
+기록해야 할 것:
+
+```text
+dataset_version
+feature_schema_version
+label_definition_version
+model_type
+hyperparameters
+offline_metrics
+training_time_range
+excluded_users or leakage guard
+```
+
+추천 모델에서 가장 위험한 것은 leakage다.
+
+예:
+
+```text
+추천 이후 발생한 click/save를 추천 전에 알 수 있었던 feature처럼 넣는 것
+```
+
+이러면 offline metric은 좋아 보이지만 production에서는 망가진다.
+
+## Database는 어떤 역할인가
+
+사용자가 "database를 얘기한 이유"는 맞다. 모델이 잘 되려면 database 설계가 중요하다.
+
+하지만 DB가 모델 그 자체는 아니다.
+
+DB의 역할:
+
+```text
+canonical state 저장
+snapshot 저장
+feature source 저장
+recommendation request/result 저장
+interaction label 저장
+training dataset export source
+model prediction log 저장
+```
+
+production 추천에서는 특히 snapshot이 중요하다.
+
+추천 결과를 나중에 설명하려면 추천 당시의 가격, 거리, 메뉴, place revision이 남아 있어야 한다.
+
+```text
+recommended_at = 2026-06-01
+place_revision = rev_123
+menu_revision = rev_45
+price_revision = rev_9
+inventory_revision = rev_17
+model_version = ml_ranker_v1.3
+feature_schema_version = feature_v1
+```
+
+이 정보가 없으면 사용자가 나중에 "왜 이 바를 추천했어?"라고 물었을 때 답할 수 없다.
+
+## 챗봇은 왜 필요한가
+
+추천 결과가 정교해질수록 UI는 복잡해진다.
+
+예를 들어 한 장소를 추천하는 이유가 다음과 같다고 해보자.
+
+```text
+너의 위스키 취향과 맞음
+버번/오크/바닐라 계열 메뉴가 있음
+현재 위치에서 가까움
+가격대가 예산과 크게 벗어나지 않음
+분위기가 조용하고 입문자에게 적합함
+다만 가격 snapshot이 3일 전이라 최신성 warning 필요
+```
+
+이걸 카드 UI에 전부 넣으면 복잡하다.
+
+그래서 UI와 chatbot의 역할을 나눈다.
+
+Flutter card:
+
+```text
+이름
+카테고리
+거리
+가격대
+대표 이유 1-2개
+```
+
+Chatbot:
+
+```text
+왜 나한테 맞아?
+더 가까운 곳은 없어?
+가격이 더 싼 곳과 비교해줘.
+조용한 분위기 기준으로 다시 설명해줘.
+이 장소 말고 비슷한 느낌의 바 있어?
+```
+
+chatbot은 추천 모델을 대체하는 것이 아니라, 추천 결과를 탐색하는 interface다.
+
+## 최종 architecture
+
+목표 architecture는 다음이다.
+
+```text
+Flutter
+  -> gateway or direct service clients
+  -> recommendation-service
+      -> auth-service ValidateToken
+      -> recommendation DB
+      -> map/place read-model snapshots
+      -> Qdrant candidate retrieval
+      -> ML ranking model serving
+      -> recommendation logs
+  -> chatbot-service
+      -> recommendation-service
+      -> LLM endpoint
+```
+
+조금 더 자세히 쓰면:
+
+```text
+survey-service
+  -> survey result
+
+map/place-service
+  -> place/menu/price/inventory/vibe snapshots
+
+recommendation-service
+  -> derived user profile
+  -> feature generation
+  -> candidate retrieval
+  -> ML ranking
+  -> explanation/reason codes
+  -> logs/labels
+
+chatbot-service
+  -> grounded context builder
+  -> LLM rewrite
+  -> response verifier
+
+Flutter
+  -> display recommendation
+  -> collect feedback events
+```
+
+## 모델을 넣을 때 바뀌는 API의 방향
+
+Flutter API는 크게 바뀌지 않는 것이 좋다. Flutter는 thin client여야 한다.
+
+즉 내부가 rule/vector baseline이든 ML ranker든 Flutter는 같은 API를 호출해야 한다.
+
+```text
+GetProfileStatus
+GetBeverageRecommendations
+GetVenueRecommendations
+RecordRecommendationEvent
+```
+
+바뀌는 것은 내부 `request_context`와 `source_snapshot`이다.
+
+예:
+
+```json
+{
+  "pipeline": "ml_ranker_v1",
+  "candidate_source": "qdrant_beverage_place_v1",
+  "model_version": "bar_ranker_lgbm_v1.2.0",
+  "feature_schema_version": "rec_feature_v1",
+  "qdrant_used": true,
+  "fallback_ranker": "postgres_baseline_v1"
+}
+```
+
+이렇게 해야 문제가 생겼을 때 rollback 가능하다.
+
+```text
+ML ranker 장애
+  -> deterministic baseline으로 fallback
+```
+
+## 추천 모델을 바로 LLM으로 만들면 안 되는 이유
+
+LLM은 대화에 강하지만 ranking에는 위험하다.
+
+이유:
+
+1. 같은 입력에도 출력이 흔들릴 수 있다.
+2. 가격, 거리, 재고를 지어낼 수 있다.
+3. score calibration이 어렵다.
+4. audit과 reproducibility가 어렵다.
+5. feedback label로 안정적으로 개선하기 어렵다.
+6. latency와 비용이 높다.
+
+추천 ranking은 다음 속성이 필요하다.
+
+```text
+deterministic or controlled stochastic
+versioned
+replayable
+measurable
+low latency
+fallback 가능한 구조
+```
+
+그래서 LLM은 다음에 써야 한다.
+
+```text
+explanation
+comparison
+clarification
+natural language UX
+```
+
+추천 결정은 model/ranker가 한다.
+
+## 필요한 다음 계획
+
+이제 다음 계획은 chatbot implementation이 아니라 ML recommendation foundation이어야 한다.
+
+Plan 013으로 잡는다면 범위는 다음이 적절하다.
+
+```text
+Plan 013: ML Recommendation Model Foundation
+```
+
+필수 작업:
+
+1. map/place/menu/price/vibe read-model contract 정의
+2. recommendation feature schema v1 정의
+3. label definition v1 정의
+4. interaction event logging을 training label로 연결
+5. training dataset export 확장
+6. deterministic baseline metric 정의
+7. LightGBM/XGBoost/CatBoost ranker PoC
+8. MLflow experiment tracking
+9. model artifact 저장 및 versioning
+10. model serving interface 설계
+11. shadow evaluation
+12. chatbot grounded context에 ML result metadata 포함
+
+이 plan의 acceptance criteria는 다음이어야 한다.
+
+```text
+feature_schema_v1 documented
+label_definition_v1 documented
+training_dataset_export produces reproducible dataset
+baseline metrics generated
+first ML ranker trains locally
+MLflow run records params, metrics, artifacts
+model serving interface is documented
+recommendation-service can shadow-score without changing user-facing ranking
+```
+
+## 사람이 해야 하는 작업: Colab Pro + GCP credit 기반 학습/서빙 순서
+
+여기서부터는 engineering plan이 아니라 실제 사람이 실행해야 하는 작업 순서다.
+
+현재 예산 조건은 다음과 같이 잡는다.
+
+```text
+GCP credit: 약 20만원
+Colab Pro: 사용 가능
+목표: 교수님 평가에서 자체 모델 학습/서빙 구조를 명확히 보여주기
+```
+
+핵심 판단은 단순하다.
+
+```text
+Colab Pro = 학습/실험/QLoRA fine-tuning
+GCP credit = staging, DB, Redis, Cloud Run, 짧은 GPU serving 검증
+Hugging Face = 학습된 model/adapter artifact 보관
+```
+
+GCP 20만원 credit으로 full training을 오래 돌리면 빨리 소진된다. 학습은 Colab Pro에서 하고, GCP는 "서비스처럼 배포해서 실제 chatbot-service가 호출한다"를 보여주는 데 집중하는 것이 맞다.
+
+### 최종 목표 구조
+
+교수님에게 보여줄 수 있는 최종 구조는 다음이다.
+
+```text
+Flutter / Gateway
+  -> ai-chatbot-service
+      -> auth metadata 확인
+      -> recommendation-service 호출
+          - 설문 기반 취향
+          - 지도/장소 정보
+          - 바/펍 분위기
+          - 메뉴
+          - 가격
+          - 위치/거리
+          - reason codes
+      -> grounded context 생성
+      -> 우리가 fine-tuned한 LLM endpoint 호출
+      -> verifier / fallback
+      -> Korean answer + cards 반환
+```
+
+이 구조에서 중요한 경계는 그대로 유지한다.
+
+```text
+recommendation-service가 추천 후보와 순위를 만든다.
+chatbot-service는 recommendation DB, survey DB, map DB를 직접 읽지 않는다.
+fine-tuned LLM은 추천 결과를 더 자연스럽고 풍부하게 설명한다.
+LLM이 없는 술, 장소, 가격, 거리, 재고, 분위기를 만들면 안 된다.
+```
+
+즉 이 단계의 fine-tuning은 "추천 ranking model"을 만드는 작업이라기보다, recommendation-service가 만든 grounded context를 한국어 대화형 답변으로 바꾸는 assistant model을 만드는 작업이다.
+
+### 모델 선택 전략
+
+교수님 평가용으로 가장 설명하기 좋은 선택은 다음이다.
+
+```text
+base model: Qwen/Qwen2.5-7B-Instruct 또는 Qwen/Qwen3-8B
+training: QLoRA / LoRA SFT
+output: Korean grounded recommendation answer
+serving: vLLM 또는 TGI OpenAI-compatible /v1/chat/completions
+```
+
+우선순위는 다음처럼 둔다.
+
+| 우선순위 | 모델 | 이유 |
+|---:|---|---|
+| 1 | `Qwen/Qwen2.5-7B-Instruct` | 안정적이고 자료가 많으며 Colab Pro/L4급에서 다루기 쉽다 |
+| 2 | `Qwen/Qwen3-8B` | 최신 모델 기반이라는 설명이 좋지만 학습/서빙 이슈가 생기면 fallback 필요 |
+| 3 | 더 큰 모델 | 20만원 GCP credit과 Colab Pro 조건에서는 우선순위가 낮다 |
+
+교수님 평가에서는 모델 크기보다 다음 문장이 더 중요하다.
+
+```text
+우리 데이터 형식으로 학습했고,
+학습된 artifact를 저장했고,
+GCP에서 직접 endpoint로 serving했고,
+chatbot-service가 그 endpoint를 호출했다.
+```
+
+### 0단계: 비용 안전장치
+
+GCP에서 가장 먼저 할 일은 모델이 아니라 비용 안전장치다.
+
+```text
+1. Billing budget alert 설정
+2. GPU VM / Cloud Run GPU는 테스트할 때만 켜기
+3. 항상 켜져 있는 GPU endpoint 금지
+4. Cloud SQL / Redis 비용 확인
+5. Artifact Registry / Cloud Storage 불필요한 image와 checkpoint 삭제
+```
+
+20만원 credit 사용 원칙:
+
+```text
+70% 이상은 serving/staging 검증용으로 남긴다.
+긴 fine-tuning 실험은 Colab Pro에서 한다.
+GCP GPU는 최종 checkpoint가 실제 service endpoint에서 뜨는지 검증할 때만 쓴다.
+```
+
+피해야 할 것:
+
+```text
+GCP에서 여러 번 장시간 fine-tuning
+큰 모델 14B/32B full fine-tuning
+GPU VM 켜둔 채 방치
+Cloud Run GPU min instance > 0 유지
+필요 없는 checkpoint/image 계속 보관
+```
+
+### 1단계: 학습 데이터 설계
+
+학습 데이터는 raw DB dump가 아니라 recommendation-service가 만든 recommendation result snapshot을 사용한다.
+
+좋은 학습 예시 1개는 다음 형태다.
+
+```json
+{
+  "instruction": "ONTHEBLOCK 추천 결과만 사용해서 한국어로 답변하세요.",
+  "user_question": "분위기 좋은 칵테일 바 추천해줘",
+  "grounded_context": {
+    "taste_profile_summary": {
+      "flavor": ["sweet", "light"],
+      "drink_type": ["cocktail"]
+    },
+    "recommendations": [
+      {
+        "recommendation_id": "venue_result_1",
+        "place_id": "place_1",
+        "place_name": "Example Bar",
+        "atmosphere": "조용하고 어두운 분위기",
+        "menu": ["하이볼", "진토닉"],
+        "price_range": "15000-25000",
+        "distance_m": 420,
+        "reason_codes": ["MATCHES_TASTE", "GOOD_ATMOSPHERE"],
+        "reason": "단맛 선호와 조용한 분위기 선호가 잘 맞음"
+      }
+    ]
+  },
+  "answer": "분위기까지 고려하면 Example Bar가 가장 잘 맞아요..."
+}
+```
+
+반드시 제외해야 하는 것:
+
+```text
+raw JWT
+access token
+비밀번호
+실제 개인 식별 정보
+raw survey answer 전체
+map/place DB 원본 row 전체
+```
+
+교수님 평가용 초기 데이터는 실제 사용자 로그가 없어도 된다. 먼저 사람이 만든 seed dataset으로 시작한다.
+
+권장 수량:
+
+```text
+v0 smoke dataset: 50-100 examples
+v1 training dataset: 500-1000 examples
+v1 eval dataset: 100-200 examples
+```
+
+여기서 중요한 것은 양보다 coverage다. normal answer만 있으면 안 되고, fallback과 refusal도 포함되어야 한다.
+
+### 2단계: 데이터 타입을 나눈다
+
+최소 5종류가 필요하다.
+
+```text
+1. beverage recommendation 설명
+2. venue/bar/pub recommendation 설명
+3. 가격/거리/분위기 trade-off 설명
+4. profile missing / insufficient data fallback
+5. out-of-scope refusal
+```
+
+교수님 평가에서 좋은 점수를 받으려면 "잘 답하는 경우"뿐 아니라 "못 답해야 하는 경우를 잘 막는 것"도 보여줘야 한다.
+
+예를 들어 날씨, 정치, 일반 지식, 의료 조언 같은 질문은 답하면 안 된다.
+
+```text
+User: 오늘 날씨 알려줘.
+Expected: ONTHEBLOCK의 술 추천, 취향, 장소 추천과 관련된 질문만 도와드릴 수 있어요.
+```
+
+### 3단계: Colab Pro에서 QLoRA 학습
+
+학습은 먼저 Colab Pro에서 한다.
+
+작업 순서:
+
+```text
+1. base model 로드
+2. 4-bit quantization 설정
+3. LoRA target module 설정
+4. SFT dataset 로드
+5. 짧은 epoch로 smoke training
+6. eval set으로 hallucination / Korean tone 확인
+7. LoRA adapter 저장
+8. Hugging Face private repo에 업로드
+```
+
+권장 방식:
+
+```text
+full fine-tuning X
+QLoRA O
+LoRA adapter 저장 O
+checkpoint 너무 자주 저장 X
+처음부터 큰 dataset으로 장시간 학습 X
+```
+
+Colab Pro 주의:
+
+```text
+GPU 종류와 사용 가능 시간은 고정 보장되지 않는다.
+A100이 잡히면 Qwen3-8B도 시도할 수 있다.
+T4/L4급이면 Qwen2.5-7B + QLoRA로 간다.
+runtime 끊김에 대비해 dataset, adapter, logs를 자주 저장한다.
+```
+
+### 4단계: 평가 리포트 만들기
+
+교수님 평가용으로 반드시 비교표를 만든다.
+
+```text
+baseline prompt-only
+base Qwen model
+fine-tuned Qwen model
+fine-tuned Qwen model + verifier
+```
+
+평가 항목:
+
+```text
+intent 이해
+한국어 자연스러움
+추천 이유 설명 품질
+가격/거리/분위기 trade-off 설명
+context 밖 hallucination 여부
+recommendation-service 순서 유지
+out-of-scope refusal
+profile missing fallback
+```
+
+최소 산출물:
+
+```text
+eval_report.md
+eval_cases.jsonl
+model_card.md
+training_config.json
+```
+
+교수님에게는 "fine-tuning을 했다"보다 "fine-tuning 전후로 어떤 behavior가 개선됐는지 측정했다"가 더 설득력 있다.
+
+### 5단계: Hugging Face에 artifact 업로드
+
+Hugging Face repo는 private으로 시작한다.
+
+권장 repo 구성:
+
+```text
+ontheblock-grounded-chatbot-qwen-lora/
+  adapter_config.json
+  adapter_model.safetensors
+  tokenizer files
+  README.md / model card
+  eval_report.md
+```
+
+서빙 때 선택지는 두 가지다.
+
+```text
+Option A: base model + LoRA adapter 로드
+Option B: merge된 model artifact 로드
+```
+
+교수님 demo는 Option B가 단순하다. 운영에서는 adapter를 분리해서 관리하는 것도 괜찮다.
+
+### 6단계: GCP에서 직접 serving
+
+GCP 20만원 조건에서 권장 순서는 다음이다.
+
+```text
+1. 먼저 CPU chatbot-service staging은 현재 구조 그대로 유지
+2. LLM serving만 GPU로 따로 띄움
+3. chatbot-service의 CHATBOT_LLM_ENDPOINT_URL을 그 GPU endpoint로 연결
+4. 검증 끝나면 GPU serving은 끔
+```
+
+#### Option A: Compute Engine GPU VM + vLLM/TGI
+
+교수님 평가용으로 가장 이해하기 쉽다.
+
+```text
+GCP GPU VM
+  -> Docker
+  -> vLLM 또는 TGI
+  -> /v1/chat/completions
+  -> chatbot-service가 호출
+```
+
+장점:
+
+```text
+우리가 GCP에서 직접 모델을 serving했다는 설명이 명확하다.
+SSH로 디버깅하기 쉽다.
+Colab보다 service 구조 설명이 좋다.
+```
+
+단점:
+
+```text
+VM을 켜둔 시간만큼 비용이 계속 나간다.
+테스트 후 반드시 stop 또는 delete 해야 한다.
+```
+
+#### Option B: Cloud Run GPU + vLLM/TGI
+
+Cloud Run GPU는 scale-to-zero가 가능해서 비용 구조가 좋다. 다만 지원 region 제약이 있을 수 있고, 현재 staging 기본 region인 `asia-northeast3`와 맞지 않을 수 있다.
+
+이 경우 LLM endpoint만 Cloud Run GPU 지원 region에 두고, chatbot-service는 `asia-northeast3`에서 원격 호출한다.
+
+장점:
+
+```text
+scale-to-zero 가능
+운영 형태가 깔끔함
+Cloud Run 기반이라 service deployment 설명이 좋음
+```
+
+단점:
+
+```text
+지원 region 제약
+container build와 startup tuning이 VM보다 까다로움
+cold start가 길 수 있음
+```
+
+추천 순서:
+
+```text
+교수님 demo 1차: Compute Engine GPU VM + vLLM
+서비스화 2차: Cloud Run GPU 가능 region에서 scale-to-zero 검토
+```
+
+### 7단계: chatbot-service에 연결
+
+GPU endpoint가 준비되면 chatbot-service staging env에 넣는다.
+
+```text
+CHATBOT_LLM_ENDPOINT_URL=https://<gcp-llm-endpoint>/v1/chat/completions
+CHATBOT_LLM_MODEL=<served-model-name>
+CHATBOT_LLM_AUTH_MODE=none
+```
+
+endpoint에 bearer auth를 붙이면 다음처럼 둔다.
+
+```text
+CHATBOT_LLM_AUTH_MODE=bearer_env
+CHATBOT_LLM_API_KEY_ENV=HF_TOKEN
+HF_TOKEN_SECRET_VERSION=<PINNED_VERSION>
+```
+
+그 다음 chatbot-service 쪽 staging validation을 수행한다.
+
+```bash
+chatbot-gcp-staging-readiness --phase predeploy
+chatbot-gcp-staging-deploy --dry-run
+chatbot-gcp-staging-deploy
+```
+
+이 명령 이름은 chatbot repo의 실제 script 이름에 맞춰 조정해야 한다. 중요한 것은 "endpoint env 연결 -> dry-run -> deploy -> smoke" 순서다.
+
+### 8단계: end-to-end 검증
+
+검증 순서:
+
+```bash
+chatbot-gcp-staging-validate preflight --dry-run
+chatbot-gcp-staging-validate preflight
+chatbot-gcp-staging-validate smoke
+chatbot-gcp-staging-validate load
+```
+
+교수님 demo 전에 직접 확인할 질문:
+
+```text
+내 취향에 맞는 술 추천해줘
+분위기 좋은 바 위주로 추천해줘
+가까운 곳이랑 가격 좋은 곳 비교해줘
+왜 이 바가 나한테 잘 맞아?
+아직 설문 안 했으면 어떻게 돼?
+오늘 날씨 알려줘
+```
+
+기대 결과:
+
+```text
+추천 관련 질문은 recommendation-service 결과 기반으로 답한다.
+가격/거리/분위기 설명은 context에 있는 값만 말한다.
+설문/profile이 없으면 profile 생성 안내를 한다.
+날씨 같은 질문은 거절한다.
+```
+
+### 예산 사용 계획
+
+권장 배분은 다음이다.
+
+```text
+Colab Pro:
+  - dataset 확인
+  - QLoRA 학습
+  - LoRA adapter 생성
+  - 짧은 eval 반복
+
+GCP 20만원:
+  - Cloud SQL / Redis / Cloud Run staging 유지
+  - Docker image build / Artifact Registry
+  - 짧은 GPU serving 테스트
+  - demo 전 smoke/load validation
+```
+
+GCP credit을 가장 빨리 태우는 것은 "켜둔 GPU"다. 그래서 demo 전에는 반드시 리소스 상태를 확인해야 한다.
+
+```text
+GPU VM running 여부
+Cloud Run GPU min instance 여부
+Artifact Registry image size
+Cloud Storage checkpoint size
+Cloud SQL instance size
+Redis instance 유지 여부
+```
+
+### 작업 체크리스트
+
+```text
+[ ] seed training dataset 50-100개 작성
+[ ] eval dataset 100개 작성
+[ ] Colab Pro에서 QLoRA smoke training 성공
+[ ] fine-tuned adapter를 Hugging Face private repo에 업로드
+[ ] eval report 작성
+[ ] GCP GPU serving 방식 선택
+[ ] vLLM/TGI endpoint에서 /v1/chat/completions 응답 확인
+[ ] chatbot-service staging env에 endpoint 연결
+[ ] preflight/smoke/load validation 통과
+[ ] 교수님 demo script 작성
+[ ] 사용한 비용과 켜둔 리소스 정리
+```
+
+### 교수님에게 설명할 문장
+
+평가 자리에서는 다음처럼 설명하면 된다.
+
+```text
+저희 챗봇은 LLM이 임의로 추천을 만드는 구조가 아닙니다.
+설문, 지도, 바/펍 분위기, 메뉴, 가격, 위치 정보를 통합한 recommendation-service가
+추천 후보와 이유를 만들고, 저희가 fine-tuning한 Qwen 기반 모델이 그 grounded
+context를 한국어 대화형 설명으로 변환합니다. 모델은 Colab Pro에서 QLoRA로
+학습했고, 학습된 checkpoint는 Hugging Face에 저장한 뒤 GCP에서 OpenAI-compatible
+endpoint로 직접 serving하여 chatbot-service가 호출하도록 구성했습니다.
+```
+
+이 문장에서 핵심은 "직접 학습"과 "직접 serving"을 보여주되, LLM이 추천 ranking을 마음대로 하는 구조가 아니라고 분명히 하는 것이다.
+
+## 지금 당장 착각하면 안 되는 것
+
+중요한 착각 세 가지가 있다.
+
+### 1. Qwen을 띄우면 추천 AI 모델이 완성되는 것이 아니다
+
+Qwen은 LLM이다. 추천 결과를 설명하는 데 쓴다.
+
+추천 ranking은 별도의 ranker가 필요하다.
+
+### 2. Qdrant를 쓰면 ML 추천 모델이 되는 것이 아니다
+
+Qdrant는 vector search engine이다. candidate retrieval에 좋다.
+
+하지만 최종 추천 품질은 feature, label, ranker, evaluation이 만든다.
+
+### 3. DB가 있다고 자동으로 학습 데이터가 되는 것이 아니다
+
+학습 데이터는 point-in-time correctness가 필요하다.
+
+추천 당시 보여준 item과, 그 뒤에 발생한 user action이 정확히 연결되어야 한다.
+
+```text
+request_id
+result_id
+rank
+shown_at
+event_type
+event_at
+user_id
+profile_revision
+model_version
+feature_snapshot
+```
+
+이게 없으면 training dataset이 흔들린다.
+
+## 결론
+
+현재 우리는 아직 학습형 AI 추천 모델을 serving하고 있지 않다.
+
+현재는:
+
+```text
+rule/mapper + vector scoring + deterministic ranking baseline
+```
+
+이다.
+
+하지만 이 baseline은 버릴 것이 아니다. 앞으로 만들 ML model이 이 baseline을 이겨야 production에 들어갈 수 있다.
+
+최종 목표는 다음이다.
+
+```text
+survey profile
+place/menu/vibe/price/distance snapshots
+user interaction labels
+  -> feature pipeline
+  -> candidate retrieval
+  -> trained ranking model
+  -> reproducible recommendation result
+  -> chatbot grounded explanation
+  -> Flutter UX
+```
+
+추천 모델과 챗봇 LLM을 분리하는 것이 핵심이다.
+
+```text
+추천 모델은 결정한다.
+챗봇은 설명한다.
+Flutter는 보여준다.
+DB와 로그는 재현성과 학습을 보장한다.
+```
+
+이 방향으로 가야 우리가 말하는 "진짜 AI 추천 엔진"에 가까워진다.
+
+## 참고 문서
+
+- [`blog-kr06.mdx`](./blog-kr06.mdx)
+- [`docs/recommendation/recommendation-logic.md`](./docs/recommendation/recommendation-logic.md)
+- [`docs/recommendation/map-read-model.md`](./docs/recommendation/map-read-model.md)
+- [`docs/assistant/assistant-architecture.md`](./docs/assistant/assistant-architecture.md)
+- [`docs/assistant/rag-policy.md`](./docs/assistant/rag-policy.md)
+- [`docs/operations/mlflow-poc.md`](./docs/operations/mlflow-poc.md)
+- [`docs/operations/training-dataset.md`](./docs/operations/training-dataset.md)
+- [Google Colab FAQ](https://research.google.com/colaboratory/intl/en-GB/faq.html)
+- [Cloud Run GPU documentation](https://docs.cloud.google.com/run/docs/configuring/services/gpu)
+- [Compute Engine GPU documentation](https://cloud.google.com/compute/docs/gpus/)

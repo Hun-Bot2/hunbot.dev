@@ -1,0 +1,425 @@
+---
+title: 'ZORO #2 — Stress Testing Codex Goal on Frontend Reconstruction'
+description: 'Observing how far a single persistent Goal can maintain frontend consistency, visual fidelity, and long-running implementation behavior during a production-style reconstruction task.'
+pubDate: '2026-05-09'
+heroImage: '/images/ZORO/zoro-main.png'
+tags: ['codex', 'ai', 'frontend', 'goal', 'zoro', 'llm']
+category: 'AI Engineering'
+series: 'ZORO'
+seriesOrder: 2
+---
+
+## Video
+A short recording of the initial Goal execution can be viewed here:
+
+<u>https://youtu.be/sFZfxKUjaXU</u>
+
+
+## Experiment Setup
+
+For this experiment, I intentionally kept the workflow as minimal as possible. 
+The entire reconstruction process was driven by a single persistent Goal.
+
+No:
+
+* external memory systems,
+* custom workflow artifacts,
+* goals.md files,
+* or manual implementation planning.
+
+The environment was:
+
+* Codex CLI
+* Codex 5.5 Extra High model
+* Goal workflow enabled
+* Playwright interactive verification
+* no `/goal pause`
+* no `/goal resume`
+* no manual code edits during execution
+
+The objective was simple:
+
+> Can a single Goal maintain frontend consistency over time without additional workflow scaffolding?
+
+## First Observations
+What surprised me most was not the frontend generation itself.
+
+It was the behavior of the Goal loop. 
+
+Over roughly 30 minutes of continuous execution, Codex:
+
+* iteratively refined the frontend structure,
+* launched the local development server on its own,
+* verified parts of the implementation through browser interaction,
+* and eventually created commits without additional prompting.
+
+At several points, the workflow felt less like "single-shot code generation" and more like an autonomous implementation loop continuously trying to move toward a stable visual target.
+
+## Goal Prompt
+```txt
+/goal Recreate a production-quality landing page inspired by Stripe using Next.js, TypeScript, and Tailwind CSS. Maintain high visual fidelity in layout structure, spacing, typography, responsive behavior, and reusable component consistency. Use Playwright interactive to continuously verify the implementation against the reference site during development.
+```
+
+At the moment, the most surprising part is not that Codex can generate a convincing frontend shell.
+
+Modern frontier models are already becoming very capable at that.
+
+What feels more important is the behavior of the Goal loop itself:
+
+* iterative refinement,
+* persistent implementation,
+* browser verification,
+* and continuous progress toward a stable visual target.
+
+The first 30 minutes looked surprisingly stable.
+
+The more interesting question is what happens after several hours of continuous evolution.
+
+That is where consistency usually begins to break.
+
+The next phase of the experiment will focus less on initial generation quality — and more on whether the system can preserve consistency while the frontend continues evolving under increasing complexity.
+
+## Next Step — Evolution Pressure
+
+The first run showed that Codex Goal can generate a convincing frontend shell surprisingly quickly.
+
+In roughly 30 minutes, the system produced a complete frontend page, launched the local development server, verified the output through browser interaction, and committed the result without additional prompting.
+
+That was impressive.
+
+But generating a polished shell is only the first layer of the problem.
+
+The more difficult question is:
+
+> Can the system preserve the identity of an existing frontend while evolving it?
+
+This is where frontend work becomes more interesting.
+
+A landing page can look complete after the first pass.
+But real frontend development rarely stops there.
+
+The system usually needs to evolve:
+
+* new visual modes,
+* reusable components,
+* better responsive behavior,
+* cleaner abstractions,
+* and stronger design consistency.
+
+So for the next phase, I decided to apply additional pressure to the existing implementation.
+
+Instead of asking Codex Goal to build something new from scratch, I asked it to evolve the current frontend in two directions at once:
+
+1. Add a complete dark mode system.
+2. Refactor the frontend into a reusable component-driven design system.
+
+The important part is not whether it can add dark mode.
+
+The important part is whether it can do that while preserving:
+
+* the original visual fidelity,
+* layout hierarchy,
+* spacing consistency,
+* responsive behavior,
+* and overall design language.
+
+This is the actual Goal prompt I used:
+
+```txt
+/goal Continue evolving the existing frontend by introducing a complete dark mode system and refactoring the application into a reusable component-driven design system while preserving the original visual fidelity, layout hierarchy, responsive behavior, spacing consistency, and overall design language. Continuously verify the implementation using Playwright interactive and avoid introducing visual or architectural drift during the evolution process.
+```
+
+This phase is more difficult than the initial reconstruction.
+
+The first task tested whether Codex Goal could create a convincing frontend.
+
+This task tests whether it can preserve coherence while changing the system.
+
+That distinction matters.
+
+Modern AI coding tools are already becoming strong at generating impressive first-pass interfaces.
+But maintaining identity through evolution is a different problem.
+
+The signs I will be watching for are:
+
+* whether dark mode changes the original design language too aggressively,
+* whether component extraction improves or damages the structure,
+* whether duplicated styling decreases or simply moves elsewhere,
+* whether responsive behavior remains stable,
+* whether visual hierarchy survives the refactor,
+* and whether the implementation starts drifting away from the original page.
+
+In other words, this is no longer just a frontend generation test.
+
+It is a continuity test.
+
+Can a single persistent Goal evolve an existing frontend without slowly eroding the assumptions that made the first version work?
+
+That is the next question for ZORO.
+
+## Increasing the Pressure — From Landing Page to Product Experience
+
+After the dark mode pass, I expected some amount of visual drift.
+
+Surprisingly, that did not happen.
+
+The design language remained stable, the theme toggle worked consistently, and the page still felt coherent across light and dark modes.
+
+At that point, simply asking Codex Goal to make the page "more polished" did not feel meaningful anymore.
+
+The frontend shell was already convincing.
+
+So I decided to increase the pressure in a different direction.
+
+Instead of asking for another visual improvement, I asked Codex Goal to evolve the project from a single landing page into a multi-page SaaS product experience.
+
+This changes the nature of the task.
+
+A single landing page mostly tests visual generation.
+
+A multi-page product experience tests something harder:
+
+* routing consistency,
+* shared layout preservation,
+* theme persistence,
+* form behavior,
+* simulated authentication state,
+* protected navigation,
+* and design system coherence across multiple surfaces.
+
+This is no longer just a frontend reconstruction task.
+
+It becomes a continuity test.
+
+Can the system preserve the identity of the product while expanding it?
+
+---
+
+## Third Goal Prompt
+
+This is the Goal prompt I used for the next phase:
+
+```txt
+/goal Continue evolving the existing frontend into a coherent multi-page SaaS product experience. Create real routes for Products, Solutions, Developers, Resources, Pricing, Login, Signup, and Dashboard. Implement client-side authentication simulation with protected routing, form validation, logout behavior, and authenticated dashboard state. Preserve the existing design system, dark mode support, responsive behavior, component consistency, spacing, typography, and visual fidelity across all pages. Continuously verify the full navigation and auth flow using Playwright interactive.
+```
+
+This prompt intentionally adds several layers of complexity at once.
+
+The previous phase tested whether Codex Goal could preserve visual consistency while adding dark mode.
+
+This phase tests whether it can preserve product coherence while introducing application structure.
+
+The important part is not simply whether it can create `/login` or `/pricing`.
+
+The important part is whether those pages still feel like they belong to the same product.
+
+---
+
+## What This Phase Tests
+
+This phase introduces a much more realistic frontend challenge.
+
+The existing project already had:
+
+* a polished landing page,
+* working light and dark mode,
+* section-based navigation,
+* and a coherent visual identity.
+
+Now the system needs to expand that into:
+
+* real routes,
+* dedicated product pages,
+* login and signup screens,
+* simulated authentication state,
+* protected dashboard access,
+* logout behavior,
+* and full navigation verification.
+
+That means Codex Goal must maintain several forms of consistency at the same time.
+
+Visually, every page should still feel like the original frontend.
+
+Architecturally, the route structure should remain clean.
+
+Interaction-wise, login, signup, logout, and dashboard protection should behave predictably.
+
+The difficulty is no longer just visual fidelity.
+
+The difficulty is preserving identity across expansion.
+
+---
+
+## Why I Chose Simulated Authentication
+
+I intentionally asked for client-side authentication simulation instead of a real backend authentication provider.
+
+That was deliberate.
+
+At this stage, I still wanted the experiment to remain focused on frontend behavior.
+
+Adding a real auth provider would introduce external variables:
+
+* database setup,
+* environment variables,
+* provider configuration,
+* session persistence,
+* deployment issues,
+* and backend integration details.
+
+Those are valuable problems, but they belong to a later experiment.
+
+For this phase, I wanted to isolate the frontend question:
+
+> Can Codex Goal create a believable product flow with protected routing and authentication behavior while preserving the existing design system?
+
+Simulated authentication is enough to test that.
+
+A meaningful flow would look something like this:
+
+```txt
+Home
+→ Login
+→ Dashboard
+→ Logout
+→ Home
+
+Unauthenticated Dashboard access
+→ Redirect or prompt for Login
+
+Signup
+→ Authenticated Dashboard state
+```
+
+If that works cleanly, the frontend has evolved beyond a static landing page.
+
+It has become a product-like interface.
+
+---
+
+## What I Will Watch For
+
+This phase should reveal whether the system begins to drift under product-level complexity.
+
+The main things I will watch are:
+
+* whether the new pages preserve the original design language,
+* whether dark mode remains consistent across all routes,
+* whether form validation feels intentional instead of generic,
+* whether protected routing behaves predictably,
+* whether the dashboard feels integrated rather than pasted on,
+* whether navigation stays coherent,
+* and whether the component structure becomes cleaner or more chaotic.
+
+This is the point where frontend AI generation becomes more interesting.
+
+A polished landing page can be generated quickly.
+
+A coherent product experience is harder.
+
+It requires the system to preserve visual, structural, and behavioral assumptions while continuing to expand.
+
+That is the kind of pressure ZORO is meant to study.
+
+## Enough Testing Just Frontends
+
+At this point, continuing to add more frontend features started to feel less meaningful.
+
+Codex Goal had already passed several increasingly difficult frontend stages:
+
+* it generated a polished landing page,
+* preserved the visual identity while adding dark mode,
+* expanded the project into a multi-page SaaS experience,
+* implemented Login, Signup, Logout, and Dashboard flows,
+* preserved authenticated state through `localStorage`,
+* and kept the overall design language surprisingly consistent.
+
+That changed the nature of the experiment.
+
+The original question was:
+
+> Can a single persistent Goal generate and preserve a coherent frontend experience?
+
+At least for this level of frontend complexity, the answer was much stronger than I expected.
+
+The result was not just a static mockup.
+
+It became a working product-like frontend with routing, theme state, authentication simulation, protected dashboard behavior, and a consistent visual system.
+
+Of course, this does not mean the application is production-ready in the full sense.
+
+There is still a huge difference between:
+
+* a convincing frontend,
+* a deployable product,
+* and a real full-stack system.
+
+But as a frontend-focused stress test, the result was already good enough that simply asking for more pages, more sections, or more UI polish would not teach me much more.
+
+The more interesting question now is no longer:
+
+> Can Codex Goal build a frontend?
+
+The next question is:
+
+> Can Codex Goal handle the invisible parts of software?
+
+Frontend work is highly visible.
+When spacing breaks, when a layout shifts, when dark mode fails, the problem is obvious.
+
+Backend and full-stack work are different.
+
+The failures are often hidden:
+
+* incorrect data flow,
+* broken API contracts,
+* unstable authentication,
+* missing validation,
+* inconsistent state,
+* weak error handling,
+* failed deployment assumptions,
+* and architecture that looks fine until it is actually used.
+
+That is where the next ZORO experiment should go.
+
+ZORO #2 showed that Codex Goal can push a frontend much further than I expected.
+
+ZORO #3 will move beyond the visible shell.
+
+The next phase is about backend logic, full-stack integration, deployment readiness, and whether Goal-driven development can preserve correctness when the result is no longer judged only by what appears on the screen.
+
+Here's my prompt for the next phase:
+
+```txt
+/goal Prepare the existing frontend for production deployment. Preserve all current visual and interaction behavior while making the application deployment-ready. Add route-level SEO metadata, accessibility improvements, keyboard navigation, focus states, reduced-motion support, robust form validation, loading/error/empty states, error boundaries, responsive edge case fixes, performance optimizations, Playwright end-to-end tests for navigation, theme toggling, login, signup, protected dashboard access, and logout. Run lint, typecheck, tests, and production build, fix all issues, and document the final deployment steps clearly. Do not replace the existing design system or rewrite the app from scratch. Continuously verify behavior with Playwright interactive.
+```
+
+## ZORO #2 Final
+
+After I ran the next phase and saw the result, I realized that Codex did not yet have a truly "full" frontend implementation.
+
+It had many components that looked complete at first glance, but some of them were still shallow in behavior.
+
+For example, several navigation items, footer links, product links, and CTA buttons pointed to the same generic destination instead of having their own meaningful pages or flows.
+
+Visually, the frontend was impressive.
+
+Structurally, it still had gaps.
+
+That became the final observation of ZORO #2:
+
+> Codex Goal is surprisingly strong at generating and evolving polished frontend shells, but a complete frontend is not just about how many components exist on the screen.
+
+A complete frontend also needs:
+
+* meaningful routes,
+* unique page destinations,
+* consistent interaction behavior,
+* complete navigation coverage,
+* and product-level information architecture.
+
+So the final frontend stress test is clear:
+
+> Can Codex Goal turn a visually convincing SaaS shell into a complete multi-page website where every visible interaction has a meaningful destination?
+
+This will be the last frontend-focused pressure before moving ZORO into backend integration and deployment readiness.

@@ -1,0 +1,332 @@
+---
+title: 'On-The-Block Service Devlog 05: Bugs and Issues'
+description: 'On-The-Block service devlog 05: Bugs and issues'
+pubDate: '2026-04-30'
+# heroImage: '/images/ON-THE-BLOCK/Recommendation-System.png'
+tags: ['recommendation', 'AI', 'on-the-block']
+category: 'on-the-block'
+series: 'on-the-block'
+seriesOrder: 4
+---
+
+# Resolving Bugs and Issues
+In this post, I want to share bugs and issues that appeared during service development.
+
+## After the Auth Service
+After a teammate developed and deployed the Auth service, connected it to Flutter, completed review, and merged it, I ran `flutter run` to test the feature.
+
+I launched it in the emulator and tried Google Login, but the app closed immediately when I clicked the button.
+
+To solve this, I needed the teammate's `GoogleService-Info.plist` file. After receiving that file separately, I added `CLIENT_ID` and `REVERSED_CLIENT_ID` to `info.plist`.
+
+## After Auth Service, Before Survey Service
+Even after finishing the preference survey, the Survey service was not deployed yet, so the app could not move to the home screen. I added `flutter run --dart-define=BYPASS_SURVEY=true` so I could reach the home screen for chat development.
+
+## Fetching Avatars in Chat
+If we think of KakaoTalk, each person in a chat can use a different avatar, and users without an avatar use a default avatar. To implement this, the chat side needs avatar handling connected to user profile data.
+
+## gRPC Error
+
+```text
+gRPC Error (code: 4, codeName: DEADLINE_EXCEEDED, message: Deadline exceeded, details: null, rawResponse: null, trailers: f)
+```
+
+# Building Chat v1 End-to-End: From Proto Integration to Real Runtime Behavior
+
+## Why this session mattered
+This session moved chat from a UI/mock state to a backend-integrated feature with real gRPC behavior, PostgreSQL-backed data, and production-like edge-case handling.
+
+The key goal was not only "can we connect?" but "does it behave correctly under real chat conditions?"
+
+## Scope we implemented
+- Wired Flutter chat feature to gRPC backend (`chat-service`) with generated protobuf stubs.
+- Validated runtime against local PostgreSQL-backed backend.
+- Removed dummy room/message behaviors from critical chat paths.
+- Added moderation actions in client:
+  - delete message, owner policy enforced by backend
+  - deactivate room, owner policy enforced by backend
+- Improved room list and stream behavior for real-world usage:
+  - pagination and load-more
+  - reconnect/catch-up handling
+  - duplicate suppression
+  - deleted-message placeholder rendering
+
+## Architecture decisions
+
+### 1. Thin-client contract boundary
+- Flutter presentation does not consume raw proto classes directly.
+- `data/` layer maps gRPC DTOs to UI models.
+- Backend remains authority for membership, moderation, and room lifecycle.
+
+### 2. Message rendering rules
+- `MESSAGE_TYPE_TEXT` renders text only.
+- Image widget renders only when:
+  - `message_type == IMAGE`
+  - `image_url` is non-empty.
+- Empty metadata is never treated as image payload.
+- Deleted messages render placeholders; original deleted content is not exposed.
+
+### 3. Stream correctness over simple connectivity
+- Client tracks latest sequence and reconnects with `afterSequenceNo`.
+- Stream merge deduplicates by `messageId` and `sequenceNo`.
+- Lifecycle hooks handle background/resume with stream restart + history sync.
+
+## Major issues found and fixed
+
+### A. Stale backend process caused false client failures
+Symptom:
+- Flutter send failed with `Unavailable` or internal SQL errors despite recent code fixes.
+
+Cause:
+- Old `chat-service` binary still listening on `:9090`.
+
+Fix:
+- Killed stale process, restarted latest backend, and re-ran smoke.
+
+### B. Room list missing older real rooms
+Symptom:
+- User had many active rooms in DB, but Flutter list showed fewer.
+
+Findings:
+1. Client initially had single-page-only behavior.
+2. Pagination could stall when the first page did not fill the viewport.
+3. Backend page-2 query failed on NULL last-message fields, specifically a `message_type` scan error.
+
+Fixes:
+- Client: added pagination, load-more, and underfilled-viewport auto-fetch.
+- Backend: fixed `ListMyRooms` query scan/null handling and status filtering.
+
+### C. Deactivated rooms still visible
+Symptom:
+- Room deactivated successfully but still appeared in the list.
+
+Fixes:
+- Backend query filter tightened to active-only rooms:
+  - `r.is_active = true`
+  - `r.deleted_at IS NULL`
+- Client added exclusion re-apply and render-time safeguards.
+
+### D. Dummy fallback confusion in room screen
+Symptom:
+- Opening invalid or deactivated rooms could show dummy-like behavior.
+
+Fix:
+- Removed local/mock send fallback and mock-room gating from the main runtime path.
+- Room now shows unavailable feedback instead of fabricating local chat behavior.
+
+## Features added in Flutter during this session
+
+### 1. Message deletion flow
+- Long-press message -> delete action.
+- Calls `DeleteMessage(roomId, messageId, ownerUserId)`.
+- Refreshes history after success.
+- Shows permission feedback on failure.
+
+### 2. Room deactivation flow
+- Room options (`...`) -> deactivate room.
+- Confirmation dialog.
+- Calls `DeactivateRoom(roomId, ownerUserId)`.
+- Returns to list and removes room from the active UI path.
+
+### 3. Backend-driven room list UX
+- Empty state for zero active rooms.
+- Pull-to-refresh + incremental pagination.
+- Deactivated/deleted rooms excluded from active list behavior.
+
+## Testing approach used
+- Backend unit/service/repository tests and smoke runs.
+- Direct DB inspection for membership/room status truth.
+- Direct RPC checks with `grpcurl` using proto files, because the server does not support reflection.
+- Flutter analyzer checks after each functional patch.
+
+## Final state
+By the end of this session:
+
+- Chat list and room behavior are backend-first.
+- Moderation actions are wired in the client and enforced by backend rules.
+- Reconnect/catch-up and duplicate handling are materially improved.
+- Deactivated/deleted rooms are handled as status-driven domain states, not UI-only assumptions.
+
+## Next recommended improvements
+1. Expose room ownership in room-screen state to hide owner-only actions for non-owners.
+2. Add explicit stream error UI for LEFT/REMOVED/inactive transitions.
+3. Add integration tests for Flutter repository + mapper behavior, including status, pagination, and deleted placeholders.
+4. Align all chat docs with the finalized active-only list backend policy.
+
+---
+
+## FCM and Firebase Setup Notes
+After the code is done, the setup mainly requires checking **two Firebase Console items + one iOS/APNs item + one GCP/Cloud Run permission item**.
+
+### 1. Enable FCM API in Firebase Console
+In Firebase Console:
+
+```text
+Project settings > Cloud Messaging
+```
+
+Confirm that **Cloud Messaging API / FCM HTTP v1 API** is enabled. This can also be done with GCP CLI:
+
+```bash
+gcloud services enable fcm.googleapis.com \
+  --project on-the-block-2026
+```
+
+### 2. iOS Setup: APNs Is Required
+iOS push does not work with Firebase alone. **APNs setup** is required.
+
+In Firebase Console:
+
+```text
+Project settings > Cloud Messaging
+> Apple app configuration / iOS app configuration
+> APNs authentication key upload
+```
+
+Upload the APNs `.p8` key issued from Apple Developer.
+
+Required values:
+
+```text
+APNs .p8 key file
+Key ID
+Apple Team ID
+```
+
+In Xcode:
+
+```text
+Open ios/Runner.xcworkspace
+Runner target > Signing & Capabilities
++ Capability > Push Notifications
++ Capability > Background Modes
+  - Background fetch
+  - Remote notifications
+```
+
+Important: **iOS push must be tested on a real iPhone.**
+
+### 3. Android Setup Check
+If `google-services.json` is already added, the basic Android setup is probably done.
+
+Check:
+
+```text
+android/app/google-services.json exists
+Firebase Android app package name == applicationId in android/app/build.gradle
+notification permission is requested on Android 13+
+```
+
+For Android emulator testing, use an emulator with Google APIs / Google Play Services.
+
+### 4. Give Cloud Run `chat-service` Permission to Send FCM
+In the current structure, **chat-service sends FCM push**.
+
+First check the Cloud Run service account:
+
+```bash
+gcloud run services describe chat-service \
+  --project on-the-block-2026 \
+  --region asia-northeast3 \
+  --format='value(spec.template.spec.serviceAccountName)'
+```
+
+Grant the role:
+
+```bash
+gcloud projects add-iam-policy-binding on-the-block-2026 \
+  --member="serviceAccount:<CHAT_SERVICE_ACCOUNT_EMAIL>" \
+  --role="roles/firebasecloudmessaging.admin"
+```
+
+On Cloud Run, it is better to use **Cloud Run service identity + Application Default Credentials** rather than a service account JSON key.
+
+Do not normally do this:
+
+```text
+GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
+```
+
+Use this structure instead:
+
+```text
+Grant FCM permission to the Cloud Run service account
+Initialize Admin SDK with ADC
+```
+
+### 5. If the Mobile App Calls `chat-service` RPC Directly
+If Flutter directly calls `RegisterDeviceToken`, `UnregisterDeviceToken`, `ListMyRooms`, and `MarkChatRoomRead`, the `chat-service` must also be reachable from the mobile app.
+
+Cloud Run may need:
+
+```text
+Authentication: Allow public access
+Ingress: All
+```
+
+This does not mean removing application authentication. It only lets the request reach the `chat-service` code instead of being blocked by Cloud Run IAM.
+
+Actual authentication should be verified inside `chat-service` through gRPC metadata:
+
+```text
+Authorization: Bearer <access_token>
+```
+
+### 6. Recommended Test Order
+
+1. Confirm FCM token is generated in the app:
+
+```text
+FCM token generated
+RegisterDeviceToken called
+RegisterDeviceToken success
+```
+
+2. Confirm DB values:
+
+```text
+user_id
+device_id
+token
+platform = IOS or ANDROID
+updated_at
+```
+
+3. Send a test message from Firebase Console:
+
+```text
+DevOps & Engagement > Messaging
+> New campaign / Notifications
+> Send test message
+> enter FCM registration token
+```
+
+4. Test real chat message push:
+
+```text
+User A login
+User B login
+A sends message to B
+B receives push
+B's Chat tab badge increments
+B taps notification
+Navigate to ChatRoomScreen(room_id)
+MarkChatRoomRead called
+badge updates to 0
+```
+
+## Notification and Auth Firebase Issue
+Because this is MSA, I wanted to separate notifications attached to chat from the Auth service and configure Firebase separately. But only one `google-services.json` file can exist, so I had to think about how to handle FCM. Does using the same Firebase project break MSA?
+
+But since chat cannot be used if auth login does not work anyway, I think it is acceptable.
+
+So I opened an issue asking the teammate responsible for auth to configure FCM, and we decided to receive it from that side.
+
+## Deployment and Chat Room Creation Issue
+
+```text
+flutter: CREATE_ROOM_FAILED: gRPC Error (code: 13, codeName: INTERNAL, message: ERROR: relation "chat_rooms" does not exist (SQLSTATE 42P01), details: [], rawResponse: null, trailers: {...})
+flutter: CREATE_ROOM_ENDPOINT: GrpcChatRepository(GrpcChatRemoteDataSource(chat-service-staging-44649239380.asia-northeast3.run.app:443, tls=true))
+```
+
+This kind of error occurred. It looks like the staging database schema or migrations are not aligned with the deployed chat service.

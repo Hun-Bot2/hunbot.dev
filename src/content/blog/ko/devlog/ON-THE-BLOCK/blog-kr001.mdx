@@ -1,0 +1,423 @@
+---
+title: 'ONTHEBLOCK 추천 챗봇 개발 기록 001 - 추천 데이터와 챗봇 데이터셋 정리'
+description: 'recommendation-service와 chatbot-service의 역할을 나누고, 추천 카탈로그 검증 결과와 챗봇 데이터셋 파이프라인을 정리한 기록'
+pubDate: '2026-06-19'
+heroImage: '/images/ON-THE-BLOCK/ontheblocktech.png'
+tags: ['on-the-block', 'recommendation', 'chatbot', 'dataset', 'gcp']
+category: 'on-the-block'
+series: 'on-the-block'
+seriesOrder: 8
+---
+
+# ONTHEBLOCK 추천 챗봇 개발 기록 001
+
+이번 기록은 ONTHEBLOCK의 추천 챗봇을 만들면서 정리한 진행 상황과 결과다.
+
+핵심은 하나다.
+
+챗봇은 추천 엔진이 아니다. 추천 후보, 점수, 순위, reason code는
+`recommendation-service`가 만들고, `chatbot-service`는 그 결과를 받아서
+사용자에게 설명하는 계층으로 둔다.
+
+## 1. 서비스 책임을 다시 나눴다
+
+처음에는 챗봇 안에서 추천 데이터셋, 추천 후보, fine-tuning 데이터를 같이
+다루다 보니 어느 저장소가 원본인지 헷갈릴 수 있었다.
+
+그래서 경계를 다시 정했다.
+
+```text
+recommendation-service
+  - 추천 후보 원본
+  - 술 catalog
+  - flavor profile
+  - recommendation vector
+  - ranking, score, reason code
+  - 사람이 검토해야 하는 source snapshot
+
+chatbot-service
+  - 사용자 질문 intent 확인
+  - recommendation-service 호출
+  - 추천 결과 순서 보존
+  - grounded Korean answer 생성
+  - verifier와 deterministic fallback
+  - chatbot fine-tuning/evaluation dataset 생성
+```
+
+중요한 결정은 다음과 같다.
+
+- `chatbot-service`는 추천 점수 계산, 정렬, 필터링을 하지 않는다.
+- `chatbot-service`는 recommendation DB, survey DB, auth DB, map DB를 직접 읽지 않는다.
+- 사용자가 보낸 `user_id`를 신뢰하지 않는다.
+- 사용자 identity는 gateway/auth metadata에서 온다.
+- 추천 결과에 없는 술, 장소, 가격, 재고, 거리, 분위기는 챗봇이 만들지 않는다.
+
+## 2. recommendation-service를 먼저 확인했다
+
+챗봇 데이터셋을 고치기 전에 recommendation-service 쪽 데이터를 먼저 봐야 했다.
+이유는 챗봇 데이터셋은 downstream artifact이고, 추천 사실의 원본은
+recommendation-service에 있기 때문이다.
+
+확인한 결론은 다음과 같다.
+
+```text
+recommendation-service/data/chatbot-sft-snapshots
+recommendation-service/data/beverage
+```
+
+여기에 추천 후보와 사람이 검토해야 하는 snapshot/candidate material이 있다.
+
+따라서 안전한 작업 순서는 이렇게 정했다.
+
+```text
+1. recommendation-service에서 source data 확인
+2. 사람이 검토한 row만 approved/reviewed 상태로 정리
+3. approved output을 chatbot-service로 전달
+4. chatbot-service에서 dataset 재생성
+5. validate/evaluate 후 학습 또는 배포 판단
+```
+
+## 3. 추천 카탈로그 검증 결과
+
+추천 카탈로그 audit 결과는 정상이다.
+
+```json
+{
+  "source": "seed:data/beverage",
+  "issues": [],
+  "metrics": {
+    "active_beverages": 60,
+    "alias_coverage": 1.0,
+    "complete_vector_coverage": 1.0,
+    "confidence_coverage": 1.0,
+    "flavor_profile_coverage": 1.0,
+    "reason_code_coverage": 1.0,
+    "recommendation_vectors": 60,
+    "source_metadata_coverage": 1.0,
+    "vector_coverage": 1.0
+  }
+}
+```
+
+해석은 명확하다.
+
+- 현재 추천 가능한 active beverage는 60개다.
+- 12개 category에 각각 5개씩 들어 있다.
+- 60개 모두 recommendation vector가 있다.
+- 60개 모두 flavor profile과 reason code를 가진다.
+- source metadata coverage도 100%다.
+- critical, warning issue는 없다.
+
+즉, 현재 앱은 이 60개 active beverage catalog를 기반으로 추천할 수 있다.
+단, 이것은 chatbot training data가 아니라 recommendation-service가 추천할 수
+있는 원본 catalog 상태다.
+
+## 4. 최신 recommendation proto를 chatbot-service에 맞췄다
+
+챗봇은 recommendation-service의 계약을 따라야 한다.
+
+그래서 최신 recommendation proto를 chatbot-service 쪽 consumer copy로 맞추고,
+Python generated stub도 다시 생성했다.
+
+확인한 contract 변경 포인트는 다음과 같다.
+
+- `BeverageDiversityMode`
+- `BeverageFlavorDirection`
+- `exclude_beverage_ids`
+- `exclude_result_ids`
+- venue `place_types`
+- 기존 chatbot 쪽의 오래된 `DiversityMode`, `session_context_id` 가정 제거
+
+이후 chatbot-service는 새로운 recommendation contract에 맞춰 request를 만든다.
+
+## 5. follow-up 추천 제어를 연결했다
+
+사용자가 "다른 술 추천해줘"처럼 후속 추천을 요청하면, 챗봇이 직접 새로운
+추천을 만들면 안 된다.
+
+대신 이전 대화의 추천 결과 ID를 context로 기억하고, recommendation-service에
+제외 목록을 넘긴다.
+
+```text
+client_context
+  -> previous recommendation ids
+  -> exclude_beverage_ids / exclude_result_ids
+  -> recommendation-service request
+```
+
+이 구조의 장점은 recommendation-service가 계속 ranking owner로 남는다는 점이다.
+챗봇은 대화 흐름을 보조하지만, 최종 추천 후보와 순위는 recommendation-service가
+결정한다.
+
+## 6. chatbot dataset pipeline을 만들었다
+
+chatbot-service에는 오프라인 fine-tuning/evaluation dataset pipeline을 만들었다.
+
+관련 파일은 다음이다.
+
+```text
+src/chatbot_service/dataset/schema.py
+src/chatbot_service/dataset/exporter.py
+src/chatbot_service/dataset/cli.py
+tests/test_dataset_pipeline.py
+docs/chatbot/dataset-v0-kr.md
+evaluation/datasets/chatbot_ft_v0
+```
+
+스키마 버전은 다음으로 정했다.
+
+```text
+ontheblock.chatbot.finetune.v0
+```
+
+각 row는 다음 정보를 가진다.
+
+```text
+case_id
+scenario
+split
+user_message
+intent
+sanitized_profile_summary
+ordered_recommendation_service_results
+reason_codes
+missing_facts
+expected_assistant_answer
+must_include
+must_not_include
+preserve_recommendation_order
+human_review.status
+recommendation_snapshot_id
+entity_combination_key
+```
+
+중요한 점은 `human_review.status`다.
+
+```text
+needs_review
+reviewed
+rejected
+```
+
+`needs_review`는 사람이 아직 확인하지 않은 dry-run 후보에만 쓴다.
+학습이나 split에 들어가는 데이터는 `reviewed` 상태여야 한다.
+
+## 7. needs_review 위치를 정리했다
+
+처음에는 `needs_review`가 어디에 있는지 헷갈릴 수 있었다.
+
+정리하면 다음과 같다.
+
+```text
+recommendation-service
+  - candidate_status_default = needs_review
+  - recommendation source/candidate 검토 상태
+
+chatbot-service
+  - generate-candidates 결과는 human_review.status = needs_review
+  - build-v0 결과는 human_review.status = reviewed
+```
+
+즉, recommendation-service의 `needs_review`는 추천 후보 자체의 검토 상태이고,
+chatbot-service의 `needs_review`는 chatbot dataset candidate의 검토 상태다.
+
+둘은 비슷해 보이지만 ownership이 다르다.
+
+## 8. reviewed dataset과 split을 만들었다
+
+chatbot-service의 v0 dataset은 작은 검증용 샘플이다.
+production training data가 아니라 pipeline이 안전하게 동작하는지 확인하기 위한
+샘플이다.
+
+생성물은 다음이다.
+
+```text
+evaluation/datasets/chatbot_ft_v0/reviewed.jsonl
+evaluation/datasets/chatbot_ft_v0/train.jsonl
+evaluation/datasets/chatbot_ft_v0/validation.jsonl
+evaluation/datasets/chatbot_ft_v0/test.jsonl
+evaluation/datasets/chatbot_ft_v0/baseline_reviewed_report.json
+evaluation/datasets/chatbot_ft_v0/baseline_test_report.json
+```
+
+현재 포함한 scenario는 다음과 같다.
+
+- greeting
+- app help
+- beverage recommendation
+- venue recommendation
+- recommendation explanation
+- alternative recommendation
+- full-list request
+- comparison / trade-off
+- insufficient data
+- out-of-scope refusal
+
+## 9. validation rule을 넣었다
+
+dataset validation은 단순 JSONL parse가 아니다.
+
+다음 조건을 확인한다.
+
+- 추천 intent는 recommendation-service 결과 순서를 보존해야 한다.
+- recommendation result에 없는 후보를 답변에 추가하면 안 된다.
+- train, validation, test 사이에 같은 `recommendation_snapshot_id`가 새면 안 된다.
+- 같은 entity combination이 split 사이를 넘나들면 안 된다.
+- `--require-reviewed`일 때 `human_review.status`는 반드시 `reviewed`여야 한다.
+- raw token, 사용자 식별자, raw survey 답변은 export하지 않는다.
+
+이렇게 한 이유는 fine-tuning 전에 데이터 누수와 hallucination label을 막기
+위해서다.
+
+## 10. baseline evaluation을 추가했다
+
+baseline evaluator는 LLM을 호출하지 않는다.
+오프라인 JSONL에 들어 있는 expected answer를 기준으로 품질 gate를 계산한다.
+
+확인하는 metric은 다음이다.
+
+- false refusal rate
+- unsupported fact rate
+- recommendation order preservation
+- candidate addition rate
+- insufficient-data correctness
+- out-of-scope correctness
+- Korean response quality fields for human review
+
+이 단계에서는 Redis cache도 쓰지 않는다.
+캐시된 답변이 evaluation을 오염시키면 안 되기 때문이다.
+
+## 11. chatbot runtime 방향도 정리했다
+
+runtime 방향은 RAG + rule-based recommendation이다.
+
+```text
+사용자 질문
+  -> chatbot-service intent check
+  -> authenticated metadata 확인
+  -> recommendation-service GetProfileStatus
+  -> profile active이면 GetBeverageRecommendations 또는 GetVenueRecommendations
+  -> recommendation-service 결과로 grounded context 구성
+  -> OpenAI-compatible LLM endpoint를 Korean response writer로만 사용
+  -> verifier
+  -> deterministic fallback 또는 answer + cards 반환
+```
+
+LLM은 추천을 만드는 모델이 아니다.
+추천 결과를 자연스러운 한국어로 설명하는 writer다.
+
+LLM이 없어도 다음 fallback은 deterministic하게 동작해야 한다.
+
+- profile missing
+- profile pending
+- empty recommendations
+- recommendation-service unavailable
+- out-of-scope question
+- ungrounded LLM output
+
+## 12. 인증과 사용자 검증 조건
+
+앱은 사용자가 검증되지 않은 상태에서 추천/챗봇 핵심 기능을 사용할 수 없어야 한다.
+
+이유는 recommendation-service가 사용자 profile status를 token-derived identity로
+판단하기 때문이다.
+
+정리한 원칙은 다음이다.
+
+- Flutter는 `user_id`를 직접 보내지 않는다.
+- gateway는 `authorization: Bearer <user_access_token>`을 downstream에 전달한다.
+- chatbot-service는 같은 user token을 recommendation-service로 forward한다.
+- private Cloud Run 호출에는 서버가 `x-serverless-authorization`을 붙인다.
+- Google ID token은 user access token을 대체하지 않는다.
+
+즉, user access token과 serverless authorization은 목적이 다르다.
+
+## 13. GCP staging에서 필요한 연결
+
+staging target은 다음 값으로 정리했다.
+
+```text
+RECOMMENDATION_SERVICE_GRPC_ADDR=recommendation-service-44649239380.asia-northeast3.run.app:443
+RECOMMENDATION_SERVICE_GRPC_TLS=true
+RECOMMENDATION_SERVICE_SERVERLESS_AUTH_MODE=google_id_token
+RECOMMENDATION_SERVICE_SERVERLESS_AUDIENCE=https://recommendation-service-44649239380.asia-northeast3.run.app
+```
+
+chatbot-service 쪽에서 필요한 것은 다음이다.
+
+- Cloud Run runtime service account
+- recommendation-service `roles/run.invoker`
+- Cloud SQL chatbot storage
+- Redis cache
+- LLM endpoint URL
+- validation bearer token
+- Secret Manager pinned version
+
+중요한 점은 staging secret 값을 문서나 git에 쓰지 않는 것이다.
+
+## 14. 검증 결과
+
+작업 후 로컬 검증은 다음 기준으로 통과했다.
+
+```text
+ruff check: pass
+pytest: 170 passed
+validation fixtures: pass
+dataset validate/evaluate: pass
+```
+
+recommendation catalog audit도 다음 상태였다.
+
+```text
+active_beverages: 60
+recommendation_vectors: 60
+issues: []
+critical: 0
+warning: 0
+```
+
+현재 기준으로 확인된 결과는 다음이다.
+
+- recommendation-service는 60개 active beverage catalog를 추천 후보로 사용할 수 있다.
+- chatbot-service는 latest recommendation contract에 맞춰 request를 만들 수 있다.
+- chatbot dataset pipeline은 `needs_review`와 `reviewed`를 분리한다.
+- training/evaluation split은 reviewed data만 허용한다.
+- 챗봇은 recommendation-service 결과 순서를 보존하도록 검증된다.
+- hallucination 방지를 위해 recommendation result에 없는 후보 추가를 막는다.
+
+## 15. 남은 일
+
+남은 일은 구현보다 운영 검증에 가깝다.
+
+```text
+1. recommendation-service source candidate를 사람이 계속 검토한다.
+2. approved/reviewed snapshot만 chatbot dataset에 반영한다.
+3. chatbot dataset을 다시 build/validate/evaluate 한다.
+4. staging user token으로 gateway -> chatbot -> recommendation 경로를 smoke test 한다.
+5. LLM endpoint latency와 한국어 품질을 확인한다.
+6. production 배포 전 Cloud Run env, IAM, Secret version을 다시 고정한다.
+```
+
+이 순서를 지키는 이유는 간단하다.
+
+추천 품질의 원본은 recommendation-service에 있고, chatbot-service는 그 결과를
+사용자에게 안전하게 설명하는 계층이기 때문이다.
+
+## 결론
+
+이번 작업의 결과는 추천 챗봇을 학습 모델 중심으로 바로 밀어붙이는 것이 아니라,
+서비스 경계와 데이터 검토 흐름을 먼저 고정했다는 점이다.
+
+현재 ONTHEBLOCK 추천 챗봇은 다음 구조로 가는 중이다.
+
+```text
+reviewed recommendation catalog
+  -> recommendation-service ranking
+  -> chatbot-service grounded context
+  -> Korean response writer
+  -> verifier / fallback
+  -> Flutter cards and answer
+```
+
+이 구조가 안정되면 그다음에 실제 사용자 로그와 피드백을 기반으로 ML ranking이나
+fine-tuning을 검토할 수 있다.

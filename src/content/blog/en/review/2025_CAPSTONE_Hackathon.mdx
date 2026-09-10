@@ -1,0 +1,114 @@
+---
+title: '2025 Capstone Design & Hackathon'
+description: 'A university alliance hackathon held from 2025-10-24 to 2025-10-26'
+pubDate: '2025-10-26'
+# heroImage: '../../assets/KOSSDA.png'
+tags: ['Hackathon', 'AI']
+category: 'Hackathon'
+---
+
+# Hackathon Overview
+
+Topic: Develop a business model using generative AI APIs / Develop a business model using generative algorithms
+
+**Our team's choice: Develop a business model using generative AI APIs**
+
+When the notice was posted on the university website, it described the event as a university alliance hackathon with meals and snacks provided during a two-night, three-day stay at a hotel. Since my exams had just ended, I thought it would be a good opportunity to rest and work on a development project at the same time.
+
+The organizers said teams would be assigned as fairly as possible based on the Google Form submitted in advance. In total, five universities participated, and each team had five members.
+
+Our team first started generating ideas, and the following candidates came up.
+
+```text
+1. Chrome extension that summarizes terms of service
+2. Gamification -> fairy tale implementation & psychological test -> Gamification
+3. Book summarizer
+4. Emotion diary
+5. Prompt converter -> formats prompts for AI [Markdown, multiple forms]
+6. Generative AI that can bypass GPT detectors
+7. Learning curriculum for major students
+   -> further developed
+8. Phone notification summarizer by importance + automatically removes alerts when the user is looking at the phone (Face)
+   -> further developed
+9. AI that provides solutions to real-world problems
+10. AI for analyzing part-time jobs, occupations, and reviewing contracts
+11. Programming learning
+12. No More Vibe Coding & Quiz AI
+13. Code -> Tagging AI
+14. Summarize AI conversation history + prompt -> continue into the next conversation
+15. Baby-language argument robot
+    -> further developed
+16. Room-cleaning recommendation AI
+    -> further developed
+17. AI detector
+18. Information reliability verification AI
+19. Drone frequency location verification AI
+20. Wearable + AI for optimal sleep-time analysis
+21. Food photo analysis + healthcare AI
+```
+
+# Team Composition and Roles
+
+I took the role of project lead. The team consisted of one frontend developer, one backend developer, one designer, and one hardware designer.
+
+The roles were divided as follows.
+
+- Project Lead (me): Overall planning and development direction, technical architecture design, schedule and role coordination, PPT and presentation leadership, related paper and market research
+- Frontend (1): UI development and React-based conversation page implementation
+- Backend (1): FastAPI server setup, STT/TTS/LLM API integration
+- Design (1): Character design, logo design, and PPT
+- Hardware (1): Raspberry Pi 5 design, sensor, microphone, and speaker module composition using online tools
+
+## Idea: A Baby-Language Argument Robot Toy
+
+The idea was inspired by `https://youtu.be/Tgk9L-6XsvA`, with the additional image of a moving cactus toy. It was selected through a team vote.
+
+While researching this idea, we found that "babbling" does not carry a fixed semantic meaning, which made it unsuitable for direct implementation using a generative AI API.
+
+As we considered changing the idea, we found another point from the research: language ability grows rapidly in children between around 18 months and 3 years old. So instead of throwing away the idea completely, we shifted the focus to children aged 18 months to 3 years and decided to develop it more concretely.
+
+> Data: `https://talkbank.org/ | https://langcog.github.io/childes-db-website/index.html`
+> Existing product: `https://catius.cafe24.com/`
+
+### Revised Idea: An Interactive Robot Toy That Grows With the Child
+
+Core idea:
+
+1. Grow with the child -> provide developmental-stage information and required abilities for the relevant age range through our app.
+2. Let the child talk with the toy and provide reports that help check language and cognitive abilities according to the developmental stage.
+3. Provide age-appropriate conversation content based on developmental-stage theory, such as 18 months to 3 years, 3 to 4 years, and 4 to 4.5 years.
+4. Support language and brain development.
+5. Design hardware and a cute exterior that can withstand impacts when a child throws or hits it.
+
+### Problems?
+
+1. How can a very young child operate the toy easily? -> Use camera recognition, make the switch visually obvious, etc.
+2. GDPR-K in Korea and regulations around children's online services
+3. Algorithmic error and interpretation risk -> fallback behavior, model diversity in training [problem: insufficient data]
+4. Technology and regulation
+
+# Project Structure
+
+# Tech Stack
+
+Frontend: React, Vite, Tailwind
+Backend: FastAPI, WebSocket, Python
+Gen AI: GPT-4-turbo, Clova STT
+Database: SQLAlchemy + Alembic for user/log storage
+Deployment: localhost
+
+# Problem-Solving Process
+
+(Focused on key issues such as errors, ports, DB, deployment, and AI communication)
+
+# Result and Demo
+
+(Frontend-backend communication success, MVP completion)
+
+# Retrospective and Takeaways
+
+(Sense of achievement, lessons learned, and next goals)
+
+# Links
+
+(GitHub, demo URL, etc.)

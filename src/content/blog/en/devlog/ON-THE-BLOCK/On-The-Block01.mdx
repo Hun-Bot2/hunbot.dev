@@ -1,0 +1,99 @@
+---
+title: 'On-The-Block Service Devlog 01'
+description: 'On-The-Block service development note 01'
+pubDate: '2026-04-03'
+heroImage: '/images/ON-THE-BLOCK/Event-Storming-v1-kr.png'
+tags: ['golang', 'go', 'DDD','Event-Storming', 'On-The-Block']
+category: 'on-the-block'
+series: 'on-the-block'
+seriesOrder: 1
+---
+
+## On-The-Block Service Devlog 01
+During the first semester of the 2026 academic year, I took a Capstone Design course and started developing a team project called On-The-Block.
+
+The service aims to provide information about cocktails, bars, and liquor shops, plus community features, recommendations, chat, and more. Conceptually, it combines parts of "Danggeun Market + Dailyshot."
+
+The name On-The-Block comes from the expression "On the rocks," used when drinking at a bar. I personally think the name sticks well.
+
+This is a three-person project, and we plan to develop it with MSA, or Microservice Architecture. The reason is that each person has different main languages and goals, so we decided it would be better for everyone to build with the language and technology they are strongest in. Some may think the topic is a little common, but I thought services like this are also necessary if I want to prepare for employment, so we decided to build it.
+
+## Features to Implement
+I thought a table would be the cleanest, so I am posting the table from our document.
+
+| **Feature category** | **Detailed features** | **Core tech stack** | **Owner** |
+|------------|---------------------|-------------------------|---------|
+| **Auth & commerce** | Signup, adult verification, alcohol smart order, payment pipeline, neighborhood verification | Java/Kotlin, Spring Boot, Spring Security, PostgreSQL, Redis | Java |
+| **Real-time interaction** | Drinking meetups, group chat, real-time participation alerts | Go/Rust, gRPC, WebSocket, Amazon DynamoDB | Go/Rust/C++/C |
+| **Intelligent services** | Survey-based alcohol recommendation, fraud detection, recommendation model serving, chatbot | Python, Qdrant, Airflow, ONNX Runtime | Python/C++ |
+| **Location & search** | Map-based nearby bar search, hybrid search, public POI data | OpenSearch, PostGIS, public data | Shared |
+| **Data pipeline** | Inter-service event relay, user behavior logs, CDC data sync | Apache Kafka, Amazon MSK, AWS Lambda, DynamoDB Streams | Shared |
+| **Admin** | Store inventory management, order dashboard, user manner temperature management | Java/Kotlin, React/Vue | Java, JavaScript |
+| **Infra/DevOps** | Container orchestration, IaC, CI/CD automation | Kubernetes (EKS), Docker, Terraform, Helm, GitLab CI | Shared |
+
+### My Role
+| **Feature category** | **Detailed features** | **Core tech stack** | **Owner** |
+|------------|---------------------|-------------------------|---------|
+| **Real-time interaction** | Drinking meetup matching, group chat, real-time participation alerts | Go/Rust, gRPC, WebSocket, Amazon DynamoDB | Go/Rust/C++/C |
+| **Intelligent services** | Survey-based alcohol recommendation, fraud detection, recommendation model serving | Python, Qdrant, Airflow, ONNX Runtime | Python/C++ |
+
+The parts marked **Shared** will be studied and developed together by the team. I decided to take responsibility for the chat system and recommendation system.
+
+## Event Storming
+Event Storming is a concept from DDD, Domain-Driven Design. It is a way to visually express domain modeling, and everyone, literally everyone, is supposed to participate.
+
+![Event-Storming-Legend](/images/ON-THE-BLOCK/Event-Storming-Legend.png)
+
+During this process, we repeatedly organized how the service features should work. The team kept discussing parts that were hard to derive and features that needed to be clarified.
+
+Through that process, the feature flow and service flow became much clearer. That made me think the Event Storming process was very important. Even though our service is not huge, we kept finding features to fix and things to discuss: DAU/MAU expectations, database choices, tech stacks, and more.
+
+The most important thing I felt was that **everyone** needs to participate. If I work at a real company later, especially a startup, I do not know whether work happens exactly like this. But development is not only about technology. Domain knowledge, design, CTO perspective, developers, marketers, and everyone else should participate to clearly identify the domain area, find mismatched parts, talk about them, discuss, and fix them. I felt grateful to experience this process as a student without much pressure.
+
+We ran Event Storming on March 27 and April 3. I will write from what I remember first. The first topic was liquor shop information, alcohol detail information, the recommendation system connected to the wishlist, and the cart feature.
+
+Users can search for liquor shops or alcohol names. If they click a liquor shop, they see the list of alcohol that shop has. If they click an alcohol item, they see information about that alcohol and nearby liquor shops that carry it. From there, users can add it to their wishlist or cart.
+
+The wishlist is connected to the recommendation-system microservice, which recommends the closest store by location or stores with better prices for the selected alcohol. However, if the user selected the alcohol directly from a liquor shop page, recommendation is unnecessary, so it can go straight into the cart. Therefore, alcohol selected from a liquor shop is not connected to the wishlist/recommendation system. Alcohol selected from the wishlist can move to the cart for final payment.
+
+We also discussed the main page design. Since prose alone would not create the same picture in everyone's head, I will write it as numbered flow from top to bottom.
+
+1. The top-left of the main page has the logo and service name. The top-right has a search icon, notification icon, and profile avatar.
+2. Clicking each icon moves to a new page, not a modal.
+3. The hero area will show alcohol and explanations based on the user's preference survey, auto-scrolling left and right. We want to apply a carousel-style design. (https://www.krds.go.kr/html/site/component/component_04_09.html)
+4. Below that, nearby bars and liquor shops based on user location appear in a scrolling area.
+5. Below that, by combining tourism/place APIs with user location, the app recommends places nearby where people can freely gather. This means parks, riversides, and similar places where people sometimes enjoy light drinks.
+6. Below that, the main page ends with recommended community posts or information posts.
+
+![Event-Storming-v2-krl](/images/ON-THE-BLOCK/Event-Storming-v2-krl.png)
+
+### Organized Decisions
+1. Login/signup will only use Google OAuth. There will be no ordinary login/signup form.
+2. Payment and adult verification logic that requires business registration or public agency document submission will be added after the app is more than 80% complete.
+3. The wishlist connects to the recommendation system only when the user wishes alcohol directly. If alcohol is selected from a liquor shop, the wishlist and recommendation system do not connect.
+4. Main page design, top to bottom:
+    1. Top bar: logo, search icon, notification icon, profile avatar
+    2. Carousel-style alcohol recommendation based on preference survey
+    3. Nearby bar/liquor shop recommendation based on user location
+    4. Recommendation area for places where users can enjoy drinks for free based on location
+    5. Recommended community posts/information posts
+
+The app design was already implemented in Stitch form, so we did not need to worry too much about it. We uploaded designs by part to Notion and discussed strange parts or feature details.
+
+![Notion Design - Home](/images/ON-THE-BLOCK/notion-design-home.png)
+
+## Closing
+1. Event Storming is very important.
+2. The process of continuously saying and discussing things like "this feature is needed," "that feature can be replaced another way," and "this approach seems better" is very important.
+3. It is very convenient to have someone with rich domain knowledge. They can give immediate feedback about desired features and feelings.
+4. I think doing Event Storming alone is impossible.
+5. I clearly learned the difference between personal development and team development.
+
+### This series will continue until the project is complete.
+- Vibe coding for Flutter implementation
+- Blog and paper reviews about chat services
+- Blog and paper reviews about recommendation systems
+- Problems and solutions encountered during development
+- Thoughts during development
+- Things studied during development
+- References used during development, and so on

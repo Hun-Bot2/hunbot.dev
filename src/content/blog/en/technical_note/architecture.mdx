@@ -1,0 +1,82 @@
+---
+title: 'Architecture Decision Record (ADR)'
+description: 'ADR: Architectural Decision Record'
+pubDate: '2026-04-24'
+heroImage: '/images/TECH/head-first-swa.png'
+tags: ['ADR', 'Architectural Decision Record', 'Architecture', 'Design Decision']
+category: 'Architecture'
+series: 'Architecture'
+seriesOrder: 1
+---
+
+I want to summarize ADR, or Architectural Decision Record, as introduced in *Head First Software Architecture*.
+
+# ADR (Architectural Decision Record)
+The structure is as follows.
+
+```markdown
+## Title
+## Status
+## Context
+## Decision
+## Consequences
+## Governance
+## Notes
+```
+
+Below is an example ADR written while applying the idea to a project I am developing. It is based on an ADR from an actual project, with some details modified for clarity.
+
+### Title
+The number starts from 001 and can go up to 999. The book says the title should be written very carefully.
+
+> 001: Use a relational database, PostgreSQL, for the chat service: Approved, superseded by 024.
+
+### Status
+The status can be request for comments, which should always have a response deadline, proposal, or approved.
+
+Naturally, parts of the decision can be replaced during development, so it recommends writing in a form like this:
+
+> 024: Decide to use Cassandra as the database for the chat service: Approved, supersedes 001.
+
+This approach updates both the existing document and the new document, showing that ADRs are continuously evolving documents.
+
+### Context
+This section explains the background and context of the problem.
+
+> In a chat service, real-time message delivery and high write throughput are important. PostgreSQL is a relational database that supports transactions and complex queries, but in a large-scale chat service, write throughput can become a bottleneck.
+> Also, chat messages are usually stored in a simple key-value style, and distributed NoSQL databases such as Cassandra may be more suitable for these requirements.
+
+### Decision
+This section explains the decision and why it was made.
+
+> Because the chat service requires real-time message delivery and high write throughput, we decided to use a distributed NoSQL database such as Cassandra.
+
+### Consequences
+This section explains the result and impact of the decision.
+
+> By using Cassandra, the chat service can support high write throughput and real-time message delivery, improving system performance and scalability.
+
+### Governance
+In other words, after the team spends time writing an ADR, there needs to be a way to check whether the decision is being implemented correctly and whether it continues to hold.
+The book *Evolutionary Architecture* apparently discusses governance, so I will study that later and update this note.
+
+> ADRs are documented for every architectural decision and promote communication and collaboration among team members.
+
+### Notes
+This section contains metadata about the ADR itself.
+
+> - Original author
+> - Approval date
+> - Approver
+> - Last modified date
+> - Modifier
+> - Last modification
+
+Other topics overlap with content from Event-Driven Architecture, DDD, Microservices, and software engineering books, so I will not write them separately here.
+
+## Closing
+I read this book after midterms, so I regret that I could not apply ADR documentation during the project. But in the next team project, I want to try it.
+
+Some parts of the book overlapped with things we discussed during Event Storming in a 2026 team project, and it made me feel that we had done some things fairly well.
+
+Next, if I find interesting books such as *Evolutionary Architecture*, I will update this note.

@@ -1,0 +1,820 @@
+---
+title: 'ONTHEBLOCK LLM Serving Service 기록 02 - 명령과 검증'
+description: 'On-The-Block 서비스 개발기 07'
+pubDate: '2026-06-06'
+heroImage: '/images/ON-THE-BLOCK/Event-Storming-v1-kr.png'
+tags: ['golang', 'go', 'DDD','Event-Storming', 'On-The-Block']
+category: 'on-the-block'
+series: 'on-the-block'
+seriesOrder: 1
+---
+
+
+# LLM Serving Service 기록 02 - 명령과 검증
+
+이 문서는 `llm-serving-service` 저장소를 만들고 GCP Cloud Run GPU staging에 배포하면서 실행한 주요 명령, 실패와 수정, 검증 결과를 한국어로 기록한다.
+
+설계와 선택 이유는 [llm-service-kr01.mdx](./llm-service-kr01.mdx)에 정리했다.
+
+## 시간 기준
+
+- 작업일: 2026-06-06
+- 로컬 기준 timezone: Asia/Seoul
+- GCP 로그 기준: UTC
+
+주요 GCP 시간:
+
+```text
+Cloud Build started: 2026-06-06T07:56:55Z
+Cloud Build duration: 17m56s
+Cloud Run ready: 2026-06-06T08:29:40Z
+```
+
+KST로 보면 대략 2026-06-06 16:56부터 17:29 사이에 build, push, deploy, model load가 완료되었다.
+
+## 최종 결과
+
+```text
+Cloud Build ID: 586db302-5004-47e5-8234-b1dc44ef88dc
+Image: asia-southeast1-docker.pkg.dev/on-the-block-2026/ontheblock-llm/llm-serving-service-staging:staging-manual-20260606-1
+Image digest: sha256:c4745f5e1d867630e982bc163a607b26d049a21bf79cd4130c739c53403c719e
+Cloud Run service: llm-serving-service-staging
+Ready revision: llm-serving-service-staging-00001-rkg
+Smoke test URL: https://llm-serving-service-staging-vcuepibcwq-as.a.run.app/v1/chat/completions
+Auth: private Cloud Run
+```
+
+Smoke test 결과는 OpenAI 호환 JSON이었고, 한국어 응답이 생성되었다.
+
+```text
+홍대 A바에서 진토닉을 추천드립니다. 라임 향과 탄산감이 산뜻한 취향과 잘 맞습니다.
+```
+
+## 1. 공식 문서 확인
+
+구현 전에 최신 공식 문서를 확인했다. 이유는 Cloud Run GPU region, GPU 조건, TGI OpenAI 호환 여부, TGI launcher variable, private model token 처리 방식이 바뀔 수 있기 때문이다.
+
+확인한 공식 출처:
+
+```text
+https://docs.cloud.google.com/run/docs/configuring/services/gpu
+https://docs.cloud.google.com/run/docs/locations
+https://docs.cloud.google.com/run/docs/authenticating/service-to-service
+https://docs.cloud.google.com/run/docs/rollouts-rollbacks-traffic-migration
+https://docs.cloud.google.com/run/docs/configuring/services/secrets
+https://huggingface.co/docs/text-generation-inference/main/quicktour
+https://huggingface.co/docs/text-generation-inference/main/basic_tutorials/consuming_tgi
+https://huggingface.co/docs/text-generation-inference/main/reference/launcher
+https://huggingface.co/docs/text-generation-inference/basic_tutorials/gated_model_access
+https://github.com/huggingface/text-generation-inference/pkgs/container/text-generation-inference
+```
+
+확인 후 결정:
+
+- TGI는 `/v1/chat/completions` OpenAI 호환 API를 제공한다.
+- 별도 Python wrapper는 필요 없다.
+- Cloud Run GPU L4는 region 제한이 있다.
+- `asia-northeast3`는 L4 지원 목록에 없어서 staging은 `asia-southeast1`로 정했다.
+- Cloud Run private이면 caller가 Google ID token과 `roles/run.invoker`를 가져야 한다.
+- `HF_TOKEN`은 private/gated Hugging Face model에만 Secret Manager로 주입한다.
+
+## 2. 저장소 파일 생성
+
+파일 생성과 수정은 Codex의 patch 적용 방식으로 진행했다. shell heredoc으로 파일을 쓰지 않았다.
+
+처음 만든 주요 파일:
+
+```text
+AGENTS.md
+README.md
+Dockerfile
+.env.example
+.gitignore
+.dockerignore
+deploy/gcp/cloudbuild.staging.yaml
+deploy/gcp/staging.env.example
+deploy/gcp/staging.substitutions.env.example
+deploy/gcp/README.md
+docs/architecture.md
+docs/decisions.md
+docs/gcp-cloud-run-gpu.md
+docs/chatbot-integration.md
+docs/security.md
+docs/operations.md
+docs/evaluation.md
+docs/plans/zero-to-hero.md
+scripts/smoke_chat_completion.sh
+scripts/build_local.sh
+scripts/README.md
+tests/README.md
+```
+
+이번 한국어 기록으로 추가한 파일:
+
+```text
+docs/llm-service-kr01.mdx
+docs/llm-service-kr02.mdx
+```
+
+## 3. 로컬 검증 명령
+
+스크립트 문법 확인:
+
+```bash
+bash -n scripts/build_local.sh scripts/smoke_chat_completion.sh
+```
+
+diff whitespace 확인:
+
+```bash
+git diff --check
+```
+
+Cloud Build YAML parse 확인:
+
+```bash
+ruby -e 'require "yaml"; YAML.load_file("deploy/gcp/cloudbuild.staging.yaml"); puts "cloudbuild yaml ok"'
+```
+
+secret pattern scan:
+
+```bash
+rg -n '<HF token, Google API key, private key, client secret, Google credential, JWT patterns>' .
+```
+
+stale deploy instruction scan:
+
+```bash
+rg -n 'print-identity-token --audiences|ENV_VARS=.*PORT|--set-env-vars .*PORT' .
+```
+
+TGI image manifest 확인:
+
+```bash
+docker manifest inspect ghcr.io/huggingface/text-generation-inference:sha-db931fc
+```
+
+결과:
+
+- shell syntax 통과
+- diff whitespace 통과
+- Cloud Build YAML parse 통과
+- secret pattern scan에서 저장소 내 secret 없음
+- `sha-db931fc` manifest inspect 성공
+
+## 4. 로컬 Docker build 관련
+
+처음 공식 예제 tag `3.3.5`로 build를 시도했지만 GHCR에서 resolve되지 않았다.
+
+시도한 형태:
+
+```bash
+docker build -t llm-serving-service:local .
+```
+
+실패 이유:
+
+```text
+ghcr.io/huggingface/text-generation-inference:3.3.5
+```
+
+위 tag가 resolve되지 않았다.
+
+수정:
+
+```text
+ghcr.io/huggingface/text-generation-inference:sha-db931fc
+```
+
+이후 local build는 multi-GB TGI layer pull 때문에 끝까지 완료하지 않았다. 로컬 Mac 환경에서 실제 Qwen 7B GPU inference까지 검증하려면 NVIDIA GPU runtime이 필요하므로, 실제 runtime 검증은 Cloud Run GPU에서 수행했다.
+
+## 5. GCP 상태 확인
+
+현재 gcloud account와 project 확인:
+
+```bash
+gcloud config list
+```
+
+확인된 값:
+
+```text
+account: kenyato1920@gmail.com
+project: on-the-block-2026
+```
+
+프로젝트 번호:
+
+```bash
+gcloud projects describe on-the-block-2026 --format='value(projectNumber)'
+```
+
+확인된 값:
+
+```text
+44649239380
+```
+
+Cloud Build default service account 확인:
+
+```bash
+gcloud builds get-default-service-account --project=on-the-block-2026
+```
+
+확인된 값:
+
+```text
+44649239380-compute@developer.gserviceaccount.com
+```
+
+## 6. GCP 리소스 생성
+
+Artifact Registry repository 생성:
+
+```bash
+gcloud artifacts repositories create ontheblock-llm \
+  --project=on-the-block-2026 \
+  --repository-format=docker \
+  --location=asia-southeast1 \
+  --description=ONTHEBLOCK-LLM-serving-images
+```
+
+성공 결과:
+
+```text
+Created repository [ontheblock-llm].
+```
+
+Cloud Run runtime service account 생성:
+
+```bash
+gcloud iam service-accounts create llm-serving-staging \
+  --project=on-the-block-2026 \
+  --display-name=LLM-serving-staging
+```
+
+성공 결과:
+
+```text
+Created service account [llm-serving-staging].
+```
+
+## 7. IAM 처리
+
+Cloud Build service account에 Artifact Registry writer 권한을 부여했다.
+
+```bash
+gcloud projects add-iam-policy-binding on-the-block-2026 \
+  --member="serviceAccount:44649239380-compute@developer.gserviceaccount.com" \
+  --role="roles/artifactregistry.writer"
+```
+
+Cloud Build service account가 runtime service account를 사용할 수 있게 했다.
+
+```bash
+gcloud iam service-accounts add-iam-policy-binding \
+  llm-serving-staging@on-the-block-2026.iam.gserviceaccount.com \
+  --project=on-the-block-2026 \
+  --member="serviceAccount:44649239380-compute@developer.gserviceaccount.com" \
+  --role="roles/iam.serviceAccountUser"
+```
+
+프로젝트 전체 `roles/run.admin` 추가는 권한 범위가 넓어서 이 작업에서는 추가로 진행하지 않았다. 대신 image build/push는 Cloud Build로 수행하고, Cloud Run deploy는 현재 인증된 user account로 직접 수행했다.
+
+이렇게 한 이유:
+
+- staging deploy를 완료해야 했다.
+- 불필요하게 넓은 IAM 권한을 새로 추가하지 않기 위해서다.
+- checked-in Cloud Build deploy YAML은 남겼지만, 첫 live deploy는 직접 `gcloud run deploy`로 했다.
+
+## 8. Cloud Build image build/push
+
+실행 명령:
+
+```bash
+gcloud builds submit \
+  --project=on-the-block-2026 \
+  --tag=asia-southeast1-docker.pkg.dev/on-the-block-2026/ontheblock-llm/llm-serving-service-staging:staging-manual-20260606-1 \
+  .
+```
+
+진행 상황 확인:
+
+```bash
+gcloud builds describe 586db302-5004-47e5-8234-b1dc44ef88dc \
+  --project=on-the-block-2026 \
+  --format='value(status,logUrl)'
+```
+
+로그 확인:
+
+```bash
+gcloud builds log 586db302-5004-47e5-8234-b1dc44ef88dc \
+  --project=on-the-block-2026
+```
+
+최종 결과:
+
+```text
+Build ID: 586db302-5004-47e5-8234-b1dc44ef88dc
+Status: SUCCESS
+Duration: 17M56S
+Image: asia-southeast1-docker.pkg.dev/on-the-block-2026/ontheblock-llm/llm-serving-service-staging:staging-manual-20260606-1
+Digest: sha256:c4745f5e1d867630e982bc163a607b26d049a21bf79cd4130c739c53403c719e
+```
+
+특이사항:
+
+- 첫 push는 TGI/CUDA layer가 커서 오래 걸렸다.
+- build 자체는 간단했다. Dockerfile은 official TGI image를 base로 하고 env 기본값과 `EXPOSE 8080`만 둔다.
+
+## 9. 첫 Cloud Run deploy 실패와 수정
+
+처음 deploy command에는 `--set-env-vars` 안에 `PORT=8080`이 포함되어 있었다.
+
+Cloud Run 오류:
+
+```text
+The following reserved env names were provided: PORT.
+These values are automatically set by the system.
+```
+
+원인:
+
+- Cloud Run은 `PORT`를 예약하고 container에 자동 주입한다.
+- 따라서 deploy-time env var로 `PORT`를 넣으면 안 된다.
+
+수정:
+
+- `deploy/gcp/cloudbuild.staging.yaml`의 `ENV_VARS`에서 `PORT=8080` 제거
+- `deploy/gcp/staging.env.example`에 Cloud Run에서는 `PORT`를 set-env-vars로 넣지 말라고 주석 추가
+- `README.md`, `docs/decisions.md`에 같은 내용을 기록
+- 실제 deploy command에서도 `--port 8080`만 유지하고 `--set-env-vars`에서는 `PORT` 제거
+
+## 10. 성공한 Cloud Run deploy 명령
+
+실제로 성공한 deploy 형태:
+
+```bash
+gcloud run deploy llm-serving-service-staging \
+  --project on-the-block-2026 \
+  --region asia-southeast1 \
+  --platform managed \
+  --image asia-southeast1-docker.pkg.dev/on-the-block-2026/ontheblock-llm/llm-serving-service-staging:staging-manual-20260606-1 \
+  --service-account llm-serving-staging@on-the-block-2026.iam.gserviceaccount.com \
+  --execution-environment gen2 \
+  --port 8080 \
+  --cpu 8 \
+  --memory 32Gi \
+  --gpu 1 \
+  --gpu-type nvidia-l4 \
+  --no-cpu-throttling \
+  --no-gpu-zonal-redundancy \
+  --concurrency 1 \
+  --timeout 900s \
+  --min-instances 0 \
+  --max-instances 1 \
+  --startup-probe tcpSocket.port=8080,periodSeconds=10,timeoutSeconds=1,failureThreshold=180 \
+  --set-env-vars MODEL_ID=Qwen/Qwen2.5-7B-Instruct,HOSTNAME=0.0.0.0,NUM_SHARD=1,MAX_INPUT_TOKENS=2048,MAX_TOTAL_TOKENS=3072,MAX_BATCH_PREFILL_TOKENS=4096,MAX_CONCURRENT_REQUESTS=4,DTYPE=float16,TRUST_REMOTE_CODE=false,USAGE_STATS=off \
+  --labels service=llm-serving-service,environment=staging,runtime=tgi \
+  --no-allow-unauthenticated
+```
+
+deploy 중 로컬 gcloud가 DNS 문제로 operation wait 중 crash했다.
+
+```text
+NameResolutionError: Failed to resolve 'asia-southeast1-run.googleapis.com'
+```
+
+이것은 remote deploy 실패로 단정하지 않고, Cloud Run service 상태를 다시 조회했다.
+
+## 11. Cloud Run 상태와 로그 확인
+
+서비스 상태 확인:
+
+```bash
+gcloud run services describe llm-serving-service-staging \
+  --project=on-the-block-2026 \
+  --region=asia-southeast1 \
+  --format='yaml(metadata.name,status.url,status.conditions,status.latestCreatedRevisionName,status.latestReadyRevisionName,status.observedGeneration)'
+```
+
+revision 상태 확인:
+
+```bash
+gcloud run revisions describe llm-serving-service-staging-00001-rkg \
+  --project=on-the-block-2026 \
+  --region=asia-southeast1 \
+  --format='yaml(metadata.name,status.conditions,status.logUrl,status.imageDigest)'
+```
+
+Cloud Run log 확인:
+
+```bash
+gcloud logging read \
+  'resource.type="cloud_run_revision" AND resource.labels.service_name="llm-serving-service-staging" AND resource.labels.revision_name="llm-serving-service-staging-00001-rkg"' \
+  --project=on-the-block-2026 \
+  --limit=50 \
+  --format='value(timestamp,severity,textPayload)'
+```
+
+관찰된 상태:
+
+- container image import 완료
+- model shard 4개 다운로드 진행
+- `Qwen/Qwen2.5-7B-Instruct` weights 다운로드 성공
+- shard ready
+- TGI webserver start
+- startup TCP probe 성공
+
+중요 로그:
+
+```text
+Successfully downloaded weights for Qwen/Qwen2.5-7B-Instruct
+Shard ready
+Starting Webserver
+Serving revision a09a35458c702b33eeacc393d103063234e8bc28 of model Qwen/Qwen2.5-7B-Instruct
+STARTUP TCP probe succeeded after 57 attempts
+```
+
+최종 ready 확인:
+
+```bash
+gcloud run services describe llm-serving-service-staging \
+  --project=on-the-block-2026 \
+  --region=asia-southeast1 \
+  --format='yaml(status.url,status.conditions,status.latestCreatedRevisionName,status.latestReadyRevisionName,status.traffic)'
+```
+
+결과:
+
+```text
+latestReadyRevisionName: llm-serving-service-staging-00001-rkg
+traffic: 100% to llm-serving-service-staging-00001-rkg
+url: https://llm-serving-service-staging-vcuepibcwq-as.a.run.app
+```
+
+## 12. private Cloud Run smoke test
+
+처음에는 user account로 audience-bound ID token을 만들려고 했다.
+
+```bash
+gcloud auth print-identity-token \
+  --audiences=https://llm-serving-service-staging-vcuepibcwq-as.a.run.app
+```
+
+실패 이유:
+
+```text
+Invalid account type for --audiences. Requires valid service account.
+```
+
+service account impersonation도 시도했다.
+
+```bash
+gcloud auth print-identity-token \
+  --impersonate-service-account=llm-serving-staging@on-the-block-2026.iam.gserviceaccount.com \
+  --audiences=https://llm-serving-service-staging-vcuepibcwq-as.a.run.app
+```
+
+실패 이유:
+
+```text
+PERMISSION_DENIED
+roles/iam.serviceAccountTokenCreator required
+```
+
+그래서 developer machine에서는 Cloud Run proxy를 사용했다.
+
+```bash
+gcloud run services proxy llm-serving-service-staging \
+  --project=on-the-block-2026 \
+  --region=asia-southeast1 \
+  --port=18080
+```
+
+처음 proxy 실행 시 `cloud-run-proxy` component 설치가 필요했다. 설치 후 재시도하여 local proxy가 열렸다.
+
+```text
+http://127.0.0.1:18080 proxies to https://llm-serving-service-staging-vcuepibcwq-as.a.run.app
+```
+
+smoke test 실행:
+
+```bash
+LLM_ENDPOINT_URL=http://127.0.0.1:18080/v1/chat/completions \
+MODEL_ID=Qwen/Qwen2.5-7B-Instruct \
+scripts/smoke_chat_completion.sh
+```
+
+성공 응답 핵심:
+
+```json
+{
+  "object": "chat.completion",
+  "model": "Qwen/Qwen2.5-7B-Instruct",
+  "choices": [
+    {
+      "message": {
+        "role": "assistant",
+        "content": "홍대 A바에서 진토닉을 추천드립니다. 라임 향과 탄산감이 산뜻한 취향과 잘 맞습니다."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 116,
+    "completion_tokens": 37,
+    "total_tokens": 153
+  }
+}
+```
+
+## 13. smoke script 수정
+
+처음 `scripts/smoke_chat_completion.sh`에는 `LLM_AUTH_TOKEN`이 없을 때 Bash array가 `set -u`와 충돌하는 문제가 있었다.
+
+증상:
+
+```text
+AUTH_ARGS[@]: unbound variable
+```
+
+수정:
+
+- `AUTH_ARGS` 대신 `curl_args`에 기본 curl 인자를 먼저 넣었다.
+- `LLM_AUTH_TOKEN`이 있을 때만 Authorization header를 추가했다.
+- `curl -w "%{http_code}"`로 HTTP status를 확인했다.
+- 2xx가 아니면 exit 1 하도록 했다.
+
+수정 후 private proxy smoke test가 성공했다.
+
+## 14. proxy cleanup
+
+smoke test 후 local proxy process를 종료했다.
+
+listener 확인:
+
+```bash
+lsof -nP -iTCP:18080 -sTCP:LISTEN
+```
+
+처음 child process만 죽이면 parent가 다시 proxy child를 띄웠다.
+
+parent 확인:
+
+```bash
+ps -axo pid,ppid,command | rg 'cloud-run-proxy|cloud-run|gcloud run services proxy|run services proxy'
+```
+
+종료:
+
+```bash
+kill 28676 29074
+```
+
+최종 확인:
+
+```bash
+lsof -nP -iTCP:18080 -sTCP:LISTEN
+```
+
+결과: listener 없음.
+
+주의: process command에는 일시적인 proxy token이 포함될 수 있으므로, token 문자열은 문서에 기록하지 않았다.
+
+## 15. private IAM 확인
+
+Cloud Run IAM policy 확인:
+
+```bash
+gcloud run services get-iam-policy llm-serving-service-staging \
+  --project=on-the-block-2026 \
+  --region=asia-southeast1 \
+  --format='yaml(bindings)'
+```
+
+결과:
+
+```text
+null
+```
+
+의미:
+
+- service-level IAM binding이 없다.
+- `allUsers` binding도 없다.
+- public access가 열려 있지 않다.
+- private Cloud Run 상태다.
+
+## 16. chatbot-service runtime service account 확인 시도
+
+Cloud Run service list:
+
+```bash
+gcloud run services list --project=on-the-block-2026
+```
+
+확인된 service:
+
+```text
+authorization-service
+gateway-service
+llm-serving-service-staging
+map-service
+recommendation-qdrant-staging
+recommendation-service
+survey-service
+```
+
+`chatbot-service`라는 Cloud Run service가 목록에 없었다. 그래서 chatbot-service runtime service account를 추측해서 `roles/run.invoker`를 주지 않았다.
+
+남은 명령 예시:
+
+```bash
+gcloud run services add-iam-policy-binding llm-serving-service-staging \
+  --project=on-the-block-2026 \
+  --region=asia-southeast1 \
+  --member="serviceAccount:<chatbot-service-runtime-sa>" \
+  --role=roles/run.invoker
+```
+
+이 명령은 `<chatbot-service-runtime-sa>`를 정확히 확인한 뒤 실행해야 한다.
+
+## 17. checked-in Cloud Build deploy command
+
+저장소에 남긴 표준 staging deploy command:
+
+```bash
+gcloud builds submit \
+  --project=on-the-block-2026 \
+  --config=deploy/gcp/cloudbuild.staging.yaml \
+  --substitutions=_REGION=asia-southeast1,_REPOSITORY=ontheblock-llm,_SERVICE_NAME=llm-serving-service-staging,_SERVICE_ACCOUNT=llm-serving-staging@on-the-block-2026.iam.gserviceaccount.com,_MODEL_ID=Qwen/Qwen2.5-7B-Instruct
+```
+
+이 경로를 완전히 자동화하려면 Cloud Build deploy identity에 필요한 최소 권한을 정확히 부여해야 한다.
+
+필요 권한:
+
+- Artifact Registry push 권한
+- Cloud Run deploy 권한
+- runtime service account에 대한 `iam.serviceAccounts.actAs`
+- secret 사용 시 Secret Manager accessor
+
+이번 live deploy에서는 broad deploy IAM을 추가하지 않기 위해 build/push와 direct deploy를 분리했다.
+
+## 18. rollback command
+
+revision 목록:
+
+```bash
+gcloud run revisions list \
+  --service=llm-serving-service-staging \
+  --region=asia-southeast1 \
+  --project=on-the-block-2026
+```
+
+이전 revision으로 100% traffic 전환:
+
+```bash
+gcloud run services update-traffic llm-serving-service-staging \
+  --region=asia-southeast1 \
+  --project=on-the-block-2026 \
+  --to-revisions=<revision-name>=100
+```
+
+이 서비스는 DB를 소유하지 않으므로 rollback은 Cloud Run revision traffic 전환이 핵심이다.
+
+## 19. 비용 제어 command
+
+현재 staging은 비용 제어를 위해 다음 설정이다.
+
+```text
+min instances: 0
+max instances: 1
+gpu zonal redundancy: off
+concurrency: 1
+```
+
+demo 후 장시간 쓰지 않을 때 max instances를 0으로 낮추거나 service를 삭제할 수 있다.
+
+max instances를 0으로 낮추는 예:
+
+```bash
+gcloud run services update llm-serving-service-staging \
+  --project=on-the-block-2026 \
+  --region=asia-southeast1 \
+  --max-instances=0
+```
+
+서비스 삭제 예:
+
+```bash
+gcloud run services delete llm-serving-service-staging \
+  --project=on-the-block-2026 \
+  --region=asia-southeast1
+```
+
+삭제는 endpoint가 사라지는 destructive action이므로 demo/검증 종료 후 명시적으로만 실행해야 한다.
+
+## 20. git commit 기록
+
+기능 단위로 commit했다.
+
+runtime과 script:
+
+```bash
+git add Dockerfile .dockerignore .gitignore .env.example scripts tests
+git commit -m "build: add TGI runtime and smoke scripts"
+```
+
+결과:
+
+```text
+2fbb588 build: add TGI runtime and smoke scripts
+```
+
+GCP deploy files:
+
+```bash
+git add deploy
+git commit -m "deploy: add Cloud Run GPU staging pipeline"
+```
+
+결과:
+
+```text
+33a2752 deploy: add Cloud Run GPU staging pipeline
+```
+
+docs와 AGENTS:
+
+```bash
+git add AGENTS.md README.md docs
+git commit -m "docs: document LLM serving boundaries and operations"
+```
+
+결과:
+
+```text
+d749f1e docs: document LLM serving boundaries and operations
+```
+
+최종 log:
+
+```bash
+git log --oneline --decorate --max-count=6
+```
+
+결과:
+
+```text
+d749f1e (HEAD -> main) docs: document LLM serving boundaries and operations
+33a2752 deploy: add Cloud Run GPU staging pipeline
+2fbb588 build: add TGI runtime and smoke scripts
+b2198c4 Initial commit
+```
+
+## 21. 현재 주의사항
+
+작업 후 `git status --short`에서 다음 untracked 파일이 보였다.
+
+```text
+?? ".env copy.example"
+```
+
+이 파일은 이번 작업에서 만든 파일이 아니므로 건드리지 않았다.
+
+## 22. 최종 검증 결과
+
+통과한 검증:
+
+- `bash -n scripts/build_local.sh scripts/smoke_chat_completion.sh`
+- `git diff --check`
+- Cloud Build YAML parse
+- secret pattern scan
+- Cloud Build image build/push
+- Cloud Run GPU deploy
+- Qwen model download
+- TGI startup
+- private Cloud Run proxy smoke test
+- `/v1/chat/completions` OpenAI-compatible response
+- Korean response generation
+
+검증하지 않은 것:
+
+- 로컬 Mac에서 Qwen 7B GPU inference
+- chatbot-service 실제 private IAM 호출
+- production load test
+- streaming response
+- model 교체 시 모든 후보 모델의 VRAM/token 안정성
+
+## 23. 다음에 해야 할 일
+
+1. chatbot-service runtime service account를 정확히 찾는다.
+2. LLM Cloud Run service에 `roles/run.invoker`를 부여한다.
+3. chatbot-service가 Google ID token을 붙여 private Cloud Run을 호출하게 한다.
+4. chatbot-service env를 LLM endpoint로 업데이트한다.
+5. staging에서 실제 chatbot prompt로 smoke test한다.
+6. latency, cold start, token usage, GPU memory, cost를 측정한다.
+7. 필요하면 min instances를 demo 시간에만 1로 올리고, demo 후 다시 0으로 내린다.

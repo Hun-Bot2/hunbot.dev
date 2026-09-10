@@ -1,0 +1,337 @@
+---
+title: 'ONTHEBLOCK LLM Serving Service 기록 01 - 설계와 선택'
+description: 'On-The-Block 서비스 개발기 06'
+pubDate: '2026-06-06'
+heroImage: '/images/ON-THE-BLOCK/Event-Storming-v1-kr.png'
+tags: ['golang', 'go', 'DDD','Event-Storming', 'On-The-Block']
+category: 'on-the-block'
+series: 'on-the-block'
+seriesOrder: 1
+---
+# LLM Serving Service 기록 01 - 설계와 선택
+
+이 문서는 `llm-serving-service` 저장소를 왜 만들었고, 어떤 기술을 선택했으며, 어떤 경계를 지키도록 설계했는지 한국어로 기록한다.
+
+작성 기준 시점은 2026-06-06이다. 배포와 검증 명령은 [llm-service-kr02.mdx](./llm-service-kr02.mdx)에 분리해서 기록했다.
+
+## 한 줄 요약
+
+`llm-serving-service`는 ONTHEBLOCK의 추천 사실을 새로 만들거나 검증하지 않고, 이미 검증된 추천 근거를 한국어 자연어 응답으로 바꾸는 OpenAI 호환 LLM 추론 엔드포인트다.
+
+## 결과
+
+- 저장소 스캐폴딩을 완료했다.
+- Hugging Face TGI 기반 Dockerfile을 추가했다.
+- OpenAI 호환 `POST /v1/chat/completions` 호출 스크립트를 추가했다.
+- GCP Cloud Run GPU용 staging 배포 파일을 추가했다.
+- 공식 문서 기준 결정을 `docs/decisions.md`에 기록했다.
+- staging Cloud Run GPU 서비스까지 실제 배포했다.
+- private Cloud Run 상태에서 smoke test를 통과했다.
+
+배포된 staging 서비스:
+
+```text
+https://llm-serving-service-staging-vcuepibcwq-as.a.run.app/v1/chat/completions
+```
+
+서비스는 private Cloud Run으로 유지했다. 즉, `allUsers` Invoker 바인딩을 추가하지 않았다.
+
+## 서비스 경계
+
+이 저장소가 하는 일:
+
+- OpenAI 호환 Chat Completions API 제공
+- 기본 모델 `Qwen/Qwen2.5-7B-Instruct` 로드
+- chatbot-service가 넘겨준 grounded facts를 짧은 한국어 응답으로 변환
+- Cloud Run GPU에서 LLM 추론 런타임 운영
+
+이 저장소가 하지 않는 일:
+
+- 추천 랭킹
+- 추천 점수 계산
+- 추천 필터링
+- RAG 검색
+- 사용자 프로파일링
+- 설문 로직
+- 지도 조회
+- 장소 조회
+- 가격 조회
+- 인증 로직
+- 추천 DB, 설문 DB, 인증 DB, 지도 DB, 챗봇 DB 연결
+- 원문 사용자 메시지 저장
+- 전체 prompt/context/response 기본 로깅
+
+이 경계는 MSA 책임 분리를 위해 중요하다. recommendation-service가 추천의 truth source이고, chatbot-service가 인증, orchestration, guardrails, grounded prompt 구성을 담당한다. LLM serving-service는 GPU 비용이 드는 문장 생성만 담당한다.
+
+## 왜 chatbot-service와 분리했나
+
+chatbot-service는 CPU 중심 orchestration 서비스다. 사용자를 인증하고, recommendation-service를 호출하고, 추천 근거를 조합하고, guardrail을 적용한다.
+
+반면 LLM serving-service는 GPU 중심 추론 서비스다. 모델 다운로드, GPU 메모리, cold start, token limit, Cloud Run GPU quota, Hugging Face token 같은 운영 이슈가 있다.
+
+두 서비스를 분리하면 다음 이점이 있다.
+
+- chatbot-service를 가볍게 유지할 수 있다.
+- GPU 비용과 scaling 정책을 LLM 서비스에만 적용할 수 있다.
+- 추천 truth와 자연어 generation 책임이 섞이지 않는다.
+- 나중에 TGI에서 vLLM으로 바꿔도 chatbot-service는 endpoint/model 설정만 유지하면 된다.
+
+## 선택한 기술
+
+| 영역 | 선택 | 이유 |
+| --- | --- | --- |
+| LLM runtime | Hugging Face Text Generation Inference, TGI | 공식적으로 OpenAI 호환 `/v1/chat/completions`를 제공하고 GPU serving에 맞춰져 있다. |
+| API contract | OpenAI Chat Completions compatible | chatbot-service가 런타임 교체 없이 호출할 수 있다. |
+| Model | `Qwen/Qwen2.5-7B-Instruct` | 한국어 응답 작성용 기본 모델로 지정되었다. 추천자는 아니다. |
+| Container | official TGI image | 별도 Python wrapper 없이 TGI 서버를 그대로 사용한다. |
+| Image tag | `ghcr.io/huggingface/text-generation-inference:sha-db931fc` | `latest`를 쓰지 않고, 실제 manifest inspect가 성공한 공식 GHCR tag를 pin했다. |
+| Cloud platform | GCP Cloud Run GPU | serverless 운영, private IAM, scale-to-zero, Artifact Registry/Cloud Build 연동이 가능하다. |
+| GPU | 1 x NVIDIA L4 | Cloud Run GPU 공식 문서에서 지원되는 target GPU이고, Qwen 7B MVP serving에 적합하다. |
+| Region | `asia-southeast1` | 공식 Cloud Run GPU 문서에서 L4 지원 region으로 확인했고, `asia-northeast3`는 L4 지원 목록에 없었다. |
+| Auth | private Cloud Run | 기본은 `--no-allow-unauthenticated`; 공개 endpoint는 명시적 staging smoke test 용도로만 허용한다. |
+
+## TGI를 먼저 선택한 이유
+
+처음 요구사항은 TGI 우선이었다. 공식 문서를 확인한 뒤에도 vLLM으로 바꿔야 할 강한 이유를 찾지 못했다.
+
+TGI를 선택한 이유:
+
+- 공식 Docker image가 있다.
+- OpenAI 호환 `/v1/chat/completions`를 제공한다.
+- NVIDIA GPU serving을 전제로 한다.
+- launcher environment variable이 문서화되어 있다.
+- gated/private model 접근을 `HF_TOKEN`으로 처리할 수 있다.
+- 별도 application wrapper가 필요 없다.
+
+vLLM으로 바꿀 가능성은 열어두었다. 이 저장소의 외부 contract는 OpenAI 호환 endpoint와 model ID이므로, 내부 runtime을 바꾸더라도 chatbot-service는 같은 방식으로 호출할 수 있어야 한다.
+
+## pinned TGI image 결정
+
+처음 공식 예제에 나온 `3.3.5` tag를 검토했다. 하지만 로컬 build 검증에서 다음 문제가 있었다.
+
+```text
+ghcr.io/huggingface/text-generation-inference:3.3.5
+```
+
+위 tag는 GHCR에서 resolve되지 않았다. 그래서 공식 Hugging Face GHCR package page에 있는 resolvable tag를 확인하고 다음 tag를 pin했다.
+
+```text
+ghcr.io/huggingface/text-generation-inference:sha-db931fc
+```
+
+이 tag는 `docker manifest inspect`에서 `linux/amd64` manifest 확인이 성공했다. Cloud Run은 Linux amd64 container를 사용하므로 build command에도 `--platform linux/amd64`를 명시했다.
+
+## 모델 선택
+
+기본 모델:
+
+```env
+MODEL_ID=Qwen/Qwen2.5-7B-Instruct
+```
+
+이 모델은 "추천 모델"이 아니라 "한국어 응답 작성 모델"이다. 추천 후보, 순위, 이유의 truth는 chatbot-service와 recommendation-service가 제공한다.
+
+LLM이 해야 하는 일:
+
+- 제공된 사실만 사용한다.
+- 한국어로 짧고 자연스럽게 표현한다.
+- 새로운 추천을 만들지 않는다.
+- 부족한 사실을 추측하지 않는다.
+
+## Cloud Run GPU 설정
+
+MVP staging 기본값:
+
+```text
+GPU_TYPE=nvidia-l4
+GPU=1
+CPU=8
+MEMORY=32Gi
+CONCURRENCY=1
+MAX_INSTANCES=1
+MIN_INSTANCES=0
+TIMEOUT=900
+```
+
+이 설정을 선택한 이유:
+
+- Cloud Run GPU 공식 문서는 L4에 최소 CPU/memory 조건을 둔다.
+- 8 CPU, 32Gi는 L4 serving에 더 현실적인 기본값이다.
+- concurrency 1은 MVP에서 latency와 GPU 메모리 안정성을 우선한다.
+- max instances 1은 staging 비용 폭주를 막는다.
+- min instances 0은 사용하지 않을 때 scale-to-zero로 비용을 줄인다.
+- timeout 900s는 첫 cold start와 model load를 고려한다.
+
+## Region 선택
+
+처음 프로젝트 기본 region으로 `asia-northeast3`가 언급되었지만, 공식 Cloud Run GPU 문서 기준으로 L4 지원 region이 아니었다.
+
+따라서 staging은 다음 region으로 정했다.
+
+```text
+asia-southeast1
+```
+
+이 선택의 의미:
+
+- Asia 기반 staging을 유지한다.
+- Seoul region의 chatbot-service가 cross-region으로 호출할 수 있다.
+- latency는 MVP 이후 측정해야 한다.
+- `asia-northeast3`가 Cloud Run L4를 지원하게 되면 이전을 검토할 수 있다.
+
+## 인증 선택
+
+기본은 private Cloud Run이다.
+
+중요한 구분:
+
+```env
+CHATBOT_LLM_AUTH_MODE=none
+```
+
+위 설정은 "LLM 서비스 자체 API key가 없다"는 뜻이다. Cloud Run IAM 인증을 끈다는 뜻이 아니다.
+
+private Cloud Run이면 chatbot-service는 다음을 만족해야 한다.
+
+- chatbot-service runtime service account가 LLM Cloud Run service에 대해 `roles/run.invoker`를 가진다.
+- 요청에 Google-signed ID token을 넣는다.
+- ID token audience는 Cloud Run service URL이어야 한다.
+
+임시 public smoke test는 가능하지만, 명시적으로만 해야 한다.
+
+## 환경 변수 설계
+
+`.env.example`과 deploy docs에 기록한 주요 변수:
+
+```env
+MODEL_ID=Qwen/Qwen2.5-7B-Instruct
+PORT=8080
+REVISION=
+HF_TOKEN=
+NUM_SHARD=1
+MAX_INPUT_TOKENS=2048
+MAX_TOTAL_TOKENS=3072
+MAX_BATCH_PREFILL_TOKENS=4096
+MAX_CONCURRENT_REQUESTS=4
+DTYPE=float16
+QUANTIZE=
+TRUST_REMOTE_CODE=false
+ALLOW_UNAUTHENTICATED=false
+```
+
+주의:
+
+- `ALLOW_UNAUTHENTICATED`는 TGI runtime variable이 아니다. Cloud Build/gcloud deploy switch다.
+- Cloud Run은 `PORT`를 예약하고 자동 주입한다.
+- Docker image/local 실행에서는 `PORT=8080`을 기본값으로 둘 수 있다.
+- Cloud Run deploy에서는 `--port 8080`을 사용하고 `--set-env-vars`에 `PORT`를 넣으면 안 된다.
+- `HF_TOKEN`은 private/gated Hugging Face model에만 Secret Manager로 주입한다.
+
+## 추가한 저장소 구조
+
+```text
+.
+├── AGENTS.md
+├── README.md
+├── Dockerfile
+├── .env.example
+├── .gitignore
+├── .dockerignore
+├── deploy/
+│   └── gcp/
+│       ├── cloudbuild.staging.yaml
+│       ├── staging.env.example
+│       ├── staging.substitutions.env.example
+│       └── README.md
+├── docs/
+│   ├── architecture.md
+│   ├── decisions.md
+│   ├── gcp-cloud-run-gpu.md
+│   ├── chatbot-integration.md
+│   ├── security.md
+│   ├── operations.md
+│   ├── evaluation.md
+│   └── plans/
+│       └── zero-to-hero.md
+├── scripts/
+│   ├── smoke_chat_completion.sh
+│   ├── build_local.sh
+│   └── README.md
+└── tests/
+    └── README.md
+```
+
+이후 이 한국어 기록 파일 2개를 `docs/`에 추가했다.
+
+```text
+docs/llm-service-kr01.mdx
+docs/llm-service-kr02.mdx
+```
+
+## 보안 결정
+
+- secret은 git에 넣지 않는다.
+- Hugging Face token은 필요할 때만 Secret Manager로 주입한다.
+- Google service account key 파일은 만들거나 commit하지 않는다.
+- prompt, grounded context, user message, model response 전문을 기본 로그로 남기지 않는다.
+- Cloud Run은 private으로 유지한다.
+- public access는 명시적이고 임시적인 staging smoke test일 때만 고려한다.
+
+## 실제 배포 snapshot
+
+2026-06-06 기준 staging 배포 결과:
+
+```text
+Project: on-the-block-2026
+Region: asia-southeast1
+Artifact Registry repository: ontheblock-llm
+Cloud Run service: llm-serving-service-staging
+Runtime service account: llm-serving-staging@on-the-block-2026.iam.gserviceaccount.com
+Image tag: asia-southeast1-docker.pkg.dev/on-the-block-2026/ontheblock-llm/llm-serving-service-staging:staging-manual-20260606-1
+Image digest: sha256:c4745f5e1d867630e982bc163a607b26d049a21bf79cd4130c739c53403c719e
+Ready revision: llm-serving-service-staging-00001-rkg
+Service URL used for smoke test: https://llm-serving-service-staging-vcuepibcwq-as.a.run.app
+Auth: private, no allUsers binding
+```
+
+## commit 기록
+
+초기 작업은 기능 단위로 3개 commit으로 나눴다.
+
+```text
+2fbb588 build: add TGI runtime and smoke scripts
+33a2752 deploy: add Cloud Run GPU staging pipeline
+d749f1e docs: document LLM serving boundaries and operations
+```
+
+## 남은 사람 작업
+
+chatbot-service가 private LLM Cloud Run을 호출하려면 runtime service account를 정확히 확인해야 한다. 이번 작업 중 GCP Cloud Run service list에서는 `chatbot-service`라는 Cloud Run 서비스가 보이지 않았다. 그래서 추측으로 Invoker 권한을 주지 않았다.
+
+남은 작업:
+
+1. chatbot-service runtime service account를 확인한다.
+2. LLM Cloud Run service에 `roles/run.invoker`를 부여한다.
+3. chatbot-service가 Cloud Run service URL audience로 Google ID token을 보내게 한다.
+4. chatbot-service env를 다음 endpoint로 업데이트한다.
+
+```env
+CHATBOT_LLM_ENDPOINT_URL=https://<llm-cloud-run-url>/v1/chat/completions
+CHATBOT_LLM_MODEL=Qwen/Qwen2.5-7B-Instruct
+CHATBOT_LLM_AUTH_MODE=none
+```
+
+`CHATBOT_LLM_AUTH_MODE=none`은 application-level API key 없음이라는 뜻이고, private Cloud Run IAM 호출 요구사항은 별도로 만족해야 한다.
+
+## 공식 문서 출처
+
+- Google Cloud Run GPU services: https://docs.cloud.google.com/run/docs/configuring/services/gpu
+- Google Cloud Run locations: https://docs.cloud.google.com/run/docs/locations
+- Google Cloud Run service-to-service authentication: https://docs.cloud.google.com/run/docs/authenticating/service-to-service
+- Google Cloud Run rollback and traffic migration: https://docs.cloud.google.com/run/docs/rollouts-rollbacks-traffic-migration
+- Google Cloud Run secrets: https://docs.cloud.google.com/run/docs/configuring/services/secrets
+- Hugging Face TGI Quick Tour: https://huggingface.co/docs/text-generation-inference/main/quicktour
+- Hugging Face TGI consuming API: https://huggingface.co/docs/text-generation-inference/main/basic_tutorials/consuming_tgi
+- Hugging Face TGI launcher environment variables: https://huggingface.co/docs/text-generation-inference/main/reference/launcher
+- Hugging Face TGI private and gated models: https://huggingface.co/docs/text-generation-inference/basic_tutorials/gated_model_access
+- Hugging Face GHCR package page: https://github.com/huggingface/text-generation-inference/pkgs/container/text-generation-inference

@@ -1,5 +1,7 @@
 # AGENTS.md
 
+> **Start here for rules. For code structure, see [`CLAUDE.md`](./CLAUDE.md).**
+
 ## 1. Project Context
 
 This repository is `hun-bot.dev`, a multilingual personal tech blog built with Astro 5, MDX, Astro Content Collections, Tailwind CSS, and Vercel serverless deployment. Preserve the current stack and static-first publishing model unless the user explicitly asks for a migration.
@@ -41,7 +43,7 @@ Major dependencies include `astro`, `@astrojs/vercel`, `@astrojs/mdx`, `@astrojs
 
 ## 4. Architecture Conventions
 
-- Use Astro Content Collections from `src/content.config.ts`. Blog entries are loaded from `src/content/blog` and must satisfy the frontmatter schema: `title`, `description`, `pubDate`, optional `updatedDate`, `heroImage`, `tags`, `category`, `series`, and `seriesOrder`.
+- Use Astro Content Collections from `src/content.config.ts`. Blog entries are loaded from `src/content/blog` and must satisfy the frontmatter schema: `title`, `description`, `pubDate`, optional `updatedDate`, `heroImage`, `tags`, `category`, `series`, `seriesOrder`, and `draft`. Posts with `draft: true` are excluded from all public listings, sitemap, and RSS.
 - Keep content language directories as `ko`, `jp`, and `en`. Content IDs include the language prefix; route code removes that prefix when building URLs.
 - Current localized routes live under `src/pages/[lang]/`. Blog posts are served by `src/pages/[lang]/blog/[...slug].astro`; blog index, tags, and categories are also language scoped.
 - Although Astro i18n has `ko` as the default locale, the current site heavily uses `/ko/...` links and root redirects to `/ko/`. Do not assume Korean URLs are unprefixed without checking the existing route helpers and generated output.
@@ -86,11 +88,11 @@ Flag these as high priority in future reviews:
 
 ## 8. Library / Resource Curation Guidance
 
-For the planned Library section:
+For the Library section (`src/content/resources/`, `src/content/papers/`, `src/content/topics/`):
 
-- Use `docs/plans/` for future Library implementation plans before adding new routes, schemas, ingestion, or publishing workflows.
 - Keep approved public data separate from private candidate data and unpublished notes.
 - AI-generated summaries or translations must be human-reviewed before publication.
 - Open-source resources should include license, source URL, author/project attribution, and retrieval/update date when practical.
 - Do not mirror third-party assets, raw datasets, or full-text resources unless license and permission are clear.
 - Prefer linking and summarizing over copying. Store only the metadata and excerpts needed for the public blog experience.
+- See `docs/features/library-data-model.md` for the full schema and review workflow.

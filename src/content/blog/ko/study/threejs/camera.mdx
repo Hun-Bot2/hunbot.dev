@@ -1,0 +1,80 @@
+---
+draft: true
+title: 'Three.js Camera'
+description: 'Three.js Camera에 대한 설명'
+pubDate: '2026-07-10'
+#heroImage: '/images/giscus.png'
+tags: ['threejs', 'camera']
+category: 'Three.js'
+series: 'threejs-study'
+seriesOrder: 1
+---
+
+## Array Camera
+옛날 비디오 게임에서 여러 명이 같은 화면을 공유하며 플레이하는 것을 본 적이 있을 것이다. 
+이때 화면을 나누어 각 플레이어에게 다른 시점을 제공하는 것이 바로 Array Camera이다. 
+Three.js에서는 `THREE.ArrayCamera`를 사용하여 여러 개의 카메라를 배열로 구성할 수 있다. 
+이를 통해 한 장면에서 여러 시점을 동시에 렌더링할 수 있다.
+
+거의 사용하지 않을 것이다.
+
+## Stereo Camera
+VR에 사용할 수 있는 카메라
+
+## Cube Camera
+
+---
+
+## Perspective Camera
+Render the scene with perspective -> 물체가 카메라에서 멀리 떨어져 있을수록 작게 보인다. 
+
+Fov (Field of View) -> 카메라가 볼 수 있는 시야각 
+
+사람이 정면을 쳐다보고 있어도 좌우로는 90도 정도까지 볼 수 있다. -> 90도 정도까지 볼 수 있는 것은 시야각이 90도라는 의미이다.
+
+```js
+const camera = new THREE.PerspectiveCamera(
+  75, // fov
+  window.innerWidth / window.innerHeight, // aspect ratio
+  0.1, // near
+  1000 // far
+);
+```
+Near과 Far는 카메라가 보여줄 수 있는 범위를 설정하는 값이다.
+
+해당 범위 밖에 있는 물체는 보여지지 않는다. 즉, 의도적으로 물체의 일정 부분을 가리거나, 잘라서 보여주고 싶을 때 사용할 수 있다. 
+
+그러나, Near과 Far에 0.0001, 9999999와 같은 값을 사용하게 된다면 `z-fighting` 현상이 발생할 수 있다. 
+
+이는 두 물체가 같은 z값을 가지게 되어 어떤 물체가 앞에 있는지 알 수 없는 현상이다.
+
+## Orthographic Camera
+Render the scene without perspective -> 물체가 카메라에서 멀리 떨어져 있어도 크기가 변하지 않는다.
+
+그럼 이건 어떻게 활용할 수 있을까??
+
+우선, Perspective Camera와 Orthographic Camera의 차이를 이해해야 한다. 
+Perspective Camera는 render하는 방식이 cone 형태로 되어 있지만, Orthographic Camera는 render하는 방식이 박스 형태에 가깝다고 생각하면 된다
+
+left,right,top,bottom + near,far까지 사용하기에 값을 잘 설정해야 한다. 
+
+특히나, left,right,top,bottom의 값은 화면의 비율에 따라 달라지기 때문에 화면의 비율을 고려하여 값을 설정해야 한다.
+
+width가 800이고, height가 600인 화면에서 큐브 형태의 정방 물체가 있다고 가정했을 때, Orthographic Camera를 사용하여 정방 형태로 render하면 큐브는 y축으로 찌그러진 형태로 render된다.
+
+```js
+const aspectRatio = window.innerWidth / window.innerHeight;
+const camera = new THREE.OrthographicCamera(
+  aspectRatio * -2, // left
+  aspectRatio * 2, // right
+  2, // top
+  -2, // bottom
+  1, // near
+  1000 // far
+);
+```
+
+## 물체의 뒷면을 어떻게 보여줄 수 있을까?
+Camera를 사용해서 물체의 뒷면을 보여주고 싶다면 여러가지 방법이 있겠지만, cos(x),sin(x), Math.PI를 사용하여 
+
+```js

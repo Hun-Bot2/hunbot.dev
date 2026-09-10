@@ -60,6 +60,7 @@ const blog = defineCollection({
 		category: z.string().optional(), // Allow any string for now, we'll normalize in utils
 		series: z.string().optional(),
 		seriesOrder: z.coerce.number().optional(),
+		draft: z.boolean().optional().default(false),
 	}),
 });
 

@@ -1,0 +1,866 @@
+---
+draft: true
+title: "Vision Language Models (VLM): 画像とテキストのマルチモーダル学習"
+description: "CLIPを中心にしたVision Language Modelsの原理、実装、応用"
+pubDate: "2025-12-29"
+# heroImage: '../../assets/KOSSDA.png'
+tags: ["Computer Vision", "NLP", "Multimodal", "CLIP", "Deep Learning"]
+category: 'paper'
+---
+
+# Vision Language Models (VLM): 画像とテキストのマルチモーダル学習
+
+## 概要
+
+Vision Language Models (VLM) は、画像とテキストを同時に理解するAIモデルです。従来の画像分類モデルやテキスト分析モデルとは異なり、VLMは二つのモダリティの意味的関係を学習し、より柔軟で強力な表現能力を提供します。
+
+この記事では、VLMの代表的なモデルである **CLIP (Contrastive Language-Image Pre-training)** を中心に、マルチモーダル学習の原理から実務応用まで整理します。
+
+---
+
+## 1. 問題定義：伝統的AIの限界
+
+### 1.1 単一モダリティの問題
+
+従来のAIモデルは、基本的に一種類のデータだけを処理していました。
+
+**画像分類**
+
+```text
+入力: 猫の写真
+出力: "猫" (ラベルのみ)
+限界: 画像が何であるかは分かるが、その画像をテキストで説明できない
+```
+
+**テキスト分類**
+
+```text
+入力: "この映画は本当に面白かった"
+出力: "ポジティブ" (感情分類)
+限界: テキストは理解するが、関連する画像とは接続できない
+```
+
+**Cross-Modal問題**
+
+```text
+質問: この写真とこの説明は同じ物を指しているか？
+従来方式: 画像モデルとテキストモデルを別々に動かし、
+         二つの結果をどう比較するかは明確ではない
+```
+
+### 1.2 マルチモーダル学習の必要性
+
+現実の認知は常にマルチモーダルです。
+
+```text
+人が写真を見る = 視覚 + 言語記憶 + 文脈
+ChatGPTが画像を見る = 画像をテキストとして理解する
+
+マルチモーダル学習はこの現実をモデル化します。
+```
+
+**実際の使用例:**
+
+- 画像検索 (Pinterest, Google Lens)
+- 画像キャプション生成 (写真に自動説明を付ける)
+- 視覚質問応答 (VQA: "この写真には何が見えるか？")
+- 推薦システム (似たスタイルの商品推薦)
+
+---
+
+## 2. CLIP: Contrastive Language-Image Pre-training
+
+### 2.1 核心アイデア
+
+CLIPは2021年にOpenAIが発表したモデルで、マルチモーダル学習のパラダイムを大きく変えました。
+
+**CLIPの核心哲学:**
+
+```text
+画像とテキストを同じベクトル空間に表現し、
+対応する画像-テキストペアは近く、
+対応しないペアは遠くに配置する
+```
+
+### 2.2 アーキテクチャ
+
+CLIPは二つのエンコーダで構成されます。
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                    CLIP Architecture                        │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  Image Encoder          Text Encoder                        │
+│  (Vision Transformer)   (Transformer)                       │
+│         │                      │                            │
+│    [ Image ]                [Text]                          │
+│    (224×224)              "A photo                          │
+│         │                 of a cat"                         │
+│         │                    │                              │
+│         ▼                    ▼                              │
+│  ┌─────────────┐       ┌─────────────┐                    │
+│  │ ViT Encoder │       │ Text Encoder│                    │
+│  │ (12 layers) │       │ (12 layers) │                    │
+│  └─────────────┘       └─────────────┘                    │
+│         │                    │                              │
+│         ▼                    ▼                              │
+│   Image Vector          Text Vector                        │
+│   (Shape: 512)          (Shape: 512)                       │
+│         │                    │                              │
+│         └────────┬───────────┘                             │
+│                  │                                          │
+│         Cosine Similarity Computation                      │
+│         (比較)                                             │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 2.3 学習過程：Contrastive Learning
+
+CLIPの学習には **対照学習(Contrastive Learning)** が使われます。
+
+**バッチ構成:**
+
+```text
+バッチにはN個の画像-テキストペアがあります。
+
+Batch: [
+  (Image₁, Text₁),  ✓ 同じペア
+  (Image₂, Text₂),  ✓ 同じペア
+  ...
+  (Imageₙ, Textₙ)   ✓ 同じペア
+]
+
+Batch size: N、通常256または512
+```
+
+**損失関数:**
+
+```text
+各画像について、N個すべてのテキストとの類似度を計算します。
+
+画像1の例:
+Image₁ vs Text₁: 0.95  ✓ 高い類似度、望ましい
+Image₁ vs Text₂: 0.15  ✗ 低い類似度、望ましい
+Image₁ vs Text₃: 0.08  ✗ 低い類似度、望ましい
+...
+Image₁ vs Textₙ: 0.10  ✗ 低い類似度、望ましい
+
+損失関数はこれらの確率を交差エントロピーで計算します。
+```
+
+**数式表現:**
+
+```text
+similarity(image_i, text_j) = cosine_similarity(I_i, T_j)
+
+Loss = -log(exp(sim(i,i) / τ) / Σⱼ exp(sim(i,j) / τ))
+
+ここで:
+- i: 画像インデックス
+- j: テキストインデックス
+- τ (tau): temperature parameter、通常0.07
+  → 類似度の差をよりはっきりさせる
+```
+
+**核心:**
+
+- 正しいペア(i=j)の類似度は **高く**
+- 間違ったペア(i≠j)の類似度は **低く**
+- これを同時に最適化することがCLIPの学習
+
+### 2.4 なぜこの方式が有効か
+
+既存のsupervised learningとの比較:
+
+```text
+従来方式:
+- ラベルが必要: "この写真は猫" (固定カテゴリのみ)
+- 新しい種類を追加: モデル再学習が必要
+- データ: ImageNet (1000カテゴリのみ)
+
+CLIP:
+- 固定ラベル不要: 画像-テキストペアだけあればよい
+- 新しい種類を追加: テキスト説明を追加するだけ
+- データ: インターネット全体、400M画像-テキストペア
+  → より多様な概念を学習可能
+```
+
+---
+
+## 3. CLIPの強み：Zero-Shot Learning
+
+### 3.1 概念
+
+CLIPの最も革新的な特徴は **ゼロショット学習(Zero-Shot Learning)** です。
+
+```text
+"ゼロショット"とは:
+= モデルがそのタスク形式で見たことのないデータも分類できる
+= 追加学習なしで新しいタスクをすぐ実行できる
+```
+
+### 3.2 動作原理
+
+**例：画像分類**
+
+```python
+# モデル準備
+model = CLIP("ViT-B/32")  # 400Mペアで事前学習済み
+
+# 画像ロード
+image = load_image("cat.jpg")
+
+# 分類カテゴリ。モデルはこのために再学習されていない
+categories = [
+    "a photo of a cat",
+    "a photo of a dog",
+    "a photo of a bird"
+]
+
+# 類似度計算
+similarities = model.compute_similarity(image, categories)
+# [0.95, 0.02, 0.01]
+
+# 結果
+predicted_class = categories[argmax(similarities)]
+# "a photo of a cat" → 95%
+```
+
+**これが可能な理由:**
+
+```text
+CLIPは「猫」「犬」「鳥」を個別カテゴリとしてだけ学んだわけではありません。
+400Mの画像-テキストペアから:
+- 動物の視覚的特徴
+- 毛、耳、足のような概念
+- 猫らしさと犬らしさの視覚的差
+を学習しています。
+
+したがって新しいカテゴリも、この知識を組み合わせて理解できます。
+```
+
+### 3.3 Zero-ShotとTraditionalの比較
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                 Zero-Shot Learning Flow                     │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  Traditional, Fine-tuning必要:                              │
+│  猫100枚 + 犬100枚 → モデル再学習 → 分類                    │
+│  時間: 1時間、データ: 200枚必要                             │
+│                                                             │
+│  CLIP Zero-Shot, 即時:                                      │
+│  "a photo of a cat"というテキストだけ準備 → すぐ分類        │
+│  時間: 1秒、データ: 新規0枚                                 │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 4. 実務応用：3つの主要ケース
+
+### 4.1 画像検索 (Visual Search)
+
+**問題:**
+ユーザーが撮った写真と似た商品を推薦する必要がある。
+
+**従来方式: 難しく高コスト**
+
+```text
+User Photo → 特徴抽出 → Database内の全写真と比較
+問題: どの特徴を抽出すべきか曖昧
+     色？形？質感？すべて？
+```
+
+**CLIPベース方式:**
+
+```text
+Databaseの全商品写真 → CLIP Image Encoder → ベクトル化
+                             一度だけ処理
+
+User Photo → CLIP Image Encoder → ベクトル化
+                ↓
+         ベクトル間距離計算
+                ↓
+         上位K個の類似商品を推薦
+```
+
+**利点:**
+
+- 非常に高速
+- スタイルやパターンなど意味的類似性を学習している
+- "青いスニーカー"のようなテキスト検索も可能
+
+**産業適用:**
+
+- Pinterest: ピン画像から似たピンを探す
+- Amazon: この靴と似た商品
+- Google Lens: 写真を撮って購入リンクを探す
+
+### 4.2 画像キャプション生成
+
+**問題:**
+写真に説明テキストを自動で追加する必要がある。
+
+**従来方式: CNN + RNN**
+
+```text
+Image → CNN Feature Extraction → RNN Text Generation
+"猫が椅子に座っている"
+
+問題: 固定的な文しか生成しにくい
+     自然な文章を作るのが難しい
+```
+
+**CLIP + LLMベースの最新方式:**
+
+```text
+Image → CLIP Image Encoder → 画像ベクトル
+                              ↓
+                    Large Language Model (GPT, LLaMAなど)
+                              ↓
+"柔らかい灰色の毛を持つ猫が、
+茶色の木製椅子に楽な姿勢で座っており、
+窓から日光が差し込んでいる。"
+```
+
+**利点:**
+
+- CLIPが画像を理解し、LLMが自然な文を生成する
+- より詳細で正確な説明が可能
+- 画像内の文脈を理解しやすい
+
+**コード例:**
+
+```python
+from transformers import CLIPVisionModel, GPT2LMHeadModel
+
+# 画像をベクトルにする
+image_features = clip_model.vision_model(image)
+
+# LLMが画像ベクトルを入力としてテキスト生成
+caption = gpt2_model.generate(
+    inputs=image_features,
+    max_length=50,
+    temperature=0.7
+)
+```
+
+### 4.3 Visual Question Answering (VQA)
+
+**問題:**
+画像と質問が与えられたとき、質問に答える必要がある。
+
+**例:**
+
+```text
+画像: レストラン写真
+質問: "このレストランの雰囲気はどうですか？"
+期待回答: "暖かく現代的な雰囲気の高級レストランです"
+
+画像: 道路の信号写真
+質問: "信号は何色ですか？"
+期待回答: "赤色です"
+```
+
+**CLIPベースVQAパイプライン:**
+
+```text
+Image → CLIP Image Encoder → 画像ベクトル
+            ↓
+Question → CLIP Text Encoder → 質問ベクトル
+            ↓
+        二つのベクトルをLLMへ入力
+            ↓
+        Fine-tuned LLMで回答生成
+```
+
+**実務例:**
+
+- 医療: "このCTスキャンに腫瘍が見えるか？" → "はい、T4付近にあります"
+- 自動運転: "前方の信号は何色か？" → "赤です"
+- ロボット: "青い道具はどこにあるか？" → "棚の左上です"
+- アクセシビリティ: 視覚障害者向けの画像説明
+
+---
+
+## 5. Fine-Tuning：CLIPのカスタマイズ
+
+### 5.1 なぜFine-Tuningが必要か
+
+CLIPは一般的なインターネットデータで学習されているため、特定ドメインでは性能が低くなることがあります。
+
+**問題例:**
+
+```text
+CLIP, General:
+"病害虫写真" → "昆虫" (一般的すぎる)
+
+Domain-Specific CLIP, Fine-tuned:
+"病害虫写真" → "アザミウマ" (より正確)
+```
+
+### 5.2 Fine-Tuning戦略
+
+データ量によって戦略を変えます。
+
+**データが多い (100K+):**
+
+```text
+Strategy: 全レイヤー再学習
+Learning Rate: 1e-4 (低め)
+Epochs: 10-20
+GPU: V100以上、8時間以上
+
+コード:
+for param in model.parameters():
+    param.requires_grad = True
+
+optimizer = Adam(model.parameters(), lr=1e-4)
+```
+
+**データ中規模 (1K-100K):**
+
+```text
+Strategy: Text Encoder + Image Encoderの一部だけ再学習
+Learning Rate: 1e-3
+Epochs: 5-10
+GPU: T4、30分〜2時間
+
+コード:
+# Vision Transformerの最後のブロックだけ
+for param in model.vision_model.transformer.resblocks[-4:].parameters():
+    param.requires_grad = True
+
+optimizer = Adam(trainable_params, lr=1e-3)
+```
+
+**データが少ない (1K未満):**
+
+```text
+Strategy: Linear Headのみ、または軽いFine-tune
+Learning Rate: 1e-2 (高め)
+Epochs: 3-5
+GPU: CPUでも可能、数分
+
+コード:
+# エンコーダは固定し、新しい分類ヘッドだけ学習
+for param in model.parameters():
+    param.requires_grad = False
+
+new_head = Linear(512, num_classes)
+optimizer = Adam(new_head.parameters(), lr=1e-2)
+```
+
+### 5.3 Fine-Tuningコード例
+
+```python
+import torch
+import clip
+from torch.utils.data import DataLoader
+from torch.optim import Adam
+
+# 1. モデルロード
+device = "cuda"
+model, preprocess = clip.load("ViT-B/32", device=device)
+
+# 2. データローダー準備
+train_loader = DataLoader(
+    CustomDataset(images, texts),
+    batch_size=32,
+    shuffle=True
+)
+
+# 3. 学習可能パラメータ設定
+for param in model.parameters():
+    param.requires_grad = False
+
+for param in model.transformer.resblocks[-4:].parameters():
+    param.requires_grad = True
+
+# 4. Optimizer
+optimizer = Adam(
+    [p for p in model.parameters() if p.requires_grad],
+    lr=1e-3
+)
+
+# 5. 学習ループ
+for epoch in range(5):
+    for batch_idx, (images, texts) in enumerate(train_loader):
+        images = images.to(device)
+        
+        image_features = model.encode_image(images)
+        text_features = model.encode_text(texts)
+        
+        image_features /= image_features.norm(dim=-1, keepdim=True)
+        text_features /= text_features.norm(dim=-1, keepdim=True)
+        
+        similarity = image_features @ text_features.t()
+        loss = contrastive_loss(similarity)
+        
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        
+        if batch_idx % 100 == 0:
+            print(f"Epoch {epoch}, Batch {batch_idx}, Loss: {loss:.4f}")
+
+# 6. モデル保存
+torch.save(model.state_dict(), "clip_finetuned.pt")
+```
+
+---
+
+## 6. 最新VLMトレンド (2024〜2025)
+
+### 6.1 CLIP以後の進化
+
+CLIP (2021) 以後、VLMは急速に発展しました。
+
+```text
+Timeline:
+2021 CLIP
+  ↓ OpenAIが基礎を確立
+2023 LLaVA (CLIP + LLaMA)
+  ↓ 大規模言語モデルとの結合
+2024 GPT-4V, Gemini Pro Vision
+  ↓ マルチモーダル理解の高度化
+2025 Multimodal Agents
+  ↓ VLMが行動まで可能に
+```
+
+### 6.2 主要モデル
+
+**LLaVA (Large Language and Vision Assistant)**
+
+```text
+構造: CLIP Image Encoder + LLaMA Language Model
+特徴: 画像理解 + 自然な会話
+用途: Visual Chatbot ("この写真について質問してもいい？")
+性能: CLIPより理解度が高いが遅い
+```
+
+**PaliGemma (Googleの効率的VLM)**
+
+```text
+構造: 軽量ビジョンモデル + 言語モデル
+特徴: 速く軽い、モバイル対応
+用途: エッジデバイスで実行
+性能: 大型モデルより低いが高速
+```
+
+**GPT-4V / Claude Vision**
+
+```text
+構造: Proprietary、詳細非公開
+特徴: 非常に高い理解度
+用途: 高度な画像分析が必要な作業
+性能: 現在最上位
+費用: 高い、APIベース
+```
+
+### 6.3 発展方向
+
+**1. より大きなモデル**
+
+```text
+CLIP: 400Mデータ
+→ 現在のモデル: 1B-10Bデータで学習
+→ 今後: 100B規模のデータ
+```
+
+**2. マルチタスク化**
+
+```text
+CLIP: 主に画像分類/検索
+→ 現在: 分類 + 検索 + キャプション生成
+→ 今後: 物体検出 + セグメンテーションも
+```
+
+**3. 動画マルチモーダル**
+
+```text
+CLIP: 静止画像
+→ 現在: 動画理解も始まる
+→ 今後: 動画 + 音声 + テキスト
+```
+
+**4. 行動可能なエージェント**
+
+```text
+現在: "この写真を説明して" (言葉だけ)
+今後: "その物を取って" (ロボットが実際に行動)
+```
+
+---
+
+## 7. 制限と倫理的考慮
+
+### 7.1 技術的制限
+
+**1. バイアス**
+
+```text
+問題: CLIPはインターネットデータで学習される
+     → 特定の文化、人種、性別に偏る可能性
+
+例:
+- "doctor"検索 → 白人男性の写真が多い
+- "nurse"検索 → 女性の写真が多い
+
+対応:
+- データセットのバランスを取る
+- Fine-tuning時に多様なデータを使う
+- 結果を検証し監視する
+```
+
+**2. 細かな理解の難しさ**
+
+```text
+簡単:
+- "猫" vs "犬"
+
+難しい:
+- "3人 vs 4人" の正確な数え上げ
+- "物体AがBの上にあるか？" という空間関係
+- 顔の微妙な表情
+```
+
+**3. 高い計算コスト**
+
+```text
+CLIP推論コスト:
+- 画像とテキストを同時に処理
+- 単一モデルより2倍遅くなる場合がある
+- 大規模システムではコスト問題になる
+```
+
+### 7.2 倫理的考慮
+
+**プライバシー:**
+
+```text
+画像検索システム:
+- ユーザー写真のデータベース化
+- 個人情報保護が必須
+
+対応:
+- On-device processing
+- データ暗号化
+- 明確な同意手続き
+```
+
+**著作権:**
+
+```text
+CLIPの学習データ:
+- インターネット上の膨大な画像
+- 著作権論争が起こり得る
+
+対応:
+- ライセンス確認必須
+- 可能ならオープンソースデータセットを優先
+```
+
+---
+
+## 8. 実装例：Pythonコード
+
+### 8.1 基本使用
+
+```python
+import torch
+import clip
+from PIL import Image
+
+# 1. デバイス設定
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
+# 2. モデルロード、自動ダウンロード
+model, preprocess = clip.load("ViT-B/32", device=device)
+
+# 3. 画像準備
+image = preprocess(Image.open("example.jpg")).unsqueeze(0).to(device)
+
+# 4. カテゴリ定義
+labels = [
+    "a cat",
+    "a dog",
+    "a bird",
+    "a car",
+    "a person"
+]
+
+# 5. テキストトークン化
+text_inputs = clip.tokenize(labels).to(device)
+
+# 6. 推論
+with torch.no_grad():
+    image_features = model.encode_image(image)
+    text_features = model.encode_text(text_inputs)
+    
+    image_features /= image_features.norm(dim=-1, keepdim=True)
+    text_features /= text_features.norm(dim=-1, keepdim=True)
+    
+    similarity = (100.0 * image_features @ text_features.T).softmax(dim=-1)
+
+# 7. 結果
+print(f"Image classification results:")
+for label, prob in zip(labels, similarity[0].cpu().numpy()):
+    print(f"  {label}: {prob*100:.2f}%")
+
+# 出力例:
+# Image classification results:
+#   a cat: 94.32%
+#   a dog: 3.21%
+#   a bird: 1.45%
+#   a car: 0.68%
+#   a person: 0.34%
+```
+
+### 8.2 バッチ処理
+
+```python
+from torch.utils.data import DataLoader
+
+# 画像バッチ
+image_batch = torch.stack([
+    preprocess(Image.open(f"image_{i}.jpg"))
+    for i in range(10)
+]).to(device)
+
+# 推論
+with torch.no_grad():
+    image_features = model.encode_image(image_batch)  # Shape: (10, 512)
+    text_features = model.encode_text(text_inputs)    # Shape: (5, 512)
+    
+    similarity = (100.0 * image_features @ text_features.T).softmax(dim=-1)
+    # Shape: (10, 5)
+
+# 各画像の上位カテゴリ
+for i, scores in enumerate(similarity):
+    top_category = labels[scores.argmax().item()]
+    top_score = scores.max().item()
+    print(f"Image {i}: {top_category} ({top_score*100:.2f}%)")
+```
+
+### 8.3 画像検索
+
+```python
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
+
+# データベースの全画像を事前にベクトル化
+database_images = [...]  # 画像パスリスト
+database_features = []
+
+for img_path in database_images:
+    img = preprocess(Image.open(img_path)).unsqueeze(0).to(device)
+    with torch.no_grad():
+        feat = model.encode_image(img)
+        feat /= feat.norm(dim=-1, keepdim=True)
+    database_features.append(feat.cpu().numpy())
+
+database_features = np.vstack(database_features)  # Shape: (N, 512)
+
+# クエリ画像
+query_image = preprocess(Image.open("query.jpg")).unsqueeze(0).to(device)
+with torch.no_grad():
+    query_feature = model.encode_image(query_image)
+    query_feature /= query_feature.norm(dim=-1, keepdim=True)
+
+query_feature = query_feature.cpu().numpy()
+
+# 類似度計算
+similarities = cosine_similarity(query_feature, database_features)[0]
+top_k_indices = np.argsort(similarities)[-5:][::-1]
+
+# 上位5件
+print("Top 5 similar images:")
+for rank, idx in enumerate(top_k_indices, 1):
+    print(f"{rank}. {database_images[idx]} (similarity: {similarities[idx]:.4f})")
+```
+
+---
+
+## 9. 次のステップ
+
+### 9.1 基礎実習
+
+```text
+Step 1: CLIPインストール、15分
+$ pip install clip-by-openai
+
+Step 2: 上のコードを実行、10分
+- 自分の写真で分類テスト
+- 複数カテゴリを試す
+
+Step 3: 結果分析、15分
+- うまく分類された画像
+- 失敗した画像の分析
+```
+
+### 9.2 中級：Fine-Tuning
+
+```text
+Step 1: ドメインデータ収集
+- 100枚以上を目標
+
+Step 2: CLIP Fine-tuningコード作成
+- 上の5.3コードを参照
+
+Step 3: 性能評価
+- Fine-tuning前後の比較
+- F1-score、Accuracy計算
+```
+
+### 9.3 上級：アプリケーション構築
+
+```text
+プロジェクト案:
+
+1. バスケットボール場面の自動分類
+   "シュート" vs "ドリブル" vs "パス" を自動認識
+   
+2. 医療画像検索
+   類似したCT/X-ray事例を探す
+   
+3. EC画像検索
+   写真から商品を探す
+   
+4. 音楽アルバムアート検索
+   特定スタイルのアルバムを探す
+```
+
+---
+
+## 結論
+
+Vision Language Models、特にCLIPは、AIが二つのモダリティを同時に理解できることを示しています。
+
+**核心ポイント:**
+
+1. **Contrastive Learning**: 画像とテキストを同じ空間に表現する
+2. **Zero-Shot Learning**: 追加学習なしで新しい作業を実行できる
+3. **マルチモーダル理解**: 画像だけ、テキストだけではなく、その組み合わせを理解する
+4. **実務応用**: 検索、キャプション生成、VQA、推薦など多様な分野
+
+今後AIはさらにマルチモーダル中心へ発展し、VLMの理解は現代AIエンジニアにとって必須知識になります。
+
+---
+
+## 参考資料
+
+- CLIP論文: https://arxiv.org/abs/2103.00020
+- OpenAI CLIP GitHub: https://github.com/openai/CLIP
+- Hugging Face Transformers: https://huggingface.co/models
+- CLIP Fine-tuning Guide: https://github.com/openai/CLIP/blob/main/notebooks/Interacting_with_CLIP.ipynb
+
+## 質問とフィードバック
+
+この記事への質問やフィードバックはコメントで残してください。
+次の記事では、CLIP Fine-tuningの実践プロジェクト例を扱う予定です。

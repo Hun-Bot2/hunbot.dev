@@ -1,0 +1,671 @@
+---
+title: 'Status Arc Devlog 01'
+description: 'Planning notes for a real-life RPG self-management app: Flutter, Android, Codex, and Harness Engineering'
+pubDate: '2026-05-12'
+# heroImage: '/images/Status Arc/Status Arc-dev-01.png'
+tags: ['Status Arc', 'flutter', 'android', 'codex', 'harness-engineering', 'devlog']
+category: 'app_devlog'
+series: 'Status Arc Devlog'
+seriesOrder: 1
+---
+
+This time I was not working on the blog itself. Instead, I organized a product idea I had been thinking about for a long time: a self-management app.
+
+At first I simply wanted to build a phone-time and notification-management app. YouTube Shorts, Instagram, social media, videos, webtoons, and similar media consume time too easily. I wanted to make an app that helps reduce those habits and supports people trying to escape dopamine addiction.
+
+But there are already many apps like that. If the product only limits app usage time, turns off notifications, and shows statistics, I did not think there was a strong reason for me to build it.
+
+So I thought about what I could offer as a differentiator. In the end, it was subculture. I wanted to remove the cold and rigid feeling of existing productivity apps by letting users customize a favorite character, show it inside the app like a VTuber in the lower-right corner, or change the app icon to the character's face.
+
+Of course, there were problems.
+
+```text
+- heat
+- performance
+- stutter
+- overlay permission
+- app-usage detection
+- Android / iOS differences
+- character resource management
+- Google Play policy
+- copyright / IP issues
+```
+
+All of these became constraints.
+
+I also decided this app should not be shipped casually as a rough MVP. Its differentiation comes from the character and real-life RPG structure. If I remove those and release it as just another time-management app, there is nothing meaningful to validate. So I think it should be released only after roughly 80% of the desired experience is implemented and the core bugs are fixed.
+
+To organize the direction, I asked AI from multiple perspectives: software engineer, game-theory expert, consumer studies PhD, psychology PhD, and hardware specialist. That process clarified the overall direction a lot.
+
+## The First Conclusion
+
+At first I thought of this app as a simple "dopamine blocking app," but the conversation changed my thinking.
+
+The core was not:
+
+```text
+an app that makes users use smartphones less
+```
+
+It should be:
+
+```text
+an app that helps users complete a better day in real life
+```
+
+Most existing productivity apps focus on numbers, statistics, restrictions, and graphs.
+
+```text
+You watched YouTube for 2 hours today.
+You used Instagram for 30 minutes.
+You watched Shorts for 40 minutes.
+```
+
+They report this information, but people do not necessarily change even when they know it. They already know they are using the app too much. They also know they should reduce it. The problem is the decision made in the moment.
+
+So this app should not simply block users. It should intervene at that moment through the character and make the user choose again.
+
+For example:
+
+```text
+When YouTube opens:
+"This gate is a restricted zone you chose. Will you use it for only five minutes?"
+
+At 80% of the time limit:
+"Three minutes remain before the limit. If you close it now, you gain Will EXP."
+
+After exceeding the limit:
+"A crack appeared in the wall. Will you keep watching, or return to a recovery quest?"
+```
+
+I thought this should work not as a supervisor, but as a companion or gatekeeper in a real-life RPG.
+
+## Android First
+
+At first I chose Flutter because I wanted to support both platforms. I wanted iOS and Android, and Flutter seemed right because it lets me build UI quickly.
+
+But after organizing the required features, I realized taking iOS and Android together from the beginning would be too difficult.
+
+The features I wanted were:
+
+```text
+- app usage-time detection
+- specific app launch detection
+- character overlay on restricted apps
+- app icon switching
+- notification management
+- user-choice-based intervention
+```
+
+Android is much more flexible for these functions. iOS can do some of this through Screen Time APIs, but fine-grained app detection and character overlays have many restrictions.
+
+So I decided to develop Android first.
+
+I also decided not to focus on low-end devices. The baseline is my own phone, Galaxy S21 or newer. In other words, I am not trying to make an app that runs everywhere. I want to make a polished, smooth experience on S21-class devices and above.
+
+That does not mean I will ignore optimization.
+
+```text
+I will not optimize for low-end devices.
+But on devices at or above the baseline, the app must run properly.
+```
+
+That is the more accurate statement.
+
+## I Do Not Need to Drop Flutter
+
+When thinking about device optimization, I considered whether a platform-specific language would be better. If I only target Android, building everything in Kotlin Native can look like the correct answer.
+
+But after organizing the whole system, I concluded that I do not need to drop Flutter.
+
+Instead, the structure should be split like this:
+
+```text
+Flutter / Dart:
+- real-life RPG UI
+- character screen
+- quest / wall / stat / growth systems
+- settings screen
+- statistics screen
+- internal app overlay
+
+Kotlin / Android Native:
+- UsageStatsManager
+- restricted app detection
+- Android permission handling
+- overlay above external apps
+- Foreground Service
+- app icon switching
+- notification / system event handling
+```
+
+This app should be viewed not as a pure Flutter app, but as:
+
+```text
+an Android system app with a Flutter UI
+```
+
+Dart decides, and Kotlin detects and executes.
+
+For example, if Kotlin detects that Instagram moved into the foreground, Dart-side domain logic judges that this is a restricted app and the user has exceeded 15 minutes today. Then Kotlin shows the overlay.
+
+This lets the app use both Flutter's strengths and Android Native's strengths.
+
+## Overlay Design
+
+The overlay was one of the features I thought about most.
+
+At first I imagined the character always floating in the lower-right corner of the screen, but the more I thought about it, the more problems appeared.
+
+```text
+- battery drain
+- heat
+- touch interference
+- user fatigue
+- Google Play policy risk
+- overlay permission burden
+```
+
+So I changed direction.
+
+By default, the character should work only inside my app. That is not an Android system overlay; it can be built with a Flutter structure such as `Stack`.
+
+```dart
+Stack(
+  children: [
+    MainScreen(),
+    Positioned(
+      right: 16,
+      bottom: 24,
+      child: CharacterCompanion(),
+    ),
+  ],
+)
+```
+
+This requires no permission, has less policy risk, and is easier to control for performance.
+
+Only when the user chooses to enable it should the character appear inside time-limited external apps.
+
+So the default is:
+
+```text
+Default:
+- show the character only inside the app
+- no permission required
+- character works on real-life RPG home, quest, and daily settlement screens
+
+Optional:
+- when the user turns on restricted-app overlay
+- request Usage Access permission
+- request SYSTEM_ALERT_WINDOW permission
+- show character warnings only in selected apps
+```
+
+This feels better as a product and safer from a policy perspective.
+
+## The Real-Life RPG Concept
+
+This is the most important part.
+
+I think one reason people play RPGs is escapism. Games themselves are not bad, but many people, including me, react intensely to levels, equipment, and achievements inside games while neglecting the real body, knowledge, and habits.
+
+That led me to this thought:
+
+```text
+Instead of growing a character in a game,
+isn't growing my real body and knowledge the true growth?
+```
+
+This is also where my "true Ubermensch" feeling came from.
+
+Taking care of your body, building knowledge, creating habits, and doing work you do not want to do: that is the real RPG.
+
+So the concept of this app is not just a self-management app.
+
+```text
+Real-Life RPG
+```
+
+The core sentence is:
+
+```text
+Reality is the main story.
+```
+
+At first AI suggested names such as `MainQuest`, `RealQuest`, `IRLQuest`, and `Wallbreak`, but I already had the name `Hamayang` in my head.
+
+`Hamayang` comes from the name "Gomulroid Hamayang." Of course, using that directly could create IP problems, so it should remain only an homage or inspiration. The actual character and worldbuilding must be completely independent.
+
+Eventually, I organized the structure like this:
+
+```text
+Hamayang = character / IP / brand
+Reality RPG = product philosophy
+Wall System = core mechanic
+```
+
+This separates the character name, service philosophy, and mechanic cleanly.
+
+## Wall System
+
+The core system I imagined is the "wall."
+
+The user sets today's goals, and those goals become a wall.
+
+For example:
+
+```text
+Today's wall:
+- study 3 hours
+- exercise 30 minutes
+- YouTube Shorts under 20 minutes
+- Instagram under 15 minutes
+
+Wall HP:
+100
+```
+
+Studying reduces Wall HP. Exercising reduces Wall HP. Exceeding restricted apps restores Wall HP or creates cracks.
+
+```text
+Study 30 minutes:
+- Wall HP -15
+- Knowledge EXP +20
+
+Exercise 30 minutes:
+- Wall HP -25
+- Body EXP +30
+
+Shorts over 20 minutes:
+- Wall HP +20
+- focus crack appears
+```
+
+And if the user fails, the day does not simply end. A recovery quest appears.
+
+```text
+Recovery quest:
+- walk 10 minutes
+- read 5 pages
+- do 20 push-ups
+- rewrite today's plan
+```
+
+I think this part is important.
+
+In ordinary self-management apps, failure often just ends as failure. But in real life, the more important ability is not having a perfect day; it is returning after failure.
+
+So Hamayang should not be an app that scolds the user. It should help the user recover after failure.
+
+## Stat System
+
+If I make RPG stats too complex from the beginning, they may become hard to manage. For the first version, I want to keep them simple.
+
+```text
+Body
+Knowledge
+Will
+Recovery
+```
+
+These four feel sufficient.
+
+```text
+Body:
+- exercise
+- walking
+- stretching
+- sleep routine
+
+Knowledge:
+- study
+- reading
+- lectures
+- coding
+
+Will:
+- success in limiting distracting apps
+- completing focus sessions
+- maintaining goals
+
+Recovery:
+- meditation
+- rest
+- sleep
+- cleaning/organizing
+```
+
+I could add `STR`, `INT`, `WILL`, `CRAFT`, and `SOCIAL` from the start, but if it becomes too complicated, the essence may become blurry.
+
+I think starting with four and expanding later if necessary is the right path.
+
+## Features for the First Public Version
+
+The first version can be small, but the differentiator must be included.
+
+So I set the minimum features like this:
+
+```text
+Required:
+- Android only
+- Flutter main app
+- Kotlin UsageStats integration
+- distracting-app presets
+- today's wall system
+- real-life quests
+- Body / Knowledge / Will / Recovery stats
+- one character
+- character dialogue system
+- daily settlement
+- recovery quests
+- unlockable app icons
+- internal app character overlay
+- optional external app overlay
+- permission setup guide
+- local storage
+```
+
+I also defined what not to include in the first version.
+
+```text
+Excluded:
+- iOS support
+- complex AI conversation
+- many advanced Live2D models
+- ranking system
+- gacha
+- social guilds
+- complete blocking of every app
+- wearable integration
+- cloud sync
+- user upload of custom copyrighted characters
+```
+
+I especially think gacha should not be included. It would be strange for an app designed to reduce dopamine traps to create another dopamine structure.
+
+## License
+
+I also thought about the license when creating the GitHub repo.
+
+At first I considered MIT, but this project is not just an open-source library. Characters, worldbuilding, design, brand, and real-life RPG UX may become its core competitive assets.
+
+So I decided it is better not to release it as fully open source at the beginning.
+
+My current thinking is:
+
+```text
+repo:
+- public is possible
+
+license:
+- No License
+- or Custom Proprietary / Source-Available
+```
+
+In other words:
+
+```text
+Public repo != Open Source
+```
+
+People may be able to read the code, but they should not receive the right to use it commercially or reuse the characters and brand.
+
+Parts that can be opened later can be separated.
+
+```text
+Can be opened:
+- parts of the test harness
+- development workflow
+- some state machines
+- AI development documentation structure
+
+Protected:
+- character
+- app design
+- worldbuilding
+- dialogue
+- icons
+- brand
+- core UX
+```
+
+Protecting the project early and opening only selected parts later feels more appropriate.
+
+## Documentation Approach
+
+Before starting development, I thought the documentation needed to be organized first.
+
+This project will use AI for vibe coding, but repeatedly giving the AI long PDFs or DOCX files is not a good workflow.
+
+If documents become too long, the AI forgets details, and reading the entire document every time wastes context.
+
+So I decided to build the documentation structure around Markdown.
+
+At first I also considered Cursor-related setup, but I plan to use Codex only, so I removed Cursor-specific configuration.
+
+The final structure looked like this:
+
+```text
+AGENTS.md
+00_DOCUMENT_RULES.md
+01_CONTEXT_ENGINEERING.md
+02_CODEX_OPERATING_MODEL.md
+03_METHOD_SELECTION.md
+04_BOOTSTRAP_NEXT_STEPS.md
+05_HARNESS_ENGINEERING.md
+SOURCE_AVAILABLE_NOTICE.md
+
+.codex/
+  README.md
+  config.example.toml
+
+.agents/
+  skills/
+    feature-slice/
+    harness-engineering/
+    scenario-coverage/
+    android-permission-review/
+    product-tone-review/
+    hamayang-diff-review/
+
+docs/
+  context/
+  specs/
+  adr/
+  exec-plans/
+  ai/
+  references/
+  quality/
+```
+
+The key is that `AGENTS.md` should not become a huge manual. It should work more like a table of contents.
+
+```text
+AGENTS.md:
+- short and stable development constitution
+- rules Codex should always read
+
+CONTEXT_INDEX.md:
+- tells which documents to read for each kind of task
+
+specs / adr / exec-plans:
+- detailed knowledge and decision records
+```
+
+In other words, the AI should not read every document every time. It should read only the documents needed for the task.
+
+## Correcting My Misunderstanding of Harness Engineering
+
+There was one major correction here.
+
+At first I understood Harness Engineering as test fakes or scenario tools. So I wrote things like this in the documents:
+
+```text
+lib/harness/clock.dart
+test/harness/fake_clock_test.dart
+```
+
+But after rereading OpenAI's official Harness Engineering post, I realized the concept was different from what I thought.
+
+Based on the official post, Harness Engineering is not simply making a `FakeClock`. It is closer to designing the repo-level development environment so Codex can understand, run, verify, and modify code.
+
+My first understanding was:
+
+```text
+FakeClock = Harness Engineering
+```
+
+After organizing it, I think it should be:
+
+```text
+FakeClock = time abstraction / test utility
+Harness Engineering = repo-level environment, tools, documents, and feedback loops that let Codex work well
+```
+
+So the current structure should also change.
+
+```text
+Current:
+lib/harness/clock.dart
+test/harness/fake_clock_test.dart
+
+Recommended:
+lib/core/time/clock.dart
+test_support/time/fake_clock.dart
+test/core/time/fake_clock_test.dart
+```
+
+`Clock` is a domain time abstraction, and `FakeClock` is a test utility. They are not the right targets for the name Harness Engineering.
+
+The real Harness Engineering pieces are things like:
+
+```text
+AGENTS.md
+docs/context/CONTEXT_INDEX.md
+docs/specs/harness_engineering.md
+docs/exec-plans/
+docs/quality/
+tools/harness/run_checks.sh
+tools/harness/doctor.sh
+.agents/skills/harness-engineering/SKILL.md
+```
+
+In other words, Harness is not an app feature. It is the development environment that helps Codex work well.
+
+If I attach the wrong name here, the project structure may keep twisting later, so it is better to correct it early.
+
+## How I Should Give Work to Codex
+
+When assigning tasks to Codex, simply saying "make this" is not enough. The scope needs to be clear.
+
+I think a format like this works:
+
+```text
+Follow AGENTS.md.
+Read:
+- docs/specs/harness_engineering.md
+- docs/specs/time_abstraction.md
+- docs/migrations/MIGRATION-0001-clock-harness-to-time.md
+
+Task: Correct the current misuse of harness terminology.
+
+Current files:
+- lib/harness/clock.dart
+- test/harness/fake_clock_test.dart
+
+Goal:
+- Move Clock/SystemClock to lib/core/time/clock.dart.
+- Move FakeClock into test_support/time/fake_clock.dart or keep it test-only.
+- Rename the test to test/core/time/fake_clock_test.dart.
+- Update imports.
+- Do not create app-facing harness features.
+
+Done when:
+- lib/harness/clock.dart no longer exists.
+- flutter analyze passes.
+- flutter test passes.
+- No production source imports a test fake.
+```
+
+Writing Goal, Context, Constraints, and Done when reduces the chance that Codex goes in the wrong direction.
+
+If Codex repeatedly makes the same mistake, I should not only fix the prompt. I should fix the documents, scripts, or tests.
+
+For example:
+
+```text
+Failure:
+Codex keeps putting FakeClock under lib/harness.
+
+Solution:
+add docs/specs/time_abstraction.md
+add a MIGRATION document
+add a naming rule to AGENTS.md
+```
+
+That is closer to the core of Harness Engineering.
+
+## Next Implementation
+
+The direction is now fairly clear.
+
+```text
+Project name:
+Hamayang
+
+Repo name candidates:
+hamayang
+hamayang-app
+
+Platform:
+Android first
+
+Technology:
+Flutter + Dart
+Kotlin Android Native
+Codex-based development
+
+Concept:
+real-life RPG
+character companion
+wall system
+real-life growth
+```
+
+The next step is to create the actual repo, place the documentation package at the root, and generate the Flutter project.
+
+The initial work will likely go like this:
+
+1. Create the GitHub repo
+2. Add Source-Available / Proprietary notice
+3. Add `AGENTS.md` and documentation package for Codex
+4. Generate the Flutter project
+5. Start by organizing `lib/core/time/clock.dart`
+6. Build the minimum structure where `flutter analyze` and `flutter test` run
+7. Write today's wall / quest / stat domain models
+8. Write midnight settlement tests with FakeClock
+9. Implement the in-app character overlay UI
+10. Integrate Android UsageStats in the next phase
+
+The actual app development has not started yet, but this planning pass turned the project from an idea into something buildable.
+
+At first it was just "a management app that reduces dopamine." Now I can summarize it like this:
+
+```text
+Hamayang is an app that gives reality itself back
+as a growth RPG to people who used to escape into games.
+```
+
+It sounds a bit grand, but it is close to what I want to build.
+
+In the next post, I plan to create the repo, apply the Codex documentation structure, and set up the initial Flutter project.
+
+## References
+
+- OpenAI Harness Engineering: https://openai.com/index/harness-engineering/
+- Codex AGENTS.md: https://developers.openai.com/codex/guides/agents-md
+- Codex Skills: https://developers.openai.com/codex/skills
+- Flutter Platform Channels: https://docs.flutter.dev/platform-integration/platform-channels
+- Android UsageStatsManager: https://developer.android.com/reference/android/app/usage/UsageStatsManager
+- Android SYSTEM_ALERT_WINDOW: https://developer.android.com/reference/android/Manifest.permission#SYSTEM_ALERT_WINDOW

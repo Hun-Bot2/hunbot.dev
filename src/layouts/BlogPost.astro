@@ -11,6 +11,7 @@ import GiscusComments from '../components/GiscusComments.astro';
 import ViewCounter from '../components/ViewCounter.astro';
 import { SITE_TITLE, AUTHOR, AUTHOR_EMAIL, SOCIAL_LINKS } from '../consts';
 import type { UILanguage } from '../i18n/ui';
+import { blogHeroImageSizes, getResponsivePublicImage } from '../utils/responsive-public-images';
 
 type Props = CollectionEntry<'blog'>['data'] & {
 	lang?: UILanguage;
@@ -66,7 +67,7 @@ const proseClass = `prose prose-slate max-w-none text-slate-200 leading-relaxed 
 	[&>td]:border [&>td]:border-slate-200 [&>td]:dark:border-slate-700 [&>td]:p-3 [&>td]:text-left
 	[&>img]:rounded-lg [&>img]:shadow-sm [&>img]:my-6 [&>img]:max-w-full [&>img]:h-auto
 	[&_.katex-display]:text-center [&_.katex-display]:text-1.5xl sm:[&_.katex-display]:text-2xl [&_.katex-display]:my-6`;
-const heroImageSizes = '(min-width: 768px) 768px, 100vw';
+const responsiveHeroImage = heroImage ? getResponsivePublicImage(heroImage) : null;
 
 const schema = {
   "@context": "https://schema.org",
@@ -132,16 +133,24 @@ const schema = {
 		<main id="main-content" class="max-w-4xl mx-auto px-6 py-8">
 			<article aria-labelledby={headingId}>
 				<!-- Hero Image -->
-				{heroImage && (
+				{heroImage && responsiveHeroImage && (
 					<figure class="mb-8">
-						<img 
-							src={heroImage}
-							alt={title}
-							loading="lazy"
-							decoding="async"
-							sizes={heroImageSizes}
-							class="w-full max-h-[70vh] rounded-lg shadow-sm object-contain"
-						/>
+						<picture>
+							{responsiveHeroImage.webpSrcSet && (
+								<source type="image/webp" srcset={responsiveHeroImage.webpSrcSet} sizes={blogHeroImageSizes} />
+							)}
+							<img
+								src={responsiveHeroImage.src}
+								alt={title}
+								loading="eager"
+								fetchpriority="high"
+								decoding="async"
+								width={responsiveHeroImage.width}
+								height={responsiveHeroImage.height}
+								sizes={blogHeroImageSizes}
+								class="w-full max-h-[70vh] rounded-lg shadow-sm object-contain"
+							/>
+						</picture>
 						{(description || title) && <figcaption class="sr-only">{description || title}</figcaption>}
 					</figure>
 				)}

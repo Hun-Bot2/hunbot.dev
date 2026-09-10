@@ -1,0 +1,22 @@
+---
+draft: true
+title: 'Tagged Span Annotation for Detecting Translation Errors in Reasoning LLMs'
+description: 'Tagged Span Annotation for Detecting Translation Errors in Reasoning LLMs のレビュー'
+pubDate: '2026-04-15'
+#heroImage: '/images/giscus.png'
+tags: ['WMT', 'Translation Errors', 'Reasoning LLMs', 'Tagged Span Annotation']
+category: 'paper_review'
+series: 'WMT2025 Translation Error Detection'
+seriesOrder: 1
+---
+
+### <a href="https://aclanthology.org/2025.wmt-1.62/" target="_blank">https://aclanthology.org/2025.wmt-1.62/</a>
+
+この記事は、WMT 2025で発表された "Tagged Span Annotation for Detecting Translation Errors in Reasoning LLMs" という論文のレビューです。
+
+個人用の翻訳機を作りながら、言語モデルの翻訳品質をどのように評価するのかに関心を持つようになりました。大量のテキストを翻訳したあと、それを一つずつ手作業で検収するのは現実的に難しいためです。
+
+そこで、次の二つの方法について勉強してみることにしました。
+
+1. 韓国語ブログ原文とLLMによる翻訳結果（日本語/英語）に対して、BLEU・COMETなど適切な翻訳品質評価指標とhuman evaluationを組み合わせ、翻訳精度を定量的に分析する方法。
+2. 韓日翻訳において、敬語・文体・文長などによってどのような誤りパターンが現れるのかを整理し、プロンプト調整や追加学習などを通じてどこまで改善できるのかを実験する方法。

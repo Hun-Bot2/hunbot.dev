@@ -1,0 +1,474 @@
+---
+title: 'On-The-Block 서비스 개발기 05 : 버그 및 이슈'
+description: 'On-The-Block 서비스 개발기 05: 버그 및 이슈'
+pubDate: '2026-04-30'
+# heroImage: '/images/ON-THE-BLOCK/Recommendation-System.png'
+tags: ['recommendation', 'AI', 'on-the-block']
+category: 'on-the-block'
+series: 'on-the-block'
+seriesOrder: 4
+---
+
+# 버그 및 이슈 해결
+이번 글에서는 서비스 개발 과정에서 발생한 버그 및 이슈에 대한 내용을 공유하려고 합니다.
+
+## Auth 서비스 이후
+팀원이 Auth 서비스를 개발해서 배포 한 뒤 플러터에 연동해 검수를 끝내고 merge까지 한 상태로, 기능을 테스트 해보려고 flutter run을 해서
+
+에뮬레이터에 띄우고 Google Login을 시도했으나, 버튼을 클릭하자마자 앱이 종료되는 현상을 경험했습니다.
+
+이를 해결하기 위해서는 개발한 팀원의 `GoogleService-Info.plist` 파일이 필요했고, 이 파일을 따로 공유받아서, `CLIENT_ID` 와 `REVERSED_CLIENT_ID`를
+`info.plist`에 추가하면 됩니다.
+
+## Auth 서비스에서 Survey 서비스 이후
+선호 조사를 마쳐도 아직 Survey 서비스가 배포되지 않아서, 홈 화면으로 넘어가지 못해 `flutter run --dart-define=BYPASS_SURVEY=true`를 추가해서
+
+채팅 개발을 위해서 홈 화면으로 넘어갈 수 있도록 했습니다.
+
+## Chat에서 Avartar 받아오기
+카카오톡을 생각하면, 채팅을 하는 사람은 각자 다른 아바타를 사용하거나, 아바타를 설정하지 않은 사람은 기본 아바타를 사용합니다.
+이걸 구현하기 위해서 채팅측에서,
+
+
+## gRPC 에러
+
+gRPC Error (code: 4, codeName: DEADLINE_EXCEEDED, message: Deadline exceeded, details: null, rawResponse:
+null, trailers: f)
+
+
+
+
+
+
+
+
+
+# Building Chat v1 End-to-End: From Proto Integration to Real Runtime Behavior
+
+## Why this session mattered
+This session moved chat from a UI/mock state to a backend-integrated feature with real gRPC behavior, PostgreSQL-backed data, and production-like edge-case handling.
+
+The key goal was not only “can we connect?” but “does it behave correctly under real chat conditions?”
+
+## Scope we implemented
+- Wired Flutter chat feature to gRPC backend (`chat-service`) with generated protobuf stubs.
+- Validated runtime against local PostgreSQL-backed backend.
+- Removed dummy room/message behaviors from critical chat paths.
+- Added moderation actions in client:
+  - delete message (owner policy enforced by backend)
+  - deactivate room (owner policy enforced by backend)
+- Improved room list and stream behavior for real-world usage:
+  - pagination and load-more
+  - reconnect/catch-up handling
+  - duplicate suppression
+  - deleted-message placeholder rendering
+
+## Architecture decisions
+
+### 1) Thin-client contract boundary
+- Flutter presentation does not consume raw proto classes directly.
+- `data/` layer maps gRPC DTOs -> UI models.
+- Backend remains authority for membership, moderation, and room lifecycle.
+
+### 2) Message rendering rules
+- `MESSAGE_TYPE_TEXT` renders text only.
+- Image widget renders only when:
+  - `message_type == IMAGE`
+  - `image_url` is non-empty.
+- Empty metadata is never treated as image payload.
+- Deleted messages render placeholders; original deleted content is not exposed.
+
+### 3) Stream correctness over simple connectivity
+- Client tracks latest sequence and reconnects with `afterSequenceNo`.
+- Stream merge deduplicates by `messageId` and `sequenceNo`.
+- Lifecycle hooks handle background/resume with stream restart + history sync.
+
+## Major issues found and fixed
+
+### A. Stale backend process caused false client failures
+Symptom:
+- Flutter send failed with `Unavailable`/internal SQL errors despite recent code fixes.
+
+Cause:
+- Old `chat-service` binary still listening on `:9090`.
+
+Fix:
+- Killed stale process, restarted latest backend, re-ran smoke.
+
+### B. Room list missing older real rooms
+Symptom:
+- User had many active rooms in DB, Flutter list showed fewer.
+
+Findings:
+1. Client had single-page-only behavior initially.
+2. Pagination could stall when first page didn’t fill viewport (no scroll event).
+3. Backend page-2 query failed on NULL last-message fields (`message_type` scan error).
+
+Fixes:
+- Client: added pagination + load-more + underfilled-viewport auto-fetch.
+- Backend: fixed `ListMyRooms` query scan/null handling path and status filtering.
+
+### C. Deactivated rooms still visible
+Symptom:
+- Room deactivated successfully but still appeared in list.
+
+Fixes:
+- Backend query filter tightened to active-only rooms:
+  - `r.is_active = true`
+  - `r.deleted_at IS NULL`
+- Client added exclusion re-apply and render-time safeguards.
+
+### D. Dummy fallback confusion in room screen
+Symptom:
+- Opening invalid/deactivated rooms could show dummy-like behavior.
+
+Fix:
+- Removed local/mock send fallback and mock-room gating from main runtime path.
+- Room now shows unavailable feedback instead of fabricating local chat behavior.
+
+## Features added in Flutter during this session
+
+### 1) Message deletion flow
+- Long-press message -> delete action.
+- Calls `DeleteMessage(roomId, messageId, ownerUserId)`.
+- Refreshes history after success.
+- Shows permission feedback on failure.
+
+### 2) Room deactivation flow
+- Room options (`...`) -> deactivate room.
+- Confirmation dialog.
+- Calls `DeactivateRoom(roomId, ownerUserId)`.
+- Returns to list and removes room from active UI path.
+
+### 3) Backend-driven room list UX
+- Empty state for zero active rooms.
+- Pull-to-refresh + incremental pagination.
+- Deactivated/deleted rooms excluded from active list behavior.
+
+## Testing approach used
+- Backend unit/service/repository tests and smoke runs.
+- Direct DB inspection for membership/room status truth.
+- Direct RPC checks with `grpcurl` using proto files (non-reflection server).
+- Flutter analyzer checks after each functional patch.
+
+## Final state
+By the end of this session:
+- Chat list and room behavior are backend-first.
+- Moderation actions are wired in client and enforced by backend rules.
+- Reconnect/catch-up and duplicate handling are materially improved.
+- Deactivated/deleted rooms are handled as status-driven domain states, not UI-only assumptions.
+
+## Next recommended improvements
+1. Expose room ownership in room-screen state to hide owner-only actions for non-owners.
+2. Add explicit stream error UI for LEFT/REMOVED/inactive transitions.
+3. Add integration tests for Flutter repository + mapper behavior (status, pagination, deleted placeholders).
+4. Align all chat docs with finalized “active-only list” backend policy.
+
+
+
+코드가 끝났다면, 설정은 크게 **Firebase Console 2개 + iOS/APNs 1개 + GCP/Cloud Run 권한 1개**를 확인하면 돼.
+
+## 1. Firebase Console에서 FCM API 활성화
+
+Firebase Console에서:
+
+```text
+Project settings > Cloud Messaging
+```
+
+으로 가서 **Cloud Messaging API / FCM HTTP v1 API**가 활성화되어 있는지 확인해야 해. Firebase 공식 문서도 서버에서 Admin SDK로 메시지를 보내려면 Cloud Messaging API를 활성화하라고 안내한다. ([Firebase][1])
+
+GCP CLI로도 가능:
+
+```bash
+gcloud services enable fcm.googleapis.com \
+  --project on-the-block-2026
+```
+
+---
+
+## 2. iOS 설정: APNs 연결 필수
+
+iOS 푸시는 Firebase만으로 안 되고, **APNs 설정**이 필요해.
+
+Firebase Console에서:
+
+```text
+Project settings > Cloud Messaging
+> Apple app configuration / iOS app configuration
+> APNs authentication key upload
+```
+
+여기에 Apple Developer에서 발급한 APNs `.p8` key를 업로드해야 해.
+
+필요한 값:
+
+```text
+APNs .p8 key file
+Key ID
+Apple Team ID
+```
+
+Firebase 공식 문서 기준으로 iOS 앱 설정에서 APNs authentication key를 업로드해야 하고, `.p8` 파일과 Key ID, Team ID를 입력해야 한다. 최소 하나의 development 또는 production key가 필요하다. ([Firebase][2])
+
+그리고 Xcode에서:
+
+```text
+ios/Runner.xcworkspace 열기
+Runner target > Signing & Capabilities
++ Capability > Push Notifications 추가
++ Capability > Background Modes 추가
+  - Background fetch 체크
+  - Remote notifications 체크
+```
+
+이것도 필요해. Firebase 문서도 iOS에서 메시지를 받으려면 Xcode에서 Push Notifications와 Background Modes를 활성화해야 한다고 안내한다. ([FlutterFire][3])
+
+중요: **iOS 푸시는 실제 iPhone에서 테스트해야 해.** APNs는 실제 기기에서 동작하고, FlutterFire 문서도 iOS 메시징 테스트에는 physical iOS device가 필요하다고 명시한다. ([FlutterFire][3])
+
+---
+
+## 3. Android 설정 확인
+
+Android는 이미 `google-services.json`을 넣었다면 기본 설정은 된 상태일 가능성이 높아.
+
+확인할 것:
+
+```text
+android/app/google-services.json 존재
+Firebase Android app package name == android/app/build.gradle의 applicationId
+Android 13 이상에서는 알림 권한 요청 처리
+```
+
+Android 13 이상과 iOS에서는 FCM payload를 받기 전에 사용자에게 알림 권한을 요청해야 한다. Firebase 문서도 iOS, macOS, web, Android 13+에서는 `requestPermission()` 호출이 필요하다고 설명한다. ([Firebase][4])
+
+Android 에뮬레이터에서 테스트할 경우 Google APIs / Google Play Services가 포함된 에뮬레이터를 써야 해. FCM Android client는 Google Play services가 필요하다. ([Firebase][2])
+
+---
+
+## 4. Cloud Run chat-service가 FCM을 보낼 권한 부여
+
+지금 구조에서는 **chat-service가 FCM push를 보내는 주체**야.
+
+그러면 Cloud Run의 `chat-service` runtime service account에 FCM 전송 권한이 있어야 해.
+
+먼저 chat-service의 service account 확인:
+
+```bash
+gcloud run services describe chat-service \
+  --project on-the-block-2026 \
+  --region asia-northeast3 \
+  --format='value(spec.template.spec.serviceAccountName)'
+```
+
+나온 service account에 아래 역할을 부여:
+
+```bash
+gcloud projects add-iam-policy-binding on-the-block-2026 \
+  --member="serviceAccount:<CHAT_SERVICE_ACCOUNT_EMAIL>" \
+  --role="roles/firebasecloudmessaging.admin"
+```
+
+`roles/firebasecloudmessaging.admin` 역할은 FCM 메시지 생성 권한인 `cloudmessaging.messages.create`를 포함한다. ([Google Cloud Documentation][5])
+
+Cloud Run에서는 service account JSON key를 넣는 것보다 **Cloud Run service identity + Application Default Credentials**를 쓰는 게 맞다. Firebase Admin SDK 문서도 Cloud Run 같은 Google 환경에서는 default credentials lookup이 자동으로 동작하므로 이 방식을 강력히 권장한다고 설명한다. ([Firebase][6])
+
+즉 Cloud Run에는 보통 이걸 하지 않는 게 좋아:
+
+```text
+GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
+```
+
+대신:
+
+```text
+Cloud Run service account에 FCM 권한 부여
+Admin SDK는 ADC로 초기화
+```
+
+이 구조가 맞다.
+
+---
+
+## 5. 모바일 앱이 chat-service RPC를 직접 호출한다면 Cloud Run 접근도 확인
+
+`RegisterDeviceToken`, `UnregisterDeviceToken`, `ListMyRooms`, `MarkChatRoomRead`를 Flutter가 직접 호출한다면, chat-service도 모바일 앱에서 접근 가능해야 해.
+
+즉 chat-service Cloud Run 설정도 auth-service처럼 필요할 수 있음:
+
+```text
+Authentication: Allow public access
+Ingress: All
+```
+
+단, 이것은 인증을 없앤다는 뜻이 아니라, 요청이 Cloud Run IAM에서 막히지 않고 chat-service 코드까지 도달하게 하는 설정이야.
+
+실제 인증은 gRPC metadata의:
+
+```text
+Authorization: Bearer <access_token>
+```
+
+으로 chat-service 내부에서 검증해야 함.
+
+---
+
+## 6. 테스트 순서
+
+내가 추천하는 테스트 순서는 이거야.
+
+### 1단계: 앱에서 FCM token 나오는지 확인
+
+로그인 후 client에서:
+
+```text
+FCM token generated
+RegisterDeviceToken called
+RegisterDeviceToken success
+```
+
+까지 확인.
+
+### 2단계: DB 확인
+
+chat-service DB에 이런 값이 저장되어야 함:
+
+```text
+user_id
+device_id
+token
+platform = IOS or ANDROID
+updated_at
+```
+
+### 3단계: Firebase Console에서 테스트 발송
+
+Firebase Console에서:
+
+```text
+DevOps & Engagement > Messaging
+> New campaign / Notifications
+> Send test message
+> FCM registration token 입력
+```
+
+으로 직접 테스트 가능해. Firebase 문서도 테스트 알림을 보낼 때 FCM registration token을 입력해서 특정 디바이스에 보낼 수 있다고 설명한다. ([Firebase][2])
+
+### 4단계: 실제 채팅 메시지 테스트
+
+```text
+User A 로그인
+User B 로그인
+A가 B에게 메시지 전송
+B 기기에서 push 수신
+B의 Chat tab badge 증가
+B가 알림 클릭
+ChatRoomScreen(room_id) 이동
+MarkChatRoomRead 호출
+badge 0으로 갱신
+```
+
+---
+
+## 7. 자주 터지는 문제
+
+### iOS에서 FCM token이 안 나옴
+
+대부분 이쪽 문제야.
+
+```text
+APNs key 미등록
+Push Notifications capability 없음
+Background Modes 없음
+실제 iPhone이 아니라 Simulator에서 테스트
+알림 권한 거부됨
+Bundle ID mismatch
+```
+
+### foreground에서 알림 배너가 안 보임
+
+이건 정상일 수 있어. Firebase 문서 기준으로 foreground 상태에서 notification message는 기본적으로 visible notification으로 표시되지 않고, Android는 high priority notification channel, iOS는 presentation options 설정이 필요하다. ([Firebase][4])
+
+그래서 foreground에서는 보통:
+
+```text
+onMessage 수신
+→ chat unread badge 갱신
+→ 필요하면 local notification 표시
+```
+
+이렇게 처리한다.
+
+### background/terminated에서 알림 클릭 후 이동 안 됨
+
+`getInitialMessage()`와 `onMessageOpenedApp` 둘 다 처리해야 해. Firebase 문서도 terminated 상태에서 열린 메시지는 `getInitialMessage()`, background에서 열린 메시지는 `onMessageOpenedApp`으로 처리하라고 안내한다. ([Firebase][4])
+
+### iOS에서 앱을 강제 종료했더니 background push가 안 됨
+
+iOS에서 사용자가 앱 스위처에서 앱을 swipe away 하면, background message를 받으려면 앱을 다시 직접 열어야 한다. Android도 설정에서 force quit하면 다시 열기 전까지 메시지 수신 조건이 제한될 수 있다. ([Firebase][4])
+
+---
+
+## 최종 체크리스트
+
+```text
+Firebase Console
+- Cloud Messaging API enabled
+- iOS app 등록됨
+- Android app 등록됨
+- APNs .p8 key 업로드됨
+
+iOS
+- GoogleService-Info.plist 있음
+- Bundle ID 일치
+- Push Notifications capability enabled
+- Background Modes enabled
+  - Background fetch
+  - Remote notifications
+- 실제 iPhone에서 테스트
+
+Android
+- google-services.json 있음
+- package/applicationId 일치
+- Android 13+ 알림 권한 요청
+- Google Play Services 있는 기기/에뮬레이터 사용
+
+GCP / Cloud Run
+- chat-service service account 확인
+- service account에 roles/firebasecloudmessaging.admin 부여
+- FCM API enabled
+- Cloud Run에서는 service account JSON key 사용하지 않음
+- 모바일이 chat-service 직접 호출하면 public access/ingress 확인
+
+App behavior
+- login 후 RegisterDeviceToken 성공
+- token refresh 시 RegisterDeviceToken 재호출
+- logout 시 UnregisterDeviceToken 호출
+- chat push는 top bell과 분리
+- unread badge는 ListMyRooms unread_count 기준
+```
+
+지금 네 상황에서는 우선 **iOS APNs key 업로드 + Cloud Run chat-service service account에 FCM 권한 부여** 이 두 개가 제일 중요해.
+
+[1]: https://firebase.google.com/docs/cloud-messaging/send/admin-sdk "Send a message using Firebase Admin SDK  |  Firebase Cloud Messaging"
+[2]: https://firebase.google.com/docs/cloud-messaging/flutter/get-started "Get started with Firebase Cloud Messaging in Flutter apps"
+[3]: https://firebase.flutter.dev/docs/messaging/apple-integration "FCM via APNs Integration | FlutterFire"
+[4]: https://firebase.google.com/docs/cloud-messaging/flutter/receive-messages "Receive messages in Flutter apps  |  Firebase Cloud Messaging"
+[5]: https://docs.cloud.google.com/iam/docs/roles-permissions/firebasecloudmessaging "Firebase Cloud Messaging roles and permissions  |  Identity and Access Management (IAM)  |  Google Cloud Documentation"
+[6]: https://firebase.google.com/docs/admin/setup "Add the Firebase Admin SDK to your server"
+
+
+## 알림기능과 auth기능 firebase 문제
+MSA라서, 채팅에 붙어있는 알림과 Auth 서비스를 분리해서 Firebase도 따로 작업하려고 했는데,
+google-services.json 파일은 하나만 존재할 수 있어서, FCM을 어떻게 처리할지 고민이 되었다. 이거, 같은 firebase를 사용하면 MSA가 깨지는 건 아닌가??
+근데 어처피 auth측에서 로그인이 안되면 채팅 또한 사용할 수 가 없어서, 상관이 없을 것 같다.
+
+그래서, auth측인 팀원에서 FCM설정을 해달라고 issue를 올려서, 받기로 했다.
+
+## 배포하고, 채팅방 생성 문제
+```txt
+flutter: CREATE_ROOM_FAILED: gRPC Error (code: 13, codeName: INTERNAL, message: ERROR: relation "chat_rooms" does not exist (SQLSTATE 42P01), details: [], rawResponse: null, trailers: {date: Mon, 18 May 2026 15:44:15 GMT, server: Google Frontend, x-cloud-trace-context: 52286cbe6adb9276c71474b249601e8b/9501168009505085909, traceparent: 00-52286cbe6adb9276c71474b249601e8b-83daedf71ddb19d5-00, content-length: 0, alt-svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000})
+flutter: CREATE_ROOM_ENDPOINT: GrpcChatRepository(GrpcChatRemoteDataSource(chat-service-staging-44649239380.asia-northeast3.run.app:443, tls=true))
+```
+
+이런 형태의 에러가 발생했느데 흠..

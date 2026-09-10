@@ -40,10 +40,11 @@ const CATEGORY_ALIASES: Record<string, 'ai' | 'devlog' | 'review' | 'misc'> = {
 };
 
 /**
- * Get all blog posts sorted by publication date (newest first)
+ * Get all blog posts sorted by publication date (newest first).
+ * Posts marked `draft: true` are excluded from production builds.
  */
 export async function getAllPosts(): Promise<BlogPost[]> {
-  const posts = await getCollection('blog');
+  const posts = await getCollection('blog', ({ data }) => !data.draft);
   return sortPostsByDateDesc(posts);
 }
 

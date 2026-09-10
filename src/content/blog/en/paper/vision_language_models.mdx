@@ -1,0 +1,863 @@
+---
+title: "Vision Language Models (VLM): Multimodal Learning with Images and Text"
+description: "Principles, implementation, and applications of Vision Language Models centered on CLIP"
+pubDate: "2025-12-29"
+# heroImage: '../../assets/KOSSDA.png'
+tags: ["Computer Vision", "NLP", "Multimodal", "CLIP", "Deep Learning"]
+category: 'paper'
+---
+
+# Vision Language Models (VLM): Multimodal Learning with Images and Text
+
+## Overview
+
+Vision Language Models (VLMs) are AI models that understand images and text together. Unlike traditional image-classification models or text-analysis models, VLMs learn semantic relationships between two modalities and provide more flexible, powerful representations.
+
+This post explains multimodal learning from first principles to practical applications, centered on **CLIP (Contrastive Language-Image Pre-training)**, one of the representative VLMs.
+
+---
+
+## 1. Problem Definition: Limits of Traditional AI
+
+### 1.1 The Single-Modality Problem
+
+Traditional AI models usually process only one kind of data.
+
+**Image Classification**
+
+```text
+Input: cat photo
+Output: "cat" (label only)
+Limit: the model knows what the image is, but cannot describe it in text
+```
+
+**Text Classification**
+
+```text
+Input: "This movie was really fun"
+Output: "positive" (sentiment classification)
+Limit: the model understands text, but cannot connect it to related images
+```
+
+**Cross-Modal Problem**
+
+```text
+Question: Does this photo match this description?
+Traditional approach: run an image model and a text model separately,
+then figure out how to compare the two outputs.
+```
+
+### 1.2 Why Multimodal Learning Is Needed
+
+Real perception is always multimodal.
+
+```text
+A person looks at a photo = vision + language memory + context
+ChatGPT looks at an image = understands the image through text
+
+Multimodal learning models this reality.
+```
+
+**Practical use cases:**
+
+- image search, such as Pinterest or Google Lens
+- image captioning, which automatically adds descriptions to photos
+- visual question answering, such as "What is visible in this image?"
+- recommendation systems, such as recommending products with a similar style
+
+---
+
+## 2. CLIP: Contrastive Language-Image Pre-training
+
+### 2.1 Core Idea
+
+CLIP was released by OpenAI in 2021 and changed the paradigm of multimodal learning.
+
+**CLIP's core philosophy:**
+
+```text
+Represent images and text in the same embedding space.
+Place matching image-text pairs close together.
+Place non-matching pairs far apart.
+```
+
+### 2.2 Architecture
+
+CLIP consists of two encoders.
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                    CLIP Architecture                        │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  Image Encoder          Text Encoder                        │
+│  (Vision Transformer)   (Transformer)                       │
+│         │                      │                            │
+│    [ Image ]                [Text]                          │
+│    (224×224)              "A photo                          │
+│         │                 of a cat"                         │
+│         │                    │                              │
+│         ▼                    ▼                              │
+│  ┌─────────────┐       ┌─────────────┐                    │
+│  │ ViT Encoder │       │ Text Encoder│                    │
+│  │ (12 layers) │       │ (12 layers) │                    │
+│  └─────────────┘       └─────────────┘                    │
+│         │                    │                              │
+│         ▼                    ▼                              │
+│   Image Vector          Text Vector                        │
+│   (Shape: 512)          (Shape: 512)                       │
+│         │                    │                              │
+│         └────────┬───────────┘                             │
+│                  │                                          │
+│         Cosine Similarity Computation                      │
+│         (comparison)                                       │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 2.3 Training Process: Contrastive Learning
+
+CLIP is trained with **contrastive learning**.
+
+**Batch structure:**
+
+```text
+A batch contains N image-text pairs.
+
+Batch: [
+  (Image₁, Text₁),  ✓ matching pair
+  (Image₂, Text₂),  ✓ matching pair
+  ...
+  (Imageₙ, Textₙ)   ✓ matching pair
+]
+
+Batch size: N, usually 256 or 512
+```
+
+**Contrastive loss:**
+
+```text
+For each image, calculate similarity against all N texts.
+
+Example for Image 1:
+Image₁ vs Text₁: 0.95  ✓ high similarity, desired
+Image₁ vs Text₂: 0.15  ✗ low similarity, desired
+Image₁ vs Text₃: 0.08  ✗ low similarity, desired
+...
+Image₁ vs Textₙ: 0.10  ✗ low similarity, desired
+
+The loss calculates these probabilities with cross entropy.
+```
+
+**Mathematical expression:**
+
+```text
+similarity(image_i, text_j) = cosine_similarity(I_i, T_j)
+
+Loss = -log(exp(sim(i,i) / τ) / Σⱼ exp(sim(i,j) / τ))
+
+where:
+- i: image index
+- j: text index
+- τ (tau): temperature parameter, usually 0.07
+  → makes similarity differences sharper
+```
+
+**Core idea:**
+
+- increase similarity for the correct pair where i=j
+- decrease similarity for incorrect pairs where i≠j
+- optimize both directions at the same time
+
+### 2.4 Why This Works
+
+Compared with traditional supervised learning:
+
+```text
+Traditional:
+- labels required: "this photo is a cat" for fixed categories only
+- adding new classes requires retraining
+- data: ImageNet with only 1,000 categories
+
+CLIP:
+- no fixed labels required, only image-text pairs
+- adding new classes only requires a text description
+- data: the broader internet, 400M image-text pairs
+  → learns far more diverse concepts
+```
+
+---
+
+## 3. CLIP's Strength: Zero-Shot Learning
+
+### 3.1 Concept
+
+CLIP's most innovative feature is **zero-shot learning**.
+
+```text
+"Zero-shot" means:
+= the model can classify data it has not seen in that task format
+= it can perform a new task immediately without extra training
+```
+
+### 3.2 How It Works
+
+**Example: image classification**
+
+```python
+# Prepare model
+model = CLIP("ViT-B/32")  # pretrained on 400M pairs
+
+# Load image
+image = load_image("cat.jpg")
+
+# Candidate categories. The model was not retrained for them.
+categories = [
+    "a photo of a cat",
+    "a photo of a dog",
+    "a photo of a bird"
+]
+
+# Calculate similarity
+similarities = model.compute_similarity(image, categories)
+# [0.95, 0.02, 0.01]
+
+# Result
+predicted_class = categories[argmax(similarities)]
+# "a photo of a cat" → 95%
+```
+
+**Why this is possible:**
+
+```text
+CLIP did not learn "cat", "dog", and "bird" as isolated classes.
+Instead, from 400M image-text pairs, it learned:
+- visual features of animals
+- concepts like fur, ears, and paws
+- visual differences between cat-like and dog-like images
+
+So it can understand new categories by composing this knowledge.
+```
+
+### 3.3 Zero-Shot vs Traditional
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                 Zero-Shot Learning Flow                     │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  Traditional, requiring fine-tuning:                        │
+│  100 cat images + 100 dog images → retrain model → classify │
+│  time: 1 hour, data: 200 images required                    │
+│                                                             │
+│  CLIP zero-shot, immediate:                                 │
+│  prepare text "a photo of a cat" → classify immediately     │
+│  time: 1 second, data: 0 new images                         │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 4. Practical Applications: Three Main Cases
+
+### 4.1 Visual Search
+
+**Problem:**
+Recommend products similar to a photo taken by the user.
+
+**Traditional approach: hard and expensive**
+
+```text
+User photo → feature extraction → compare with every database photo
+Problem: it is unclear which features matter
+         color? shape? texture? all of them?
+```
+
+**CLIP-based approach:**
+
+```text
+All product photos in database → CLIP Image Encoder → vectors
+                                processed once
+
+User photo → CLIP Image Encoder → vector
+                ↓
+         calculate vector distance quickly
+                ↓
+         recommend top-K similar products
+```
+
+**Advantages:**
+
+- very fast, because vector similarity is simple
+- semantic similarity is learned, including style and pattern
+- text search is also possible, such as "blue sneakers" → related photos
+
+**Industry examples:**
+
+- Pinterest: find similar pins from an image
+- Amazon: products similar to this shoe
+- Google Lens: take a photo and find purchase links
+
+### 4.2 Image Captioning
+
+**Problem:**
+Automatically add descriptive text to photos.
+
+**Traditional approach: CNN + RNN**
+
+```text
+Image → CNN feature extraction → RNN text generation
+"A cat is sitting on a chair"
+
+Problem: fixed-style text generation
+         difficult to produce natural, detailed sentences
+```
+
+**Modern approach: CLIP + LLM**
+
+```text
+Image → CLIP Image Encoder → image vector
+                              ↓
+                    Large Language Model, such as GPT or LLaMA
+                              ↓
+"A cat with soft gray fur is sitting comfortably
+on a brown wooden chair, with sunlight coming through the window."
+```
+
+**Advantages:**
+
+- CLIP understands the image, while the LLM writes natural language
+- descriptions become more detailed and accurate
+- context inside the image is better understood
+
+**Code example:**
+
+```python
+from transformers import CLIPVisionModel, GPT2LMHeadModel
+
+# Convert image to vector
+image_features = clip_model.vision_model(image)
+
+# LLM receives image vector and generates text
+caption = gpt2_model.generate(
+    inputs=image_features,
+    max_length=50,
+    temperature=0.7
+)
+```
+
+### 4.3 Visual Question Answering (VQA)
+
+**Problem:**
+Given an image and a question, answer the question.
+
+**Examples:**
+
+```text
+Image: restaurant photo
+Question: "What kind of atmosphere does this restaurant have?"
+Expected answer: "It is an upscale restaurant with a warm and modern atmosphere."
+
+Image: traffic light photo
+Question: "What color is the traffic light?"
+Expected answer: "It is red."
+```
+
+**CLIP-based VQA pipeline:**
+
+```text
+Image → CLIP Image Encoder → image vector
+            ↓
+Question → CLIP Text Encoder → question vector
+            ↓
+        feed both vectors to an LLM
+            ↓
+        generate answer with a fine-tuned LLM
+```
+
+**Practical examples:**
+
+- medicine: "Is there a tumor in this CT scan?" → "Yes, around T4"
+- autonomous driving: "What color is the traffic light ahead?" → "Red"
+- robotics: "Where is the blue tool?" → "Upper-left shelf"
+- accessibility: image descriptions for visually impaired users
+
+---
+
+## 5. Fine-Tuning: Customizing CLIP
+
+### 5.1 Why Fine-Tuning Is Needed
+
+CLIP is trained on general internet data, so it can perform poorly in specialized domains.
+
+**Example problem:**
+
+```text
+CLIP, general:
+"pest damage photo" → "insect" (too generic)
+
+Domain-specific CLIP, fine-tuned:
+"pest damage photo" → "thrips" (more precise)
+```
+
+### 5.2 Fine-Tuning Strategies
+
+Choose the strategy based on data size.
+
+**Large data, 100K+:**
+
+```text
+Strategy: retrain all layers
+Learning Rate: 1e-4, low
+Epochs: 10-20
+GPU: V100 or better, 8+ hours
+
+Code:
+for param in model.parameters():
+    param.requires_grad = True
+
+optimizer = Adam(model.parameters(), lr=1e-4)
+```
+
+**Medium data, 1K-100K:**
+
+```text
+Strategy: retrain only parts of the text/image encoders
+Learning Rate: 1e-3
+Epochs: 5-10
+GPU: T4, 30 minutes to 2 hours
+
+Code:
+# Only the last blocks of the Vision Transformer
+for param in model.vision_model.transformer.resblocks[-4:].parameters():
+    param.requires_grad = True
+
+optimizer = Adam(trainable_params, lr=1e-3)
+```
+
+**Small data, under 1K:**
+
+```text
+Strategy: linear head only, or very light fine-tuning
+Learning Rate: 1e-2, high
+Epochs: 3-5
+GPU: CPU can work, minutes
+
+Code:
+# Freeze encoder, train only a new classification head
+for param in model.parameters():
+    param.requires_grad = False
+
+new_head = Linear(512, num_classes)
+optimizer = Adam(new_head.parameters(), lr=1e-2)
+```
+
+### 5.3 Fine-Tuning Code Example
+
+```python
+import torch
+import clip
+from torch.utils.data import DataLoader
+from torch.optim import Adam
+
+# 1. Load model
+device = "cuda"
+model, preprocess = clip.load("ViT-B/32", device=device)
+
+# 2. Prepare data loader
+train_loader = DataLoader(
+    CustomDataset(images, texts),
+    batch_size=32,
+    shuffle=True
+)
+
+# 3. Set trainable parameters
+for param in model.parameters():
+    param.requires_grad = False
+
+for param in model.transformer.resblocks[-4:].parameters():
+    param.requires_grad = True
+
+# 4. Optimizer
+optimizer = Adam(
+    [p for p in model.parameters() if p.requires_grad],
+    lr=1e-3
+)
+
+# 5. Training loop
+for epoch in range(5):
+    for batch_idx, (images, texts) in enumerate(train_loader):
+        images = images.to(device)
+        
+        image_features = model.encode_image(images)
+        text_features = model.encode_text(texts)
+        
+        image_features /= image_features.norm(dim=-1, keepdim=True)
+        text_features /= text_features.norm(dim=-1, keepdim=True)
+        
+        similarity = image_features @ text_features.t()
+        loss = contrastive_loss(similarity)
+        
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        
+        if batch_idx % 100 == 0:
+            print(f"Epoch {epoch}, Batch {batch_idx}, Loss: {loss:.4f}")
+
+# 6. Save model
+torch.save(model.state_dict(), "clip_finetuned.pt")
+```
+
+---
+
+## 6. Recent VLM Trends: 2024-2025
+
+### 6.1 Evolution After CLIP
+
+VLMs developed rapidly after CLIP in 2021.
+
+```text
+Timeline:
+2021 CLIP
+  ↓ foundation established by OpenAI
+2023 LLaVA, CLIP + LLaMA
+  ↓ combined with large language models
+2024 GPT-4V, Gemini Pro Vision
+  ↓ stronger multimodal understanding
+2025 Multimodal Agents
+  ↓ VLMs become able to act
+```
+
+### 6.2 Major Models
+
+**LLaVA (Large Language and Vision Assistant)**
+
+```text
+Structure: CLIP Image Encoder + LLaMA Language Model
+Feature: image understanding + natural conversation
+Use: visual chatbot, such as "Can I ask about this photo?"
+Performance: better understanding than CLIP, but slower
+```
+
+**PaliGemma, Google's efficient VLM**
+
+```text
+Structure: lightweight vision model + language model
+Feature: fast and light, mobile-friendly
+Use: edge-device execution
+Performance: lower than large models but faster
+```
+
+**GPT-4V / Claude Vision**
+
+```text
+Structure: proprietary, details not fully public
+Feature: very high understanding
+Use: tasks requiring advanced image analysis
+Performance: currently among the strongest
+Cost: high, API-based
+```
+
+### 6.3 Direction of Development
+
+**1. Larger models**
+
+```text
+CLIP: 400M data
+→ current models: 1B-10B training data
+→ future: 100B-scale data
+```
+
+**2. Multitasking**
+
+```text
+CLIP: mainly image classification/search
+→ current: classification + search + captioning
+→ future: object detection + segmentation too
+```
+
+**3. Video multimodality**
+
+```text
+CLIP: static images
+→ current: beginning to understand video
+→ future: video + audio + text
+```
+
+**4. Action-capable agents**
+
+```text
+Current: "Describe this photo" (language only)
+Future: "Pick up that object" (robot acts physically)
+```
+
+---
+
+## 7. Limitations and Ethical Considerations
+
+### 7.1 Technical Limitations
+
+**1. Bias**
+
+```text
+Problem: CLIP is trained on internet data
+         → biased by culture, race, gender, and social patterns
+
+Examples:
+- searching "doctor" may return many white male images
+- searching "nurse" may return many female images
+
+Mitigation:
+- balance datasets
+- use diverse data when fine-tuning
+- validate and monitor outputs
+```
+
+**2. Difficulty with fine-grained understanding**
+
+```text
+Easy:
+- "cat" vs "dog"
+
+Hard:
+- "3 people" vs "4 people"
+- "is object A on top of object B?"
+- subtle facial expressions
+```
+
+**3. High compute cost**
+
+```text
+CLIP inference cost:
+- processes image and text together
+- can be about twice as slow as a single-modal model
+- cost becomes important in large-scale systems
+```
+
+### 7.2 Ethical Considerations
+
+**Privacy:**
+
+```text
+Image search systems:
+- can database user photos
+- privacy protection is required
+
+Mitigation:
+- on-device processing
+- data encryption
+- explicit consent flow
+```
+
+**Copyright:**
+
+```text
+CLIP training data:
+- billions of internet images
+- copyright disputes can arise
+
+Mitigation:
+- check licenses
+- prefer open-source datasets when possible
+```
+
+---
+
+## 8. Practical Implementation: Python Code
+
+### 8.1 Basic Usage
+
+```python
+import torch
+import clip
+from PIL import Image
+
+# 1. Device setup
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
+# 2. Load model, automatically downloads weights
+model, preprocess = clip.load("ViT-B/32", device=device)
+
+# 3. Prepare image
+image = preprocess(Image.open("example.jpg")).unsqueeze(0).to(device)
+
+# 4. Define categories
+labels = [
+    "a cat",
+    "a dog",
+    "a bird",
+    "a car",
+    "a person"
+]
+
+# 5. Tokenize text
+text_inputs = clip.tokenize(labels).to(device)
+
+# 6. Inference
+with torch.no_grad():
+    image_features = model.encode_image(image)
+    text_features = model.encode_text(text_inputs)
+    
+    image_features /= image_features.norm(dim=-1, keepdim=True)
+    text_features /= text_features.norm(dim=-1, keepdim=True)
+    
+    similarity = (100.0 * image_features @ text_features.T).softmax(dim=-1)
+
+# 7. Results
+print(f"Image classification results:")
+for label, prob in zip(labels, similarity[0].cpu().numpy()):
+    print(f"  {label}: {prob*100:.2f}%")
+
+# Example output:
+# Image classification results:
+#   a cat: 94.32%
+#   a dog: 3.21%
+#   a bird: 1.45%
+#   a car: 0.68%
+#   a person: 0.34%
+```
+
+### 8.2 Batch Processing
+
+```python
+from torch.utils.data import DataLoader
+
+# Image batch
+image_batch = torch.stack([
+    preprocess(Image.open(f"image_{i}.jpg"))
+    for i in range(10)
+]).to(device)
+
+# Inference
+with torch.no_grad():
+    image_features = model.encode_image(image_batch)  # Shape: (10, 512)
+    text_features = model.encode_text(text_inputs)    # Shape: (5, 512)
+    
+    similarity = (100.0 * image_features @ text_features.T).softmax(dim=-1)
+    # Shape: (10, 5)
+
+# Top category per image
+for i, scores in enumerate(similarity):
+    top_category = labels[scores.argmax().item()]
+    top_score = scores.max().item()
+    print(f"Image {i}: {top_category} ({top_score*100:.2f}%)")
+```
+
+### 8.3 Image Search
+
+```python
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
+
+# Vectorize all database images in advance
+database_images = [...]  # image path list
+database_features = []
+
+for img_path in database_images:
+    img = preprocess(Image.open(img_path)).unsqueeze(0).to(device)
+    with torch.no_grad():
+        feat = model.encode_image(img)
+        feat /= feat.norm(dim=-1, keepdim=True)
+    database_features.append(feat.cpu().numpy())
+
+database_features = np.vstack(database_features)  # Shape: (N, 512)
+
+# Query image
+query_image = preprocess(Image.open("query.jpg")).unsqueeze(0).to(device)
+with torch.no_grad():
+    query_feature = model.encode_image(query_image)
+    query_feature /= query_feature.norm(dim=-1, keepdim=True)
+
+query_feature = query_feature.cpu().numpy()
+
+# Similarity
+similarities = cosine_similarity(query_feature, database_features)[0]
+top_k_indices = np.argsort(similarities)[-5:][::-1]
+
+# Top 5 similar images
+print("Top 5 similar images:")
+for rank, idx in enumerate(top_k_indices, 1):
+    print(f"{rank}. {database_images[idx]} (similarity: {similarities[idx]:.4f})")
+```
+
+---
+
+## 9. Next Steps You Can Try
+
+### 9.1 Basic Practice
+
+```text
+Step 1: install CLIP, 15 minutes
+$ pip install clip-by-openai
+
+Step 2: run the code above, 10 minutes
+- test classification with your own photos
+- try several categories
+
+Step 3: analyze results, 15 minutes
+- images classified well
+- images that failed
+```
+
+### 9.2 Intermediate: Fine-Tuning
+
+```text
+Step 1: collect domain data
+- aim for at least 100 images
+
+Step 2: write CLIP fine-tuning code
+- refer to section 5.3
+
+Step 3: evaluate performance
+- compare before and after fine-tuning
+- calculate F1-score and accuracy
+```
+
+### 9.3 Advanced: Build an Application
+
+```text
+Project ideas:
+
+1. Basketball scene classification
+   automatically recognize "shooting" vs "dribbling" vs "passing"
+   
+2. Medical image search
+   find similar CT/X-ray cases
+   
+3. Ecommerce image search
+   find products from photos
+   
+4. Music album-art search
+   find albums with a specific style
+```
+
+---
+
+## Conclusion
+
+Vision Language Models, especially CLIP, show how AI can understand two modalities at the same time.
+
+**Key points:**
+
+1. **Contrastive Learning**: represent images and text in the same space
+2. **Zero-Shot Learning**: perform new tasks without additional training
+3. **Multimodal Understanding**: understand the combination of image and text, not just one side
+4. **Practical Applications**: search, captioning, VQA, recommendation, and more
+
+AI will become increasingly multimodal, and understanding VLMs is becoming essential knowledge for modern AI engineers.
+
+---
+
+## References
+
+- CLIP paper: https://arxiv.org/abs/2103.00020
+- OpenAI CLIP GitHub: https://github.com/openai/CLIP
+- Hugging Face Transformers: https://huggingface.co/models
+- CLIP Fine-tuning Guide: https://github.com/openai/CLIP/blob/main/notebooks/Interacting_with_CLIP.ipynb
+
+## Questions and Feedback
+
+Please leave questions or feedback in the comments.
+In the next post, I will cover a practical CLIP fine-tuning project.

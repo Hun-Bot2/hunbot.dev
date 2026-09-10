@@ -1,0 +1,69 @@
+---
+draft: true
+title: '余ったノートPCでサービスを作る 01'
+description: '未使用ノートPCを活用したオンプレミス開発サーバー構築記'
+pubDate: '2026-02-09'
+#heroImage: '/images/giscus.png'
+tags: ["HomeLab" ,"Ubuntu" ,"Docker", "Rust", "NextJS", "DevOps", "OnPremise"]
+category: 'onpremise_devlog'
+series: 'On-premise JP Service Devlog'
+seriesOrder: 1
+---
+
+# [Home Server] 眠っていたノートPCを起こし、24/7オンプレミス開発サーバーとして構築する (Ubuntu + Docker + VS Code Remote)
+
+![Home Server Architecture](https://dummyimage.com/800x400/000/fff&text=Home+Server+Architecture)
+
+## 概要
+現在開発中の**日本語スピーキング練習**プロジェクトとは別のプロジェクトです。今回のプロジェクトでは、自宅で眠っているノートPCにUbuntuをインストールし、デュアルブートで**オンプレミス開発サーバー**として活用する方法を学びます。サービス機能としては、日本のニュース記事を収集し、個人的な勉強に役立つ自分向けのサービスを作ることを目標にしています。記事に関連する単語をレベル別に分類したり、クイズを作ったり、作文課題を出したり、記事内容を要約して書いてみたりする機能を実装する予定です。
+
+これまでサービスを作るとき、毎回クラウド形式のデプロイ環境ばかり構築していたため、実際のデプロイ環境であるLinuxと同じ環境で開発したいというニーズがありました。
+
+そこで、自宅に余っているノートPCにUbuntuをインストールして**On-premise開発サーバー**を構築し、MacBookからは**VS Code Remote SSH**で遠隔制御する開発環境を作ることにしました。初日はこの環境構築とアーキテクチャ構想にすべて使いました。
+
+### 目標
+* **コスト削減**: AWS/GCPなどのクラウド費用0円で24時間稼働サーバーを確保。
+* **リソース分離**: 重いDockerコンテナとビルド作業はUbuntuが担当し、MacはコーディングとUI確認に集中。
+* **デプロイ環境一致**: Production環境と同じLinux(Ubuntu)ベースで開発し、「自分のPCでは動くのに？」問題を防ぐ。
+
+---
+
+## アーキテクチャ (Architecture)
+MacBookは単に**Client**としての役割、つまりコード作成と画面確認だけを行い、実際のすべての計算リソースとデータは**Server**、Ubuntu側で処理されます。
+
+---
+## 構築過程 (Implementation)
+以下の過程は2026年2月8日に行った作業をもとに作成しました。
+
+### Step 1. ノートPCをサーバーに変える（電源設定）
+
+ノートPCをサーバーとして使うとき、最初に直面した問題は**「蓋を閉じるとスリープモードに入ること」**でした。サーバーは24時間起きている必要があるため、システム設定を変更しました。
+
+```bash
+# /etc/systemd/logind.conf ファイル修正
+sudo nano /etc/systemd/logind.conf
+
+# 下の設定を探し、コメントを解除して変更
+HandleLidSwitch=ignore
+
+```
+
+設定適用後（`sudo systemctl restart systemd-logind`）、蓋を閉じてもSSH接続が切れないことを確認しました。
+
+### Step 2. 開発環境の核心、Docker & Docker Compose
+
+すべてのサービスはコンテナベースで隔離されて実行されます。
+
+```bash
+# Dockerインストールおよび権限設定（sudoなしで実行するため）
+curl -fsSL [https://get.docker.com](https://get.docker.com) -o get-docker.sh
+sudo sh get-docker.sh
+sudo usermod -aG docker $USER
+newgrp docker
+
+```
+
+### Step 3. VS Code Remote SSH設定 (MacBook)
+VS Codeで`F1`を押し、"Remote-SSH: Connect to Host..."を選択したあと、ノートPCのIPアドレスとユーザー名を入力すれば接続できます。
+
+---

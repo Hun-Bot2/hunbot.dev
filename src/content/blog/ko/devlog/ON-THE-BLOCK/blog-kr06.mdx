@@ -1,0 +1,761 @@
+---
+title: '26년 반기를 돌아보면서'
+description: '설명 입력'
+pubDate: '2026-06-12'
+#heroImage: '/images/giscus.png'
+tags: ['tag1', 'tag2']
+category: 'category'
+series: 'series 이름'
+seriesOrder: 1
+---
+
+# 추천 엔진 제작기 06: Flutter 연결, 실제 유저 검증, Qdrant 정정, 그리고 GCP LLM 챗봇 설계
+
+이번 글은 [`blog-kr05.mdx`](./blog-kr05.mdx) 이후에 실제로 확인된 내용을 정리한다.
+
+이전 글에서는 Cloud Run 리소스, Qdrant, staging job, production readiness를 중심으로 설명했다. 그 뒤로 우리는 Flutter 연결 계약, auth-service debug token, survey-service 배포 결과, 실제 유저 profile 상태, chatbot/LLM 구조, 그리고 Qdrant가 실제 serving path에서 쓰이는지까지 다시 확인했다.
+
+가장 중요한 업데이트는 이 문장이다.
+
+```text
+현재 recommendation-service의 추천 serving path는 Qdrant를 사용하지 않는다.
+현재 실제 추천 응답은 PostgreSQL 기반 deterministic ranking이다.
+```
+
+Qdrant 인프라와 rebuild job은 존재하지만, 실제 `GetBeverageRecommendations`와 `GetVenueRecommendations` serving 경로에서는 `qdrant_used = false`다.
+
+이 글은 그 내용을 정정하고, 앞으로 Flutter와 chatbot이 어떤 방식으로 recommendation-service를 사용해야 하는지 기록한다.
+
+## 이번 업데이트 요약
+
+`blog-kr05` 이후 핵심 변경/확인 사항은 다음이다.
+
+| 영역 | 업데이트 |
+|---|---|
+| Qdrant | 인프라는 있지만 현재 추천 serving에서는 미사용 |
+| 추천 ranking | PostgreSQL catalog/vector 기반 deterministic scoring |
+| Flutter 계약 | gRPC direct call, TLS, bearer metadata, client user_id 전송 금지 |
+| Auth | staging 전용 `IssueDebugToken` RPC 추가, `ValidateToken` 검증 가능 |
+| Survey | category 기반 설문 응답 구조로 변경, deployed survey 결과 조회 가능 |
+| 실제 유저 검증 | auth token valid, survey result exists, recommendation profile missing |
+| Profile 생성 | survey 저장과 recommendation profile 생성은 아직 자동 real-time sync가 아님 |
+| Hero UI | MVP에서는 이미지 없이 추천 결과 텍스트 기반 hero 가능 |
+| Chatbot | chat repo에서 orchestration layer로 구현해야 함 |
+| LLM | 우리 DB를 직접 읽지 않고, backend가 넘긴 grounded context만 설명 |
+| GCP 대안 | Hugging Face Endpoint 대신 Cloud Run GPU + vLLM 고려 |
+
+## Qdrant에 대한 정정
+
+이전 글에서는 Cloud Run runtime 구조를 설명하면서 online path에 Qdrant가 포함될 수 있다고 썼다. 인프라 관점에서는 맞는 설명이지만, 현재 코드 기준으로는 더 정확히 말해야 한다.
+
+현재 실제 추천 API serving은 Qdrant를 쓰지 않는다.
+
+beverage 추천 경로는 다음처럼 동작한다.
+
+```text
+1. auth context에서 external_user_id 확인
+2. PostgreSQL에서 active taste_profile_revision 조회
+3. PostgreSQL에서 active beverage catalog/vector candidate 조회
+4. Python scoring 함수로 score 계산
+5. final_score, similarity, catalog key 기준으로 정렬
+6. recommendation_requests, recommendation_results, explanations 저장
+7. gRPC response 반환
+```
+
+코드상 request context도 명확하다.
+
+```json
+{
+  "pipeline": "postgres_beverage_v1",
+  "qdrant_used": false
+}
+```
+
+그리고 각 result의 `qdrant_point_id`도 `null`로 저장된다.
+
+venue 추천 경로도 같다.
+
+```json
+{
+  "pipeline": "postgres_selected_beverage_venue_v1",
+  "qdrant_used": false,
+  "distance_strategy": "straight_line_mvp"
+}
+```
+
+즉 현재 상태는 다음처럼 표현하는 게 맞다.
+
+```text
+PostgreSQL = canonical + serving ranking source
+Qdrant = rebuildable derived index, prepared but not serving-critical
+```
+
+## 왜 지금은 PostgreSQL ranking이 맞는가
+
+현재 catalog 규모에서는 Qdrant가 반드시 필요하지 않다. 오히려 지금 단계에서는 PostgreSQL 기반 deterministic ranking이 더 안전하다.
+
+이유는 네 가지다.
+
+1. catalog가 아직 MVP 규모다.
+2. 추천 결과 재현성이 중요하다.
+3. Flutter integration과 auth/survey 연동 검증이 더 급하다.
+4. Qdrant를 candidate retrieval로 넣기 전에 profile/catalog/vector quality가 먼저 안정되어야 한다.
+
+추천 결과는 다음 정보를 기준으로 재현 가능해야 한다.
+
+```latex
+R =
+rank(
+  P_u,
+  C,
+  V,
+  S,
+  F
+)
+```
+
+각 항의 의미는 다음과 같다.
+
+- `P_u`: user `u`의 active taste profile revision
+- `C`: active beverage catalog
+- `V`: canonical recommendation vectors
+- `S`: versioned scoring config
+- `F`: request filter, category, budget mode, limit
+
+Qdrant를 candidate retrieval로 붙이더라도 최종 rank와 explanation은 PostgreSQL hydrate 후 deterministic scoring으로 확정해야 한다.
+
+```latex
+Candidates =
+retrieve_{qdrant}(P_u, k)
+```
+
+```latex
+FinalRank =
+rerank_{postgres}(Candidates, P_u, S, F)
+```
+
+이 구조를 지키면 Qdrant가 장애 나도 PostgreSQL fallback이 가능하고, Qdrant rebuild 후에도 결과를 설명할 수 있다.
+
+## 현재 Qdrant의 실제 역할
+
+현재 Qdrant 관련 구성은 이미 있다.
+
+| 구성 | 상태 | 역할 |
+|---|---|---|
+| `recommendation-qdrant-staging` | 존재 | staging Qdrant service |
+| `recommendation-qdrant-rebuild-staging` | 존재 가능 | PostgreSQL vector에서 Qdrant rebuild |
+| `qdrant_points` table | 존재 | Qdrant point metadata |
+| `app.tools.qdrant_rebuild` | 존재 | rebuild CLI |
+| `app.tools.qdrant_index_smoke` | 존재 | indexed collection smoke |
+| serving recommendation path | 미사용 | 현재 `qdrant_used=false` |
+
+따라서 Qdrant를 "아직 안 썼다"고 말해도 된다. 단, 더 정확히는:
+
+```text
+Qdrant 인프라와 indexing pipeline은 준비되어 있지만,
+사용자 추천 응답을 만드는 online serving 경로에는 아직 연결하지 않았다.
+```
+
+이 차이가 중요하다.
+
+## Flutter 연결 계약
+
+Flutter는 thin client여야 한다. scoring, filtering, ranking, vector logic, cross-service orchestration을 Flutter에 넣으면 안 된다.
+
+Flutter가 알아야 할 것은 endpoint와 response display 계약뿐이다.
+
+현재 staging recommendation endpoint는 다음이다.
+
+```text
+host: recommendation-service-vcuepibcwq-du.a.run.app
+port: 443
+TLS: true
+transport: gRPC
+package: ontheblock.recommendation.v1
+service: RecommendationService
+```
+
+Flutter는 모든 recommendation RPC에 auth metadata를 넣어야 한다.
+
+```text
+authorization: Bearer <accessToken>
+```
+
+그리고 절대 request body에 `user_id`를 넣으면 안 된다.
+
+```text
+Do not send user_id.
+recommendation-service derives the user from the bearer token.
+```
+
+이 원칙은 production에서 매우 중요하다. client가 보내는 `user_id`를 믿으면 다른 유저의 추천 결과를 조회하는 보안 문제가 생길 수 있다.
+
+## Flutter 권장 호출 순서
+
+Flutter는 추천 화면에 진입했을 때 바로 추천 리스트를 호출하면 안 된다. 먼저 profile 상태를 확인해야 한다.
+
+권장 순서:
+
+```text
+1. GetProfileStatus
+2. status == ACTIVE이면 GetBeverageRecommendations
+3. 추천 카드/hero 노출
+4. 첫 노출 이벤트 RecordRecommendationEvent(IMPRESSION)
+5. 클릭/저장/닫기/상세 보기 이벤트 기록
+```
+
+`GetProfileStatus` 결과가 active가 아니면 recommendation list를 요청하지 않는 것이 좋다.
+
+상태별 Flutter behavior는 다음처럼 잡을 수 있다.
+
+| 상태 | Flutter 동작 |
+|---|---|
+| `PROFILE_STATUS_MISSING` | 설문은 있을 수 있지만 추천 profile이 아직 없음. "추천 프로필 생성 중/필요" 상태 표시 |
+| `PROFILE_STATUS_PENDING_GENERATION` | 로딩 또는 다시 확인 |
+| `PROFILE_STATUS_ACTIVE` | 추천 목록 요청 |
+| `PROFILE_STATUS_STALE` | stale 안내 후 추천 요청 또는 refresh 유도 |
+| `PROFILE_STATUS_FAILED_GENERATION` | 재시도/문의 안내 |
+
+현재 Flutter에서 본 메시지:
+
+```text
+Recommendation profile not ready
+Your survey is saved, but the recommendation profile has not been generated yet.
+```
+
+이 메시지는 Flutter 버그가 아니라 backend 상태를 정확히 보여준 것이다.
+
+## 실제 유저 검증 결과
+
+실제 유저에 대해 확인한 흐름은 다음이다.
+
+```text
+auth debug token 발급 가능
+ValidateToken valid=true
+survey-service에서 SurveyResult 존재
+recommendation-service GetProfileStatus = PROFILE_STATUS_MISSING
+```
+
+즉 문제는 auth나 survey 저장 실패가 아니었다.
+
+문제는 이것이다.
+
+```text
+survey result는 저장되어 있지만,
+recommendation-service의 derived taste profile이 아직 생성되지 않았다.
+```
+
+현재 구조에서 recommendation-service는 raw survey DB를 직접 읽으면 안 된다. survey-service gRPC 결과를 받아 derived profile을 만들어야 한다.
+
+이때 서비스 경계는 다음과 같다.
+
+| 데이터 | owner | recommendation-service 권한 |
+|---|---|---|
+| 로그인/JWT/user identity | auth-service | token validate 결과만 사용 |
+| raw survey answers | survey-service | 직접 DB read/write 금지 |
+| taste profile | recommendation-service | survey output에서 derived state 생성 |
+| beverage catalog/vector | recommendation-service | canonical owner |
+| recommendation logs | recommendation-service | canonical owner |
+
+## Survey-service 응답 구조 업데이트
+
+survey-service는 기존 질문 번호 기반 키에서 category 기반 키로 바뀌었다.
+
+이전 구조:
+
+```text
+q3_answer
+q4_answer
+q5_answer
+...
+```
+
+현재 구조:
+
+```json
+{
+  "level": "expert",
+  "categories": ["whiskey", "wine", "cognac", "beer", "cocktail"],
+  "whiskey": ["bourbon_character", "sherry_character"],
+  "wine": ["full_red", "sparkling"],
+  "cocktail": ["tropical_tiki", "tart_balanced"],
+  "beer": ["lager_pilsner", "pale_ale_ipa"],
+  "flavor_keywords": ["vanilla_caramel", "citrus_berry"],
+  "budget": "over_200k"
+}
+```
+
+이 변경은 recommendation-service에 좋은 방향이다. 질문 번호를 category로 다시 mapping하는 중간 변환이 줄고, mapper가 의미 기반 key를 직접 사용할 수 있기 때문이다.
+
+다만 주의할 점도 있다.
+
+```text
+cognac은 categories에 포함될 수 있지만 별도 하위 preference field가 없다.
+```
+
+따라서 cognac은 category preference로는 반영하되, 세부 스타일 vector에는 flavor keywords와 global preference를 더 많이 사용해야 한다.
+
+## Real-time 추천 응답 문제
+
+사용자가 물었던 핵심 질문은 이것이다.
+
+> 설문을 저장한 직후 어떻게 recommendation response를 real-time으로 받을 수 있는가?
+
+정답은 "Flutter가 직접 profile을 만드는 것"이 아니다.
+
+정상 구조는 다음 중 하나다.
+
+### Option A: 설문 완료 후 synchronous profile generation
+
+```text
+Flutter SubmitSurvey
+  -> survey-service 저장 성공
+  -> Flutter이 recommendation-service Refresh/GenerateProfile 호출
+  -> recommendation-service가 survey-service GetSurveyResultByUser 호출
+  -> derived profile 생성
+  -> GetProfileStatus ACTIVE
+  -> GetBeverageRecommendations
+```
+
+장점:
+
+- MVP에서 이해하기 쉽다.
+- 사용자가 설문 직후 추천을 받을 수 있다.
+
+단점:
+
+- profile generation latency가 추천 화면 진입 latency에 포함된다.
+- 중복 호출 idempotency가 필요하다.
+
+### Option B: event/sync 기반 asynchronous profile generation
+
+```text
+survey-service survey saved
+  -> event or sync cursor
+  -> recommendation sync worker
+  -> derived profile 생성
+  -> Flutter polling or refresh
+```
+
+장점:
+
+- production 확장성이 좋다.
+- 설문 저장과 추천 profile 생성을 분리할 수 있다.
+
+단점:
+
+- deployed survey-service에 cursor/event RPC가 필요하다.
+- MVP에서는 구현/운영 복잡도가 올라간다.
+
+현재 상태에서는 Option A 또는 guarded staging adapter로 먼저 검증하고, production에서는 Option B로 가는 것이 자연스럽다.
+
+## Auth debug token이 해결한 것
+
+이전에는 staging에서 end-to-end smoke를 하려면 실제 Flutter 로그인 session의 access token이 필요했다. CLI에는 live Flutter session이 없어서 토큰을 가져오기 어려웠다.
+
+auth-service 팀원이 staging 전용 `IssueDebugToken` RPC를 추가하면서 이 문제가 풀렸다.
+
+특징:
+
+```text
+staging only
+DEBUG_TOKEN_ENABLED=true일 때만 동작
+production에서는 UNIMPLEMENTED
+access token 유효시간 30분
+ValidateToken valid=true 확인 가능
+```
+
+이건 좋은 선택이다. auth DB를 직접 읽거나 JWT를 수동으로 조작하지 않고, auth-service가 token issuance와 validation을 계속 소유하기 때문이다.
+
+중요한 boundary:
+
+```text
+recommendation-service는 JWT를 발급하지 않는다.
+recommendation-service는 auth DB를 읽지 않는다.
+recommendation-service는 auth-service ValidateToken 결과만 신뢰한다.
+```
+
+## Feature testing: Hero section
+
+Flutter 요구사항 중 하나는 hero section이 recommendation engine 결과에 따라 바뀌어야 한다는 것이었다.
+
+MVP에서는 이미지가 없어도 된다. 오히려 지금은 text-only hero가 맞다.
+
+추천 hero는 첫 번째 beverage recommendation을 기준으로 만들 수 있다.
+
+```text
+Hero title = name_ko
+Hero subtitle = explanation_text or reason
+Hero chips = category, style, top flavor tags, reason code labels
+CTA = 자세히 보기 / 추천 이유 보기
+```
+
+일반 사용자에게는 internal score를 보여주지 않는 것이 좋다.
+
+```text
+final_score, similarity_score = internal/debug/admin only
+reason/explanation = user visible
+```
+
+점수는 사용자에게 신뢰를 주기보다 오해를 만들 수 있다. 예를 들어 `0.84`가 "84점"인지 "84% 확신"인지 사용자는 알기 어렵다. 따라서 UI에는 자연어 설명을 우선 노출한다.
+
+## Chatbot은 어디에 구현해야 하는가
+
+chatbot은 recommendation-service repo가 아니라 chatbot/chat-service repo에 구현하는 것이 맞다.
+
+이유는 역할이 다르기 때문이다.
+
+```text
+recommendation-service = 추천 결정, ranking, profile, reason code, score 저장
+chatbot-service = 사용자 질문 해석, 서비스 호출 orchestration, LLM 응답 생성
+LLM = grounded context를 한국어로 자연스럽게 설명
+```
+
+LLM이 ranking을 하면 안 된다.
+
+```text
+LLM must not rank.
+LLM must not invent.
+LLM must not read service DB directly.
+```
+
+chatbot-service는 recommendation-service를 먼저 호출해야 한다.
+
+```text
+User question
+  -> chatbot-service
+      -> classify intent
+      -> recommendation-service GetProfileStatus
+      -> recommendation-service GetBeverageRecommendations
+      -> build grounded context
+      -> LLM rewrite
+      -> response verifier
+      -> user response
+```
+
+## 우리 DB 기준으로 답한다는 말의 정확한 의미
+
+"chatbot이 우리 DB 기준으로 답한다"는 말은 LLM이 DB에 직접 접속한다는 뜻이 아니다.
+
+정확한 구조는 다음이다.
+
+```text
+우리 DB / 우리 service
+  -> backend가 필요한 facts 조회
+  -> grounded context 생성
+  -> LLM에게 context 전달
+  -> LLM은 context 안에서만 한국어 응답 생성
+```
+
+즉 LLM의 역할은 추천 결정이 아니라 language generation이다.
+
+```latex
+Answer =
+LLM(
+  Prompt,
+  GroundedContext(
+    RecommendationResults,
+    ReasonCodes,
+    ProfileSummary
+  )
+)
+```
+
+하지만 추천 결과 자체는 다음에서 나온다.
+
+```latex
+RecommendationResults =
+RecommendationService(P_u, C, V, S, F)
+```
+
+따라서 production에서 중요한 guardrail은 이것이다.
+
+```text
+No grounded context, no answer.
+```
+
+## Chatbot LLM prompt 방향
+
+LLM system prompt는 영어로 두는 것이 좋다. 모델과 provider가 바뀌어도 behavior contract를 유지하기 쉽고, 개발자가 테스트하기도 좋다.
+
+핵심 prompt는 다음과 같은 방향이어야 한다.
+
+```text
+You are the ONTHEBLOCK recommendation assistant.
+Answer in Korean.
+Use only the provided recommendation context.
+Do not invent beverages, stores, prices, inventory, ratings, distances, or reasons.
+If the context does not contain enough information, say that the service does not have enough data yet.
+Do not answer questions unrelated to ONTHEBLOCK beverage recommendation, survey, or supported service features.
+Keep the answer concise and user-friendly.
+Never expose internal scores unless the context explicitly marks them as user-visible.
+```
+
+그리고 chatbot-service는 LLM 응답을 그대로 믿으면 안 된다. response verifier가 필요하다.
+
+검증 규칙:
+
+```text
+1. 응답에 나온 beverage name이 context 안에 있는가?
+2. 응답에 나온 place name이 context 안에 있는가?
+3. 응답에 나온 price/distance/inventory가 context 안에 있는가?
+4. 추천 이유가 reason_codes 또는 explanation_text와 일치하는가?
+5. out-of-scope 질문에 답하지 않았는가?
+```
+
+이 검증을 통과하지 못하면 LLM 응답 대신 deterministic fallback을 반환한다.
+
+## Hugging Face 대신 GCP Cloud Run GPU를 고려한 이유
+
+처음에는 Hugging Face Inference Endpoint를 고려했다. 하지만 dedicated endpoint는 비용이 발생한다.
+
+우리 상황에서는 GCP를 사용할 수 있으므로, 대안은 다음이다.
+
+```text
+Cloud Run GPU + vLLM + Qwen/Qwen2.5-7B-Instruct
+```
+
+이 구조에서는 우리가 모델을 직접 학습해서 올리는 게 아니다. GPU가 붙은 container를 Cloud Run에 배포하고, 그 안에서 vLLM server가 model을 로드한다.
+
+MVP 명령 개념은 다음과 같다.
+
+```bash
+python -m vllm.entrypoints.openai.api_server \
+  --model Qwen/Qwen2.5-7B-Instruct \
+  --host 0.0.0.0 \
+  --port 8080
+```
+
+chatbot-service는 OpenAI-compatible API처럼 호출한다.
+
+```text
+CHATBOT_LLM_ENDPOINT_URL=https://<cloud-run-llm-url>/v1/chat/completions
+CHATBOT_LLM_MODEL=Qwen/Qwen2.5-7B-Instruct
+CHATBOT_LLM_AUTH_MODE=none
+```
+
+필요하면 private endpoint 보호를 위해 bearer auth를 붙일 수 있다.
+
+```text
+CHATBOT_LLM_AUTH_MODE=bearer_env
+CHATBOT_LLM_API_KEY_ENV=CHATBOT_LLM_API_KEY
+```
+
+## Cloud Run GPU에서 모델은 어디에 위치하는가
+
+Cloud Run GPU를 쓰면 모델 위치는 세 가지 중 하나다.
+
+| 방식 | 설명 | MVP 추천 |
+|---|---|---:|
+| Hugging Face에서 startup 때 다운로드 | 가장 단순하지만 cold start 느림 | 가능 |
+| GCS bucket에 모델 저장 | GCP 안에서 관리, 더 안정적 | 추천 |
+| Docker image에 모델 포함 | image가 너무 커짐 | 비추천 |
+
+처음에는 HF에서 직접 로드해서 end-to-end를 검증하고, 안정화 단계에서 GCS bucket으로 옮기는 것이 현실적이다.
+
+운영 구조:
+
+```text
+Flutter
+  -> chatbot-service
+      -> recommendation-service
+      -> LLM Cloud Run GPU endpoint
+          -> vLLM
+          -> Qwen/Qwen2.5-7B-Instruct
+```
+
+중요한 점:
+
+```text
+LLM Cloud Run GPU는 우리 recommendation DB를 직접 읽지 않는다.
+chatbot-service가 recommendation-service에서 받은 context만 전달한다.
+```
+
+## 왜 아직 fine-tuning이 아닌가
+
+지금 단계에서 "우리 데이터로 AI model을 train"하고 싶은 욕구가 생긴다. 하지만 production 관점에서는 아직 fine-tuning보다 grounding이 먼저다.
+
+fine-tuning은 이런 문제가 있다.
+
+1. 데이터가 아직 충분하지 않다.
+2. 실제 user feedback label이 부족하다.
+3. 모델이 외운 내용을 최신 DB 상태처럼 말할 위험이 있다.
+4. 가격, 재고, 장소, 취향 profile은 계속 바뀐다.
+5. 추천 ranking은 deterministic service가 소유해야 한다.
+
+따라서 MVP 순서는 다음이 맞다.
+
+```text
+1. deterministic recommendation-service
+2. grounded chatbot orchestration
+3. response verifier
+4. interaction logs
+5. offline evaluation dataset
+6. shadow model
+7. fine-tuning or reranker model 검토
+```
+
+수식으로 보면 LLM fine-tuning은 ranking function을 대체하면 안 된다.
+
+나쁜 구조:
+
+```latex
+R = LLM(user\_message)
+```
+
+좋은 구조:
+
+```latex
+R = f_{rank}(P_u, C, V, S, F)
+```
+
+```latex
+A = LLM(R, E, Policy)
+```
+
+여기서:
+
+- `R`: deterministic recommendation result
+- `E`: explanation/reason codes
+- `Policy`: no-answer, scope, safety policy
+- `A`: natural-language answer
+
+## 추천 시스템의 현재 production readiness
+
+`blog-kr05`에서 backend foundation은 70%+ 방향이라고 표현했다. 이후 확인 결과를 반영하면 더 정확한 상태는 다음이다.
+
+| 영역 | 상태 | 코멘트 |
+|---|---:|---|
+| PostgreSQL schema/foundation | 높음 | canonical state 구조 있음 |
+| Beverage catalog/vector | 중상 | MVP seed/catalog 기반 가능 |
+| Deterministic beverage ranking | 높음 | PostgreSQL scoring path 동작 |
+| Qdrant serving integration | 낮음 | 인프라는 있지만 serving 미사용 |
+| Qdrant rebuild/index ops | 중상 | rebuild/smoke tool 있음 |
+| Auth integration | 중상 | staging debug token + ValidateToken 확인 |
+| Survey integration | 중상 | deployed SurveyResult 조회 확인 |
+| Real-time profile generation | 낮음-중간 | survey 저장 후 자동 profile 생성은 아직 gap |
+| Flutter integration | 중간 | 계약은 명확, profile active data 필요 |
+| Venue/map recommendation | 낮음-중간 | map snapshot freshness/price/distance 의존 |
+| Chatbot/LLM | 설계 단계 | chat repo 구현 필요 |
+| Production public launch | 아직 | safe-user E2E gate와 운영 지표 필요 |
+
+퍼센트로 말하면 조심해야 하지만, 현재는 이렇게 보는 게 맞다.
+
+```text
+recommendation backend foundation: 약 70%
+Flutter에서 실제 추천 UX 검증: 약 45-55%
+LLM chatbot production readiness: 약 20-30%
+public production launch readiness: 아직 낮음
+```
+
+이 수치는 "서버가 떠 있다"가 아니라 "실제 사용자가 안전하게 추천을 받을 수 있는가" 기준이다.
+
+## 지금 바로 해야 할 일
+
+가장 중요한 next step은 profile generation path를 닫는 것이다.
+
+현재 실제 유저 상태는 다음과 같다.
+
+```text
+auth OK
+survey OK
+recommendation profile MISSING
+```
+
+따라서 해야 할 일은:
+
+```text
+1. recommendation-service에서 survey-service 결과를 받아 profile 생성
+2. active profile 상태 확인
+3. GetBeverageRecommendations 응답 확인
+4. Flutter hero/list에 표시
+5. RecordRecommendationEvent로 impression/click/save 이벤트 저장
+```
+
+이 flow가 끝나야 "Flutter integration이 실제로 된다"고 말할 수 있다.
+
+## 그 다음 해야 할 일
+
+profile generation 이후에는 세 갈래로 간다.
+
+### 1. Flutter MVP 완성
+
+```text
+GetProfileStatus
+GetBeverageRecommendations
+text-only hero
+recommendation list
+empty/missing/error state
+RecordRecommendationEvent
+```
+
+### 2. Chatbot repo 구현
+
+```text
+intent classification
+recommendation-service gRPC client
+grounded context builder
+OpenAI-compatible LLM client
+response verifier
+out-of-scope refusal
+missing-profile deterministic fallback
+```
+
+### 3. Production hardening
+
+```text
+safe-user E2E smoke
+profile generation idempotency
+p95 latency
+empty recommendation rate
+profile missing rate
+event logging success rate
+DB pool metrics
+Qdrant rebuild runbook
+```
+
+## 최종 정리
+
+이번 업데이트에서 가장 큰 정정은 Qdrant다.
+
+```text
+Qdrant는 있다.
+Qdrant rebuild/index pipeline도 있다.
+하지만 현재 사용자 추천 응답은 Qdrant를 사용하지 않는다.
+현재 serving recommendation은 PostgreSQL deterministic ranking이다.
+```
+
+이건 나쁜 소식이 아니다. 오히려 MVP와 production readiness 관점에서는 좋은 순서다.
+
+지금 가장 중요한 것은 더 복잡한 ML 모델이나 vector DB 연결이 아니라, 다음 end-to-end 경로를 확실하게 닫는 것이다.
+
+```text
+Google login / auth token
+  -> survey saved
+  -> recommendation profile generated
+  -> beverage recommendations returned
+  -> Flutter displays result
+  -> user interaction event logged
+```
+
+그리고 chatbot은 이 추천 결과 위에 얹어야 한다.
+
+```text
+recommendation-service decides.
+chatbot-service orchestrates.
+LLM explains.
+Flutter displays.
+```
+
+이 boundary를 지키면, 나중에 Qdrant, MLflow, fine-tuning, Cloud Run GPU, ranking model을 붙여도 시스템이 무너지지 않는다.
+
+## 참고 문서
+
+- [`blog-kr05.mdx`](./blog-kr05.mdx)
+- [`docs/api/flutter-handoff.md`](./docs/api/flutter-handoff.md)
+- [`docs/recommendation/recommendation-logic.md`](./docs/recommendation/recommendation-logic.md)
+- [`docs/recommendation/survey-mapping.md`](./docs/recommendation/survey-mapping.md)
+- [`docs/assistant/assistant-architecture.md`](./docs/assistant/assistant-architecture.md)
+- [`docs/assistant/rag-policy.md`](./docs/assistant/rag-policy.md)
+- [`docs/assistant/prompt-contract.md`](./docs/assistant/prompt-contract.md)
+- [`docs/operations/gcp-deployment.md`](./docs/operations/gcp-deployment.md)

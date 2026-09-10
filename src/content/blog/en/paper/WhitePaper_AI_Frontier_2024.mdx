@@ -1,0 +1,91 @@
+---
+title: 'WhitePaper: Navigating the AI Frontier 2024'
+description: 'A review of the 2024 white paper on navigating the AI frontier'
+pubDate: '2026-05-19'
+#heroImage: '/images/giscus.png'
+tags: ['AI', 'whitepaper', '2024']
+category: 'ai-frontier'
+series: 'ai-frontier'
+seriesOrder: 1
+---
+
+> **The 2024 white paper describes an AI agent as a system that autonomously perceives and acts. In 2026, however, understanding AI agents requires more than autonomy: the crucial questions are what context the agent receives, which tools it can access, what rules constrain it, and how its behavior is observed and verified.**
+
+## Core Summary of the White Paper
+
+The World Economic Forum and Capgemini white paper *Navigating the AI Frontier: A Primer on the Evolution and Impact of AI Agents* defines an AI agent as an autonomous system that perceives its environment, acts to achieve goals, and changes that environment through its actions.
+
+Its core components are **user input, environment, sensors, percepts, control centre, effectors, and actions**. Figure 1 presents this as a loop: input, environmental perception, decision-making, action, and environmental change.
+
+The white paper explains agent development as a progression from **simple reflex agent → model-based reflex agent → goal-based agent → utility-based agent → advanced AI agent → AI agent system → multi-agent system**. In other words, the path moves from simple condition-action rules toward internal models, goals, utility functions, memory, planning, tool use, and multi-agent collaboration. This perspective can be read as a Russell and Norvig-style classical agent taxonomy reinterpreted for the LLM and LMM era.
+
+The core of an advanced AI agent is not the LLM or LMM alone, but the combination of **control centre, decision-making and planning, memory management, tools, and effectors** around the model. Figure 3 shows an agent not as a simple answer generator, but as a system that receives input, plans, maintains memory, calls external tools, and acts in digital or physical environments.
+
+The future direction the paper emphasizes most strongly is the **multi-agent system, or MAS**. In MAS, multiple agents or agent systems cooperate, compete, and negotiate to achieve complex goals. The paper uses a smart-city traffic management example, where vehicles, traffic lights, emergency services, and parking systems exchange information to optimize traffic flow.
+
+At the same time, the paper stresses risk. AI agents can improve productivity, personalization, healthcare, education, finance, and customer support, but they can also create malfunction, malicious use, goal misalignment, poor explainability, unclear responsibility, labor disruption, and overreliance. The paper especially argues that AI-agent risk depends on the **application environment and context**. In high-risk environments such as medicine or autonomous driving, a small error can cause serious harm, while the same error in a lower-risk customer-support context may be far less dangerous.
+
+## What Changed in 2025-2026
+
+If the 2024 white paper provided a conceptual map of AI agents, the shift in 2025-2026 is that those concepts moved into real infrastructure, standards, evaluation, and regulation.
+
+| Area | 2024 White Paper View | 2025-2026 Update |
+| --- | --- | --- |
+| Agent definition | Autonomous system that perceives and acts in an environment | More concrete task-execution system with model, tools, memory, runtime environment, permissions, and monitoring |
+| Context | Described mainly as environment, percepts, and memory | Established as a separate research and practice frame called **Context Engineering** |
+| Tool connection | Structural description that agents use tools | **MCP** emerged as a standard for connecting LLMs/agents to external data, tools, and workflows |
+| Agent communication | MAS as a future direction | **A2A** appeared as an agent-to-agent collaboration protocol |
+| Evaluation | Need for risk and governance | Agent Index, HAL, and other work surfaced practical questions of evaluation, transparency, and reproducibility |
+| Regulation | Emphasis on ethics, responsibility, and transparency | EU AI Act and International AI Safety Report 2026 made deployment, monitoring, and accountability more concrete |
+
+The largest shift is the movement from **Prompt Engineering to Context Engineering**. The 2025 arXiv paper *A Survey of Context Engineering for Large Language Models* defines Context Engineering as a field that goes beyond prompt writing and systematically optimizes the information payload provided at LLM inference time. The survey divides Context Engineering into **context retrieval/generation, context processing, and context management**, connecting it to RAG, memory systems, tool-integrated reasoning, and multi-agent systems. ([arXiv][1])
+
+The second change is the rise of **MCP and A2A**. MCP is described as an open standard that lets AI applications connect to external systems such as files, databases, search engines, calculators, and workflows. The official documentation defines MCP as an open-source standard for connecting AI applications to external systems. ([Model Context Protocol][2]) The June 2025 MCP specification frames it as an open protocol for integrating LLM applications with external data sources and tools. ([Model Context Protocol][3])
+
+A2A sits at a different layer. If MCP is **agent-to-tool / model-to-context** connection, A2A is **agent-to-agent** connection. The official A2A documentation describes it as an open standard for secure communication and collaboration among AI agents built by different frameworks and vendors, developed by Google and contributed to the Linux Foundation. ([A2A Protocol][4]) Google's announcement also explains A2A as a protocol that complements MCP and addresses the deployment problem of large-scale multi-agent systems. ([Google Developers Blog][5])
+
+The third change is the productization of **agent development infrastructure**. In 2025, OpenAI described the Responses API as an API primitive for agentic applications, combining built-in tools such as web search, file search, and computer use in a single API flow. ([OpenAI][6]) Later in 2025, remote MCP server support, Code Interpreter, file-search improvements, background mode, reasoning summaries, and encrypted reasoning items were added. ([OpenAI][7]) In 2026, the Agents SDK expanded toward file inspection, command execution, code editing, long-horizon tasks, and sandbox execution. ([OpenAI][8])
+
+The fourth change is the importance of **evaluation and observability**. *The 2025 AI Agent Index*, released in 2026, argues that the agentic AI ecosystem is changing quickly and is unevenly documented, making it difficult for researchers and policymakers to track. It documents the design, capabilities, ecosystem, and safety features of 30 state-of-the-art AI agents, and notes that many developers do not disclose enough information about safety, evaluation, and societal impacts. ([arXiv][9]) The Holistic Agent Leaderboard paper similarly argues that existing agent benchmarks are limited for understanding how well agents actually work and that evaluation must move toward reliable operation in real environments. ([arXiv][10])
+
+The fifth change is the concreteness of **regulation and deployment context**. The EU AI Act entered into force in August 2024. Prohibited AI practices and AI-literacy obligations began applying in February 2025, GPAI model governance and obligations began applying in August 2025, and full application is scheduled for August 2026. ([Digital Strategy Europe][11]) This means the white paper's call for ethics and governance has become a matter of legal and organizational duty in 2025-2026.
+
+## Context: The Part My Professor Emphasized
+
+For this blog post, the most important point is not to explain **context** as merely "extra information added to a prompt." In AI agents, context includes all of the following.
+
+**First, environmental context.** In the white paper, the environment is the boundary in which an agent operates, including both physical and digital infrastructure. Sensors perceive the environment, effectors change it, and actions are the changes themselves. Context is therefore not just text; it is the operating condition that determines what an agent can see and how far it can act.
+
+**Second, memory context.** In advanced AI agents, memory management records prior interactions and uses conversation state or past data to keep the next decision relevant. This makes the agent a dynamic system that carries forward past state, not a one-shot question-answering system.
+
+**Third, tool context.** Which tools an agent can use, what input and output formats those tools have, and how the agent should interpret tool results are all part of context. This is why MCP became important after 2025: it gives LLM applications a standard way to connect to external data and tools when they need context. ([Model Context Protocol][3])
+
+**Fourth, social and risk context.** The same agent requires different acceptable error rates and monitoring levels depending on whether it is deployed in healthcare, finance, education, customer support, or entertainment. The white paper also argues that potential harm from AI agents must be evaluated by understanding the specific application, environment, and affected stakeholders.
+
+**Fifth, interaction context.** A user's goals, preferences, constraints, current state, conversation history, organizational policy, and permission level all constrain or enable agent behavior. As the 2025 Context Engineering survey argues, the performance of modern LLM systems fundamentally depends on which contextual information is provided at inference time. ([arXiv][1])
+
+It is also useful to connect this with the paper *No Pervasive Computing Without Intelligent Systems*. That paper warned that pervasive computing can overwhelm users, block access, and constantly require control unless systems provide **understandability, integration, and adaptivity**. These three requirements still apply directly to AI agents in 2026. Agents that are not understandable are hard to trust, agents that are not integrated interrupt workflows, and agents that are not adaptive keep forcing users to correct them.
+
+So I would summarize context in one sentence:
+
+> **An AI agent's context is not only the text information a model references to generate an answer. It is the full operating condition around the agent: its environment, user goals and constraints, memory, tool permissions, social risk level, and the rules that monitor its actions.**
+
+## Blog Conclusion
+
+The 2024 white paper provides a baseline map for understanding AI agents. An agent is a system that perceives an environment, sets goals, uses memory and tools, and changes the environment through action. But in 2026, that explanation alone is not enough. The core question is no longer only "how autonomous is the agent?" but "inside what context is it autonomous?"
+
+The shift in 2025-2026 has three main directions. First, Prompt Engineering expanded into Context Engineering. Second, standards such as MCP and A2A made tool connection and inter-agent communication more concrete. Third, agent risk changed from an abstract ethical issue into a problem of evaluation, logging, monitoring, sandboxing, human-in-the-loop control, and legal responsibility.
+
+Ultimately, to understand AI agents properly, we need to look beyond the model itself and inspect the context around it. What data can it see? Which tools can it use? What permissions does it have? In what environment does it act? Who is responsible when it fails? These questions determine the agent's real capability and risk. In that sense, the 2024 white paper is a starting point, while the 2026 keywords are **Context Engineering, Interoperability, Observability, and Governance**.
+
+[1]: https://arxiv.org/abs/2507.13334 "[2507.13334] A Survey of Context Engineering for Large Language Models"
+[2]: https://modelcontextprotocol.io/docs/getting-started/intro "What is the Model Context Protocol (MCP)? - Model Context Protocol"
+[3]: https://modelcontextprotocol.io/specification/2025-06-18 "Specification - Model Context Protocol"
+[4]: https://a2a-protocol.org/latest/ "A2A Protocol"
+[5]: https://developers.googleblog.com/en/a2a-a-new-era-of-agent-interoperability/ "Announcing the Agent2Agent Protocol (A2A) - Google Developers Blog"
+[6]: https://openai.com/index/new-tools-for-building-agents/ "New tools for building agents | OpenAI"
+[7]: https://openai.com/index/new-tools-and-features-in-the-responses-api/ "New tools and features in the Responses API | OpenAI"
+[8]: https://openai.com/index/the-next-evolution-of-the-agents-sdk/ "The next evolution of the Agents SDK | OpenAI"
+[9]: https://arxiv.org/abs/2602.17753 "[2602.17753] The 2025 AI Agent Index: Documenting Technical and Safety Features of Deployed Agentic AI Systems"
+[10]: https://arxiv.org/abs/2510.11977 "[2510.11977] Holistic Agent Leaderboard: The Missing Infrastructure for AI Agent Evaluation"
+[11]: https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai "AI Act | Shaping Europe’s digital future"

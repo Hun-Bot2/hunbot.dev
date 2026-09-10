@@ -1,0 +1,369 @@
+---
+title: 'Race Condition에 대한 기록'
+description: 'Race-Condition에 대한 공부 및 기록'
+pubDate: '2026-07-13'
+#heroImage: '/images/giscus.png'
+tags: ['Database', 'Race Condition', 'Pulmuone']
+category: 'DB-Race-Condition'
+series: 'database'
+seriesOrder: 1
+---
+
+## [2026-07-13] Race Condition
+
+내가 했었던 간단한 기술적 고민 + 공부를 위해서 기록을 남겨두려고 한다. (해당 문제는 풀무원에서 HRD 통합 플랫폼을 구축하면서 발생할 수 있는 문제점에 대한 고민이다.)
+
+환경은 Supabase(PostgreSQL), Next.js 서버는 Rocky Linux를 사용중이다.
+
+### 상황
+먼저, 본사와 법인간 교육 과정을 공유하기도 하고 새로운 교육 과정이 있다면 추가되기도 하는데, 이때 누군가 동시에 같은 교육과정을 추가할 수 도 있는 문제점이 있다고 생각한다.
+
+1. 페이지에서 새로운 교육과정을 추가한다 -> 교육과정에 DB에 반영되어 해당 교육 과정을 불러와 인원을 배정한다. 즉, Write -> DB -> Read로 거치는데 여기서 동시에 같은 교육과정이 입력되는 경우는 어떻게 핸들링해야하는가??
+
+이렇게 구현할 경우, DB에 Read, Write하는 비용이 증가할 수도 있고, 동시에 같은 교육과정이 입력되는 경우가 발생할 수 있다는게 기본적인 생각이다.
+
+예를 들어 본사 담당자 A와 법인 담당자 B가 거의 동시에 같은 교육과정을 등록한다고 하자.
+
+```text
+A: 동일 과정이 있는지 조회 → 없음
+B: 동일 과정이 있는지 조회 → 없음
+A: INSERT
+B: INSERT
+```
+
+페이지에서 먼저 중복을 조회하는 방식만 사용하면 두 요청 모두 “없다”고 판단할 수 있다. 따라서 **중복 방지의 최종 책임은 PostgreSQL의 `UNIQUE` 제약조건에 둬야 한다.**
+
+
+## 2. DB에 복합 `UNIQUE` 제약조건을 둔다
+
+예를 들어 같은 조직에서 같은 과정이 같은 시작일에 두 번 개설되면 안 된다고 정의한다면:
+
+```sql
+create table course_sessions (
+    id uuid primary key default gen_random_uuid(),
+
+    course_id uuid not null
+        references courses(id),
+
+    organization_id uuid not null
+        references organizations(id),
+
+    start_date date not null,
+    end_date date not null,
+
+    capacity integer not null
+        check (capacity > 0),
+
+    created_by uuid not null,
+    created_at timestamptz not null default now(),
+
+    constraint uq_course_session
+        unique (
+            course_id,
+            organization_id,
+            start_date
+        )
+);
+```
+
+이제 두 요청이 동시에 들어와도 PostgreSQL이 처리한다.
+
+```text
+요청 A → INSERT 성공
+요청 B → UNIQUE 위반으로 실패
+```
+
+`UNIQUE` 제약조건은 애플리케이션의 사전 조회와 달리, 동시 트랜잭션 사이에서도 중복을 원자적으로 차단한다. PostgreSQL은 각 SQL 문을 트랜잭션 안에서 실행하며, 충돌하는 동시 입력도 고유 제약조건을 기준으로 판정한다. ([PostgreSQL][1])
+
+## 3. `SELECT → INSERT`가 아니라 바로 `INSERT`한다
+
+이렇게 하면 안 된다.
+
+```ts
+const existingCourse = await supabase
+  .from('course_sessions')
+  .select('id')
+  .eq('course_id', courseId)
+  .eq('organization_id', organizationId)
+  .eq('start_date', startDate)
+  .maybeSingle();
+
+if (!existingCourse.data) {
+  await supabase.from('course_sessions').insert(...);
+}
+```
+
+조회와 입력 사이에 다른 사용자가 등록할 수 있기 때문이다.
+
+대신 바로 입력하고, DB에서 중복 오류가 발생하면 처리한다.
+
+```ts
+const { data, error } = await supabase
+  .from('course_sessions')
+  .insert({
+    course_id: courseId,
+    organization_id: organizationId,
+    start_date: startDate,
+    end_date: endDate,
+    capacity,
+    created_by: userId,
+  })
+  .select()
+  .single();
+
+if (error) {
+  if (error.code === '23505') {
+    return {
+      success: false,
+      message: '동일한 교육과정 운영 차수가 이미 등록되어 있습니다.',
+    };
+  }
+
+  throw error;
+}
+```
+
+`23505`는 PostgreSQL의 `unique_violation` 오류 코드다.
+
+페이지에서 중복 여부를 미리 검사하는 것은 사용자 편의를 위해 추가할 수 있지만, 그 검사는 보조 수단일 뿐이다.
+
+```text
+프론트 중복 확인: 빠른 사용자 피드백
+DB UNIQUE: 실제 데이터 무결성 보장
+```
+
+## 4. `upsert`를 사용할지는 업무 규칙에 따라 결정한다
+
+Supabase는 PostgreSQL의 충돌 처리를 이용한 `upsert`와 `onConflict`를 지원한다. 충돌 기준으로 사용할 컬럼에는 실제 `UNIQUE` 제약조건이 있어야 한다. ([Supabase][2])
+
+```ts
+const { data, error } = await supabase
+  .from('course_sessions')
+  .upsert(
+    {
+      course_id: courseId,
+      organization_id: organizationId,
+      start_date: startDate,
+      end_date: endDate,
+      capacity,
+      created_by: userId,
+    },
+    {
+      onConflict: 'course_id,organization_id,start_date',
+      ignoreDuplicates: true,
+    },
+  )
+  .select();
+```
+
+하지만 교육과정 등록에서는 보통 **무조건적인 upsert보다 일반 `insert`가 더 안전하다.**
+
+왜냐하면 `upsert`의 설정을 잘못하면 나중에 들어온 사용자의 입력으로 기존 과정 정보가 덮어써질 수 있기 때문이다.
+
+예를 들어:
+
+```text
+A: 정원 30명으로 등록
+B: 정원 50명으로 거의 동시에 등록
+```
+
+`ON CONFLICT DO UPDATE`라면 B의 요청이 A가 생성한 데이터를 50명으로 변경할 수 있다. 사용자는 신규 등록을 시도했는데 실제로는 다른 사용자의 데이터를 수정한 셈이다.
+
+따라서 추천 방식은 다음과 같다.
+
+```text
+신규 교육과정 등록
+→ INSERT
+→ 중복이면 409 Conflict
+→ 기존 과정 정보를 사용자에게 표시
+→ 사용자가 명시적으로 수정 여부 결정
+```
+
+## 5. Next.js에서는 `409 Conflict`로 반환한다
+
+서버 액션이나 Route Handler에서 중복 오류를 업무 오류로 변환한다.
+
+```ts
+import { NextResponse } from 'next/server';
+
+export async function POST(request: Request) {
+  const body = await request.json();
+
+  const { data, error } = await supabase
+    .from('course_sessions')
+    .insert({
+      course_id: body.courseId,
+      organization_id: body.organizationId,
+      start_date: body.startDate,
+      end_date: body.endDate,
+      capacity: body.capacity,
+      created_by: body.userId,
+    })
+    .select()
+    .single();
+
+  if (error?.code === '23505') {
+    return NextResponse.json(
+      {
+        code: 'COURSE_SESSION_ALREADY_EXISTS',
+        message: '같은 교육과정이 이미 등록되어 있습니다.',
+      },
+      { status: 409 },
+    );
+  }
+
+  if (error) {
+    return NextResponse.json(
+      {
+        code: 'COURSE_SESSION_CREATE_FAILED',
+        message: '교육과정을 등록하지 못했습니다.',
+      },
+      { status: 500 },
+    );
+  }
+
+  return NextResponse.json(data, { status: 201 });
+}
+```
+
+프론트에서는 다음과 같이 보여줄 수 있다.
+
+```text
+동일한 교육과정이 이미 등록되었습니다.
+
+과정명: 개인정보보호교육
+운영 조직: 본사
+교육 시작일: 2026-07-20
+등록자: 홍길동
+
+[기존 과정 보기]
+```
+
+## 6. 과정 생성과 인원 배정을 함께 처리한다면 트랜잭션이 필요하다
+
+현재 흐름이 다음과 같다고 했다.
+
+```text
+교육과정 생성
+→ 생성한 과정 조회
+→ 대상 인원 배정
+```
+
+이 과정에서 교육과정은 생성됐는데 인원 배정이 실패할 수 있다.
+
+```text
+과정 INSERT 성공
+인원 INSERT 실패
+```
+
+두 작업이 반드시 함께 성공해야 한다면 하나의 PostgreSQL 함수로 묶고 Supabase RPC로 호출하는 편이 좋다.
+
+```sql
+create or replace function create_course_session_with_members(
+    p_course_id uuid,
+    p_organization_id uuid,
+    p_start_date date,
+    p_end_date date,
+    p_capacity integer,
+    p_created_by uuid,
+    p_member_ids uuid[]
+)
+returns uuid
+language plpgsql
+security invoker
+as $$
+declare
+    v_session_id uuid;
+begin
+    insert into course_sessions (
+        course_id,
+        organization_id,
+        start_date,
+        end_date,
+        capacity,
+        created_by
+    )
+    values (
+        p_course_id,
+        p_organization_id,
+        p_start_date,
+        p_end_date,
+        p_capacity,
+        p_created_by
+    )
+    returning id into v_session_id;
+
+    insert into course_session_members (
+        session_id,
+        member_id
+    )
+    select
+        v_session_id,
+        unnest(p_member_ids);
+
+    return v_session_id;
+end;
+$$;
+```
+
+호출:
+
+```ts
+const { data, error } = await supabase.rpc(
+  'create_course_session_with_members',
+  {
+    p_course_id: courseId,
+    p_organization_id: organizationId,
+    p_start_date: startDate,
+    p_end_date: endDate,
+    p_capacity: capacity,
+    p_created_by: userId,
+    p_member_ids: memberIds,
+  },
+);
+```
+
+함수 내부에서 예외가 발생하면 전체 트랜잭션이 롤백된다.
+
+```text
+과정 생성 성공 + 인원 배정 성공 → COMMIT
+과정 생성 성공 + 인원 배정 실패 → 전체 ROLLBACK
+과정 중복 → 전체 실패
+```
+
+여러 SQL을 하나의 트랜잭션으로 묶으면 전체 작업을 하나의 단위로 성공시키거나 실패시킬 수 있다. ([PostgreSQL][3])
+
+## 최종 권장 구조
+
+Pulmuone 프로젝트에서는 다음 설계가 적절하다.
+
+```text
+1. courses
+   교육과정의 원본 정보
+
+2. course_sessions
+   본사·법인별 실제 개설 차수
+
+3. course_session_members
+   개설 차수별 대상 인원
+
+4. course_sessions에 복합 UNIQUE
+   (course_id, organization_id, start_date)
+
+5. Next.js에서 바로 INSERT
+   사전 SELECT 결과를 신뢰하지 않음
+
+6. 중복 발생 시 PostgreSQL 23505
+   → HTTP 409 Conflict로 변환
+
+7. 과정 생성과 인원 배정이 하나의 업무라면
+   PostgreSQL 함수 + Supabase RPC 트랜잭션
+```
+
+핵심은 **“동시에 입력되지 않도록 막는다”가 아니라, “동시에 입력되어도 DB가 단 하나만 성공시키게 한다”**는 것이다. Rocky Linux나 Next.js 서버 프로세스 수와 관계없이 PostgreSQL이 최종 데이터 무결성을 보장하도록 설계해야 한다.
+
+[1]: https://www.postgresql.org/docs/current/transaction-iso.html?utm_source=chatgpt.com "Documentation: 18: 13.2. Transaction Isolation"
+[2]: https://supabase.com/docs/reference/javascript/upsert?utm_source=chatgpt.com "JavaScript: upsert | Supabase Docs"
+[3]: https://www.postgresql.org/docs/current/tutorial-transactions.html?utm_source=chatgpt.com "Documentation: 18: 3.4. Transactions"
+
+## 수강 신청의 경우

@@ -15,7 +15,7 @@ export async function GET(context) {
 		return new Response('Not found', { status: 404 });
 	}
 
-	const posts = await getCollection('blog');
+	const posts = await getCollection('blog', ({ data }) => !data.draft);
 	const languagePosts = posts.filter((post) => {
 		try {
 			return getBlogLanguageFromId(post.id) === lang;

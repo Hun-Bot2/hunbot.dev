@@ -10,7 +10,7 @@ import { getLearningPathUrl, getPublishedLearningPaths } from '../utils/learning
 
 export const GET: APIRoute = async ({ site }) => {
   const siteUrl = site ?? new URL(SITE_URL);
-  const posts = await getCollection('blog');
+  const posts = await getCollection('blog', ({ data }) => !data.draft);
   const academicReviews = await getCollection('academicReviews');
   const now = new Date().toISOString();
   const blogPaginationPages = SUPPORTED_LANGUAGES.flatMap((lang) => {

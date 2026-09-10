@@ -1,0 +1,462 @@
+---
+title: '26년 반기를 돌아보면서'
+description: '설명 입력'
+pubDate: '2026-06-12'
+#heroImage: '/images/giscus.png'
+tags: ['tag1', 'tag2']
+category: 'category'
+series: 'series 이름'
+seriesOrder: 1
+---
+# ONTHEBLOCK 추천엔진: 60개 MVP seed에서 120개 reviewed catalog로 확장한 기록
+
+이 글은 [`blog-kr08.mdx`](./blog-kr08.mdx)에서 이어진다.
+
+`blog-kr08`의 핵심은 추천 카드가 앱에 표시될 수 있도록 이미지 URL, license metadata,
+cache key, Flutter 표시 계약을 정리한 것이었다. 그때 기준 catalog는 60개 active
+beverage였다.
+
+이번 글의 핵심은 그 다음 단계다.
+
+```text
+60개 MVP seed catalog
+  -> 120개 reviewed recommendation catalog
+```
+
+단순히 후보 파일에 술을 더 넣은 것이 아니다. 추천 serving path가 실제로 사용할 수 있는
+canonical beverage catalog를 넓히고, 그 결과가 추천 품질 gate를 통과하는지 확인했다.
+
+## 1. 결론부터
+
+현재 reviewed beverage recommendation catalog는 다음 상태다.
+
+```text
+active_beverages = 120
+recommendation_vectors = 120
+flavor_profiles = 120
+category_counts = 10 per category
+priced_beverages = 96
+price_observations = 97
+image_url_coverage = 1.0
+image_license_metadata_coverage = 1.0
+image_cache_metadata_coverage = 1.0
+critical = 0
+warnings = 0
+```
+
+추천 평가도 통과했다.
+
+```text
+top_k_hit_rate = 1.0
+top_result_positive_hit_rate = 1.0
+positive_score_above_negative_rate = 1.0
+directional_followup_score_preference_rate = 1.0
+negative_violations = 0
+```
+
+즉, 이제 추천엔진은 60개가 아니라 120개의 reviewed beverage를 대상으로 추천할 수 있다.
+12개 category마다 10개씩 들어 있다.
+
+```text
+beer = 10
+brandy_cognac = 10
+cocktail = 10
+gin = 10
+liqueur = 10
+rum = 10
+sake_shochu = 10
+tequila_mezcal = 10
+traditional_korean_alcohol = 10
+vodka = 10
+whiskey = 10
+wine = 10
+```
+
+## 2. blog-kr08과 무엇이 달라졌나
+
+`blog-kr08`에서는 이런 상태였다.
+
+```text
+active_beverages = 60
+priced_beverages = 49
+price_observations = 50
+image_url_coverage = 1.0
+```
+
+그때는 이미지와 앱 표시 계약을 production-ready하게 만드는 것이 우선이었다. 모든 active
+beverage가 image metadata를 갖고, license와 attribution이 보존되고, 나중에 CDN으로
+전환할 수 있는 cache key를 갖는지가 핵심이었다.
+
+이번에는 질문이 바뀌었다.
+
+```text
+앱에 보여줄 수 있는가?
+  -> 더 풍부한 추천 후보를 안정적으로 줄 수 있는가?
+```
+
+60개 catalog는 MVP 검증에는 충분했다. 하지만 실제 사용자에게는 선택지가 좁다. 예를 들어
+사용자가 위스키를 좋아한다고 했을 때 bourbon, smoky Scotch, Irish whiskey, Japanese
+whisky 사이에서 충분히 다른 후보를 보여주려면 후보 수가 더 필요하다.
+
+그래서 이번 작업은 다음을 목표로 했다.
+
+```text
+1. candidate file에서 human-reviewed 상태를 명확히 표시한다.
+2. reviewed candidate 전체를 canonical recommendation catalog로 승격할 수 있게 한다.
+3. 모든 reviewed beverage가 taste_v1 vector와 flavor profile을 갖도록 한다.
+4. 이미지, 가격, source metadata, reason hints가 유지되는지 audit한다.
+5. 기존 recommendation evaluation fixture를 120개 catalog 기준으로 다시 맞춘다.
+```
+
+## 3. reviewed 상태의 의미
+
+후보 파일에는 `candidate_status`가 있다.
+
+기존 dry-run validator는 `needs_review`만 정상 상태로 받았다. 하지만 사람이 검수를 끝낸
+후보를 계속 `needs_review`로 두면 상태가 맞지 않는다.
+
+이번에 상태 의미를 이렇게 정리했다.
+
+```text
+needs_review
+  아직 검수 대기 상태
+
+reviewed
+  후보 파일 검수가 끝났고 canonical recommendation catalog promotion 대상이 될 수 있음
+
+approved
+  별도 운영 승인 workflow가 생기기 전까지 자동 후보 파일에서는 금지
+```
+
+중요한 점은 `reviewed`가 map/place의 live inventory나 venue price 승인을 뜻하지 않는다는 것이다.
+
+```text
+reviewed = recommendation-owned beverage catalog 후보 검수 완료
+approved = 미래의 운영 승인 workflow에서 사용할 수 있는 더 강한 상태
+```
+
+그래서 dry-run validator도 `needs_review`와 `reviewed`를 받아들이도록 바꿨다.
+반대로 `approved`는 여전히 자동 후보 파일에서는 거부한다.
+
+## 4. candidate dry-run 결과
+
+전체 candidate workspace를 다시 검증했다.
+
+```text
+beverage_candidate_dry_run accepted=685 warning=0 rejected=0
+```
+
+입력 row 수는 다음과 같다.
+
+```text
+catalog_candidates.jsonl = 120
+flavor_profile_candidates.jsonl = 120
+knowledge_candidates.jsonl = 120
+price_observation_candidates.jsonl = 97
+source_registry.csv = 228
+```
+
+이 dry-run은 DB에 쓰지 않는다.
+
+검증하는 것은 다음이다.
+
+```text
+1. JSONL / CSV row shape
+2. required field 존재 여부
+3. candidate_status
+4. category 값
+5. source registry coverage
+6. catalog / flavor / knowledge linkage
+7. duplicate candidate
+8. KRW price observation 정책
+```
+
+즉 dry-run은 "이 후보 파일을 안전하게 읽고 검토할 수 있는가"를 보는 gate다.
+
+## 5. canonical promotion 방식 변경
+
+이전 importer는 fixed MVP seed subset을 갖고 있었다.
+
+```text
+MVP_SEED_CANDIDATE_IDS = 60개 고정 tuple
+```
+
+이 구조는 안전하지만 확장성이 떨어진다. 120개 후보를 검수해도 코드에 ID를 하나씩 더 넣어야
+canonical catalog로 올라간다.
+
+이번에는 기준을 이렇게 바꿨다.
+
+```text
+candidate_status == "reviewed"
+  -> canonical recommendation catalog promotion 대상
+```
+
+코드 관점에서는 hardcoded 60개 tuple 대신 reviewed catalog row를 순회한다.
+
+```text
+for candidate_id in reviewed_catalog_candidate_ids:
+  catalog row 로드
+  flavor row 로드
+  knowledge row 로드
+  source coverage 검증
+  taste_v1 vector 검증
+  image metadata 선택
+  price observation summary 생성
+  BeverageItem 생성
+  FlavorProfile 생성
+  RecommendationVector 생성
+```
+
+여기서 중요한 것은 Qdrant가 아니다.
+
+현재 추천 serving path는 여전히 PostgreSQL 기반 deterministic ranking이다.
+Qdrant는 rebuildable derived index이고, canonical beverage vector는 PostgreSQL에 저장된다.
+
+```text
+PostgreSQL = canonical beverage catalog + canonical vector
+Qdrant = 나중에 rebuild 가능한 derived index
+```
+
+## 6. 120개 catalog audit 결과
+
+catalog audit는 reviewed candidate를 canonical seed record로 만든 뒤, 실제 추천 catalog로
+쓸 수 있는지 검사한다.
+
+통과 결과는 다음이다.
+
+```text
+active_beverages = 120
+recommendation_vectors = 120
+flavor_profiles = 120
+complete_vector_coverage = 1.0
+confidence_coverage = 1.0
+source_metadata_coverage = 1.0
+reason_code_coverage = 1.0
+alias_coverage = 1.0
+style_coverage = 1.0
+image_url_coverage = 1.0
+image_metadata_coverage = 1.0
+image_license_metadata_coverage = 1.0
+image_cache_metadata_coverage = 1.0
+critical = 0
+warnings = 0
+```
+
+이 말은 모든 active beverage가 다음을 갖는다는 뜻이다.
+
+```text
+1. beverage identity
+2. category / style
+3. Korean display name
+4. flavor profile
+5. taste_v1 vector
+6. dimension confidence
+7. reason code hints
+8. source metadata
+9. image_url
+10. image license metadata
+11. cache metadata
+```
+
+## 7. 가격 데이터의 경계
+
+이번 확장으로 가격 관측치도 늘었다.
+
+```text
+priced_beverages = 96
+price_observations = 97
+```
+
+하지만 이 숫자를 해석할 때 조심해야 한다.
+
+이 가격은 venue live price가 아니다.
+
+```text
+allowed:
+  broad catalog price evidence
+  추천 설명의 약한 budget context
+  catalog-level KRW observation summary
+
+not allowed:
+  현재 매장 판매가
+  현재 재고 여부
+  strict budget filtering의 유일한 근거
+  map/place price truth 대체
+```
+
+실제 매장 가격, 메뉴, 재고, 영업 상태는 map-service/place-service가 소유한다.
+recommendation-service는 그 데이터를 직접 DB에서 읽거나 수정하면 안 된다.
+
+따라서 추천 응답에서 가격을 사용할 때는 항상 다음 정책을 유지해야 한다.
+
+```text
+price_policy = verified_krw_observations_not_live_truth
+```
+
+## 8. recommendation evaluation도 다시 맞췄다
+
+120개로 늘리면 evaluation fixture도 같이 봐야 한다.
+
+처음에는 일부 test가 깨졌다. 이유는 추천이 나빠져서가 아니었다.
+
+기존 fixture의 positive catalog key가 60개 seed 기준으로 작성되어 있었기 때문이다.
+120개 catalog에서는 새로 들어온 reviewed beverage가 더 높은 점수를 받을 수 있다.
+
+예를 들면 이런 경우다.
+
+```text
+vanilla_oak_beginner
+  기존 positive: Buffalo Trace, Macallan 12
+  새 top result: Maker's Mark Bourbon
+
+smoky_scotch_expert
+  기존 positive: Laphroaig 10
+  새 top result: Ardbeg 10
+
+crisp_beer
+  기존 positive: Asahi, Guinness, Heineken
+  새 top result: Budweiser 또는 Sapporo
+```
+
+이건 실패가 아니다. 모두 같은 category/style 안에서 profile에 맞는 plausible candidate다.
+그래서 fixture positive set을 full reviewed catalog 기준으로 확장했다.
+
+최종 evaluation 결과는 다음이다.
+
+```text
+fixtures = 29
+top_k_hit_rate = 1.0
+top_result_positive_hit_rate = 1.0
+active_category_fixture_coverage = 1.0
+experience_level_fixture_coverage = 1.0
+deployed_budget_range_fixture_coverage = 1.0
+top_result_reason_hit_rate = 1.0
+different_followup_change_rate = 1.0
+adjacent_followup_change_rate = 1.0
+budget_affordable_score_preference_rate = 1.0
+budget_premium_score_preference_rate = 1.0
+positive_score_above_negative_rate = 1.0
+directional_followup_score_preference_rate = 1.0
+negative_violations = 0
+```
+
+가장 중요한 지표는 `negative_violations = 0`이다.
+
+후보가 늘어나면 ranking이 흔들릴 수 있다. 하지만 이번 결과에서는 positive가 negative보다
+계속 높은 점수를 받았고, top result도 fixture positive set 안에 들어왔다.
+
+## 9. 추천 설명이 더 풍부해지는 이유
+
+catalog가 60개에서 120개로 늘면 단순히 리스트가 길어지는 것이 아니다.
+
+사용자에게 줄 수 있는 설명의 폭이 넓어진다.
+
+예를 들어 위스키 안에서도 다음처럼 달라진다.
+
+```text
+Buffalo Trace
+  bourbon, vanilla, caramel, oak, beginner-friendly
+
+Maker's Mark
+  bourbon, rounded body, vanilla/caramel, softer profile
+
+Laphroaig 10
+  smoky, peat, salinity, intense Islay profile
+
+Ardbeg 10
+  smoky, peat, rich oak, expert profile
+
+Yamazaki 12
+  Japanese whisky, fruit, oak, premium context
+```
+
+같은 category라도 사용자의 취향 방향이 다르면 다른 후보를 줄 수 있다.
+
+```text
+더 smoky하게
+더 가볍게
+더 달게
+더 herbal하게
+더 citrus하게
+더 spirit-forward하게
+```
+
+이게 추천엔진에서 중요한 이유다.
+
+좋은 추천은 단순히 "가장 가까운 하나"만 주는 것이 아니라, 사용자가 이해할 수 있는 선택지를
+제공해야 한다.
+
+## 10. Flutter와 chatbot에 주는 의미
+
+Flutter는 더 다양한 추천 카드를 받을 수 있다.
+
+각 recommendation result는 여전히 다음을 가진다.
+
+```text
+beverage name
+category
+style
+score breakdown
+reason codes
+explanation
+metadata.image_url
+metadata.image license/source info
+price observation summary
+```
+
+Chatbot은 이 데이터를 기반으로 더 풍부한 설명을 만들 수 있다.
+
+하지만 boundary는 그대로다.
+
+```text
+Recommendation service decides.
+Chatbot explains.
+LLM does not rank.
+LLM does not invent price.
+LLM does not invent inventory.
+```
+
+즉, chatbot이 사용해야 하는 것은 LLM의 상상이 아니라 recommendation-service가 반환한
+deterministic result다.
+
+## 11. 아직 남은 일
+
+이번 작업으로 reviewed catalog는 넓어졌다. 하지만 production 완성은 아니다.
+
+남은 일은 다음이다.
+
+```text
+1. staging DB에 reviewed candidate import workflow를 더 명확히 운영한다.
+2. canonical promotion 전후 audit report를 release artifact로 관리한다.
+3. 이미지 CDN mirror를 실제 GCS / CDN에 붙인다.
+4. map/place snapshot과 venue inventory를 연결한다.
+5. strict budget mode는 live price semantics가 준비된 뒤에만 켠다.
+6. Qdrant candidate retrieval은 PostgreSQL vector 품질이 안정된 뒤 연결한다.
+7. 실제 사용자 interaction log가 쌓이면 learning-to-rank 단계로 넘어간다.
+```
+
+특히 가격과 재고는 아직 recommendation-service의 canonical truth가 아니다.
+
+술 자체의 catalog price evidence와 매장별 live price/inventory는 반드시 분리해야 한다.
+
+## 12. 이번 작업의 의미
+
+이번 확장은 ML 모델을 붙인 작업은 아니다.
+
+하지만 추천엔진 관점에서는 중요한 단계다.
+
+```text
+추천 후보 pool이 60개에서 120개로 늘었다.
+모든 후보가 vector와 flavor profile을 갖는다.
+모든 후보가 image display metadata를 갖는다.
+대부분의 후보가 KRW price evidence를 갖는다.
+추천 evaluation fixture가 full catalog 기준으로 다시 맞춰졌다.
+negative violation 없이 품질 gate를 통과했다.
+```
+
+이제 recommendation-service는 더 풍부한 술 추천 정보를 사용자에게 줄 수 있다.
+
+다음 단계는 이 catalog를 실제 map/place availability와 연결하는 것이다.
+그때부터 사용자는 단순히 "어떤 술이 맞는가"가 아니라 "어디서 마시거나 살 수 있는가"까지
+이어지는 추천을 받을 수 있다.
+

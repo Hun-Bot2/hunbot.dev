@@ -1,0 +1,97 @@
+---
+title: 'Local LLM Devlog 02'
+description: 'Local LLM development for blog post translation: text collection and architecture redesign'
+pubDate: '2026-04-13'
+heroImage: '/images/LOCAL_LLM/local-llm-architecture-en(v2).png'
+tags: ['local llm', 'development', 'translation']
+category: 'local_llm_devlog'
+series: 'Local LLM Devlog'
+seriesOrder: 2
+---
+
+## March 11, 2026
+
+Some time has passed. I could not write because I was busy with projects and school preparation, and I am finally writing now. In the previous post, I started building a blog-post translation feature with a local LLM. In this post, I will cover the architecture redesign.
+
+In the previous post, [Local LLM Devlog 01](../local_llm_01), I started developing a blog translation feature using a local LLM.
+
+This post focuses on architecture redesign.
+
+## Architecture Redesign
+First, every post I write for my personal blog is written locally in MDX or Markdown format. When I push it to GitHub, Vercel automatically builds and deploys the site.
+
+For automatic translation, I thought of two possible methods:
+
+1. Before writing and pushing a post, run translation locally, review the translated posts, and push them together.
+2. When a Korean post is pushed to GitHub, another program detects it and translates it. Then I review the translation and push the English and Japanese versions separately.
+
+The efficient method is obviously option 1. However, if I translate locally, I cannot use my laptop while the translation is running, so I chose to use a cloud GPU.
+
+Just in case, I asked AI whether I should run it on a GTX 1070 Ti, and it did not recommend it.
+
+1. I created a Docker image, pushed it to Hub, ran it on RunPod, and tested translation, but the output was strange.
+2. So I tested again on a local model, confirmed that translation worked well, then created an image with the same environment and redeployed it.
+3. But I write at most about three posts a week, and sometimes none. I began to wonder whether simply running it locally once and waiting would be better.
+4. I need to think a little more before deciding. For now, I put $10 into RunPod and received an additional $15, so I have $25.
+   Translating one post cost $0.09. It was a Korean-to-English translation task, about 130 KRW, and finished in about 60 seconds.
+   Except for untranslated code comments and text the model attached on its own, the translation was decent, but there were spacing and indentation issues.
+
+I used the `gemma4:latest` model. It was clearly good. However, in code blocks such as ```python, it sometimes removed the ``` characters entirely. It translated internal code comments well, so I think I need to prompt the code block handling more explicitly.
+
+While developing with RunPod and local execution, I tried to improve translation accuracy. But after studying more, I realized it would be hard to improve accuracy in this direction. Even if it takes time, I want to read relevant papers and materials and think about better ways to improve translation quality.
+
+## April 13, 2026
+It has been almost a month. I was busy with other projects, portfolio cleanup, and schoolwork, so I could not keep filling in the post.
+I started revisiting the translation system because while building my portfolio, I noticed many weak points. I have been thinking about it continuously for about two weeks.
+
+The papers and materials I read were mainly about Korean-Japanese translation and generally applicable methodologies. I also looked into factors that determine translation quality. I will cover the details in another post. Below is a short summary with links.
+
+### Translation Quality
+[Reference]: https://machinetranslate.org/
+
+First, I want to introduce techniques for evaluating translation quality.
+
+> n-gram overlap: Split sentences into n-word units and measure how much the same pieces overlap between two sentences.
+
+- [BLEU](https://en.wikipedia.org/wiki/BLEU): A representative metric for machine translation evaluation. It calculates a score based on n-gram overlap between translation output and reference sentences. It mainly measures surface-level text similarity.
+- [ROUGE](https://en.wikipedia.org/wiki/ROUGE_(metric)): Originally developed for text summarization evaluation. It is also used for translation, but more commonly in summarization than BLEU. It measures n-gram-based similarity.
+- [METEOR](https://en.wikipedia.org/wiki/METEOR): Proposed to compensate for BLEU's limitations. It performs more refined evaluation by considering word matching, stems, synonyms, and semantic similarity.
+- [BERTScore](https://arxiv.org/abs/1904.09675): Uses pretrained language models such as BERT to compare word meanings as vectors and measure semantic similarity between sentences.
+- [COMET](https://aclanthology.org/2020.emnlp-main.213): Not a simple similarity calculation, but a machine translation quality prediction model trained on human evaluation data. It can comprehensively evaluate meaning preservation, context, naturalness, and more, and is one of the strongest recent metrics.
+
+### Lexically Constrained Translation
+General neural machine translation (NMT) freely generates sentences, so the same term can be translated differently across documents, or proper nouns can be altered.
+
+To solve this, research proposes **Lexically Constrained Translation**.
+
+Hokamp & Liu (ACL 2017) showed that Grid Beam Search can force specific words to be included during translation, and experimentally verified that this improves translation quality.
+
+Post & Vilar (NAACL 2018) later improved this approach and proposed a method that can be applied efficiently regardless of the number of constraints, achieving practical performance and speed.
+
+Research in 2020 also confirmed that such constraints can be applied to Transformer-based models, preserving specific terms 100% while improving overall translation quality.
+
+[Lexically Constrained Neural Machine Translation with Levenshtein Transformer: https://aclanthology.org/2020.acl-main.325/]
+
+### Model Selection and Application
+For this project, I used Qwen3-14B as the translation model. Among open-source models, it was reported to have the best Korean-Japanese translation performance.
+
+Qwen3-14B is a large language model based on the Transformer architecture. Through the Self-Attention mechanism, it can understand context and generate natural sentences. This structure also performs well in translation tasks, especially multilingual processing.
+
+To solve problems in existing translation systems, such as the same term being translated differently across documents, proper nouns being altered, and translations changing by context, I applied the Lexically Constrained Translation approach to Qwen3-14B.
+
+### Manual Work
+First, I removed all strange or incorrect translations from the `glossary_backup` I had previously built, leaving only good translations.
+Then, to provide reliable data to the model, I organized it in JSON format and set rules.
+
+```json
+    {
+      "ko": "Baekjoon",
+      "canonical": "Baekjoon",
+      "en": "Baekjoon",
+      "jp": "Baekjoon",
+      "type": "proper_noun",
+      "translate": false,
+      "priority": "required",
+      "status": "approved"
+    }
+```

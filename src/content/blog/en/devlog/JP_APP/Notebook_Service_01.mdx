@@ -1,0 +1,69 @@
+---
+draft: true
+title: 'Building a Service With a Spare Laptop 01'
+description: 'Building an on-premise development server with an idle laptop'
+pubDate: '2026-02-09'
+#heroImage: '/images/giscus.png'
+tags: ["HomeLab" ,"Ubuntu" ,"Docker", "Rust", "NextJS", "DevOps", "OnPremise"]
+category: 'onpremise_devlog'
+series: 'On-premise JP Service Devlog'
+seriesOrder: 1
+---
+
+# [Home Server] Waking Up a Sleeping Laptop and Turning It Into a 24/7 On-Premise Development Server (Ubuntu + Docker + VS Code Remote)
+
+![Home Server Architecture](https://dummyimage.com/800x400/000/fff&text=Home+Server+Architecture)
+
+## Overview
+This is a different project from the **Japanese speaking practice** project I am currently developing. In this project, I install Ubuntu on an unused laptop at home through dual booting and learn how to use it as an **on-premise development server**. As for the service itself, the goal is to collect Japanese news articles and build a service useful for my own study: classifying article-related vocabulary by level, generating quizzes, giving writing assignments, and letting me summarize article content.
+
+Until now, whenever I built services, I always set up cloud-style deployment environments. Because of that, I wanted to develop in an environment identical to an actual deployment environment, Linux.
+
+So I decided to install Ubuntu on a spare laptop at home, build an **on-premise development server**, and control it remotely from my MacBook through **VS Code Remote SSH**. I spent the first day setting up this environment and designing the architecture.
+
+### Goals
+* **Cost reduction**: Secure a 24/7 server with zero AWS/GCP cloud cost.
+* **Resource separation**: Let Ubuntu handle heavy Docker containers and build work, while the Mac focuses only on coding and UI checks.
+* **Deployment environment consistency**: Develop on Linux, Ubuntu, just like the production environment, and avoid the "it works on my machine" problem.
+
+---
+
+## Architecture
+The MacBook only plays the role of the **client**, for writing code and checking screens. All actual compute power and data are handled by the **server**, Ubuntu.
+
+---
+## Implementation
+The following process is based on work done on February 8, 2026.
+
+### Step 1. Turning the Laptop Into a Server (Power Settings)
+
+The first issue I faced when using a laptop as a server was **the laptop entering sleep mode when the lid was closed**. Since a server must stay awake 24/7, I changed the system setting.
+
+```bash
+# Edit /etc/systemd/logind.conf
+sudo nano /etc/systemd/logind.conf
+
+# Find the setting below, uncomment it, and change it
+HandleLidSwitch=ignore
+
+```
+
+After applying the setting with `sudo systemctl restart systemd-logind`, I confirmed that the SSH connection did not drop even when closing the lid.
+
+### Step 2. The Core of the Development Environment: Docker & Docker Compose
+
+All services run isolated in containers.
+
+```bash
+# Install Docker and configure permissions so it can run without sudo
+curl -fsSL [https://get.docker.com](https://get.docker.com) -o get-docker.sh
+sudo sh get-docker.sh
+sudo usermod -aG docker $USER
+newgrp docker
+
+```
+
+### Step 3. VS Code Remote SSH Setup (MacBook)
+In VS Code, press `F1`, select "Remote-SSH: Connect to Host...", then enter the laptop's IP address and user name to connect.
+
+---

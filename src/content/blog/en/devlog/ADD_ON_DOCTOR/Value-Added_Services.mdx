@@ -1,0 +1,197 @@
+---
+title: 'Checking Telecom Value-Added Services'
+description: 'A development note for a service that authenticates a phone number and checks telecom value-added services attached to that number'
+pubDate: '2026-02-06'
+heroImage: '/images/ADD_ON/addon-doctor_v1.png'
+tags: ['telecom', 'value-added-services']
+category: 'add_on_doctor_devlog'
+series: 'Add-on Doctor'
+seriesOrder: 1
+---
+
+## Idea
+This idea came to me while using a Korean service called "Find My Insurance." With only a resident registration number, phone number, and name, it lets users view all insurance products they are enrolled in. I wondered whether a similar service could show all telecom value-added services a user has subscribed to.
+
+For example, if I use SKT but do not know which add-on services I have, I wanted to build a web service where I could enter only my name and phone number and see all subscribed SKT add-ons at once.
+
+Of course, users can log in to T-world and check subscribed services there. I do that too. Still, I thought it would be useful if checking add-ons could be simpler than opening T-world.
+
+I looked into whether lookup with only a name and phone number is possible, and it is not. Identity verification is required. So I checked the Korean telecom MyData standard API and found that there are telecom value-added service lookup APIs by API code. If I use those APIs, I should be able to build a service that verifies a user through their phone number and then retrieves the telecom add-on services attached to that number.
+
+**Is it enough to only fetch and display the data?** That would feel a little incomplete. I want to add RAG + chatbot features, so users can ask questions based on their subscribed services. If I also retrieve plan information and recommend better options, the service could become fairly useful.
+
+Because each of the three major carriers has different add-on services, integrating SKT, KT, and LG U+ APIs will be annoying. To build a RAG feature for add-on services, I will also need data collection and preprocessing for the service descriptions.
+
+If traffic spikes because many users arrive at once, I should also consider a serverless architecture. Platforms such as AWS Lambda or GCP Cloud Functions scale automatically with traffic, which should help provide stable service.
+
+For now, I will start by using the Korean telecom MyData standard API to verify a phone number and retrieve the carrier's add-on services for that number. If that works well, I will add cancellation support and detailed explanations later.
+
+---
+
+## Initial Development Plan
+The introduction became long, but in short, the goal is to build **a service that verifies a user with a phone number, then retrieves and recommends telecom value-added services for that number**.
+
+| **Category** | **Tech** | **Reason** |
+| --- | --- | --- |
+| **Languages** | **TypeScript & Python** | TypeScript for type safety across the Web/API surface, Python for complex LangGraph-based AI orchestration. |
+| **Frontend** | **Next.js 15+ (App Router)** | Use Server Actions and ISR on static telecom plan pages for strong performance. |
+| **Backend & Auth** | **Supabase** | A BaaS that provides Postgres, Auth, and RLS together, protecting sensitive MyData records with minimal setup. |
+| **Vector Database** | **pgvector (Supabase)** | Enables RAG over 900+ services inside existing Postgres, avoiding a separate vector DB. |
+| **AI Orchestration** | **LangGraph** | State-based multi-step reasoning for usage log analysis and calculation of a "waste index" across hundreds of combinations. |
+| **LLM & SDK** | **sLLM / GPT-4o mini** | Build an sLLM and route extra tasks to GPT-4o mini through the Vercel AI SDK. |
+| **Infrastructure** | **Vercel (Edge Functions)** | Global serverless execution with near 200-500ms cold starts and strong scaling during traffic spikes. |
+| **Caching & Scaling** | **Upstash (Redis)** | Global rate limiting and prompt caching to prevent runaway LLM costs. |
+| **AI Observability** | **Langfuse** | Essential for tracking per-user LLM costs, tracing agent decision steps, and debugging recommendation reasons. |
+| **System Monitoring** | **Sentry** | Automated error tracking for serverless functions and frontend crashes, useful for solo operation. |
+| **Development Method** | **GitHub Spec Kit** | Spec-driven development to keep architecture goals and implementation consistent. |
+| **Data & Simulation** | **Mockoon & SmartChoice API** | Mockoon for simulating 2026 MyData standard APIs, telecom-001/003, and SmartChoice API for real-time plan data. |
+
+## Architecture Diagram
+![Architecture diagram for the telecom value-added service lookup service](/images/ADD_ON/addon-doctor_v1.png)
+
+\<The following section was written with AI assistance.\>
+## Add-on Doctor v1 Architecture Overview
+1. **Personal information security**: Keep raw MyData only in restricted storage, and pass only de-identified, summarized data to the LLM/RAG layer.  
+2. **sLLM first, cloud LLM as backup**: The main reasoning path uses a self-hosted sLLM, while only complex requests fall back to commercial LLMs.
+(Otherwise the cost may be too high. In an actual service, this feature may need to be blocked or charged to users.)
+3. **Operational efficiency**: Use S3 + local vector storage such as Chroma + a serverless frontend to minimize operational complexity.
+
+### Front End: Vercel + Next.js + Redis
+- The frontend is deployed to Vercel using **Next.js (App Router)**.
+#### Features:
+  - Collect user input: carrier selection, add-on list lookup request, analysis button, and so on.
+  - API Routes / Server Actions:
+    - Trigger telecom MyData API calls
+    - Trigger SmartChoice API calls
+    - Trigger LangGraph analysis API calls (`/api/analyze_addons`)
+
+This design **does not use login**.
+For each request, the app creates a `session_id`, performs a one-time analysis for that session, and immediately shows the result.
+The UI should feel like the simple identity verification flows we commonly use. After pulling carrier-specific data and displaying it, the app should only run extra features when the user presses the analysis button or opens the chatbot.
+
+### Upstash Redis (Rate Limit & Prompt Cache)
+
+- Use **serverless Redis** close to the edge for two purposes.
+  1. **Rate Limit**: Limit analysis requests by IP or `session_id` to prevent LLM cost spikes.
+  2. **Prompt Cache**:  
+     - If the same add-on combination and plan are analyzed again, return the cached result without calling the LLM again.
+
+***
+
+### Storage & Metadata: AWS S3
+
+S3 acts as the service's **source data store**.
+
+- Data to store:
+  - Add-on descriptions, plan guides, and policy documents from the three telecom carriers, in formats such as HTML, Markdown, and JSON
+  - Add-on master table with service name, category, monthly fee, carrier, and so on
+  - Model-related resources, such as prompt templates and domain rule definitions
+  - Optional analysis report snapshots, such as `reports/{session_id}.json`
+
+I will decide during development whether it is really worth storing this much.
+
+***
+
+### External Services: MyData API + SmartChoice API
+
+#### Telecom MyData API
+
+- With user consent, use telecom-001/003 and related MyData standard APIs to retrieve:
+  - **Subscription information**, such as carrier, plan name, contract/combined products
+  - **Billing history**, such as monthly add-on service line items and amounts
+- Store this data only by `session_id` in S3 or internal storage, and pass only de-identified summaries to the LLM side.
+
+#### SmartChoice API
+
+- Use the **plan and add-on recommendation open API** operated by the Korea Telecommunications Operators Association (KTOA).
+- Role:
+  - Based on the current plan and usage pattern, retrieve public-portal-style plan recommendation results.
+  - Cross-check recommendations generated by the sLLM or supplement the list of alternative plan candidates.
+
+***
+
+### AI Orchestration & Observability: LangGraph + Chroma + Langfuse
+
+#### LangGraph Orchestrator
+LangGraph is used as a **Python-based agent/workflow orchestration layer**.
+
+1. When Next.js sends a request to `/api/analyze_addons`, it passes `[session_id, summarized subscription information/billing history]` to LangGraph.
+2. LangGraph analyzes the request in three steps.
+   1. **Preprocessing & de-identification**
+      - Extract only the necessary fields from raw telecom-001/003 data and convert them into a summarized structure.  
+        Example: `{carrier, plan_name, addon_list[], monthly_addon_total}`
+      - Remove identifiers such as name, phone number, and resident registration number from LLM/RAG inputs.
+   2. **RAG + rule-based judgment**
+      - Query Chroma to retrieve add-on descriptions, policies, and alternative options.
+      - Also perform simple rule-based checks, such as whether a paid add-on overlaps with a plan's base benefits.
+   3. **LLM call**
+      - Give context to the sLLM and ask it to generate "cancel / keep / conditionally keep + reason + expected savings."
+      - If needed, fall back to a cloud LLM to polish the natural-language report.
+
+#### Chroma (Local RAG Index)
+
+- Use **Chroma** as the RAG index next to the LangGraph process.
+- During initialization:
+  1. Load add-on service documents from S3 for the three carriers.
+  2. Generate embeddings and upsert them into a Chroma collection.
+- During queries:
+  - Search top-k documents by service names or keywords such as "Smart Call Keeper," "V Coloring," and "PASS rent deposit safety care," then use them as LLM context.
+
+#### Langfuse (LLM Trace & Costs)
+
+- Record all LLM calls and chain steps in Langfuse.
+  - Group traces by `session_id` or de-identified `user_id`.
+  - Monitor token usage, cost, and latency.
+- This information is used for:
+  - Detecting cost spikes
+  - Tuning prompts and chains
+  - Explaining why a recommendation was produced, for debugging and explainability
+
+***
+
+### LLM Layer: sLLM + Vercel AI SDK
+
+#### Local sLLM
+
+- The main reasoning engine is a **self-hosted sLLM**.
+  - Korean-friendly models served through vLLM/Ollama can be used, such as K-EXAONE family models, A.X family models, Solar, and similar options.
+- Role:
+  - Receive add-on lists, plans, SmartChoice results, and Chroma context, then generate:
+    - "cancel / keep / conditionally keep" classification
+    - Item-level explanations
+    - Short summary reports
+
+#### Vercel AI SDK + GPT-4o mini (Fallback)
+
+- For more complex natural-language reports or cases where the sLLM lacks confidence, call commercial LLMs such as **GPT-4o mini / Claude** through the Vercel AI SDK.
+- Define fallback conditions in LangGraph:
+  - The report needs to be long
+  - Multilingual explanation is needed
+  - The internal evaluation score is low
+
+***
+
+### Observability & Error Tracking: Sentry
+
+- Send errors and warnings from Next.js/Vercel, LangGraph, and the sLLM gateway to **Sentry**.
+- Main goals:
+  - External API failures, such as MyData/SmartChoice
+  - LLM call exceptions
+  - Performance degradation and timeouts
+  - Frontend runtime error monitoring
+
+***
+
+### Personal Information Security
+
+- Raw MyData, such as telecom-001/003 JSON, names, and phone numbers, is stored only in **S3/internal storage**. The LLM/RAG layer receives only structured summary data.
+- Session identification uses `session_id`, and a TTL policy can delete MyData snapshots and reports after a certain period.
+- Langfuse/Sentry should keep only de-identified IDs and metadata, never sensitive raw text.
+
+---
+
+## Closing
+Additional logic that came to mind:
+- Because of API call limits, show API call logs directly on the screen.
+
+Other than that, I do not have additional implementation ideas at the time of writing. If I think of something while building, I will add it then.

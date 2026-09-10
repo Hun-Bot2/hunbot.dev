@@ -1,0 +1,211 @@
+---
+title: 'Japanese Speaking App for JLPT & Business Conversation Practice, Part 1'
+description: 'Purpose and plan for developing a Japanese conversation practice app'
+pubDate: '2026-01-28'
+#heroImage: '/images/giscus.png'
+tags: ['jlpt', 'business', 'japanese', 'app', 'devlog']
+category: 'jp_app_devlog'
+series: 'Japanese Speaking App'
+seriesOrder: 1
+---
+
+## Japanese Speaking App for JLPT & Business Conversation Practice, Part 1
+I have been studying Japanese for about seven months since last June. I did not like the Japanese conversation practice apps on the market or the apps shown in YouTube ads, so I wanted to build one myself and see what technical limitations make it hard to build a good study app.
+
+The conditions I consider necessary for a good Japanese speaking practice app are:
+
+1. It should support practice across many situations, from daily conversation to business conversation, and it should allow natural use of polite language, respectful language, and humble language. The target level is above JLPT N1.
+2. Users should be able to improve conversation ability by speaking with AI through voice-based real-time interaction.
+3. It should provide feedback based on what the user said, helping them improve mistakes.
+4. It should support interview practice by asking and evaluating various questions about the user's major, portfolio, and resume.
+   It should always assume the worst-case scenario, and every question should include follow-up questions that encourage deeper answers.
+5. Strong security should ensure that user personal information and conversation contents are not leaked outside.
+
+With these thoughts in mind, I used Gemini Deep Research to organize the necessary technologies and the development direction.
+
+---
+
+### Initial Tech Stack Selection
+
+| **Category** | **Technology** | **Reason** |
+|------|--------|---------|
+| **Language** | Python 3.11+ | Richest AI/ML library ecosystem. |
+| **Orchestration** | LangGraph | Optimized for agent workflows where cycles and state management are essential. Suitable for complex conversation flow control, not just simple chains. |
+| **LLM (Text)** | CyberAgentLM3-22B-Chat (GGUF) or Llama-3-Elyza-JP-8B | Strong Japanese-specific performance and can be run locally or through low-cost APIs. |
+| **TTS (Audio)** | Style-Bert-VITS2 | Open-source model that expresses Japanese intonation and emotions such as joy, anger, and embarrassment most naturally. |
+| **RAG & Search** | Qdrant (Vector DB) + SudachiPy (Tokenizer) | Supports hybrid search and uses a tokenizer optimized for Japanese morphological analysis. |
+| **UI/UX** | Chainlit | Fast and efficient for conversational AI prototyping, and good for visualizing the chain-of-thought-style process. |
+
+For real-time conversation, the most important part, I thought Chainlit alone would not be enough. So I considered which real-time communication framework to use.
+
+| Feature | **Chainlit** | **Gradio** | **LiveKit** |
+|------|----------|--------|---------|
+| **Main use** | Chat-style LLM apps | ML model demo/serving | Real-time A/V infrastructure |
+| **Communication protocol** | WebSocket | WebSocket / HTTP | WebRTC (UDP/TCP) |
+| **Latency** | Medium (500ms-1s) | Medium (500ms-1s) | Very low (&lt;200ms) |
+| **Audio processing** | File/chunk transfer | Stream generator | RTP media stream |
+| **Barge-in** | Difficult, custom needed | Possible but complex | Native support |
+| **State management** | Persistent chat sessions | State object passing | Real-time room state |
+| **Scalability** | Easy vertical scaling | Easy containerization | Cloud/edge distributed processing |
+
+Based on this table, real-time audio communication and barge-in are essential, so I selected LiveKit as the main communication framework. I plan to build the frontend and backend with a LiveKit + [ ] combination.
+
+### Real-Time Voice Conversation
+To achieve the behavior I want, the whole pipeline of speech recognition (STT), large language model (LLM), and speech synthesis (TTS) needs to be optimized as a streaming structure. I know streaming is a fairly difficult area to implement, so I will probably build it gradually and refine the direction as I go.
+
+#### General Voice Conversation Flow (Non-Streaming)
+
+| **Step** | **Component** | **Description** |
+|---|----|------|
+| 1 | **VAD Delay** | Time spent waiting for silence to determine whether the user has finished speaking |
+| 2 | **Audio Upload** | Send audio data to the cloud |
+| 3 | **ASR Processing** | Convert the full audio into text |
+| 4 | **LLM Inference** | Wait for the full answer text to be generated |
+| 5 | **TTS Synthesis** | Convert the full text into audio |
+| 6 | **Audio Download & Buffering** | Prepare playback |
+
+**Problem**: Each step is processed sequentially, so total latency accumulates and the system becomes unsuitable for real-time conversation.
+
+#### Streaming Architecture (Real-Time)
+
+| **Step** | **Technology** | **Description** |
+|---|-----|------|
+| 1 | **Transport (WebRTC)** | Audio is split into 20ms frames and arrives at the server, LiveKit Agent, in real time |
+| 2 | **Server-side VAD (Silero VAD)** | Analyze the audio frame stream in real time and detect speech start/end |
+| 3 | **Streaming STT (ReazonSpeech v2)** | Push audio frames into the STT engine as soon as speech is detected and generate interim text results |
+| 4 | **Speculative LLM Processing** | Advanced optimization where the LLM prepares or starts generating tokens based only on interim STT results |
+| 5 | **Streaming LLM** | The LLM streams tokens instead of outputting the complete sentence at once |
+| 6 | **Streaming TTS (Style-Bert-VITS2)** | Start audio synthesis immediately when text accumulates by punctuation or semantic unit |
+| 7 | **Playback** | The first synthesized audio chunk is immediately sent to the user through a WebRTC track |
+
+**Benefit**: Parallel processing and incremental result delivery minimize latency and enable natural real-time conversation.
+
+## Data Collection
+Naturally, I first needed to collect data for business conversation and Japanese-specific language forms such as polite, respectful, and humble speech. The data to collect is below.
+
+### BSD (Business Scene Dialogue) Dataset: `ryo0634/bsd_ja_en`
+  - Downloaded from Hugging Face
+  - JSON-form dialogue data
+  - Classified by situation, such as telephone, meeting, apology, and speaker relationship, such as superior-subordinate or client
+- **Business manners documents**: Collected from sites such as business-mail.jp
+- **Honorific/grammar correction data**: TMU Evaluation Corpus or KeiCO corpus
+
+### KeiCO Corpus
+**Source**: GitHub - `Liumx2020/KeiCO-corpus`  
+**Paper**: Liu et al. (2022) - "Construction and Validation of a Japanese Honorific Corpus"
+
+```text
+Scale: 10,007 sentences (5 annotations per sentence)
+Annotations:
+   - Honorific level (4 levels)
+   - Respectful language (尊敬語/sonkeigo) classification
+   - Humble language (謙譲語/kenjougo) classification
+   - Polite language (丁寧語/teineigo) classification
+   - Activity field
+```
+
+**Honorific Level System (Level 1-4)**
+
+| Level | Name | Use case | Marker examples |
+|------|------|---------|---------|
+| **1** | Highest respect | Formal speeches, polite business | ございます, 申し上げます, いたします |
+| **2** | General respect | Business conversation, official documents | ます, ございます |
+| **3** | Medium honorific | Everyday respect | ます, です |
+| **4** | Casual respect | Close relationships | ... |
+
+### Detecting Honorific Errors and Giving Feedback
+I want to show feedback on screen as text in the following form. Alternatively, the feedback could also be spoken by voice.
+
+```python
+# User's incorrect expression
+user_utterance = "すみません。"  # Level 4 (casual)
+
+# Classification learned from KeiCO data
+correct_level = 1  # Business requires the highest respect
+correct_form = "失礼いたします。"
+
+# Generate feedback
+feedback = "Your expression 'すみません' is Level 4. " \
+           "In business situations, you should use the Level 1 expression '失礼いたします'."
+```
+
+### Data Classification and Structuring
+
+#### BSD Data Classification Schema
+
+```text
+Scenario
+├── Telephone
+│   ├── Customer service
+│   ├── Order confirmation
+│   └── Problem solving
+├── Meeting
+│   ├── Business negotiation
+│   ├── Project review
+│   └── Result reporting
+├── Apology
+│   ├── Acknowledging a mistake
+│   ├── Offering compensation
+│   └── Restoring trust
+└── Other
+    ├── Email conversation
+    └── Business card exchange
+
+Speaker Relationship
+├── Superior-Subordinate → Level 2 or higher required
+├── Peers → Level 2-3
+├── Business Partner → Level 1-2
+├── New Customer → Level 1 recommended
+└── Existing Customer → Level 2-3
+```
+
+### Preprocessing and Morphological Segmentation
+
+**Why is morphological segmentation necessary?**
+
+Japanese does not use spaces, so it must be split into meaningful units. I need a tool specialized for Japanese that can perform morphological analysis and divide text by semantic units.
+
+The tool that can classify text into meaningful units is SudachiPy, a fairly large Japanese morphological analyzer.
+
+SudachiPy: https://pypi.org/project/SudachiPy/
+
+WAP Tokushima Laboratory of AI and NLP: https://nlp.worksap.co.jp/
+
+### Embedding Generation
+According to what I found, the model below is considered well suited for Japanese sentence embeddings. I will try it first, and if performance is not satisfactory, I will try other models.
+
+**Model selection: cl-nagoya/ruri-large (Japanese-specialized)**
+
+```python
+from sentence_transformers import SentenceTransformer
+
+# Japanese-specialized model
+model = SentenceTransformer('cl-nagoya/ruri-large')
+
+# Convert text into 384-dimensional vectors
+texts = [
+    "会議でのビジネス敬語",
+    "電話での丁寧な表現",
+    "謝罪の文化"
+]
+
+embeddings = model.encode(texts)  # shape: (3, 384)
+
+print(f"Embedding generation complete: {embeddings.shape}")
+```
+
+### Building a Qdrant Vector DB
+Qdrant is an open-source database optimized for vector search. It can efficiently store and retrieve large-scale embedding data.
+This option may also be replaced if a better vector DB is found.
+
+### Hybrid Search Implementation (Optional)
+I plan to use a combination of **vector search + BM25 keyword search**. What is BM25? See https://www.geeksforgeeks.org/nlp/what-is-bm25-best-matching-25-algorithm/. In short, it is an algorithm that improves keyword-based search accuracy by considering term frequency and inverse document frequency.
+
+I am not sure whether this is truly necessary. First I will implement vector search without BM25, and if performance is not satisfactory, I will add BM25 later.
+
+**References**
+- BSD: https://huggingface.co/datasets/ryo0634/bsd_ja_en
+- KeiCO: https://github.com/Liumx2020/KeiCO-corpus
+- SudachiPy: https://github.com/WorksApplications/Sudachi
+- Qdrant: https://qdrant.tech/
+- Liu et al. (2022). Construction and Validation of a Japanese Honorific Corpus
