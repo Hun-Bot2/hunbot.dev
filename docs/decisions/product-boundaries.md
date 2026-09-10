@@ -16,6 +16,7 @@ Future paid, team, or private workflow features need a separate product decision
 - Backendless deck metadata and reviewed deck assets.
 - Public learning paths.
 - Search over public static pages.
+- The Discover feed, its taxonomy, and its per-domain RSS feeds.
 
 ## What Must Stay Private
 
@@ -60,6 +61,27 @@ Before implementation, write a narrow architecture decision covering:
 - deployment/runtime cost
 - legal and privacy implications
 
+## Local Preferences Carve-Out
+
+Added: 2026-09-10, for [`discover-direction.md`](./discover-direction.md).
+
+Reader-selected topic filters are permitted, under strict conditions. This is a narrow exception to the "saved resources" guardrail below, not a softening of it.
+
+Permitted:
+
+- Filter state in URL query parameters.
+- The last-used selection mirrored to `localStorage`.
+- Server-rendered content that a client script only shows or hides.
+
+Still prohibited, unchanged:
+
+- Any account, login, or user record.
+- Any server-side storage of a reader's selection.
+- Any transmission of reader preferences off the device.
+- Any content visible only to some readers.
+
+The distinguishing test: **the site must not be able to tell two readers apart.** A preference the server never sees is a rendering detail. A preference the server stores is a user account with extra steps, and needs the separate product decision described below.
+
 ## Current Blog Guardrails
 
 Do not add these to the personal blog without explicit approval:
@@ -69,7 +91,7 @@ Do not add these to the personal blog without explicit approval:
 - gated content
 - authentication
 - user accounts
-- saved resources
+- saved resources on a server (local filter preferences are carved out above)
 - private review queues
 - newsletter signup providers
 - payment SDKs

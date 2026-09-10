@@ -2,7 +2,7 @@
 
 `PresentationEmbed` is a backendless component for showing presentation materials inside blog posts and future Library pages. It keeps the site static-first: deck assets are committed under `public/`, metadata is committed under `src/data/decks.ts`, and rendering happens in Astro plus a small browser script for slide-image navigation.
 
-Deck support is part of the broader product direction in [`docs/service-plans/001-product-service-direction.md`](./service-plans/001-product-service-direction.md). It should support paper reviews, experiment notes, technical explanations, build logs, and future YouTube companion notes without turning the blog into a document server.
+Deck support is part of the broader product direction in [`docs/decisions/discover-direction.md`](../decisions/discover-direction.md). It should support paper reviews, experiment notes, technical explanations, build logs, and future YouTube companion notes without turning the blog into a document server.
 
 ## Why PPTX Is Not Embedded
 

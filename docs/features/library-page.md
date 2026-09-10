@@ -6,7 +6,7 @@ The Library hub is the first public entry point for the human-reviewed Library d
 
 The current implementation also adds first-pass section listing pages. It does not add ingestion, private candidate storage, comments, authentication, payments, newsletters, or a database.
 
-The broader product direction is documented in [`docs/service-plans/001-product-service-direction.md`](./service-plans/001-product-service-direction.md). The hub should stay broad enough to represent the whole AI-native curation service, not only the Design Library.
+The broader product direction is documented in [`docs/decisions/discover-direction.md`](../decisions/discover-direction.md). The hub should stay broad enough to represent the whole AI-native curation service, not only the Design Library.
 
 ## Supported Sections
 

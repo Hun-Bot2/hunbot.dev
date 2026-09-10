@@ -2,9 +2,9 @@
 
 This document defines the data foundation for the Library section. The repository now has public schemas, small sample entries, validation, a Library hub, and first-pass section listing pages. It does not add ingestion jobs, private candidate storage, search UI automation, or publishing workflows.
 
-The broader service direction is documented in [`docs/service-plans/001-product-service-direction.md`](./service-plans/001-product-service-direction.md). This data model should support that full direction: Design, Vibe Coding, Developer Docs, AI Papers, Useful Feeds, Decks, and future media companion resources.
+The broader service direction is documented in [`docs/decisions/discover-direction.md`](../decisions/discover-direction.md). This data model should support that full direction: Design, Vibe Coding, Developer Docs, AI Papers, Useful Feeds, Decks, and future media companion resources.
 
-Related implementation plans are indexed in [`docs/plans/000-index.md`](./plans/000-index.md). Future Library schema, route, ingestion, or publishing workflow changes should be planned there before implementation.
+Future Library schema, route, ingestion, or publishing workflow changes should be planned against the build order in [`docs/decisions/discover-direction.md`](../decisions/discover-direction.md) before implementation.
 
 ## Purpose
 

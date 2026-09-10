@@ -75,11 +75,11 @@ for (const privatePath of [
 	assert.equal(existsSync(join(root, privatePath)), false, `${privatePath} should not exist in the public repo.`);
 }
 
-const boundaryDoc = read('docs/product-separation-boundaries.md');
+const boundaryDoc = read('docs/decisions/product-boundaries.md');
 assert.match(boundaryDoc, /personal trust asset/);
 assert.match(boundaryDoc, /Do not add these to the personal blog/);
 
-const decisionRecord = read('docs/monetization-decision-record.md');
+const decisionRecord = read('docs/decisions/monetization.md');
 assert.match(decisionRecord, /No monetization implementation approved/);
 assert.match(decisionRecord, /Explicitly Deferred/);
 

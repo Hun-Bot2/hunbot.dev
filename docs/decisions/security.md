@@ -4,7 +4,7 @@ Reviewed: 2026-05-12
 
 Do not print or commit secret values. A root `.env` file exists and was not read during this review.
 
-Product direction reference: [`docs/service-plans/001-product-service-direction.md`](./service-plans/001-product-service-direction.md). Security work should preserve the public/private boundary: approved public content can live in Git, while private candidates, raw source text, embeddings, unreviewed AI output, and future commercial data stay outside the public repo.
+Product direction reference: [`docs/decisions/discover-direction.md`](./discover-direction.md). Security work should preserve the public/private boundary: approved public content can live in Git, while private candidates, raw source text, embeddings, unreviewed AI output, and future commercial data stay outside the public repo.
 
 | Risk ID | Severity | Affected files | Scenario | Recommended fix | Test or verification method | Status |
 | --- | --- | --- | --- | --- | --- | --- |

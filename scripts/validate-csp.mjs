@@ -26,12 +26,12 @@ assert.match(headerMenu, /menuToggle/);
 assert.match(headerMenu, /mobileMenu/);
 assert.match(headerMenu, /instanceof Node/);
 
-const inventory = read('docs/csp-script-inventory.md');
+const inventory = read('docs/ops/csp.md');
 assert.match(inventory, /Header\.astro/);
 assert.match(inventory, /unsafe-inline/);
 assert.match(inventory, /unsafe-eval/);
 
-const thirdPartyInventory = read('docs/third-party-services.md');
+const thirdPartyInventory = read('docs/ops/third-party.md');
 for (const requiredDomain of [
 	'gc.zgo.at',
 	'hunbot.goatcounter.com',

@@ -41,7 +41,7 @@ for (const componentPath of ['src/components/Header.astro', 'src/components/Foot
   assert.match(read(componentPath), /data-pagefind-ignore/);
 }
 
-assert.ok(existsSync(join(root, 'docs/search.md')), 'docs/search.md should exist');
+assert.ok(existsSync(join(root, 'docs/features/search.md')), 'docs/search.md should exist');
 
 for (const outputRoot of [join(root, 'dist/client'), join(root, '.vercel/output/static')]) {
   if (!existsSync(outputRoot)) continue;

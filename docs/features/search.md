@@ -2,7 +2,7 @@
 
 This site uses Pagefind for static full-text search.
 
-Search supports the broader service direction in [`docs/service-plans/001-product-service-direction.md`](./service-plans/001-product-service-direction.md): public blog posts, Library resources, paper cards, topics, decks, and future media companion notes should remain discoverable without adding a backend search service.
+Search supports the broader service direction in [`docs/decisions/discover-direction.md`](../decisions/discover-direction.md): public blog posts, Library resources, paper cards, topics, decks, and future media companion notes should remain discoverable without adding a backend search service.
 
 ## Why Pagefind
 

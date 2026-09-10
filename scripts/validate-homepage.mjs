@@ -98,8 +98,6 @@ assert.deepEqual(
 	['ko/blog/new', 'ko/blog/older'],
 );
 
-assert.ok(existsSync(join(root, 'docs/homepage-reference-review.md')), 'Homepage reference review doc is required.');
-
 console.log(
 	`Validated homepage source, filters, and Library picks: ${picks.length} picks, ${Object.keys(sectionCounts).length} sections.`,
 );

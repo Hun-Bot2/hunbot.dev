@@ -366,8 +366,9 @@ docs/
 │   ├── workflow.md          Content review and publishing workflow
 │   └── public-images.md     Image size/format/naming guidelines
 ├── decisions/
+│   ├── discover-direction.md  Discover product direction, dynamic taxonomy, phased build order
 │   ├── monetization.md      No monetization — current decision boundary
-│   ├── product-boundaries.md  What stays public vs private
+│   ├── product-boundaries.md  What stays public vs private (+ local preferences carve-out)
 │   └── security.md          Security risk register (SEC-001..SEC-012)
 ├── features/
 │   ├── library-data-model.md  Content Collections for Library (resources/papers/topics)

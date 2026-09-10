@@ -2,7 +2,7 @@
 
 This inventory supports incremental CSP hardening. The site still needs some inline scripts, so `script-src 'unsafe-inline'` remains for now. `unsafe-eval` has been removed from the Vercel CSP after moving the first low-risk interaction script out of an Astro component.
 
-Product direction reference: [`docs/service-plans/001-product-service-direction.md`](./service-plans/001-product-service-direction.md). Future Library, media companion, or productization work should not add third-party scripts or document viewers without updating this inventory and the CSP plan.
+Product direction reference: [`docs/decisions/discover-direction.md`](../decisions/discover-direction.md). Future Library, media companion, or productization work should not add third-party scripts or document viewers without updating this inventory and the CSP plan.
 
 Third-party service reference: [`docs/third-party-services.md`](./third-party-services.md).
 

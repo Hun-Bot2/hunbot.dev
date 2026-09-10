@@ -6,7 +6,7 @@ Reviewed: 2026-05-12
 
 `hun-bot.dev` is a multilingual personal tech blog built on Astro 5, MDX, Astro Content Collections, Tailwind CSS, and the Vercel serverless adapter. The intended model is static-first: most pages are generated from filesystem content, and dynamic behavior is limited to a small page-view API backed by Redis-compatible serverless persistence.
 
-The broader product/service direction is documented in [`docs/service-plans/001-product-service-direction.md`](./service-plans/001-product-service-direction.md). Architecture changes should preserve the personal blog as a lightweight trust asset unless a later plan explicitly separates a new product layer.
+The broader product/service direction is documented in [`docs/decisions/discover-direction.md`](../decisions/discover-direction.md). Architecture changes should preserve the personal blog as a lightweight trust asset unless a later plan explicitly separates a new product layer.
 
 The stack to preserve:
 
