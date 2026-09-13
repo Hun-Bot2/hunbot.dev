@@ -126,6 +126,18 @@ This satisfied the entire personalization requirement with zero backend, and is 
 
 **Judgment call.** `links:validate` started report-only because failing on a pre-existing backlog would block every PR on old debt. It becomes enforced once the backlog reaches zero — fix the debt first, then close the gate behind it.
 
+## 13. Unreferenced assets are triaged, not bulk-deleted
+
+**Problem.** 17 images in `public/` were referenced nowhere yet shipped to every visitor — 5.28 MB of dead weight.
+
+**Decision.** Classify each rather than delete in bulk. Obsolete third-party boilerplate is deleted; the author's own superseded work is moved to `archive/images/`, out of `public/` so it stops being published while staying in the repository; anything ambiguous is left alone.
+
+**Why not just delete.** Two of the "orphans" were not orphans. `CHAT/chatting-media-en.png` is the English counterpart of a published Korean asset whose English post does not exist yet — a pending translation, not dead weight. `nanawithme.jpeg` had been added hours earlier by in-flight work. A bulk delete justified by "nothing references it" would have destroyed both.
+
+**Result.** 132 KB deleted, 1.85 MB archived, 8 files left untouched. **1.98 MB removed from the published site**, reported separately from the 5.58 MB compression saving because archiving relocates bytes rather than reclaiming them.
+
+**Guard.** The 600 KB per-file cap stays enforced, verified by planting an oversized file and confirming it fires. Unresolved cases stay in a named `PENDING_REMOVAL` list with the rationale inline, so a pending decision produces a warning rather than a blocked build.
+
 ---
 
 ## Recurring principles

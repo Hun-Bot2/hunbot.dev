@@ -85,9 +85,12 @@ assert.ok(
 // candidates for deletion rather than conversion. Delete the file, then delete
 // its line here. Nothing may be added to this list without the same rationale.
 const PENDING_REMOVAL = new Set([
+	// Unreferenced, but classified UNCERTAIN rather than obsolete on 2026-09-10:
+	// the English counterpart of a published Korean asset (its post does not exist
+	// yet) and a tall product screenshot. Resolve by publishing, archiving under
+	// archive/images/, or deleting -- then remove the line here.
 	'public/images/CHAT/chatting-media-en.png',
 	'public/images/ZORO/local-desktop.png',
-	'public/images/ZORO/ver4.png',
 ]);
 
 const stillPresentExceptions = [...PENDING_REMOVAL].filter((path) => existsSync(join(root, path)));

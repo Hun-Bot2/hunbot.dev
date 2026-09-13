@@ -2,7 +2,9 @@
 
 Written: 2026-09-10. Companion to [`health-audit.md`](./health-audit.md) (findings H1–H3).
 
-Two proposals, neither implemented. Both hold the same constraint: **zero client-side JavaScript is architectural.** Neither proposal adds a byte of runtime JS, and any future exception needs an explicit written justification.
+Two proposals. Both hold the same constraint: **zero client-side JavaScript is architectural** — neither adds a byte of runtime JS, and any future exception needs an explicit written justification.
+
+**Status (2026-09-10):** token Stage 0 and Stage 1 are done, image Stage A and the unreferenced-asset triage are done. Measured outcomes are in [Results](#results-measured-2026-09-10) near the end. Later stages remain proposals.
 
 ---
 
@@ -186,6 +188,49 @@ The repo already has `src/utils/responsive-public-images.ts`, an existing partia
 None. `astro:assets` is entirely build-time; it emits plain `<img>`/`<picture>` markup. Format conversion, resizing and `srcset` are all compile-step operations. No exception to the constraint is needed anywhere in this plan.
 
 ---
+
+## Results (measured 2026-09-10)
+
+### Stage 0 and Stage 1 — done
+
+Stage 0 added the semantic tier to `global.css` as a purely additive block (**+197 / −0 lines**), so it could not disturb concurrent editing. Stage 1 migrated `FeedbackBox.astro`: **9 `body.light-theme` rules → 0**, 15 token references, one hardcoded hover colour left with a `TODO` for a state token that does not exist yet.
+
+Visual neutrality was verified, not asserted: 7 elements × 2 themes, **14/14 exact `rgb`/`rgba` matches** against a baseline captured before the change.
+
+**A note on method.** Toggling the theme class and reading `getComputedStyle` in the same task returns in-flight transition values, which produced an inconsistent result and a phantom contrast "bug" that did not exist. The reliable method is the one a visitor actually experiences: persist the theme to `localStorage`, reload, then measure. A verification method that yields inconsistent results is worse than none, because it manufactures false findings.
+
+**Known wart.** `--surface-panel` and `--surface-border` now have two `:root` definitions — the new ones and the pre-existing dead ones with different values. The later declaration wins and computed values confirm correctness, but this is shadowing rather than resolution. Removing the dead lines is Stage 5.
+
+### Image Stage A — done
+
+| | Before | After | Saved |
+|---|---:|---:|---:|
+| 7 converted files | 6,419,447 B | 579,370 B | **90.97%** |
+| `public/images` | 23,288,235 B | 17,435,862 B | **5.58 MB** |
+
+`src/utils/responsive-public-images.ts` also keyed one of these images, so the lookup needed updating or the hero would have silently stopped resolving. Worth remembering for the remaining 57.
+
+### Unreferenced-asset triage — done
+
+17 unreferenced images were classified rather than bulk-deleted.
+
+**DELETED (132 KB)** — `blog-placeholder-2..5.jpg`. Unused Astro starter template art with no historical value; `-1` and `-about` are still referenced.
+
+**ARCHIVED to `archive/images/` (1.85 MB)** — moved out of `public/`, so no longer published, but retained in the repository:
+
+| File | Superseded by |
+|---|---|
+| `local-llm-architecture-en(v1).png` | `LOCAL_LLM/…-en(v2).png` |
+| `blog-arch.png` | `BLOG/blog-arch-v2.png` |
+| `ZORO/ver2.png`, `ver3.png`, `ver4.png` | — (`ver1.png` is still referenced) |
+
+**UNCERTAIN, untouched (8 files)** — including `CHAT/chatting-media-en.png` (the English counterpart of a published Korean asset whose English post does not exist yet — possibly a pending translation, not an orphan) and `nanawithme.jpeg` (added by in-flight work in `55404b0`).
+
+**Production bytes removed: 2,074,022 B (1.98 MB).** This is separate from the 5.58 MB compression saving: archiving moves bytes out of the published site but keeps them in the repository, so repository size is unchanged by the 1.85 MB archive portion.
+
+Running total for `public/images`: **23,288,235 → 15,361,840 bytes (22.21 MB → 14.65 MB, −34.0%)**.
+
+The per-file 600 KB cap remains enforced — verified by planting an oversized file and confirming the guard fires. `PENDING_REMOVAL` is down from three entries to two, with the archived file resolved.
 
 ## Recommended order
 
