@@ -77,10 +77,10 @@ Also fixed: additive-by-default does **not** apply to this task. This is an inte
 ## Implementation Steps
 
 1. Read T01's field table in full before editing anything.
-2. Apply the schema changes in one pass — identity, external-ID map with DOI, provenance tier, honors, `same_work_as`, content hash.
+2. Apply the schema changes in one pass — identity, external-ID map with DOI, provenance tier, honors.
 3. Migrate `sample-paper-card.md` **in the same commit**. The build breaks otherwise.
 4. Extend `validate-library.mjs`: canonical ID format, DOI format when present, provenance tier valid, honors independent of tier, `same_work_as` carrying evidence and confidence, content hash present and well-formed.
-5. Add fixtures — minimum: conflated provenance and honors; missing canonical ID; malformed DOI; `same_work_as` without evidence; unknown venue ID (T05 interaction).
+5. Add fixtures — minimum: conflated provenance and honors; missing canonical ID; malformed DOI; an unevidenced `provenance: VERIFIED` claim; unknown venue ID (T05 interaction).
 6. Check every consumer: `grep -rn "papers" src/pages src/components src/utils`. `getPaperTldr`, `isApprovedPaper`, and the Library section route all read this collection.
 7. Rebuild and confirm the Library paper section renders in all three languages.
 8. Update `CLAUDE.md`'s content-collection description.
@@ -107,6 +107,7 @@ Run **all** of them. This task touches the collection that the Library routes re
 - **Splitting schema and content migration across commits.** Leaves a broken build in history.
 - **Breaking the Library paper section.** The most likely regression; `library-page:validate` is the detector.
 - **Leaving `totalScore` in place when C1 removed it**, or removing it when C1 kept it. Follow the resolution exactly.
+- **Adding `sameWorkAs` or `contentHash` to the public collection.** **Packet corrected 2026-09-14:** earlier revisions of this file listed both as deliverables. That was an error by the coordinator. `research-item-identity.md:465` puts both on the *"must never appear in the public projection"* list, and `:454`/`:457` mark them `corpus`. T09 caught the contradiction, followed Table A as designated, and reported instead of silently choosing — the correct behaviour. They belong to the private canonical item and to T10's enforcement list.
 - **A fixed-column external-ID map.** The point of the change is that a new source is data, not a schema edit.
 - **Forgetting DOI.** Its absence is the specific defect this task exists to fix.
 
@@ -124,8 +125,6 @@ Run **all** of them. This task touches the collection that the Library routes re
 - [ ] DOI present in an extensible external-ID map
 - [ ] Provenance tier expressible independently of honors; validator rejects the conflated form
 - [ ] C1's resolution applied exactly as decided
-- [ ] `same_work_as` carries evidence and confidence
-- [ ] Content hash per T02's definition
 - [ ] `sample-paper-card.md` migrated in the same commit
 - [ ] Five regression fixtures pass
 - [ ] Library paper section renders in ko, jp, and en

@@ -1,11 +1,10 @@
 ---
 {
   "id": "fixture-paper",
-  "itemId": "itm-1bpgqrr8zmfgvgrq01rexe23gy",
   "title": "Fixture Paper",
   "url": "https://example.com",
-  "venue": "not-a-real-venue",
-  "acceptanceStatus": "unknown",
+  "venue": "iclr",
+  "acceptanceStatus": "accepted",
   "honors": [],
   "presentationFormat": null,
   "provenance": "RADAR",
@@ -20,4 +19,7 @@
 }
 ---
 
-Fixture: `venue` does not match any registry id or alias in src/data/venues.ts.
+Fixture: `itemId` is missing entirely. The canonical work identity
+(docs/decisions/research-item-identity.md#Canonical-Item-Identity) is the
+only join key between this public projection, the private Research OS item,
+and every note anchored to it — it must never be silently absent.

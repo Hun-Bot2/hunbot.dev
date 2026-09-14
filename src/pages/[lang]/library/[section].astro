@@ -9,6 +9,7 @@ import { getCollection } from 'astro:content';
 import { useTranslations, type UILanguage } from '../../../i18n/ui';
 import { decks } from '../../../data/decks';
 import { getVenueDisplayName } from '../../../data/venues';
+import { getAcceptanceStatusDisplayName, getHonorDisplayName } from '../../../data/paperVocabularies';
 import { getAspectRatioValue } from '../../../lib/decks/validateDeckMeta';
 import {
 	getActiveTopics,
@@ -223,7 +224,12 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 										{paper.data.year && <span class={subtlePillClass}>{paper.data.year}</span>}
 										<span class={subtlePillClass}>{paper.data.priority}</span>
 										<span class={subtlePillClass}>{paper.data.difficulty}</span>
-										<span class={subtlePillClass}>{paper.data.decision}</span>
+										{getAcceptanceStatusDisplayName(paper.data.acceptanceStatus) && (
+											<span class={subtlePillClass}>{getAcceptanceStatusDisplayName(paper.data.acceptanceStatus)}</span>
+										)}
+										{paper.data.honors.map((honor) => (
+											<span class={subtlePillClass}>{getHonorDisplayName(honor)}</span>
+										))}
 									</div>
 									<h3 class="mb-3 text-lg font-semibold text-slate-100">{paper.data.title}</h3>
 									<p class="mb-5 text-sm leading-relaxed text-slate-400">{getPaperTldr(paper, lang)}</p>

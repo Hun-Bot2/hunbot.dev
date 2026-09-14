@@ -56,7 +56,7 @@ Author the four domain files and the starting topic set, and promote `ai-agents`
 | File | Change |
 |---|---|
 | `src/content/topics/*.md` | ~4 domain files + ~36 topic files |
-| `src/content/topics/ai-agents.md` | Add `parent: "agents"`, keep the ID, add the alias per T03's mechanism |
+| `src/content/topics/ai-agents.md` → `agents.md` | **Corrected 2026-09-14.** This row previously read *"add `parent: "agents"`, keep the ID"*, which contradicted the ADR's *"keeps `ai-agents` as an alias"* — a live topic with `id: "ai-agents"` plus an alias `"ai-agents"` is an id/alias collision that `validate-taxonomy.mjs` rejects. The correct reading: the file **becomes** the `agents` domain (`id: "agents"`, `parent: null`) and carries `aliases: ["ai-agents"]`. T04 caught this and built the consistent version |
 
 No code changes. No `src/content.config.ts`.
 

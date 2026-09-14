@@ -3,11 +3,21 @@ import { extname, join, relative } from 'node:path';
 
 import { contentTypeIds } from '../src/data/discoverFacets.ts';
 import { isValidVenueId, resolveVenueId } from '../src/data/venues.ts';
+import {
+	isValidAcceptanceStatus,
+	isValidHonor,
+	isValidPresentationFormat,
+} from '../src/data/paperVocabularies.ts';
+import { isValidIdentifierScheme, isWellFormedDoi } from '../src/data/identifierSchemes.ts';
+import { buildTopicIndex, isResolvableTopicReference } from './lib/topic-resolution.mjs';
 
 const root = process.cwd();
 const slugPattern = /^[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$/;
 const shortSlugPattern = /^[a-z0-9][a-z0-9-]{0,39}$/;
 const dateStringPattern = /^\d{4}-\d{2}-\d{2}$/;
+// Canonical research-item identity
+// (docs/decisions/research-item-identity.md#Canonical-Item-Identity).
+const itemIdPattern = /^itm-[0-9abcdefghjkmnpqrstvwxyz]{26}$/;
 // Discover Phase 2 facets (docs/decisions/discover-direction.md#Facets).
 // `depth` is the one deliberate closed enum (shared-context.md §4); it is
 // duplicated here (rather than imported) because it is Zod's fixed
@@ -39,21 +49,27 @@ const errors = [
 	...validateUniqueIds(resources, 'resources'),
 	...validateUniqueIds(papers, 'papers'),
 	...validateUniqueIds(topics, 'topics'),
+	...validateUniqueItemIds(papers),
 ];
 
 const resourceIds = new Set(resources.map((entry) => entry.data.id));
-const topicIds = new Set(topics.map((entry) => entry.data.id));
+// Alias-aware resolution (docs/decisions/discover-direction.md#Taxonomy):
+// a topic reference in content may name a current id OR a uniquely-owned
+// alias OR resolve through a bounded mergedInto chain to an active topic.
+// See scripts/lib/topic-resolution.mjs for why this must not be a plain
+// `Set` of current ids — that was the bug this fixes.
+const topicIndex = buildTopicIndex(topics);
 
 for (const entry of resources) {
 	errors.push(...validateNoForbiddenFields(entry.data, entry.label));
 	errors.push(...validateCommonId(entry));
-	errors.push(...validateResource(entry, topicIds));
+	errors.push(...validateResource(entry, topicIndex));
 }
 
 for (const entry of papers) {
 	errors.push(...validateNoForbiddenFields(entry.data, entry.label));
 	errors.push(...validateCommonId(entry));
-	errors.push(...validatePaper(entry, topicIds, resourceIds));
+	errors.push(...validatePaper(entry, topicIndex, resourceIds));
 }
 
 for (const entry of topics) {
@@ -135,7 +151,31 @@ function validateCommonId(entry) {
 	return [];
 }
 
-function validateResource(entry, topicIds) {
+// itemId is the canonical research-item identity
+// (docs/decisions/research-item-identity.md#Canonical-Item-Identity) — the
+// join key between this public projection and the private Research OS
+// canonical item and every note anchored to it. A duplicate itemId means two
+// public cards claim to be the same work: an editorial problem needing a
+// human, and a validator failure rather than a silent merge.
+function validateUniqueItemIds(papers) {
+	const errors = [];
+	const seen = new Map();
+
+	for (const entry of papers) {
+		const itemId = entry.data.itemId;
+		if (typeof itemId !== 'string') continue;
+
+		if (seen.has(itemId)) {
+			errors.push(`papers itemId "${itemId}" is duplicated in ${seen.get(itemId)} and ${entry.label}.`);
+		}
+
+		seen.set(itemId, entry.label);
+	}
+
+	return errors;
+}
+
+function validateResource(entry, topicIndex) {
 	const { data } = entry;
 	const errors = [];
 
@@ -179,7 +219,7 @@ function validateResource(entry, topicIds) {
 
 	if (Array.isArray(data.relatedTopics)) {
 		for (const topicId of data.relatedTopics) {
-			if (!topicIds.has(topicId)) {
+			if (!isResolvableTopicReference(topicId, topicIndex)) {
 				errors.push(`${entry.label}.relatedTopics references unknown topic "${topicId}".`);
 			}
 		}
@@ -248,9 +288,19 @@ function validateDiscoverFacets(entry, data, { includeContentType }) {
 	return errors;
 }
 
-function validatePaper(entry, topicIds, resourceIds) {
+function validatePaper(entry, topicIndex, resourceIds) {
 	const { data } = entry;
 	const errors = [];
+
+	// Canonical item identity
+	// (docs/decisions/research-item-identity.md#Canonical-Item-Identity).
+	// Required — a missing or malformed itemId leaves this card with no join
+	// key to the private Research OS item and no anchor for any note.
+	if (typeof data.itemId !== 'string' || !itemIdPattern.test(data.itemId)) {
+		errors.push(
+			`${entry.label}.itemId is required and must match "itm-" followed by 26 lowercase Crockford-base32 characters (got ${JSON.stringify(data.itemId)}).`,
+		);
+	}
 
 	for (const field of ['url', 'paperUrl', 'codeUrl', 'projectUrl']) {
 		const value = data[field];
@@ -267,11 +317,88 @@ function validatePaper(entry, topicIds, resourceIds) {
 		errors.push(...validateVenueReference(data.venue, `${entry.label}.venue`));
 	}
 
+	// C2 split (docs/decisions/research-item-identity.md#C2): acceptanceStatus,
+	// honors, and presentationFormat replace the conflated legacy `decision`
+	// enum and are each independently registry-backed
+	// (src/data/paperVocabularies.ts) — never a Zod enum.
+	if (typeof data.acceptanceStatus !== 'undefined' && !isValidAcceptanceStatus(data.acceptanceStatus)) {
+		errors.push(
+			`${entry.label}.acceptanceStatus "${data.acceptanceStatus}" is not a recognized acceptance status. Add it to src/data/paperVocabularies.ts.`,
+		);
+	}
+
+	if (typeof data.honors !== 'undefined') {
+		if (!Array.isArray(data.honors)) {
+			errors.push(`${entry.label}.honors must be an array.`);
+		} else {
+			for (const honor of data.honors) {
+				if (!isValidHonor(honor)) {
+					errors.push(
+						`${entry.label}.honors contains "${honor}", which is not a recognized honor. Add it to src/data/paperVocabularies.ts, or use acceptanceStatus if this is an acceptance fact rather than an honor.`,
+					);
+				}
+			}
+		}
+	}
+
+	if (
+		data.presentationFormat !== null &&
+		typeof data.presentationFormat !== 'undefined' &&
+		!isValidPresentationFormat(data.presentationFormat)
+	) {
+		errors.push(
+			`${entry.label}.presentationFormat "${data.presentationFormat}" is not a recognized presentation format. Add it to src/data/paperVocabularies.ts.`,
+		);
+	}
+
+	// Provenance tier (docs/decisions/research-item-identity.md
+	// #Status-History-And-Provenance-Tier): drives destructive TTL in the
+	// private Research OS, so it must never be assignable by assertion.
+	// "VERIFIED" requires both a human reviewer and an authoritative registry
+	// venue — the public-projection proxy for "a statusHistory entry from an
+	// authoritative source", since statusHistory itself is private-only.
+	if (data.provenance === 'VERIFIED') {
+		if (data.review?.humanReviewed !== true) {
+			errors.push(
+				`${entry.label} has provenance "VERIFIED" but review.humanReviewed is not true. VERIFIED is not assignable by assertion.`,
+			);
+		}
+
+		if (typeof data.venue === 'undefined' || !isValidVenueId(data.venue)) {
+			errors.push(
+				`${entry.label} has provenance "VERIFIED" but venue "${data.venue}" does not resolve to a venue registry id. VERIFIED requires an authoritative registry venue — see src/data/venues.ts.`,
+			);
+		}
+	}
+
+	if (Array.isArray(data.source?.externalIds)) {
+		const seenPairs = new Set();
+		for (const [index, entryId] of data.source.externalIds.entries()) {
+			const label = `${entry.label}.source.externalIds[${index}]`;
+			const scheme = entryId?.scheme;
+			const value = entryId?.value;
+
+			if (!isValidIdentifierScheme(scheme)) {
+				errors.push(`${label}.scheme "${scheme}" is not a recognized identifier scheme. Add it to src/data/identifierSchemes.ts.`);
+			}
+
+			if (scheme === 'doi' && !isWellFormedDoi(value)) {
+				errors.push(`${label}.value "${value}" is not a well-formed DOI (expected "10.<registrant>/<suffix>").`);
+			}
+
+			const pairKey = `${scheme}:${value}`;
+			if (seenPairs.has(pairKey)) {
+				errors.push(`${entry.label}.source.externalIds contains a duplicate (scheme, value) pair: ${pairKey}.`);
+			}
+			seenPairs.add(pairKey);
+		}
+	}
+
 	if (!Array.isArray(data.topics) || data.topics.length === 0) {
 		errors.push(`${entry.label}.topics must include at least one topic id when possible.`);
 	} else {
 		for (const topicId of data.topics) {
-			if (!topicIds.has(topicId)) {
+			if (!isResolvableTopicReference(topicId, topicIndex)) {
 				errors.push(`${entry.label}.topics references unknown topic "${topicId}".`);
 			}
 		}

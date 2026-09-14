@@ -1,17 +1,21 @@
 ---
 {
   "id": "fixture-paper",
+  "itemId": "itm-2fey2rn07bnrhfa39rk24hmfsk",
   "title": "Fixture Paper",
   "url": "https://example.com",
   "venue": "ICLR",
-  "decision": "unknown",
+  "acceptanceStatus": "unknown",
+  "honors": [],
+  "presentationFormat": null,
+  "provenance": "RADAR",
   "topics": ["fixture-topic"],
   "priority": "low",
   "difficulty": "unknown",
   "status": "draft",
   "summary": {},
   "signals": {},
-  "source": { "firstSeenAt": "2026-01-01", "lastCheckedAt": "2026-01-01" },
+  "source": { "kind": "manual", "externalIds": [], "firstSeenAt": "2026-01-01", "lastCheckedAt": "2026-01-01" },
   "review": { "status": "draft", "humanReviewed": false }
 }
 ---

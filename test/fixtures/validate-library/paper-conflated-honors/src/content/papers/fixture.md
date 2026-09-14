@@ -1,12 +1,12 @@
 ---
 {
   "id": "fixture-paper",
-  "itemId": "itm-1bpgqrr8zmfgvgrq01rexe23gy",
+  "itemId": "itm-z8jajy8b0wvwy25514xyhyp0yf",
   "title": "Fixture Paper",
   "url": "https://example.com",
-  "venue": "not-a-real-venue",
-  "acceptanceStatus": "unknown",
-  "honors": [],
+  "venue": "iclr",
+  "acceptanceStatus": "accepted",
+  "honors": ["accepted"],
   "presentationFormat": null,
   "provenance": "RADAR",
   "topics": ["fixture-topic"],
@@ -20,4 +20,8 @@
 }
 ---
 
-Fixture: `venue` does not match any registry id or alias in src/data/venues.ts.
+Fixture: `honors` conflates an acceptanceStatus value ("accepted") into the
+honors array. The legacy `decision` enum entangled acceptance, honor,
+presentation format, and provenance into one value; C2 splits them into
+independently validated fields, and this must be rejected to prove the split
+is enforced, not merely modeled.

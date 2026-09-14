@@ -1,6 +1,7 @@
 ---
 {
   "id": "sample-paper-card",
+  "itemId": "itm-7811ctspfjhjwgc0s299yf7dcd",
   "title": "Sample Paper Title",
   "url": "https://example.com/paper",
   "paperUrl": "https://example.com/paper.pdf",
@@ -8,7 +9,10 @@
   "projectUrl": null,
   "venue": "iclr",
   "year": 2026,
-  "decision": "accepted",
+  "acceptanceStatus": "accepted",
+  "honors": [],
+  "presentationFormat": null,
+  "provenance": "RADAR",
   "topics": ["ai-agents"],
   "priority": "medium",
   "difficulty": "intermediate",
@@ -33,18 +37,11 @@
     "citationCount": null,
     "influentialCitationCount": null,
     "hasCode": false,
-    "hasProjectPage": false,
-    "topicScore": null,
-    "sourceScore": null,
-    "usefulnessScore": null,
-    "freshnessScore": null,
-    "totalScore": null
+    "hasProjectPage": false
   },
   "source": {
     "kind": "manual",
-    "openReviewId": null,
-    "semanticScholarId": null,
-    "arxivId": null,
+    "externalIds": [],
     "firstSeenAt": "2026-05-22",
     "lastCheckedAt": "2026-05-22"
   },
@@ -61,3 +58,8 @@
 ---
 
 Sample paper card entry for Library schema validation.
+
+`provenance` is `RADAR`, not `VERIFIED`: this is fabricated sample data with
+no authoritative source establishing the acceptance claim, so it does not
+qualify even though `venue` happens to be a registry id and the record is
+human-reviewed. See docs/decisions/research-item-identity.md#Migration-Notes-For-T09.

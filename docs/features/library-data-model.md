@@ -74,19 +74,58 @@ Optional relationship fields:
 
 Papers represent concise AI paper cards, not copied paper text.
 
+**Superseded 2026-09-14** by
+[`docs/decisions/research-item-identity.md`](../decisions/research-item-identity.md)
+(T01), applied by
+[T09](../plans/research-os-pre-aws/tasks/T09-paper-schema-migration.md). The
+single legacy `decision` field (`accepted` / `oral` / `spotlight` / `poster` /
+`preprint` / `workshop` / `rejected` / `unknown`) conflated four independent
+facts — acceptance status, honor, presentation format, and provenance — and
+could not express "accepted **and** oral". It is replaced by the fields
+below. See that ADR's §C2 for the full reasoning and the derived value lists.
+
 Required core fields:
 
-- `id`: slug-safe identifier.
+- `id`: slug-safe identifier. The **projection** identity — URL-bearing,
+  human-chosen, never reused.
+- `itemId`: the canonical **work** identity — `itm-` plus a 26-character
+  lowercase Crockford-base32 ULID, opaque and minted once. The only join key
+  to the private Research OS canonical item and to every note anchored to it.
+  Never derived from title, URL, or any other mutable field. See
+  [`research-item-identity.md#Canonical-Item-Identity`](../decisions/research-item-identity.md#canonical-item-identity).
 - `title`: paper title.
 - `url`: canonical paper or landing URL.
-- `decision`: `accepted`, `oral`, `spotlight`, `poster`, `preprint`, `workshop`, `rejected`, or `unknown`.
+- `acceptanceStatus`: the work's status at the referenced venue —
+  `accepted`, `rejected`, `preprint`, or `unknown` (default). Registry-backed
+  (`src/data/paperVocabularies.ts`), cross-checked by
+  `scripts/validate-library.mjs`, never a Zod enum.
+- `honors`: array (max 4, default `[]`) of registry-backed honor ids, e.g.
+  `oral`, `spotlight` — independent of `acceptanceStatus`, because "accepted
+  and oral" was unrepresentable under the old single-enum `decision` field.
+- `presentationFormat`: nullable (default `null`) registry-backed
+  presentation-format id, e.g. `poster`.
+- `provenance`: `VERIFIED` or `RADAR` (default `RADAR`). The one other closed
+  Zod enum in this repository besides `depth` — it drives destructive TTL in
+  the private Research OS and is never assignable by assertion.
+  `scripts/validate-library.mjs` rejects `VERIFIED` unless the record is
+  human-reviewed **and** `venue` resolves to a registry id.
 - `topics`: topic IDs when applicable.
 - `priority`: `high`, `medium`, or `low`.
 - `difficulty`: `beginner`, `intermediate`, `advanced`, or `unknown`.
-- `status`: `draft`, `pending`, `approved`, or `rejected`.
+- `status`: `draft`, `pending`, `approved`, or `rejected`. **Publication
+  review status — unrelated to `acceptanceStatus`, the venue's decision.**
 - `summary`: concise original summary fields.
-- `signals`: optional numeric and availability signals.
-- `source`: manual/source identifiers and check dates.
+- `signals`: citation counts and code/project-page observations. `hasCode`
+  and `hasProjectPage` are nullable (default `null` — "not yet checked" is
+  never the same fact as "false"). The former `topicScore` / `sourceScore` /
+  `usefulnessScore` / `freshnessScore` / `totalScore` composite fields are
+  removed entirely: ranking inputs, not observations, and no single composite
+  quality score is a source-of-truth field anywhere in the system.
+- `source`: manual/source metadata and check dates. `source.externalIds` is a
+  bounded list (max 12) of `{ scheme, value }` entries — replacing the fixed
+  `openReviewId` / `semanticScholarId` / `arxivId` columns — with `scheme`
+  cross-checked against `src/data/identifierSchemes.ts`. A `doi` entry's
+  value must be a well-formed DOI.
 - `review`: publication review metadata.
 
 For approved papers, `summary.ko` must include:
