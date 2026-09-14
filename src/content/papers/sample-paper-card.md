@@ -6,7 +6,7 @@
   "paperUrl": "https://example.com/paper.pdf",
   "codeUrl": null,
   "projectUrl": null,
-  "venue": "ICLR",
+  "venue": "iclr",
   "year": 2026,
   "decision": "accepted",
   "topics": ["ai-agents"],

@@ -20,11 +20,11 @@
   ],
   "negativeKeywords": [],
   "venues": [
-    "ICLR",
-    "ICML",
-    "NeurIPS",
-    "ACL",
-    "EMNLP"
+    "iclr",
+    "icml",
+    "neurips",
+    "acl",
+    "emnlp"
   ],
   "arxivCategories": [
     "cs.AI",

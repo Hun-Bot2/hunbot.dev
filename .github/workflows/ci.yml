@@ -43,7 +43,7 @@ jobs:
         run: npm run views:validate
 
       - name: Unit tests
-        run: node --test test/
+        run: npm test
 
       # The build has no secrets: the only serverless route is prerender=false,
       # so Redis is never contacted here. It must succeed without credentials.

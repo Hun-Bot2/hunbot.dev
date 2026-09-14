@@ -1,9 +1,20 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { extname, join, relative } from 'node:path';
 
+import { contentTypeIds } from '../src/data/discoverFacets.ts';
+import { isValidVenueId, resolveVenueId } from '../src/data/venues.ts';
+
 const root = process.cwd();
 const slugPattern = /^[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$/;
 const shortSlugPattern = /^[a-z0-9][a-z0-9-]{0,39}$/;
+const dateStringPattern = /^\d{4}-\d{2}-\d{2}$/;
+// Discover Phase 2 facets (docs/decisions/discover-direction.md#Facets).
+// `depth` is the one deliberate closed enum (shared-context.md §4); it is
+// duplicated here (rather than imported) because it is Zod's fixed
+// four-value scale, not a cross-referenced registry like contentType.
+const depthValues = new Set(['beginner', 'practical', 'engineering', 'research']);
+const canonicalLanguages = new Set(['ko', 'en', 'jp']);
+const contentTypeRegistry = new Set(contentTypeIds);
 const forbiddenFieldNames = new Set([
 	'rawhtml',
 	'rawpdftext',
@@ -11,7 +22,7 @@ const forbiddenFieldNames = new Set([
 	'largecopiedtext',
 	'copiedabstract',
 ]);
-const requiredPaperKoSummaryFields = ['tldr', 'problem', 'keyIdea', 'whyItMatters', 'limitations', 'readThisIf'];
+const requiredPaperSummaryFields = ['tldr', 'problem', 'keyIdea', 'whyItMatters', 'limitations', 'readThisIf'];
 const resourcePublicPolicies = new Set([
 	'link-and-summary-only',
 	'open-source',
@@ -152,15 +163,19 @@ function validateResource(entry, topicIds) {
 		}
 	}
 
+	const canonicalLanguage = data.canonicalLanguage ?? 'ko';
+
 	if (data.status === 'approved') {
 		if (data.review?.humanReviewed !== true) {
 			errors.push(`${entry.label} is approved but review.humanReviewed is not true.`);
 		}
 
-		if (!data.summary?.ko?.trim()) {
-			errors.push(`${entry.label} is approved but summary.ko is missing.`);
+		if (!data.summary?.[canonicalLanguage]?.trim()) {
+			errors.push(`${entry.label} is approved but summary.${canonicalLanguage} (its canonical language) is missing.`);
 		}
 	}
+
+	errors.push(...validateDiscoverFacets(entry, data, { includeContentType: true }));
 
 	if (Array.isArray(data.relatedTopics)) {
 		for (const topicId of data.relatedTopics) {
@@ -181,6 +196,58 @@ function validateResource(entry, topicIds) {
 	return errors;
 }
 
+// Venue registry cross-reference (docs/decisions/research-discovery-system.md
+// #Venue-Registry), shared by papers.venue and topics.venues. Accepts only
+// the canonical registry id — a value that resolves solely via an alias
+// (e.g. legacy "ICLR") is rejected with a message naming the canonical id to
+// use instead, rather than silently accepted, because the point of this
+// migration is that content stores the canonical id, and aliases exist for
+// matching other systems' spellings during ingestion, not for permissive
+// content authoring.
+function validateVenueReference(value, label) {
+	if (isValidVenueId(value)) {
+		return [];
+	}
+
+	const canonical = resolveVenueId(value);
+	if (canonical) {
+		return [`${label} references venue "${value}", which is an alias, not a registry id. Use "${canonical}" instead — see src/data/venues.ts.`];
+	}
+
+	return [`${label} references unknown venue "${value}". Add it to src/data/venues.ts or fix the reference.`];
+}
+
+// Discover Phase 2 facet checks shared by resources and papers
+// (docs/decisions/discover-direction.md#Facets). Zod (src/content.config.ts)
+// enforces the same rules at build time; this script duplicates them because
+// it validates raw frontmatter directly, without going through Zod, so its
+// fixtures (test/fixtures/validate-library/) can exercise this script alone.
+function validateDiscoverFacets(entry, data, { includeContentType }) {
+	const errors = [];
+
+	if (includeContentType && typeof data.contentType !== 'undefined' && !contentTypeRegistry.has(data.contentType)) {
+		errors.push(
+			`${entry.label}.contentType "${data.contentType}" is not a recognized content type. Add it to src/data/discoverFacets.ts.`,
+		);
+	}
+
+	if (typeof data.depth !== 'undefined' && !depthValues.has(data.depth)) {
+		errors.push(`${entry.label}.depth "${data.depth}" must be one of: ${[...depthValues].join(', ')}.`);
+	}
+
+	if (typeof data.canonicalLanguage !== 'undefined' && !canonicalLanguages.has(data.canonicalLanguage)) {
+		errors.push(
+			`${entry.label}.canonicalLanguage "${data.canonicalLanguage}" must be one of: ${[...canonicalLanguages].join(', ')}.`,
+		);
+	}
+
+	if (typeof data.publishedAt !== 'undefined' && !dateStringPattern.test(data.publishedAt)) {
+		errors.push(`${entry.label}.publishedAt must be in YYYY-MM-DD format.`);
+	}
+
+	return errors;
+}
+
 function validatePaper(entry, topicIds, resourceIds) {
 	const { data } = entry;
 	const errors = [];
@@ -196,6 +263,10 @@ function validatePaper(entry, topicIds, resourceIds) {
 		errors.push(`${entry.label}.year must be a valid year when provided.`);
 	}
 
+	if (typeof data.venue !== 'undefined') {
+		errors.push(...validateVenueReference(data.venue, `${entry.label}.venue`));
+	}
+
 	if (!Array.isArray(data.topics) || data.topics.length === 0) {
 		errors.push(`${entry.label}.topics must include at least one topic id when possible.`);
 	} else {
@@ -206,14 +277,16 @@ function validatePaper(entry, topicIds, resourceIds) {
 		}
 	}
 
+	const canonicalLanguage = data.canonicalLanguage ?? 'ko';
+
 	if (data.status === 'approved') {
 		if (data.review?.humanReviewed !== true) {
 			errors.push(`${entry.label} is approved but review.humanReviewed is not true.`);
 		}
 
-		for (const field of requiredPaperKoSummaryFields) {
-			if (!data.summary?.ko?.[field]?.trim()) {
-				errors.push(`${entry.label} is approved but summary.ko.${field} is missing.`);
+		for (const field of requiredPaperSummaryFields) {
+			if (!data.summary?.[canonicalLanguage]?.[field]?.trim()) {
+				errors.push(`${entry.label} is approved but summary.${canonicalLanguage}.${field} is missing.`);
 			}
 		}
 	}
@@ -221,6 +294,8 @@ function validatePaper(entry, topicIds, resourceIds) {
 	if (data.review?.aiDraftUsed === true && data.review?.humanReviewed !== true) {
 		errors.push(`${entry.label} used an AI draft but is not human reviewed.`);
 	}
+
+	errors.push(...validateDiscoverFacets(entry, data, { includeContentType: false }));
 
 	if (Array.isArray(data.relatedResources)) {
 		for (const resourceId of data.relatedResources) {
@@ -256,6 +331,12 @@ function validateTopic(entry) {
 	for (const field of ['positiveKeywords', 'negativeKeywords', 'venues', 'arxivCategories', 'seedPapers']) {
 		if (!Array.isArray(data[field])) {
 			errors.push(`${entry.label}.${field} must be an array.`);
+		}
+	}
+
+	if (Array.isArray(data.venues)) {
+		for (const venueId of data.venues) {
+			errors.push(...validateVenueReference(venueId, `${entry.label}.venues`));
 		}
 	}
 

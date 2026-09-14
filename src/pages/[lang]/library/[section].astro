@@ -8,6 +8,7 @@ import LibraryPageStyles from '../../../components/library/LibraryPageStyles.ast
 import { getCollection } from 'astro:content';
 import { useTranslations, type UILanguage } from '../../../i18n/ui';
 import { decks } from '../../../data/decks';
+import { getVenueDisplayName } from '../../../data/venues';
 import { getAspectRatioValue } from '../../../lib/decks/validateDeckMeta';
 import {
 	getActiveTopics,
@@ -218,7 +219,7 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 							return (
 								<article class={panelClass}>
 									<div class="mb-3 flex flex-wrap gap-2">
-										{paper.data.venue && <span class={subtlePillClass}>{paper.data.venue}</span>}
+										{getVenueDisplayName(paper.data.venue) && <span class={subtlePillClass}>{getVenueDisplayName(paper.data.venue)}</span>}
 										{paper.data.year && <span class={subtlePillClass}>{paper.data.year}</span>}
 										<span class={subtlePillClass}>{paper.data.priority}</span>
 										<span class={subtlePillClass}>{paper.data.difficulty}</span>

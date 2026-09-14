@@ -17,6 +17,24 @@ const libraryStatus = z.enum(['draft', 'pending', 'approved', 'rejected']);
 const supportedLibraryLanguage = z.enum(['ko', 'en', 'jp', 'multi', 'unknown']);
 const relatedIds = z.array(slugSafeString).default([]);
 
+// Discover Phase 2 facets (docs/decisions/discover-direction.md#Facets and
+// #Language-Policy). `canonicalLanguage` is the key the shared
+// requested-language -> canonical-language -> any-available resolver in
+// src/utils/library.ts reads; it defaults to 'ko' so every existing resource
+// and paper keeps today's rendering exactly. `depth` is the one deliberate,
+// closed, ordered enum in this file — see shared-context.md §4 — because it
+// is a scale used for range filtering, not a taxonomy. `contentType` is
+// intentionally a plain string here, not an enum: it is validated against
+// the data-file registry in src/data/discoverFacets.ts by
+// scripts/validate-library.mjs, never by Zod.
+const canonicalLanguage = z.enum(['ko', 'en', 'jp']).default('ko');
+const depth = z.enum(['beginner', 'practical', 'engineering', 'research']).optional();
+const localizedOneLiner = z.object({
+	ko: z.string().min(1).optional(),
+	en: z.string().min(1).optional(),
+	jp: z.string().min(1).optional(),
+});
+
 const resourceSummary = z.object({
 	ko: z.string().min(1).optional(),
 	en: z.string().min(1).optional(),
@@ -103,6 +121,13 @@ const resources = defineCollection({
 			review: reviewMeta,
 			relatedTopics: relatedIds,
 			relatedDecks: relatedIds,
+			// Discover Phase 2 facets — all optional or defaulted, see the note
+			// above `canonicalLanguage`. Existing resources validate unchanged.
+			contentType: z.string().optional(),
+			depth,
+			publishedAt: dateString.optional(),
+			canonicalLanguage,
+			whyRelevant: localizedOneLiner.optional(),
 		})
 		.superRefine((resource, context) => {
 			if (resource.status === 'approved' && resource.review.humanReviewed !== true) {
@@ -113,11 +138,11 @@ const resources = defineCollection({
 				});
 			}
 
-			if (resource.status === 'approved' && !resource.summary.ko?.trim()) {
+			if (resource.status === 'approved' && !resource.summary[resource.canonicalLanguage]?.trim()) {
 				context.addIssue({
 					code: z.ZodIssueCode.custom,
-					path: ['summary', 'ko'],
-					message: 'Approved resources must include a human-reviewed Korean summary.',
+					path: ['summary', resource.canonicalLanguage],
+					message: `Approved resources must include a human-reviewed summary in their canonical language (${resource.canonicalLanguage}).`,
 				});
 			}
 		}),
@@ -142,6 +167,11 @@ const papers = defineCollection({
 			paperUrl: optionalHttpUrl,
 			codeUrl: optionalHttpUrl,
 			projectUrl: optionalHttpUrl,
+			// A venue registry ID (src/data/venues.ts), not a free string — see
+			// docs/decisions/research-discovery-system.md#Venue-Registry. Plain
+			// z.string() deliberately: cross-referenced against the registry by
+			// scripts/validate-library.mjs, never a Zod enum, matching the
+			// contentType pattern in src/data/discoverFacets.ts.
 			venue: z.string().min(1).optional(),
 			year: z.number().int().min(1900).max(2100).optional(),
 			decision: z.enum(['accepted', 'oral', 'spotlight', 'poster', 'preprint', 'workshop', 'rejected', 'unknown']),
@@ -178,6 +208,11 @@ const papers = defineCollection({
 			}),
 			relatedResources: relatedIds,
 			relatedDecks: relatedIds,
+			// Discover Phase 2 facets, the subset applicable to papers — see the
+			// note above `canonicalLanguage` on the resources collection.
+			depth,
+			publishedAt: dateString.optional(),
+			canonicalLanguage,
 		})
 		.superRefine((paper, context) => {
 			if (paper.status === 'approved' && paper.review.humanReviewed !== true) {
@@ -189,12 +224,13 @@ const papers = defineCollection({
 			}
 
 			if (paper.status === 'approved') {
+				const canonicalSummary = paper.summary[paper.canonicalLanguage];
 				for (const field of ['tldr', 'problem', 'keyIdea', 'whyItMatters', 'limitations', 'readThisIf'] as const) {
-					if (!paper.summary.ko?.[field]?.trim()) {
+					if (!canonicalSummary?.[field]?.trim()) {
 						context.addIssue({
 							code: z.ZodIssueCode.custom,
-							path: ['summary', 'ko', field],
-							message: `Approved papers must include summary.ko.${field}.`,
+							path: ['summary', paper.canonicalLanguage, field],
+							message: `Approved papers must include summary.${paper.canonicalLanguage}.${field}.`,
 						});
 					}
 				}
@@ -234,6 +270,12 @@ const topics = defineCollection({
 		}),
 		positiveKeywords: z.array(z.string().min(1)).default([]),
 		negativeKeywords: z.array(z.string().min(1)).default([]),
+		// Venue registry IDs (src/data/venues.ts), not free-form strings — see
+		// docs/decisions/research-discovery-system.md#Venue-Registry. Plain
+		// z.array(z.string()) deliberately: cross-referenced against the
+		// registry (with alias resolution) by scripts/validate-library.mjs,
+		// never a Zod enum, matching the contentType pattern in
+		// src/data/discoverFacets.ts.
 		venues: z.array(z.string().min(1)).default([]),
 		arxivCategories: z.array(z.string().min(1)).default([]),
 		seedPapers: z.array(slugSafeString).default([]),
@@ -242,6 +284,12 @@ const topics = defineCollection({
 			requireHumanReview: z.boolean().default(true),
 		}).default({}),
 		status: z.enum(['active', 'draft', 'archived']),
+		// Discover Phase 1 taxonomy lifecycle fields (docs/decisions/discover-direction.md#Taxonomy).
+		// All additive: existing topic files (e.g. ai-agents.md) validate unchanged.
+		parent: slugSafeString.nullable().default(null),
+		order: z.number().default(0),
+		aliases: z.array(slugSafeString).default([]),
+		mergedInto: slugSafeString.nullable().default(null),
 	}),
 });
 
