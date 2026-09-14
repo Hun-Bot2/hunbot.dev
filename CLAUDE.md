@@ -40,6 +40,7 @@ hun-bot-blog/
 │   ├── styles/             # Global CSS
 │   └── utils/              # Pure helper functions
 ├── public/                 # Static assets (images, scripts, fonts)
+├── contracts/              # Wire + storage contracts for the private Research OS (inert to the build)
 ├── docs/                   # Project documentation
 │   ├── architecture/       # System architecture and deps
 │   ├── content/            # Content ops workflows
@@ -64,8 +65,10 @@ Defined in `src/content.config.ts`. Each collection has a Zod schema — check i
 | `blog` | `src/content/blog/**/*.{md,mdx}` | Blog posts in ko/jp/en |
 | `resources` | `src/content/resources/**` | Curated external links (Library) |
 | `papers` | `src/content/papers/**` | AI paper cards (Library) |
-| `topics` | `src/content/topics/**` | Library topic definitions |
+| `topics` | `src/content/topics/**` | Library topic definitions + Discover taxonomy nodes |
 | `academicReviews` | `src/content/academic-reviews/**` | Structured paper review posts |
+
+> **Topic taxonomy lifecycle:** beyond the original Library fields, each topic carries `parent` (a topic id, or `null` — `null` is what makes a node a domain; nesting is not limited to two levels), `order` (display weight within its parent, default `0`), `aliases` (previous ids that must keep resolving after a rename), and `mergedInto` (set alongside `status: "archived"` when a topic is merged into another). Nothing is ever deleted — rename adds an alias, merge sets `mergedInto`, retire sets `status: "archived"`; routes and item references keep resolving. All four fields are optional/defaulted, so existing topic files validate unchanged. Full lifecycle spec: `docs/decisions/discover-direction.md` §Taxonomy. Enforced by `scripts/validate-taxonomy.mjs` (`npm run taxonomy:validate`, part of `content:validate`), which rejects an unresolved `parent`, a `parent`/`mergedInto` cycle, duplicate topic ids, a duplicate or id-colliding alias, an archived topic with an active child, and a paper/resource whose topic reference isn't active or merged into an active topic.
 
 ### Blog Content Layout
 
@@ -158,6 +161,7 @@ src/pages/
 | `view-counter.ts` | `getViewCount()`, `incrementViewCount()` | Redis-backed view count read/write. |
 | `responsive-public-images.ts` | `getResponsiveImageSet()` | Public image srcset helpers. |
 | `remark-localized-blog-links.mjs` | Remark plugin | Rewrites relative MDX links to localized blog URLs at build time. |
+| `canonicalization.ts` | `canonicalizeUrl()`, `normalizeTitle()`, `computeContentHash()`, `normalizeExternalIdentifier()`, `deriveDedupKey()` | URL canonicalization, CJK-safe title normalization, versioned content hashing, and identifier-index dedup-key derivation for the private Research OS pipeline. Not imported anywhere in the public site. |
 
 ---
 
@@ -238,6 +242,8 @@ src/pages/
 | `learningPaths.ts` | `LearningPath[]` | `/[lang]/paths/` pages |
 | `mediaCompanions.ts` | `MediaCompanion[]` | Reserved for future YouTube companion feature |
 | `reviewTopics.ts` | Review topic list | Academic review index |
+| `discoverFacets.ts` | `contentTypes: ContentTypeDefinition[]`, `contentTypeIds`, `isValidContentType()` | The `contentType` facet registry for `resources` (docs/decisions/discover-direction.md#Facets). Data, not an enum — cross-referenced by `scripts/validate-library.mjs`. |
+| `venues.ts` | `venues: VenueDefinition[]`, `venueIds`, `isValidVenueId()`, `resolveVenueId()`, `getVenueRegistryErrors()` | The venue registry for `papers.venue` and `topics.venues` (docs/decisions/research-discovery-system.md#Venue-Registry). Data, not an enum — cross-referenced (with alias resolution) by `scripts/validate-library.mjs`. Coverage is deliberately partial: only venues actually referenced by content, plus IEEE VIS. Every entry's `access` is `unverified` until a real licensing check is done. |
 
 ---
 
@@ -377,7 +383,13 @@ docs/
 │   ├── discover-direction.md  Discover product direction, dynamic taxonomy, phased build order
 │   ├── monetization.md      No monetization — current decision boundary
 │   ├── product-boundaries.md  What stays public vs private (+ local preferences carve-out)
+│   ├── research-item-identity.md  Canonical research item ID, external-ID map, provenance tier, status history; supersedes papers.decision / signals.totalScore
+│   ├── research-os-data-contract.md  Corpus/personal-state/operational/projection boundary, versioned queue+API envelope, content hash, 1 KB record budget
+│   ├── research-os-cloud-architecture.md  Private Research OS on AWS: $0/month invariant, serverless architecture, cost guardrails, free-tier model
+│   ├── research-discovery-system.md  Research discovery → understanding → hypothesis → experiment loop: registry, provenance, graphs, reading paths, AI reader, notebook, gold sets
 │   └── security.md          Security risk register (SEC-001..SEC-012)
+├── plans/
+│   └── research-os-pre-aws/  Pre-AWS readiness audit, task DAG, and per-task packets (AWS_READY gate)
 ├── features/
 │   ├── library-data-model.md  Content Collections for Library (resources/papers/topics)
 │   ├── library-page.md      Library hub and section pages
