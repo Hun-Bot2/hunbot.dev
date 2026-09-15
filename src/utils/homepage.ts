@@ -10,6 +10,7 @@ import {
 	type PaperEntry,
 	type ResourceEntry,
 } from './library.ts';
+import { sortStable } from './ordering.ts';
 
 export type BlogEntry = CollectionEntry<'blog'>;
 
@@ -34,11 +35,13 @@ function normalizeMarker(value: string | undefined): string {
 }
 
 function sortBlogPostsByDate(posts: BlogEntry[]): BlogEntry[] {
-	return [...posts].sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+	// Date alone is not a total order — several posts share a pubDate, and their
+	// relative order then depends on input order. sortStable appends an id tiebreak.
+	return sortStable(posts, (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
 }
 
 function sortPapersByFreshness(papers: PaperEntry[]): PaperEntry[] {
-	return [...papers].sort((a, b) => {
+	return sortStable(papers, (a, b) => {
 		const yearComparison = (b.data.year ?? 0) - (a.data.year ?? 0);
 		if (yearComparison !== 0) return yearComparison;
 
