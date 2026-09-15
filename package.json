@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "test": "node --test test/",
+    "test": "node --test test/*.test.mjs",
     "build": "npm run build:astro && npm run search:index",
     "build:astro": "astro build",
     "search:index": "pagefind --site dist/client && pagefind --site .vercel/output/static",
