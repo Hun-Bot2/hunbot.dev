@@ -342,8 +342,65 @@ Do not store these in public content:
 - Unreviewed AI summaries.
 - Mirrored images, fonts, datasets, or other assets without clear permission.
 - Secrets, tokens, private URLs, or credentials.
+- Anything shaped like the private Research OS's corpus record, personal
+  state, or removed ranking inputs — see the next section.
 
-The validator rejects fields named `rawHtml`, `rawPdfText`, `fullPdfText`, `largeCopiedText`, and `copiedAbstract`.
+**2026-09-15 (T10 — boundary validator hardening):**
+[`docs/decisions/research-os-data-contract.md`](../decisions/research-os-data-contract.md)
+defines a public/corpus/personal-state/operational boundary for the
+(not-yet-built) private Research OS, machine-checkable against
+[`contracts/research-os/research-item.schema.json`](../../contracts/research-os/research-item.schema.json)'s
+`x-contract` block. `scripts/validate-library.mjs` now reads that block
+rather than a hand-typed list, and rejects three additional shapes at any
+nesting depth. INV-01/INV-02 are written against `resources` and `papers`;
+the validator applies every name below to `topics` as well, deliberately —
+a topic carrying `readingState` or `jobState` is the same mistake, and no
+topic field collides with any of these names. `mergedInto` is the one name
+that genuinely needs per-collection scoping, and it has it:
+
+- **Corpus-only fields** (T01 + T02 — `x-contract.forbiddenInPublicProjection`):
+  `fieldSources`, `conflicts`, `statusHistory`, `sameWorkAs`, `dedupKey`,
+  `contentHash`, `ttlExempt`, `lifecycle`, `mintedAt`, anything in the `ai`
+  or `derived` namespaces, `bibliographic`, `enrichment`, `operational`,
+  `signalSheet`, `canonicalUrl`, `projectionId`, `identifierIndex`,
+  `embedding`, `abstract`, `fullText` — plus `mergedInto`, but **only** on
+  `papers`/`resources`. The `topics` collection carries its own, unrelated
+  `mergedInto` (T03's taxonomy lifecycle,
+  [`discover-direction.md`](../decisions/discover-direction.md#Taxonomy)) and
+  must keep validating.
+- **Personal-state / operational fields** (`x-contract.personalStateFieldNames`):
+  `readingState`, `readingPriority`, `savedAt`, `unsavedAt`,
+  `queuePosition`, `noteCount`, `lastNoteAt`, `lastOpenedAt`, `noteIds`,
+  `reviewCandidate`, `ttl`, `expiresAt`, `deviceId`, `jobId`, `jobState`,
+  `cursor`, `retryCount`, `idempotencyKey`, `dlqReason`. These belong only in
+  the private Research OS's DynamoDB record, never in a public collection —
+  the error message says so, distinctly from a corpus-shaped violation,
+  because the remedy differs. `readingPriority` is deliberately not named
+  `priority`: `papers.priority` is a legitimate, unrelated editorial field.
+- **Removed ranking-input fields** (`x-contract.removedScoreFields`):
+  `topicScore`, `sourceScore`, `usefulnessScore`, `freshnessScore`,
+  `totalScore`. Also checked against `src/content.config.ts` directly — a
+  reappearance in the schema is a regression even before any content uses it.
+
+A public-collection record over 8192 bytes (measured against the current
+largest real record, 2154 bytes) also fails validation — usually a sign that
+corpus data has leaked into a summary field rather than a human having
+written one.
+
+The validator rejects fields named `rawHtml`, `rawPdfText`, `fullPdfText`,
+`largeCopiedText`, and `copiedAbstract` (unchanged from the original five),
+plus the extended lists above.
+
+Nine of T02's fifteen invariants (INV-05 through INV-13, and INV-15) are
+contract-file-shaped rather than content-shaped — checked by
+`scripts/validate-research-contract.mjs`
+(`npm run research-contract:validate`, part of `content:validate`) against
+`contracts/research-os/research-item.schema.json` and
+`src/utils/canonicalization.ts`, not against `src/content/`. INV-14 (no
+public route or component may import `contracts/` or
+`src/utils/canonicalization.ts`) lives in
+`scripts/validate-product-boundaries.mjs` alongside this repository's other
+boundary-shaped checks.
 
 ## Validation
 
@@ -359,7 +416,13 @@ For focused Library-only checks, run:
 npm run library:validate
 ```
 
-The Library validation script checks duplicate IDs, slug-safe IDs, approved review rules, required Korean summaries, forbidden raw fields, resource license metadata, resource public policies, topic references, resource references, and safe optional deck IDs.
+The Library validation script checks duplicate IDs, slug-safe IDs, approved review rules, required Korean summaries, forbidden raw/corpus/personal-state/removed-score fields (see "What Not To Store" above), a public-collection record size guard, resource license metadata, resource public policies, topic references, resource references, and safe optional deck IDs.
+
+For the private Research OS contract file's own internal-coherence checks (independent of any content), run:
+
+```bash
+npm run research-contract:validate
+```
 
 `content:validate` also runs the blog frontmatter checker and deck metadata validator so public content issues can be caught before a full Astro build.
 

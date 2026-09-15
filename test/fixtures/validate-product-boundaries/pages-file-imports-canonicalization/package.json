@@ -1,0 +1,8 @@
+{
+  "name": "fixture",
+  "scripts": {
+    "product:validate": "node scripts/validate-product-boundaries.mjs"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

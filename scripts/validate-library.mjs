@@ -25,13 +25,95 @@ const itemIdPattern = /^itm-[0-9abcdefghjkmnpqrstvwxyz]{26}$/;
 const depthValues = new Set(['beginner', 'practical', 'engineering', 'research']);
 const canonicalLanguages = new Set(['ko', 'en', 'jp']);
 const contentTypeRegistry = new Set(contentTypeIds);
-const forbiddenFieldNames = new Set([
+
+// Original five — pre-T02, "raw or copied source material" shaped.
+const legacyForbiddenFieldNames = new Set([
 	'rawhtml',
 	'rawpdftext',
 	'fullpdftext',
 	'largecopiedtext',
 	'copiedabstract',
 ]);
+
+// T02 boundary extension (docs/decisions/research-os-data-contract.md,
+// "Validator Invariants, Checkable Today" — this is T10's specification).
+// Name lists are read FROM the schema file's `x-contract` block rather than
+// retyped here, so they cannot drift from the machine contract the way a
+// hand-copied list would (that drift risk is exactly what INV-09, in
+// scripts/validate-research-contract.mjs, exists to catch on the contract
+// file's own copy of the fromT01 list).
+//
+// Resolved relative to THIS file's own location (import.meta.url), not
+// process.cwd(): the contract file is a fixed repo asset that defines what
+// "forbidden" means, not fixture-controlled content — a content fixture
+// (test/fixtures/validate-library/*) must not need its own copy of it, the
+// same way existing fixtures need no copy of src/data/discoverFacets.ts.
+const researchContract = JSON.parse(
+	readFileSync(new URL('../contracts/research-os/research-item.schema.json', import.meta.url), 'utf8'),
+)['x-contract'];
+
+// `mergedInto` is deliberately EXCLUDED from the corpus-only set and
+// enforced separately, papers/resources-only (see validateNoForbiddenFields
+// below): the topics collection legitimately carries its own `mergedInto`
+// (T03, docs/decisions/discover-direction.md#Taxonomy) and must keep
+// validating. Touching this exclusion breaks topic validation.
+const MERGED_INTO = 'mergedinto';
+
+// Corpus-only field names (T01 + T02) — INV-01. Forbidden at any nesting
+// depth in a papers/resources document.
+const corpusOnlyFieldNames = new Set(
+	[
+		...researchContract.forbiddenInPublicProjection.fromT01,
+		...researchContract.forbiddenInPublicProjection.addedByT02,
+	]
+		.map((name) => name.toLowerCase())
+		.filter((name) => name !== MERGED_INTO),
+);
+
+// Personal-state / operational field names — INV-02. Never valid in a
+// public collection. Kept as its own set (rather than folded into
+// corpusOnlyFieldNames) so the failure message can name the correct remedy —
+// the private DynamoDB record, not the private corpus repository.
+const personalStateOnlyFieldNames = new Set(
+	researchContract.personalStateFieldNames.names.map((name) => name.toLowerCase()),
+);
+// namingHazard guard (research-os-data-contract.md): `readingPriority` is
+// deliberately NOT named `priority` because `papers.priority` is a
+// legitimate, unrelated editorial field. If that ever collided, every
+// approved paper card would start failing this validator — assert it can't.
+if (personalStateOnlyFieldNames.has('priority')) {
+	throw new Error(
+		'personalStateFieldNames must never include "priority" — papers.priority is a legitimate public field. See research-os-data-contract.md\'s namingHazard note.',
+	);
+}
+
+// Ranking-input fields removed from the schema outright — INV-03. Never a
+// source-of-truth field anywhere in public content.
+const removedScoreFieldNames = new Set(
+	researchContract.removedScoreFields.names.map((name) => name.toLowerCase()),
+);
+
+// The full membership check used by validateNoForbiddenFields. `mergedInto`
+// stays out of this set (see MERGED_INTO above) and is checked separately,
+// only for papers/resources.
+const forbiddenFieldNames = new Set([
+	...legacyForbiddenFieldNames,
+	...corpusOnlyFieldNames,
+	...personalStateOnlyFieldNames,
+	...removedScoreFieldNames,
+]);
+
+// A public collection record is not a private candidate store
+// (library-data-model.md). A record that grows past a few KB is the
+// empirical signature of corpus data (a raw abstract, pasted source text)
+// leaking into public content rather than a human-authored summary, and
+// aligns with the cloud ADR's small-record posture (shared-context.md §8).
+// Measured against the current largest real record — 2154 bytes total file
+// size, src/content/papers/sample-paper-card.md — this threshold gives it
+// roughly 4x headroom for legitimate growth (more languages, more topics,
+// more external ids) before tripping.
+const MAX_RECORD_BYTES = 8192;
+
 const requiredPaperSummaryFields = ['tldr', 'problem', 'keyIdea', 'whyItMatters', 'limitations', 'readThisIf'];
 const resourcePublicPolicies = new Set([
 	'link-and-summary-only',
@@ -60,23 +142,36 @@ const resourceIds = new Set(resources.map((entry) => entry.data.id));
 // `Set` of current ids — that was the bug this fixes.
 const topicIndex = buildTopicIndex(topics);
 
+// Papers/resources get the full forbidden-field check, including
+// mergedInto (INV-01's scope — see MERGED_INTO above). Topics get the
+// default (mergedInto allowed) so T03's legitimate lifecycle field keeps
+// validating.
 for (const entry of resources) {
-	errors.push(...validateNoForbiddenFields(entry.data, entry.label));
+	errors.push(...validateNoForbiddenFields(entry.data, entry.label, { allowMergedInto: false }));
 	errors.push(...validateCommonId(entry));
 	errors.push(...validateResource(entry, topicIndex));
+	errors.push(...validateRecordSize(entry));
 }
 
 for (const entry of papers) {
-	errors.push(...validateNoForbiddenFields(entry.data, entry.label));
+	errors.push(...validateNoForbiddenFields(entry.data, entry.label, { allowMergedInto: false }));
 	errors.push(...validateCommonId(entry));
 	errors.push(...validatePaper(entry, topicIndex, resourceIds));
+	errors.push(...validateRecordSize(entry));
 }
 
 for (const entry of topics) {
 	errors.push(...validateNoForbiddenFields(entry.data, entry.label));
 	errors.push(...validateCommonId(entry));
 	errors.push(...validateTopic(entry));
+	errors.push(...validateRecordSize(entry));
 }
+
+// INV-03: removed ranking-input fields must never reappear in the Zod
+// schema either — a symptom invisible to a check that only reads content
+// files (nothing uses them yet, but a schema-level reappearance would be a
+// silent regression no content fixture could catch).
+errors.push(...validateRemovedScoreFieldsAbsentFromSchema());
 
 if (errors.length > 0) {
 	throw new Error(`Invalid Library content:\n- ${errors.join('\n- ')}`);
@@ -101,6 +196,7 @@ function readCollection(name, directory) {
 				filePath,
 				label: relative(root, filePath),
 				data: parseJsonFrontmatter(source, filePath),
+				byteLength: Buffer.byteLength(source, 'utf8'),
 			};
 		});
 }
@@ -478,7 +574,16 @@ function validateTopic(entry) {
 	return errors;
 }
 
-function validateNoForbiddenFields(value, path) {
+// Recursive walker — unchanged in structure from the original five-name
+// version. Extended in what it will report, not how it recurses:
+//   - `options.allowMergedInto` (default true) gates the papers/resources-
+//     only `mergedInto` check (INV-01's scope note); topics callers omit
+//     `options` and keep today's behavior.
+//   - messages now distinguish corpus-shaped from personal-state-shaped
+//     names, because the remedies differ (move to the private corpus repo
+//     vs. move to DynamoDB) — see fieldForbiddenReason.
+function validateNoForbiddenFields(value, path, options = {}) {
+	const { allowMergedInto = true } = options;
 	const errors = [];
 
 	if (!value || typeof value !== 'object') {
@@ -487,17 +592,90 @@ function validateNoForbiddenFields(value, path) {
 
 	if (Array.isArray(value)) {
 		value.forEach((item, index) => {
-			errors.push(...validateNoForbiddenFields(item, `${path}[${index}]`));
+			errors.push(...validateNoForbiddenFields(item, `${path}[${index}]`, options));
 		});
 		return errors;
 	}
 
 	for (const [key, child] of Object.entries(value)) {
-		if (forbiddenFieldNames.has(key.toLowerCase())) {
-			errors.push(`${path}.${key} is forbidden in public Library content.`);
+		const lower = key.toLowerCase();
+
+		if (forbiddenFieldNames.has(lower)) {
+			errors.push(`${path}.${key} is forbidden in public Library content${fieldForbiddenReason(lower)}`);
+		} else if (!allowMergedInto && lower === MERGED_INTO) {
+			errors.push(
+				`${path}.${key} is forbidden in public Library content — it is corpus-only data (docs/decisions/research-os-data-contract.md, INV-01): mergedInto belongs only to the private Research OS canonical item on papers/resources. (The topics collection carries its own, unrelated mergedInto — see docs/decisions/discover-direction.md#Taxonomy.)`,
+			);
 		}
 
-		errors.push(...validateNoForbiddenFields(child, `${path}.${key}`));
+		errors.push(...validateNoForbiddenFields(child, `${path}.${key}`, options));
+	}
+
+	return errors;
+}
+
+// Distinct wording per category — the remedy differs (delete vs. move to the
+// private corpus repo vs. move to DynamoDB), so the message must say which.
+// Returns a string starting with a space so it appends cleanly onto the
+// "is forbidden in public Library content" prefix above (empty suffix for
+// the original five, which keep their original, unqualified message).
+function fieldForbiddenReason(lowerKey) {
+	if (legacyForbiddenFieldNames.has(lowerKey)) {
+		return '.';
+	}
+
+	if (removedScoreFieldNames.has(lowerKey)) {
+		return ' — it is a removed ranking-input field (docs/decisions/research-os-data-contract.md, INV-03) and must never reappear as a source-of-truth field.';
+	}
+
+	if (personalStateOnlyFieldNames.has(lowerKey)) {
+		return ' — it is personal-state data (docs/decisions/research-os-data-contract.md, INV-02) and belongs only in the private Research OS DynamoDB record, never in a public collection.';
+	}
+
+	// corpusOnlyFieldNames — the remaining, and largest, category.
+	return ' — it is corpus-only data (docs/decisions/research-os-data-contract.md, INV-01) and belongs only in the private Research OS canonical item, never in the public projection.';
+}
+
+// Record-size guard. Not part of T02's invariant list — a T10-local addition
+// (see this task's packet, "Decisions You May Make") aligned with the cloud
+// ADR's small-record posture. Applies to all three Library collections: none
+// of them is a candidate store.
+function validateRecordSize(entry) {
+	if (entry.byteLength <= MAX_RECORD_BYTES) {
+		return [];
+	}
+
+	return [
+		`${entry.label} is ${entry.byteLength} bytes, over the ${MAX_RECORD_BYTES}-byte public-collection record guard. A record this large is usually a sign that corpus data (raw text, a full abstract, copied source material) has leaked into public content — see docs/decisions/research-os-data-contract.md and docs/features/library-data-model.md#what-not-to-store.`,
+	];
+}
+
+// INV-03's schema-file half: `x-contract.removedScoreFields` (topicScore,
+// sourceScore, usefulnessScore, freshnessScore, totalScore) must never
+// reappear as an actual declared field in src/content.config.ts, not just
+// absent from content. Matches the name only when followed by `:` (a real
+// object-shape key), so it does not fire on the removal comment that already
+// names all five in prose.
+function validateRemovedScoreFieldsAbsentFromSchema() {
+	const schemaConfigPath = join(root, 'src/content.config.ts');
+	// Tolerate a fixture directory that doesn't include this file — fixtures
+	// deliberately mirror only the minimal repo-root-relative slice the case
+	// under test needs (test/fixtures/README.md). In the real repo root this
+	// file always exists, so the check still runs there.
+	if (!existsSync(schemaConfigPath)) {
+		return [];
+	}
+
+	const schemaSource = readFileSync(schemaConfigPath, 'utf8');
+	const errors = [];
+
+	for (const rawName of researchContract.removedScoreFields.names) {
+		const keyPattern = new RegExp(`(^|[^A-Za-z0-9_$])${rawName}\\s*:`, 'm');
+		if (keyPattern.test(schemaSource)) {
+			errors.push(
+				`src/content.config.ts declares a field named "${rawName}", which is a removed ranking-input field (docs/decisions/research-os-data-contract.md, INV-03) and must never reappear in the schema.`,
+			);
+		}
 	}
 
 	return errors;

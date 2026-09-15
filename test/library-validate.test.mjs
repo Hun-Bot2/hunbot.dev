@@ -112,3 +112,75 @@ test('validate-library rejects provenance "VERIFIED" asserted without a resolvab
 		/has provenance "VERIFIED" but venue "not-a-real-venue-xyz" does not resolve to a venue registry id/,
 	);
 });
+
+// T10 — boundary validator hardening
+// (docs/decisions/research-os-data-contract.md, "Validator Invariants,
+// Checkable Today": INV-01, INV-02, INV-03). Field-name lists are read from
+// contracts/research-os/research-item.schema.json's x-contract block, not
+// retyped here.
+
+test('validate-library still rejects the original five forbidden names (regression)', () => {
+	// A silent regression here — the extended forbiddenFieldNames set
+	// dropping a legacy name while gaining new ones — would be the worst
+	// outcome this task could produce.
+	assertValidatorRejects(
+		'scripts/validate-library.mjs',
+		join(fixturesRoot, 'legacy-name-still-forbidden'),
+		/rawHtml is forbidden in public Library content\./,
+	);
+});
+
+test('validate-library rejects a T01/T02 corpus-only field name, even nested', () => {
+	assertValidatorRejects(
+		'scripts/validate-library.mjs',
+		join(fixturesRoot, 'forbidden-corpus-field-in-paper'),
+		/source\.fieldSources is forbidden in public Library content — it is corpus-only data \(docs\/decisions\/research-os-data-contract\.md, INV-01\)/,
+	);
+});
+
+test('validate-library rejects a personal-state field name with a message distinct from a corpus-shaped one', () => {
+	assertValidatorRejects(
+		'scripts/validate-library.mjs',
+		join(fixturesRoot, 'forbidden-personal-state-field-in-resource'),
+		/readingState is forbidden in public Library content — it is personal-state data \(docs\/decisions\/research-os-data-contract\.md, INV-02\) and belongs only in the private Research OS DynamoDB record/,
+	);
+});
+
+test('validate-library rejects a removed ranking-score field (INV-03)', () => {
+	assertValidatorRejects(
+		'scripts/validate-library.mjs',
+		join(fixturesRoot, 'forbidden-removed-score-field-in-paper'),
+		/signals\.totalScore is forbidden in public Library content — it is a removed ranking-input field \(docs\/decisions\/research-os-data-contract\.md, INV-03\)/,
+	);
+});
+
+test('validate-library rejects mergedInto on a paper', () => {
+	assertValidatorRejects(
+		'scripts/validate-library.mjs',
+		join(fixturesRoot, 'forbidden-merged-into-on-paper'),
+		/mergedInto is forbidden in public Library content — it is corpus-only data \(docs\/decisions\/research-os-data-contract\.md, INV-01\): mergedInto belongs only to the private Research OS canonical item on papers\/resources/,
+	);
+});
+
+test('validate-library still accepts mergedInto on a topic (scope note: T03 owns its own mergedInto)', () => {
+	// The one place the T02 boundary extension could have broken the build:
+	// mergedInto must stay legal on topics even though it is now forbidden
+	// on papers/resources.
+	assertValidatorAccepts('scripts/validate-library.mjs', join(fixturesRoot, 'topic-merged-into-still-allowed'));
+});
+
+test('validate-library rejects a public-collection record over the size guard', () => {
+	assertValidatorRejects(
+		'scripts/validate-library.mjs',
+		join(fixturesRoot, 'oversized-resource-record'),
+		/over the 8192-byte public-collection record guard/,
+	);
+});
+
+test('validate-library rejects a removed ranking-score field reappearing in the schema file itself (INV-03)', () => {
+	assertValidatorRejects(
+		'scripts/validate-library.mjs',
+		join(fixturesRoot, 'removed-score-field-in-schema'),
+		/src\/content\.config\.ts declares a field named "totalScore", which is a removed ranking-input field \(docs\/decisions\/research-os-data-contract\.md, INV-03\)/,
+	);
+});

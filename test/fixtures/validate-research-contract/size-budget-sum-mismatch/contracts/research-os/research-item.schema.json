@@ -1,0 +1,1008 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hun-bot.dev/contracts/research-os/research-item.schema.json",
+  "title": "Research OS Data Contract",
+  "description": "Machine-checkable companion to docs/decisions/research-os-data-contract.md. Defines (1) the corpus / personal-state / public-projection boundary as data, (2) the versioned queue-and-API envelope, (3) the content-hash definition, and (4) the personal-state size budget. This file is INERT to the Astro build: it is not under src/content (never loaded as a collection), not under src/data (never imported by a route), and not under public/ (never served). Nothing in src/ may import it. The root schema validates one transport envelope.",
+  "$ref": "#/$defs/envelope",
+  "x-contract": {
+    "contractVersion": 1,
+    "status": "pre-implementation",
+    "decisionRecord": "docs/decisions/research-os-data-contract.md",
+    "identityRecord": "docs/decisions/research-item-identity.md",
+    "cloudRecord": "docs/decisions/research-os-cloud-architecture.md",
+    "singleUser": {
+      "assumed": true,
+      "rationale": "research-os-cloud-architecture.md#security-boundary: 'one user, and the system should assume it'. No principal identifier appears anywhere in this contract. Introducing one is a contractVersion bump, not an additive field.",
+      "forbiddenPrincipalFieldNames": [
+        "userId",
+        "tenantId",
+        "accountId",
+        "ownerId",
+        "principalId",
+        "subjectId"
+      ]
+    },
+    "stores": {
+      "corpus": {
+        "location": "private pipeline repository, local, relational primary store",
+        "owns": "everything observed about, derived from, or asserted about the external world",
+        "regenerable": true,
+        "evidence": "research-discovery-system.md#storage-shape; research-os-cloud-architecture.md#conflict-with-the-existing-record-and-its-resolution"
+      },
+      "personal-state": {
+        "location": "AWS DynamoDB, provisioned capacity, single region",
+        "owns": "what the user did, decided, or wrote, where no versioned repository already holds it",
+        "regenerable": false,
+        "evidence": "research-os-cloud-architecture.md#data-and-storage-strategy"
+      },
+      "operational": {
+        "location": "AWS DynamoDB, alongside personal state, always TTL-bearing",
+        "owns": "state about the system's own execution - job state, cursors, idempotency keys, DLQ bookkeeping",
+        "regenerable": true,
+        "disposable": true,
+        "neverAnchoredTo": "No note, saved item, or public record may reference an operational record.",
+        "evidence": "research-os-cloud-architecture.md#access-patterns-first lists 'Processing and job state' as a DynamoDB access pattern"
+      },
+      "projection": {
+        "location": "this repository, src/content/papers and src/content/resources",
+        "owns": "nothing; it is downstream of corpus and is deletable and rebuildable",
+        "regenerable": true,
+        "evidence": "research-item-identity.md#c3--where-the-canonical-research-item-lives"
+      }
+    },
+    "sides": [
+      "corpus",
+      "personal-state",
+      "operational",
+      "projection"
+    ],
+    "decidingRules": {
+      "R0": {
+        "name": "infrastructure state",
+        "test": "Is the value about the system's own execution rather than about research - a job, a cursor, a retry count, an idempotency key, a DLQ record?",
+        "yes": "operational owns it. It lives in DynamoDB, always carries a TTL, and nothing may anchor to it.",
+        "elseGoTo": "R1",
+        "rationale": "Checked first because it is the cheapest disqualifier. Without it R2 would file job state as corpus, which is both wrong and unimplementable: the Lambdas that produce it cannot reach a local store."
+      },
+      "R1": {
+        "name": "unrecomputable-authorship",
+        "test": "Is the value produced by the user's own act of reading, deciding, or writing, such that no re-fetch of any external source could reproduce it?",
+        "thenAsk": "R1a",
+        "elseGoTo": "R2"
+      },
+      "R1a": {
+        "name": "already-versioned",
+        "test": "Is that authored value already committed to a git-versioned repository as part of a published or private artifact?",
+        "yes": "projection (or the private corpus repository) owns it. It does not enter DynamoDB.",
+        "no": "personal-state owns it."
+      },
+      "R2": {
+        "name": "world-observation",
+        "test": "Is the value observed about, derived from, enriched from, or asserted about the external world - bibliographic, enrichment, derived, AI-interpretation, or operational?",
+        "yes": "corpus owns it.",
+        "elseGoTo": "R3"
+      },
+      "R3": {
+        "name": "hot-read mirror",
+        "test": "Does a declared personal-state access pattern need this corpus value in order to render without a corpus round-trip?",
+        "yes": "corpus still owns it; a bounded copy is MIRRORED into the personal-state record. Subject to both vetoes.",
+        "no": "corpus only."
+      },
+      "R4": {
+        "name": "projection gate",
+        "test": "Applied independently of R1-R3. A corpus field is published only if it is human-reviewed, identical for every reader, and regenerable.",
+        "evidence": "shared-context.md section 2; research-item-identity.md#c3--where-the-canonical-research-item-lives"
+      },
+      "V1": {
+        "name": "size veto",
+        "test": "A mirror that pushes the personal-state record past its declared byte budget is not taken. It is fetched from the corpus instead.",
+        "doesNotApplyTo": "R1 fields. Notes outrank cost."
+      },
+      "V2": {
+        "name": "churn veto",
+        "test": "A corpus value that changes more often than the user's own state is never mirrored, at any size. Mirroring it would make every enrichment run rewrite every saved item.",
+        "examples": [
+          "citationCount",
+          "influentialCitationCount",
+          "signalSheet",
+          "lastCheckedAt"
+        ]
+      }
+    },
+    "forbiddenInPublicProjection": {
+      "description": "Corpus-only field names. None may appear at any nesting depth in src/content/papers or src/content/resources. Superset of the enforcement list at research-item-identity.md#b-canonical-research-item--private-repository-contract-not-implemented-here.",
+      "fromT01": [
+        "fieldSources",
+        "conflicts",
+        "statusHistory",
+        "sameWorkAs",
+        "dedupKey",
+        "contentHash",
+        "ttlExempt",
+        "lifecycle",
+        "mergedInto",
+        "mintedAt",
+        "derived",
+        "ai"
+      ],
+      "addedByT02": [
+        "bibliographic",
+        "enrichment",
+        "operational",
+        "signalSheet",
+        "canonicalUrl",
+        "projectionId",
+        "identifierIndex",
+        "embedding",
+        "abstract",
+        "fullText"
+      ],
+      "note": "mergedInto is forbidden on papers/resources only. The topics collection legitimately carries its own mergedInto (T03) and is out of scope for this list."
+    },
+    "personalStateFieldNames": {
+      "description": "Personal-state and operational field names. None may appear in any public collection - writing reading state or queue position into src/content/papers is the specific mistake research-item-identity.md#c3--where-the-canonical-research-item-lives names.",
+      "names": [
+        "readingState",
+        "readingPriority",
+        "savedAt",
+        "unsavedAt",
+        "queuePosition",
+        "noteCount",
+        "lastNoteAt",
+        "lastOpenedAt",
+        "noteIds",
+        "reviewCandidate",
+        "ttl",
+        "expiresAt",
+        "deviceId",
+        "jobId",
+        "jobState",
+        "cursor",
+        "retryCount",
+        "idempotencyKey",
+        "dlqReason"
+      ],
+      "namingHazard": "readingPriority is deliberately NOT named 'priority'. papers.priority already exists in the public projection (the papers schema in src/content.config.ts) as an editorial choice made on a reviewed card. The two are different facts and must not share a name - the same hazard research-item-identity.md#a-naming-hazard-that-must-not-be-ignored records for status/acceptanceStatus."
+    },
+    "removedScoreFields": {
+      "description": "Owner decision 2026-09-14 (C1 + C1-extension). All five leave the public projection and live only in corpus.derived.ranking. A validator fails if any reappears in public content or in src/content.config.ts.",
+      "names": [
+        "topicScore",
+        "sourceScore",
+        "usefulnessScore",
+        "freshnessScore",
+        "totalScore"
+      ],
+      "notAffected": [
+        "citationCount",
+        "influentialCitationCount",
+        "hasCode",
+        "hasProjectPage"
+      ]
+    },
+    "contentHash": {
+      "form": "v1:sha256:<hex>",
+      "pattern": "^v1:sha256:[0-9a-f]{64}$",
+      "algorithm": "sha256",
+      "definitionVersion": 1,
+      "fields": [
+        "title",
+        "abstract",
+        "authors",
+        "venue",
+        "year"
+      ],
+      "encoding": "JSON.stringify of an array of [fieldName, value] pairs built by iterating the declared field order; a missing field and an explicit null are both hashed as null; utf8.",
+      "implementation": "src/utils/canonicalization.ts (computeContentHash, CONTENT_HASH_FIELDS)",
+      "side": "corpus",
+      "neverIn": [
+        "personal-state",
+        "projection"
+      ],
+      "uses": {
+        "embeddingStaleness": "A stored embedding is stale if and only if the item's current contentHash differs from the contentHash recorded on the embedding. Volatile fields are structurally excluded - the function reads only the five declared keys - so a lastCheckedAt bump can never invalidate an embedding.",
+        "dedupInput": "Hash equality is CONFIRMATORY, never DISCRIMINATIVE. Equality maps to sameWorkAs confidence 'strong-match' and therefore never merges automatically. Inequality is no evidence of difference: an arXiv v1 and its camera-ready are one work with two titles."
+      }
+    },
+    "sizeBudget": {
+      "unit": "bytes, attribute name plus UTF-8 value, per DynamoDB item-size accounting",
+      "wcuPerKb": 1,
+      "evidence": "research-os-cloud-architecture.md#the-actual-binding-constraint - 'keep hot items under 1 KB'",
+      "hotItem": {
+        "name": "PersonalStateItem",
+        "maxBytes": 1024,
+        "attributes": {
+          "pk": 40,
+          "sk": 8,
+          "itemId": 37,
+          "readingState": 22,
+          "readingPriority": 22,
+          "savedAt": 28,
+          "updatedAt": 30,
+          "provenance": 19,
+          "ttlExempt": 11,
+          "topicIds": 168,
+          "titleMirror": 171,
+          "venueMirror": 43,
+          "year": 8,
+          "canonicalLanguage": 20,
+          "contentTypeMirror": 30,
+          "depthMirror": 23,
+          "noteCount": 12,
+          "lastNoteAt": 31,
+          "gsi1pk": 46,
+          "gsi1sk": 46
+        },
+        "declaredTotal": 999,
+        "headroom": 209
+      },
+      "evictionOrder": {
+        "description": "If the hot item exceeds 1024 bytes, drop mirrors in this order. Each moves to a sibling DETAIL item under the same pk, fetched only on a detail view.",
+        "order": [
+          "canonicalUrlMirror",
+          "contentTypeMirror",
+          "depthMirror",
+          "venueMirror",
+          "titleMirror",
+          "topicIds"
+        ],
+        "neverEvict": [
+          "pk",
+          "sk",
+          "itemId",
+          "readingState",
+          "savedAt",
+          "updatedAt",
+          "ttlExempt",
+          "noteCount",
+          "lastNoteAt"
+        ]
+      },
+      "coldItems": {
+        "NoteItem": {
+          "maxBytes": 8704,
+          "uncapped": true,
+          "rationale": "A note is never truncated to save write capacity. 300 user actions/day at 9 WCU each is 2,700 WCU-seconds against 2,160,000 available per day - 0.125%. The cost objection to full-size notes is quantitatively empty, and research-os-cloud-architecture.md#reliability-and-failure-behavior already ranks personal-state durability above the $0 invariant."
+        },
+        "RadarCandidateItem": {
+          "maxBytes": 1024,
+          "ttl": true,
+          "ttlExemptWhen": "ttlExempt is true - set once when any note, save, or reference exists, and never cleared"
+        }
+      }
+    },
+    "identifierIndexReplica": {
+      "description": "Answers the sizing question research-item-identity.md#open-questions hands to T02. The identifier index is corpus-owned; a bounded, regenerable replica lives in DynamoDB because ingest resolution runs in the processor Lambda and cannot reach a local store.",
+      "sourceOfTruth": "corpus",
+      "replicaScope": "entries for items inside the Radar TTL window, plus every ttlExempt item, and nothing else",
+      "regenerable": true,
+      "modelled": {
+        "ttlWindowDays": 90,
+        "candidatesPerDay": 500,
+        "keysPerCandidate": 5,
+        "entries": 225000,
+        "bytesPerEntry": 110,
+        "totalBytes": 24750000,
+        "shareOf25GbAllowance": "~0.1%",
+        "writesPerDay": 2500,
+        "wcuSecondsPerDay": 2500,
+        "shareOfDailyWriteCapacity": "~0.12%"
+      }
+    },
+    "transport": {
+      "maxMessageBytes": 65536,
+      "rationale": "research-os-cloud-architecture.md#verified-allowances - SQS counts each 64 KB of payload as one request. Capping at exactly one chunk makes request consumption bounded by construction rather than by expectation.",
+      "softTargetBytes": 8192,
+      "unknownEnvelopeHandling": "dead-letter",
+      "unknownMessageTypeHandling": "dead-letter",
+      "unknownPayloadVersionHandling": "dead-letter",
+      "neverDrop": true,
+      "runtimeLeniency": "A runtime consumer MUST ignore unknown properties inside payload rather than reject the message, so a producer may roll out ahead of a consumer. This schema declares payload bodies closed anyway, because the authoring-time and CI check is deliberately stricter than the runtime check: an accidental field must fail in CI, not silently ship.",
+      "idempotency": "At-least-once delivery. A consumer records idempotencyKey and applies each message at most once, enforced by a conditional write on attribute_not_exists - the same mechanism research-item-identity.md#the-decision uses for itemId minting."
+    },
+    "versioningPolicy": {
+      "contractVersion": "Integer major on the ENVELOPE. Bumped only when the envelope shape changes. The envelope is closed (additionalProperties false) precisely so that this is the only way it can change.",
+      "payloadVersion": "Integer major, PER MESSAGE TYPE, carried in the envelope so a consumer can route a body it cannot parse straight to the DLQ without parsing it.",
+      "additiveChange": "Adding an optional property to a body: no version change.",
+      "breakingChange": "Removing, renaming, retyping, or changing the meaning of a body property: payloadVersion major bump for that type only.",
+      "newMessageType": "Adding a message type is additive; no contractVersion bump.",
+      "immutabilityWarning": "This contract becomes immutable-in-practice the moment the first queue exists. Messages in flight cannot be re-versioned retroactively."
+    }
+  },
+  "$defs": {
+    "itemId": {
+      "type": "string",
+      "pattern": "^itm-[0-9abcdefghjkmnpqrstvwxyz]{26}$",
+      "description": "Canonical work identity. Opaque, minted once, never derived from mutable metadata. research-item-identity.md#canonical-item-identity.",
+      "x-side": "corpus",
+      "x-rule": "R2",
+      "x-mirroredInto": [
+        "personal-state",
+        "projection"
+      ]
+    },
+    "messageId": {
+      "type": "string",
+      "pattern": "^msg-[0-9abcdefghjkmnpqrstvwxyz]{26}$",
+      "description": "ULID, same alphabet and prefix convention as itemId so a wrong-key bug is catchable by eye."
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$",
+      "description": "RFC 3339, UTC, Z-suffixed. Never a local offset - the producer may run in any region."
+    },
+    "dateString": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "description": "Matches src/content.config.ts:10 so a date crossing into the projection needs no reformatting."
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$",
+      "description": "Matches slugSafeString at src/content.config.ts:4-6."
+    },
+    "externalIdentifier": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scheme",
+        "value"
+      ],
+      "properties": {
+        "scheme": {
+          "$ref": "#/$defs/slug",
+          "description": "Cross-referenced against the scheme registry. Never an enum - shared-context.md section 4."
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "description": "Normalized by normalizeExternalIdentifier before storage AND before index lookup."
+        },
+        "source": {
+          "$ref": "#/$defs/slug",
+          "x-side": "corpus",
+          "description": "Private contract only. Never projected."
+        },
+        "fetchedAt": {
+          "$ref": "#/$defs/dateString",
+          "x-side": "corpus",
+          "description": "Private contract only. Never projected."
+        }
+      },
+      "x-side": "corpus",
+      "x-rule": "R2"
+    },
+    "provenance": {
+      "enum": [
+        "VERIFIED",
+        "RADAR"
+      ],
+      "description": "Closed Zod enum by ADR, and the second deliberate exception to 'taxonomy is data, not code' alongside depth - shared-context.md section 4. A third value arriving through a data edit would silently change what TTL deletes, and TTL is destructive.",
+      "x-side": "corpus",
+      "x-rule": "R2",
+      "x-mirroredInto": [
+        "personal-state",
+        "projection"
+      ]
+    },
+    "contentHash": {
+      "type": "string",
+      "pattern": "^v1:sha256:[0-9a-f]{64}$",
+      "x-side": "corpus",
+      "x-rule": "R2"
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "version"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/slug"
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        }
+      }
+    },
+    "envelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "messageId",
+        "messageType",
+        "payloadVersion",
+        "occurredAt",
+        "producer",
+        "idempotencyKey",
+        "payload"
+      ],
+      "properties": {
+        "contractVersion": {
+          "type": "integer",
+          "const": 1,
+          "description": "REQUIRED. Envelope major version. A consumer that does not recognise this value dead-letters the message without parsing the payload."
+        },
+        "messageId": {
+          "$ref": "#/$defs/messageId"
+        },
+        "messageType": {
+          "enum": [
+            "candidate.discovered",
+            "candidate.processed",
+            "item.enrichment.requested",
+            "personalState.mutation.requested"
+          ]
+        },
+        "payloadVersion": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Major version of THIS message type's body. Independent of contractVersion."
+        },
+        "occurredAt": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "producer": {
+          "$ref": "#/$defs/producer"
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Deterministic for a given logical event. Redelivery of the same key is a no-op, enforced by a conditional write."
+        },
+        "traceId": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "payload": {
+          "type": "object"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "messageType": {
+                "const": "candidate.discovered"
+              }
+            },
+            "required": [
+              "messageType"
+            ]
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/payload_candidateDiscovered_v1"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "messageType": {
+                "const": "candidate.processed"
+              }
+            },
+            "required": [
+              "messageType"
+            ]
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/payload_candidateProcessed_v1"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "messageType": {
+                "const": "item.enrichment.requested"
+              }
+            },
+            "required": [
+              "messageType"
+            ]
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/payload_enrichmentRequested_v1"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "messageType": {
+                "const": "personalState.mutation.requested"
+              }
+            },
+            "required": [
+              "messageType"
+            ]
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/payload_personalStateMutation_v1"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "payload_candidateDiscovered_v1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceId",
+        "sourceRecordId",
+        "fetchedAt",
+        "url"
+      ],
+      "description": "Collector -> SQS -> processor. Carries enough to resolve identity and compute a content hash, and nothing else. No PDF, no full text - research-os-cloud-architecture.md#data-and-storage-strategy.",
+      "properties": {
+        "sourceId": {
+          "$ref": "#/$defs/slug"
+        },
+        "sourceRecordId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "fetchedAt": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "maxLength": 2048
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 1024
+        },
+        "abstract": {
+          "type": "string",
+          "maxLength": 8192,
+          "description": "In transit and in the corpus only. NEVER written to DynamoDB. It is a content-hash input and a filtering input; it is not personal state and it is not a paper's full text."
+        },
+        "authors": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "type": "string",
+            "maxLength": 256
+          }
+        },
+        "venue": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "year": {
+          "type": "integer",
+          "minimum": 1900,
+          "maximum": 2100
+        },
+        "externalIds": {
+          "type": "array",
+          "maxItems": 12,
+          "items": {
+            "$ref": "#/$defs/externalIdentifier"
+          }
+        },
+        "topicHints": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/slug"
+          }
+        }
+      }
+    },
+    "payload_candidateProcessed_v1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "itemId",
+        "resolution",
+        "contentHash",
+        "canonicalUrl",
+        "provenance",
+        "dedupKeys"
+      ],
+      "description": "Processor result. The only message that asserts an itemId.",
+      "properties": {
+        "itemId": {
+          "$ref": "#/$defs/itemId"
+        },
+        "resolution": {
+          "enum": [
+            "minted",
+            "matched",
+            "merge-required"
+          ],
+          "description": "'merge-required' never merges. It raises a sameWorkAs claim for a human - research-item-identity.md#same-work-claims-and-their-confidence-vocabulary."
+        },
+        "contentHash": {
+          "$ref": "#/$defs/contentHash"
+        },
+        "canonicalUrl": {
+          "type": "string",
+          "format": "uri",
+          "maxLength": 2048
+        },
+        "provenance": {
+          "$ref": "#/$defs/provenance"
+        },
+        "dedupKeys": {
+          "type": "array",
+          "maxItems": 24,
+          "items": {
+            "type": "string",
+            "maxLength": 2048
+          },
+          "description": "Output of deriveDedupKey. Lookup keys for the identifier index - never an itemId."
+        },
+        "candidateItemIds": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/itemId"
+          }
+        },
+        "topicIds": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/slug"
+          }
+        },
+        "canonicalLanguage": {
+          "enum": [
+            "ko",
+            "en",
+            "jp"
+          ]
+        }
+      }
+    },
+    "payload_enrichmentRequested_v1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "itemId",
+        "enrichers"
+      ],
+      "description": "Deep processing. research-os-cloud-architecture.md#one-year-capacity-model models 20/day.",
+      "properties": {
+        "itemId": {
+          "$ref": "#/$defs/itemId"
+        },
+        "enrichers": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/slug"
+          }
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "observedContentHash": {
+          "$ref": "#/$defs/contentHash",
+          "description": "The hash the requester saw. A consumer that finds a different current hash re-reads rather than acting on stale input."
+        }
+      }
+    },
+    "payload_personalStateMutation_v1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "itemId",
+        "mutation"
+      ],
+      "description": "API -> DynamoDB. The only message that writes personal state. No principal identifier: single user.",
+      "properties": {
+        "itemId": {
+          "$ref": "#/$defs/itemId"
+        },
+        "clientMutationId": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "mutation": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "op"
+              ],
+              "properties": {
+                "op": {
+                  "const": "save"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "op"
+              ],
+              "properties": {
+                "op": {
+                  "const": "unsave"
+                }
+              },
+              "description": "Clears savedAt. Never clears ttlExempt, and never deletes notes."
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "op",
+                "readingState"
+              ],
+              "properties": {
+                "op": {
+                  "const": "setReadingState"
+                },
+                "readingState": {
+                  "enum": [
+                    "unread",
+                    "reading",
+                    "completed",
+                    "abandoned"
+                  ]
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "op",
+                "readingPriority"
+              ],
+              "properties": {
+                "op": {
+                  "const": "setReadingPriority"
+                },
+                "readingPriority": {
+                  "enum": [
+                    "high",
+                    "medium",
+                    "low"
+                  ]
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "op",
+                "noteType",
+                "body"
+              ],
+              "properties": {
+                "op": {
+                  "const": "appendNote"
+                },
+                "noteType": {
+                  "$ref": "#/$defs/slug",
+                  "description": "Note types are data, not an enum - research-discovery-system.md#research-notebook."
+                },
+                "body": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 8192
+                },
+                "anchor": {
+                  "type": "string",
+                  "maxLength": 256
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "op",
+                "noteId",
+                "body"
+              ],
+              "properties": {
+                "op": {
+                  "const": "reviseNote"
+                },
+                "noteId": {
+                  "type": "string",
+                  "pattern": "^note-[0-9abcdefghjkmnpqrstvwxyz]{26}$"
+                },
+                "body": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 8192
+                }
+              },
+              "description": "Writes a new revision and sets revisionOf. The prior revision is retained - nothing is ever deleted."
+            }
+          ]
+        }
+      }
+    },
+    "personalStateItem": {
+      "type": "object",
+      "description": "The hot DynamoDB item. Not a transport shape; declared here so the byte budget above is machine-checkable against a real attribute list.",
+      "additionalProperties": false,
+      "required": [
+        "pk",
+        "sk",
+        "itemId",
+        "readingState",
+        "updatedAt",
+        "ttlExempt"
+      ],
+      "properties": {
+        "pk": {
+          "type": "string",
+          "pattern": "^ITEM#itm-[0-9abcdefghjkmnpqrstvwxyz]{26}$",
+          "x-side": "personal-state",
+          "x-rule": "R1"
+        },
+        "sk": {
+          "const": "STATE",
+          "x-side": "personal-state",
+          "x-rule": "R1"
+        },
+        "itemId": {
+          "$ref": "#/$defs/itemId",
+          "x-side": "corpus",
+          "x-rule": "R3",
+          "x-mirrorOf": "corpus.itemId"
+        },
+        "readingState": {
+          "enum": [
+            "unread",
+            "reading",
+            "completed",
+            "abandoned"
+          ],
+          "x-side": "personal-state",
+          "x-rule": "R1"
+        },
+        "readingPriority": {
+          "enum": [
+            "high",
+            "medium",
+            "low"
+          ],
+          "x-side": "personal-state",
+          "x-rule": "R1"
+        },
+        "savedAt": {
+          "$ref": "#/$defs/timestamp",
+          "x-side": "personal-state",
+          "x-rule": "R1"
+        },
+        "updatedAt": {
+          "$ref": "#/$defs/timestamp",
+          "x-side": "personal-state",
+          "x-rule": "R1"
+        },
+        "provenance": {
+          "$ref": "#/$defs/provenance",
+          "x-side": "corpus",
+          "x-rule": "R3",
+          "x-mirrorOf": "corpus.provenance"
+        },
+        "ttlExempt": {
+          "type": "boolean",
+          "x-side": "personal-state",
+          "x-rule": "R1",
+          "description": "Set true once any note, save, or reference exists. Never cleared."
+        },
+        "topicIds": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/slug"
+          },
+          "x-side": "corpus",
+          "x-rule": "R3",
+          "x-mirrorOf": "corpus.derived.topicIds"
+        },
+        "titleMirror": {
+          "type": "string",
+          "maxLength": 160,
+          "x-side": "corpus",
+          "x-rule": "R3",
+          "x-mirrorOf": "corpus.bibliographic.title",
+          "description": "Capped at 160 BYTES after NFC normalization, not 160 characters. A 160-character Korean title is 480 UTF-8 bytes and alone breaks the 1 KB budget."
+        },
+        "venueMirror": {
+          "$ref": "#/$defs/slug",
+          "x-side": "corpus",
+          "x-rule": "R3",
+          "x-mirrorOf": "corpus.bibliographic.venueId"
+        },
+        "year": {
+          "type": "integer",
+          "minimum": 1900,
+          "maximum": 2100,
+          "x-side": "corpus",
+          "x-rule": "R3",
+          "x-mirrorOf": "corpus.bibliographic.year"
+        },
+        "canonicalLanguage": {
+          "enum": [
+            "ko",
+            "en",
+            "jp"
+          ],
+          "x-side": "corpus",
+          "x-rule": "R3",
+          "x-mirrorOf": "corpus.canonicalLanguage"
+        },
+        "contentTypeMirror": {
+          "$ref": "#/$defs/slug",
+          "x-side": "corpus",
+          "x-rule": "R3",
+          "x-mirrorOf": "corpus.contentType"
+        },
+        "depthMirror": {
+          "enum": [
+            "beginner",
+            "practical",
+            "engineering",
+            "research"
+          ],
+          "x-side": "corpus",
+          "x-rule": "R3",
+          "x-mirrorOf": "corpus.depth"
+        },
+        "noteCount": {
+          "type": "integer",
+          "minimum": 0,
+          "x-side": "personal-state",
+          "x-rule": "R1"
+        },
+        "lastNoteAt": {
+          "$ref": "#/$defs/timestamp",
+          "x-side": "personal-state",
+          "x-rule": "R1"
+        },
+        "gsi1pk": {
+          "type": "string",
+          "maxLength": 40,
+          "x-side": "personal-state",
+          "x-rule": "R1"
+        },
+        "gsi1sk": {
+          "type": "string",
+          "maxLength": 40,
+          "x-side": "personal-state",
+          "x-rule": "R1"
+        }
+      }
+    }
+  }
+}
