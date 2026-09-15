@@ -21,7 +21,7 @@ which is the source of truth.
 
 | # | To verify | Who can resolve it | Status |
 |---|---|---|---|
-| V1 | Account is on the **Paid** plan, not the Free plan | **Owner only** — billing console | **OPEN — the only true blocker** |
+| V1 | Account is on the **Paid** plan, not the Free plan | Owner — billing console | **Resolved 2026-09-16.** No credit balance or expiry shown, and the account dates to at least 2022-04-02 — a Free plan account could not still be open |
 | V2 | CloudFront allowance | Research | Resolved: 100 GB + 1M req/month, $0, no overage charges |
 | V3 | Lambda 1M req + 400,000 GB-s always-free | Research | Resolved: always-free |
 | V4 | DynamoDB 25 WCU / 25 RCU / 25 GB always-free | Research | **Confirmed from the account's own meter** — the Free tier page says "always free per month" |
@@ -58,10 +58,9 @@ need billing and identity details.
 
 Progress as of 2026-09-16:
 
-1. **Confirm or switch the account plan** (V1) — **STILL OPEN.** Billing details were added,
-   which usually moves an account to Paid, but the plan itself has not been read off the
-   console. This is the one item whose failure mode is silent and total. Check
-   *Billing and Cost Management → Free tier*.
+1. **Confirm the account plan** (V1) — **DONE.** The account predates the 2025 Free/Paid
+   split (tables found from 2022-04-02) and shows no credit balance or expiry, so it is on
+   pay-as-you-go. A Free plan account would have closed years ago.
 2. **Root account hygiene** — **DONE.** Root MFA enabled, no root access keys present, an
    `admin` IAM user created with MFA and confirmed working. Root is retired.
 3. **Spend alerting** — **DONE.** A `zero-spend` budget ($0.01 monthly, alert at 100% of
