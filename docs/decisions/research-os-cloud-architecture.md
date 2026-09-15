@@ -412,7 +412,7 @@ Every row must be checked before the corresponding component is created, and thi
 | V11 | Lambda Function URLs carry no separate charge | Before the online path |
 | V12 | CloudWatch 5 GB is combined across ingestion, archive, and Insights scans | Before setting retention |
 | V13 | Cognito Essentials free MAU and its stated indefinite duration | Confirmed 2026-09-14; recheck at go-live |
-| V14 | Region choice does not alter any allowance above | Before creating resources |
+| V14 | Region choice does not alter any allowance above | **Answered 2026-09-16, with a caveat that changes the capacity model.** Free-tier *scope* is not uniform across services: [SQS](https://aws.amazon.com/sqs/pricing/) states its allowance is *"calculated each month across all regions (except the GovCloud region)"* — one pool, shared. [DynamoDB](https://aws.amazon.com/dynamodb/pricing/provisioned/) grants its 25 WCU / 25 RCU / 25 GB *"on a per Region, per-payer account basis"* — a separate pool per region. Lambda and CloudWatch region scope is **not verified**; assume account-wide (the conservative reading) until checked. Unit *rates* above free tier are higher in ap-northeast-2 than us-east-1, so an overage costs more there — which matters only if the $0 invariant is already broken |
 
 **V1-V5 and V9 re-checked 2026-09-16** against official AWS pricing and Free Tier pages; answers are inline in the table above and carry that date. Every figure below remains volatile.
 
@@ -445,6 +445,31 @@ itself proves unreliable, PITR becomes the right answer and this becomes the fir
 deliberate non-zero line item. That is a decision to make explicitly, with a number, not
 by drifting into it. **The $0.00 invariant holds until someone writes down why it should
 not.**
+
+---
+
+### Region
+
+**DECISION (owner, 2026-09-16): the Research OS runs in `ap-northeast-2` (Seoul).
+Billing metrics and budget alarms stay in `us-east-1`.**
+
+The split is not a preference. The `AWS/Billing` CloudWatch namespace exists only in
+us-east-1, so cost alarms must live there regardless of where the workload runs.
+
+Seoul is chosen for latency: this system is meant to be used from a phone, from Korea,
+and Seoul is roughly a third of the round-trip to us-east-1. Region is also the most
+expensive decision to reverse in this architecture — changing it later means migrating
+table data, not editing a setting — so it is made before anything exists.
+
+**Consequence for the capacity model:** DynamoDB's 25 WCU / 25 RCU / 25 GB is granted
+per region, so Seoul carries its own full allowance. SQS's 1M requests is **not** —
+it is one pool shared across all regions. The [One-Year Capacity Model](#one-year-capacity-model)
+is unaffected, because it already models a single region and a single queue, but a
+second region would silently halve the SQS headroom rather than double it.
+
+**OPEN:** Lambda and CloudWatch free-tier region scope (V14) is unverified. Both are
+assumed account-wide, which is the conservative reading — if either turns out to be
+per-region, the model gains headroom rather than losing it.
 
 ---
 

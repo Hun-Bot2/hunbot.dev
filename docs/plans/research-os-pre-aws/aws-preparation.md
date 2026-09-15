@@ -56,12 +56,20 @@ That is the highest-value work available right now, and it is the natural next s
 None of these can be delegated to an agent. Each needs console access, and the first two
 need billing and identity details.
 
-1. **Confirm or switch the account plan** (V1). Paid plan, per the record's reasoning.
-2. **Root account hygiene** — MFA on root, then stop using root.
-3. **A CloudWatch billing alarm at any non-zero amount.** The record is explicit that this
-   is *detection, not prevention*: by the time it fires, money has been spent. There is no
-   account-wide spending cap in AWS; that finding is recorded and has not changed.
-4. **Region choice** (V14) — confirm it alters no allowance, then fix it and write it down.
+Progress as of 2026-09-16:
+
+1. **Confirm or switch the account plan** (V1) — **STILL OPEN.** Billing details were added,
+   which usually moves an account to Paid, but the plan itself has not been read off the
+   console. This is the one item whose failure mode is silent and total. Check
+   *Billing and Cost Management → Free tier*.
+2. **Root account hygiene** — **DONE.** Root MFA enabled, no root access keys present, an
+   `admin` IAM user created with MFA and confirmed working. Root is retired.
+3. **Spend alerting** — **DONE.** A `zero-spend` budget ($0.01 monthly, alert at 100% of
+   actual) with an email subscriber. Still *detection, not prevention*: it reports after
+   money has been spent, and AWS provides no account-wide spending cap.
+4. **Region choice** (V14) — **DONE.** `ap-northeast-2` (Seoul) for the Research OS,
+   `us-east-1` for billing metrics. See
+   [Region](../../decisions/research-os-cloud-architecture.md#region).
 
 ---
 
