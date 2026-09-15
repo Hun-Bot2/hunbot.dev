@@ -24,7 +24,7 @@ which is the source of truth.
 | V1 | Account is on the **Paid** plan, not the Free plan | **Owner only** — billing console | **OPEN — the only true blocker** |
 | V2 | CloudFront allowance | Research | Resolved: 100 GB + 1M req/month, $0, no overage charges |
 | V3 | Lambda 1M req + 400,000 GB-s always-free | Research | Resolved: always-free |
-| V4 | DynamoDB 25 WCU / 25 RCU / 25 GB always-free | Research | Resolved: always-free |
+| V4 | DynamoDB 25 WCU / 25 RCU / 25 GB always-free | Research | **Confirmed from the account's own meter** — the Free tier page says "always free per month" |
 | V5 | SQS poller billing when idle | Research | Partially resolved; scheduled drain no longer depends on the answer |
 
 **V1 got worse on inspection, not better.** The Free plan expires at *the earlier of* six
@@ -70,6 +70,10 @@ Progress as of 2026-09-16:
 4. **Region choice** (V14) — **DONE.** `ap-northeast-2` (Seoul) for the Research OS,
    `us-east-1` for billing metrics. See
    [Region](../../decisions/research-os-cloud-architecture.md#region).
+5. **Account baseline** — **DONE.** Three unrelated DynamoDB tables from 2022 were found
+   consuming the free tier in two regions, and removed. See
+   [Account Baseline](../../decisions/research-os-cloud-architecture.md#account-baseline-2026-09-16).
+   The account now holds nothing.
 
 ---
 

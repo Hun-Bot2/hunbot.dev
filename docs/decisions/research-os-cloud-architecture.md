@@ -402,7 +402,7 @@ Every row must be checked before the corresponding component is created, and thi
 | V1 | Account is on the **Paid** plan, not the Free plan | **Blocking — OPEN.** Owner action; requires the billing console. Reconfirmed 2026-09-16 from [Free Tier FAQs](https://aws.amazon.com/free/free-tier-faqs/), with a detail this record did not previously carry: the Free plan expires at *the earlier of* 6 months from account opening **or** credit exhaustion, after which *"AWS closes your account, and you'll lose access to your resources and data."* The 6-month clock is unconditional, so the Free plan is not merely risky — it is terminal by default |
 | V2 | CloudFront: which allowance applies — 1 TB/10M pay-as-you-go, or 100 GB/1M flat-rate Free plan | **Resolved 2026-09-16, conservatively.** [CloudFront pricing](https://aws.amazon.com/cloudfront/pricing/) now presents plan tiers (Free / Pro / Business / Premium). The Free plan is **100 GB data transfer + 1M requests per month at $0, stated as "no overage charges"**. Model against 100 GB/1M — the smaller figure, and the one that fails closed rather than billing |
 | V3 | Lambda's 1M requests + 400,000 GB-s is always-free, not 12-month | **Resolved 2026-09-16: always-free.** [Lambda pricing](https://aws.amazon.com/lambda/pricing/) states the 1M requests + 400,000 GB-seconds monthly allowance is for all customers and does not expire at the end of the 12-month term |
-| V4 | DynamoDB 25 WCU / 25 RCU / 25 GB is always-free, not 12-month | **Resolved 2026-09-16: always-free.** [DynamoDB pricing](https://aws.amazon.com/dynamodb/pricing/provisioned/) grants 25 WCU / 25 RCU / 25 GB *"each month on a per Region, per-payer account basis"* and separately marks only data transfer as 12-month-enhanced — the contrast is the evidence |
+| V4 | DynamoDB 25 WCU / 25 RCU / 25 GB is always-free, not 12-month | **CONFIRMED 2026-09-16 from the account's own metering, not from documentation.** The Billing console's *Free tier* page lists `18600.0 ReadCapacityUnit-Hrs are **always free per month** as part of AWS Free Usage Tier`. 18,600 = 25 x 744 hours, so this is the 25 RCU / 25 WCU allowance stated by AWS's own meter, carrying the words "always free" with no 12-month qualifier. Read and write are metered separately, and so are `APN2-` and `USW2-` — see [Region](#region) |
 | V5 | SQS `ReceiveMessage` polling from a Lambda event source mapping is billable, and at what rate when idle | **Partially resolved 2026-09-16 — and the decision no longer depends on it.** [SQS pricing](https://aws.amazon.com/sqs/pricing/) confirms *"Every Amazon SQS action counts as a request"* and each 64 KB chunk bills as one request; the 1M/month allowance is for all customers. The **idle poll rate** of a Lambda event source mapping is not documented publicly, so the worst case cannot be bounded from sources. Scheduled drain is therefore kept — it is the option whose cost is knowable in advance, which is the property that matters. Remains VERIFY only if an event source mapping is ever reconsidered |
 | V6 | API Gateway HTTP API free tier is 12-month rather than always-free | Before considering it |
 | V7 | S3 free storage is always-free or 12-month | Before any S3 use |
@@ -410,7 +410,7 @@ Every row must be checked before the corresponding component is created, and thi
 | V9 | DynamoDB PITR cost, and whether any free allowance applies | **Resolved 2026-09-16: PITR is billed by table size, with no free allowance.** See [Durability Has A Price](#durability-has-a-price) below — this is the first identified conflict between R1 ($0/month) and R5 (notes durability) |
 | V10 | SCPs on a single account, or Organization required | Before Level 3 controls |
 | V11 | Lambda Function URLs carry no separate charge | Before the online path |
-| V12 | CloudWatch 5 GB is combined across ingestion, archive, and Insights scans | Before setting retention |
+| V12 | CloudWatch 5 GB is combined across ingestion, archive, and Insights scans | **Partially confirmed 2026-09-16 from the account.** The Free tier page shows `5.0 GB-Mo are always free per month ... (Global-TimedStorage-ByteHrs)`: 5 GB of **archive storage**, always-free, and — per the `Global-` prefix — **account-wide rather than per-region**. Whether ingestion and Insights scans draw on that *same* 5 GB is not shown by this line and stays unverified. Keep assuming they share it: the conservative reading, and the one that keeps retention short |
 | V13 | Cognito Essentials free MAU and its stated indefinite duration | Confirmed 2026-09-14; recheck at go-live |
 | V14 | Region choice does not alter any allowance above | **Answered 2026-09-16, with a caveat that changes the capacity model.** Free-tier *scope* is not uniform across services: [SQS](https://aws.amazon.com/sqs/pricing/) states its allowance is *"calculated each month across all regions (except the GovCloud region)"* — one pool, shared. [DynamoDB](https://aws.amazon.com/dynamodb/pricing/provisioned/) grants its 25 WCU / 25 RCU / 25 GB *"on a per Region, per-payer account basis"* — a separate pool per region. Lambda and CloudWatch region scope is **not verified**; assume account-wide (the conservative reading) until checked. Unit *rates* above free tier are higher in ap-northeast-2 than us-east-1, so an overage costs more there — which matters only if the $0 invariant is already broken |
 
@@ -467,9 +467,41 @@ it is one pool shared across all regions. The [One-Year Capacity Model](#one-yea
 is unaffected, because it already models a single region and a single queue, but a
 second region would silently halve the SQS headroom rather than double it.
 
-**OPEN:** Lambda and CloudWatch free-tier region scope (V14) is unverified. Both are
-assumed account-wide, which is the conservative reading — if either turns out to be
-per-region, the model gains headroom rather than losing it.
+**CONFIRMED 2026-09-16, from the account's own metering rather than from documentation.**
+The Billing console's *Free tier* page lists DynamoDB's allowance twice — once as
+`APN2-ReadCapacityUnit-Hrs` and once as `USW2-ReadCapacityUnit-Hrs`, each carrying its own
+full 18,600 RCU-Hrs. That is the per-region grant made visible. CloudWatch appears once, as
+`Global-TimedStorage-ByteHrs`: account-wide, as assumed.
+
+**OPEN:** Lambda's free-tier region scope is still unverified — there was no Lambda usage in
+the account to meter. Assume account-wide, the conservative reading, where being wrong adds
+headroom rather than removing it.
+
+---
+
+### Account Baseline, 2026-09-16
+
+**FACT:** the account was not empty when this work began. The Free tier page showed DynamoDB
+consuming 1.83% of the monthly allowance in **two** regions, which is how the following were
+found — none of them related to this project:
+
+| Table | Region | Created | Items | Capacity |
+|---|---|---|---|---|
+| `test` | ap-northeast-2 | 2022-04-02 | 0 | 1 RCU / 1 WCU |
+| `user_info` | us-west-2 | 2022-04-02 | 0 | 1 RCU / 1 WCU |
+| `Todo-...-dev` (Amplify) | ap-northeast-2 | 2022-09-25 | 2 | on-demand |
+
+The two empty 1-RCU tables were what consumed the allowance — 1 RCU x ~341 hours matches the
+341 RCU-Hrs metered in each region exactly. The Amplify-generated `Todo` table was on-demand
+and contributed nothing to it. All three were deleted by the owner on 2026-09-16, after the
+`Todo` table's two items were exported; both regions now list no tables.
+
+**The lesson outranks the log entry.** A $0 invariant is a claim about an **account**, not
+about a project. Four-year-old experiments were quietly drawing on the same allowance the
+[capacity model](#one-year-capacity-model) assumes it holds in full — and nothing in this
+record would have noticed, because the model reasons about what this system will consume,
+never about what else already does. **The Free tier page is therefore a precondition for
+trusting any projection here**, and is worth re-reading whenever the model is revised.
 
 ---
 
