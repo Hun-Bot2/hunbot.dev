@@ -399,24 +399,52 @@ Every row must be checked before the corresponding component is created, and thi
 
 | # | To verify | Status |
 |---|---|---|
-| V1 | Account is on the **Paid** plan, not the Free plan | **Blocking** |
-| V2 | CloudFront: which allowance applies — 1 TB/10M pay-as-you-go, or 100 GB/1M flat-rate Free plan | **Blocking** |
-| V3 | Lambda's 1M requests + 400,000 GB-s is always-free, not 12-month | **Blocking** |
-| V4 | DynamoDB 25 WCU / 25 RCU / 25 GB is always-free, not 12-month | **Blocking** |
-| V5 | SQS `ReceiveMessage` polling from a Lambda event source mapping is billable, and at what rate when idle | **Blocking** — drives the scheduled-drain decision |
+| V1 | Account is on the **Paid** plan, not the Free plan | **Blocking — OPEN.** Owner action; requires the billing console. Reconfirmed 2026-09-16 from [Free Tier FAQs](https://aws.amazon.com/free/free-tier-faqs/), with a detail this record did not previously carry: the Free plan expires at *the earlier of* 6 months from account opening **or** credit exhaustion, after which *"AWS closes your account, and you'll lose access to your resources and data."* The 6-month clock is unconditional, so the Free plan is not merely risky — it is terminal by default |
+| V2 | CloudFront: which allowance applies — 1 TB/10M pay-as-you-go, or 100 GB/1M flat-rate Free plan | **Resolved 2026-09-16, conservatively.** [CloudFront pricing](https://aws.amazon.com/cloudfront/pricing/) now presents plan tiers (Free / Pro / Business / Premium). The Free plan is **100 GB data transfer + 1M requests per month at $0, stated as "no overage charges"**. Model against 100 GB/1M — the smaller figure, and the one that fails closed rather than billing |
+| V3 | Lambda's 1M requests + 400,000 GB-s is always-free, not 12-month | **Resolved 2026-09-16: always-free.** [Lambda pricing](https://aws.amazon.com/lambda/pricing/) states the 1M requests + 400,000 GB-seconds monthly allowance is for all customers and does not expire at the end of the 12-month term |
+| V4 | DynamoDB 25 WCU / 25 RCU / 25 GB is always-free, not 12-month | **Resolved 2026-09-16: always-free.** [DynamoDB pricing](https://aws.amazon.com/dynamodb/pricing/provisioned/) grants 25 WCU / 25 RCU / 25 GB *"each month on a per Region, per-payer account basis"* and separately marks only data transfer as 12-month-enhanced — the contrast is the evidence |
+| V5 | SQS `ReceiveMessage` polling from a Lambda event source mapping is billable, and at what rate when idle | **Partially resolved 2026-09-16 — and the decision no longer depends on it.** [SQS pricing](https://aws.amazon.com/sqs/pricing/) confirms *"Every Amazon SQS action counts as a request"* and each 64 KB chunk bills as one request; the 1M/month allowance is for all customers. The **idle poll rate** of a Lambda event source mapping is not documented publicly, so the worst case cannot be bounded from sources. Scheduled drain is therefore kept — it is the option whose cost is knowable in advance, which is the property that matters. Remains VERIFY only if an event source mapping is ever reconsidered |
 | V6 | API Gateway HTTP API free tier is 12-month rather than always-free | Before considering it |
 | V7 | S3 free storage is always-free or 12-month | Before any S3 use |
 | V8 | CloudFront OAC supports Lambda Function URL origins, and its configuration | Before the online path |
-| V9 | DynamoDB PITR cost, and whether any free allowance applies | Before go-live with real notes |
+| V9 | DynamoDB PITR cost, and whether any free allowance applies | **Resolved 2026-09-16: PITR is billed by table size, with no free allowance.** See [Durability Has A Price](#durability-has-a-price) below — this is the first identified conflict between R1 ($0/month) and R5 (notes durability) |
 | V10 | SCPs on a single account, or Organization required | Before Level 3 controls |
 | V11 | Lambda Function URLs carry no separate charge | Before the online path |
 | V12 | CloudWatch 5 GB is combined across ingestion, archive, and Insights scans | Before setting retention |
 | V13 | Cognito Essentials free MAU and its stated indefinite duration | Confirmed 2026-09-14; recheck at go-live |
 | V14 | Region choice does not alter any allowance above | Before creating resources |
 
+**V1-V5 and V9 re-checked 2026-09-16** against official AWS pricing and Free Tier pages; answers are inline in the table above and carry that date. Every figure below remains volatile.
+
 **Sources retrieved 2026-09-14:** [AWS Free Tier](https://aws.amazon.com/free/), [Free Tier FAQs](https://aws.amazon.com/free/free-tier-faqs/), [Lambda pricing](https://aws.amazon.com/lambda/pricing/), [DynamoDB provisioned pricing](https://aws.amazon.com/dynamodb/pricing/provisioned/), [SQS pricing](https://aws.amazon.com/sqs/pricing/), [Cognito pricing](https://aws.amazon.com/cognito/pricing/), [EventBridge pricing](https://aws.amazon.com/eventbridge/pricing/), [CloudWatch pricing](https://aws.amazon.com/cloudwatch/pricing/), [CloudFront pricing](https://aws.amazon.com/cloudfront/pricing/), [AWS Free Tier data transfer expansion](https://aws.amazon.com/blogs/aws/aws-free-tier-data-transfer-expansion-100-gb-from-regions-and-1-tb-from-amazon-cloudfront-per-month/).
 
 **DECISION:** every pricing fact in this record carries the 2026-09-14 retrieval date and is treated as volatile. **DECISION:** re-verify the whole table annually and after any AWS free-tier policy announcement. A stale pricing fact in a document whose entire premise is $0 is worse than no fact.
+
+---
+
+### Durability Has A Price
+
+**Added 2026-09-16, from the V9 answer.** DynamoDB point-in-time recovery is charged by
+table size and **no free allowance applies to it**. This is the first place where two of
+this record's own requirements genuinely conflict rather than merely coexist:
+
+- **R1** — the AWS bill stays $0.00/month.
+- **R5** — research notes are durable. The whole reason the [Paid plan is required](#verification-checklist) is that losing notes is worse than paying.
+
+PITR is the managed answer to "notes survive my mistakes," and it is not free. The
+resolution is *not* to weaken R5, which already outranks R1 by this record's own reasoning.
+
+**DECISION:** V1 does not change — the Paid plan stays, for the same reason as before.
+**DECISION:** PITR is **not** enabled by default. Instead, durability in V1 is met by
+**export to the corpus**: personal state is small, bounded, and already mirrored by a
+corpus-owned canonical item, so a scheduled export into the local relational store is both
+cheaper and more useful than PITR — it puts notes where the research actually happens.
+
+**OPEN:** if personal state ever grows past what an export can cover, or if the export
+itself proves unreliable, PITR becomes the right answer and this becomes the first
+deliberate non-zero line item. That is a decision to make explicitly, with a number, not
+by drifting into it. **The $0.00 invariant holds until someone writes down why it should
+not.**
 
 ---
 

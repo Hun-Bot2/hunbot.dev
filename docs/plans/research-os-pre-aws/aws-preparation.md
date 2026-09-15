@@ -15,13 +15,29 @@ contracts done, account untouched, nothing built.
 
 ## 1. The blocking five
 
+Researched 2026-09-16 against official AWS sources. Four of the five are now answered;
+the answers are recorded in the [cloud record's checklist](../../decisions/research-os-cloud-architecture.md#verification-checklist),
+which is the source of truth.
+
 | # | To verify | Who can resolve it | Status |
 |---|---|---|---|
-| V1 | Account is on the **Paid** plan, not the Free plan | **Owner only** — billing console | OPEN |
-| V2 | CloudFront: 1 TB/10M pay-as-you-go, or 100 GB/1M flat-rate Free plan | Partly research, partly V1 | OPEN |
-| V3 | Lambda's 1M requests + 400,000 GB-s is always-free, not 12-month | Research, official AWS sources | OPEN |
-| V4 | DynamoDB 25 WCU / 25 RCU / 25 GB is always-free, not 12-month | Research, official AWS sources | OPEN |
-| V5 | SQS `ReceiveMessage` polling from a Lambda event source mapping is billable, and at what rate when idle | Research, official AWS sources | OPEN |
+| V1 | Account is on the **Paid** plan, not the Free plan | **Owner only** — billing console | **OPEN — the only true blocker** |
+| V2 | CloudFront allowance | Research | Resolved: 100 GB + 1M req/month, $0, no overage charges |
+| V3 | Lambda 1M req + 400,000 GB-s always-free | Research | Resolved: always-free |
+| V4 | DynamoDB 25 WCU / 25 RCU / 25 GB always-free | Research | Resolved: always-free |
+| V5 | SQS poller billing when idle | Research | Partially resolved; scheduled drain no longer depends on the answer |
+
+**V1 got worse on inspection, not better.** The Free plan expires at *the earlier of* six
+months from account opening **or** credit exhaustion — the six-month clock runs regardless
+of usage — and expiry closes the account and destroys its data. A $0 workload does not
+avoid this. The Paid plan is not a precaution; it is the only plan compatible with R5.
+
+**A new conflict surfaced while answering V9.** DynamoDB PITR is billed by table size with
+no free allowance, which puts R1 ($0/month) and R5 (notes durable) in genuine conflict for
+the first time. Resolved in the cloud record under
+[Durability Has A Price](../../decisions/research-os-cloud-architecture.md#durability-has-a-price):
+PITR stays off, durability comes from scheduled export into the corpus, and the $0 invariant
+holds until someone writes down why it should not.
 
 **V1 is the one that matters most and the one an agent must not touch.** The cloud record
 established that the Free plan *closes the account* when its credits are exhausted, which
