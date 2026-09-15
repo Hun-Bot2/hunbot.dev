@@ -1,6 +1,11 @@
 # Research OS: Pre-AWS Readiness Plan
 
-Status: **Planning complete. No implementation started. AWS_READY = false.**
+Status: **All ten tasks complete. AWS_READY = true as of 2026-09-16** — see
+[`aws-ready.md`](./aws-ready.md) for the per-criterion evidence, and
+[`aws-preparation.md`](./aws-preparation.md) for what is gated next.
+**No AWS infrastructure has been created**, and none may be until the five blocking
+items in [`research-os-cloud-architecture.md`](../../decisions/research-os-cloud-architecture.md#verification-checklist)
+are resolved.
 
 Created: 2026-09-14
 
