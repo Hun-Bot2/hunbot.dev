@@ -81,12 +81,39 @@ Progress as of 2026-09-16:
 The corpus is **local and relational** (C3). None of the following touches AWS, and all of
 it is on the critical path:
 
-- The private repository skeleton — it does not exist yet.
-- The local corpus store and its migrations, matching `x-contract`'s `corpus` side.
-- The queue/API envelope implementation against
-  [`contracts/research-os/research-item.schema.json`](../../../contracts/research-os/research-item.schema.json) —
-  already versioned and machine-checked here.
-- The ingestion pipeline, run locally on a schedule, with the per-run cap the record requires.
+**Built 2026-09-16.** The private repository now exists, local only, with no AWS
+resources and no network calls. It has **zero dependencies** — `node:sqlite`,
+`node:crypto` and `node --test` are built in — because a pipeline meant to run
+unattended on a schedule should not be able to break because of someone else's release.
+
+| Piece | State |
+|---|---|
+| Private repository skeleton | Done. Local git, no remote |
+| Corpus store (relational, `corpus` side of `x-contract`) | Done. 10 tables, CHECK constraints in SQL |
+| Queue/API envelope against the contract schema | Done. Rules read from the schema at load time, never retyped |
+| Ingestion pipeline with per-run cap | Done. File-backed source only |
+| Tests | 34, all passing |
+
+What it enforces in code rather than in prose: the ingestion cap has no default at
+the boundary (a missing or zero cap is refused, so forgetting an argument cannot
+start an uncapped run); every ingested item lands `RADAR` and `VERIFIED` requires
+both human review and a registry venue; merged items keep their row and id, with
+identifiers and dedup keys following the merge and chain resolution bounded so a
+cycle raises instead of hanging; the envelope is closed and capped at one 64 KB SQS
+chunk; and the two files vendored from this repository — the contract schema and
+`canonicalization.ts` — are checked **byte-for-byte**, because a drifted
+`CONTENT_HASH_FIELDS` would leave both copies individually valid while silently
+invalidating every stored hash.
+
+**Deliberately absent: any network source.** Every external API, licence and rate
+limit in [`research-discovery-system.md`](../../decisions/research-discovery-system.md)
+is marked as requiring verification, and none has been verified. A fabricated
+adapter is the most expensive kind of shortcut — everything above it would inherit
+an assumption nobody checked, and the failure would arrive as data that looks
+plausible.
+
+**Still local.** The repository has no remote. Pushing it anywhere is an owner
+decision, not a side effect of building it.
 
 Doing this first also de-risks AWS: a pipeline that already works locally arrives in Lambda
 with its behaviour known, and the first cloud deploy stops being the first test.
