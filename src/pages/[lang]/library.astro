@@ -14,6 +14,8 @@ import {
 	getApprovedPapers,
 	getApprovedResources,
 	getFeaturedResources,
+	getFeaturedTopics,
+	getFeaturedPapers,
 	getLibrarySectionPath,
 	getPaperTldr,
 	getResourceSummary,
@@ -43,9 +45,13 @@ const approvedResources = getApprovedResources(allResources);
 const approvedPapers = getApprovedPapers(allPapers);
 const activeTopics = getActiveTopics(allTopics);
 
+// All three go through a deterministic comparator. A bare `.slice()` takes
+// whatever order getCollection() returned, so two builds of identical source
+// could disagree — which makes diffing rendered output worthless, and diffing
+// rendered output is what caught the venue-display regression (audit N4).
 const featuredResources = getFeaturedResources(approvedResources, 3);
-const featuredPapers = approvedPapers.slice(0, 3);
-const featuredTopics = activeTopics.slice(0, 6);
+const featuredPapers = getFeaturedPapers(approvedPapers, 3);
+const featuredTopics = getFeaturedTopics(activeTopics, 6);
 
 const resourcesBySection = approvedResources.reduce<Record<string, number>>((counts, resource) => {
 	counts[resource.data.section] = (counts[resource.data.section] ?? 0) + 1;
