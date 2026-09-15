@@ -35,7 +35,11 @@ Package manager: `npm` (`package-lock.json` is present).
 - Build: `npm run build` (`astro build`)
 - Preview: `npm run preview` (`astro preview`)
 - Astro CLI passthrough: `npm run astro`
-- Test: `npm test` (`node --test test/`)
+- Test: `npm test` (`node --test test/*.test.mjs`)
+- Node: **24**, pinned in `.nvmrc` and matching CI and the Vercel serverless runtime.
+  `engines` allows `>=24`, so a newer local Node installs and runs without complaint —
+  and will happily accept syntax and CLI behaviour that Node 24 rejects. Run `nvm use`
+  before trusting a local green run; a suite that passes only on your machine has not passed.
 - Lint: Not currently defined
 - Typecheck: Not currently defined
 
