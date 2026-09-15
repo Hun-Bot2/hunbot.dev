@@ -35,7 +35,7 @@ Package manager: `npm` (`package-lock.json` is present).
 - Build: `npm run build` (`astro build`)
 - Preview: `npm run preview` (`astro preview`)
 - Astro CLI passthrough: `npm run astro`
-- Test: Not currently defined
+- Test: `npm test` (`node --test test/`)
 - Lint: Not currently defined
 - Typecheck: Not currently defined
 

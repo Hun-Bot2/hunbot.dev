@@ -5,6 +5,7 @@ import { extname, join, relative } from 'node:path';
 import { decks } from '../src/data/decks.ts';
 import { learningPaths } from '../src/data/learningPaths.ts';
 import { learningPathLanguages, normalizeLearningPathRef } from '../src/utils/learning-paths.ts';
+import { buildTopicIndex, isResolvableTopicReference } from './lib/topic-resolution.mjs';
 
 const root = process.cwd();
 const slugSafe = /^[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$/;
@@ -24,7 +25,13 @@ assert.match(pathDetailPage, /data-pagefind-filter="path\[content\]"/);
 const blogIds = new Set(readBlogIds());
 const resourceIds = new Set(readJsonFrontmatterIds('src/content/resources'));
 const paperIds = new Set(readJsonFrontmatterIds('src/content/papers'));
-const topicIds = new Set(readJsonFrontmatterIds('src/content/topics'));
+// Alias-aware topic resolution (docs/decisions/discover-direction.md#Taxonomy):
+// a learning path may reference a topic by its current id, by a uniquely-owned
+// alias, or through a mergedInto chain. A bare Set of current ids breaks the
+// ADR's guarantee that item references keep resolving across a rename — the
+// same bug fixed in scripts/validate-library.mjs. Shared, not duplicated, so a
+// fourth validator cannot drift again.
+const topicIndex = buildTopicIndex(readTopicEntries('src/content/topics'));
 const deckIds = new Set(decks.map((deck) => deck.id));
 const seenPathIds = new Set();
 
@@ -45,7 +52,10 @@ for (const path of learningPaths) {
 	}
 
 	for (const topicId of path.topicIds) {
-		assert.ok(topicIds.has(topicId), `${path.id} references unknown topic: ${topicId}`);
+		assert.ok(
+			isResolvableTopicReference(topicId, topicIndex),
+			`${path.id} references unknown topic: ${topicId}`,
+		);
 	}
 
 	for (const resourceId of path.resourceIds) {
@@ -118,6 +128,20 @@ function readBlogIds() {
 	return walk(blogRoot)
 		.filter((filePath) => ['.md', '.mdx'].includes(extname(filePath)))
 		.map((filePath) => normalizeLearningPathRef(relative(blogRoot, filePath)));
+}
+
+function readTopicEntries(directory) {
+	const fullDirectory = join(root, directory);
+	if (!existsSync(fullDirectory)) return [];
+
+	return walk(fullDirectory)
+		.filter((filePath) => ['.md', '.mdx'].includes(extname(filePath)))
+		.map((filePath) => {
+			const source = readFile(filePath);
+			const match = source.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+			assert.ok(match, `${relative(root, filePath)} is missing frontmatter.`);
+			return { label: relative(root, filePath), data: JSON.parse(match[1]) };
+		});
 }
 
 function readJsonFrontmatterIds(directory) {

@@ -96,6 +96,32 @@ for (const privatePath of [
 	assert.equal(existsSync(join(root, privatePath)), false, `${privatePath} should not exist in the public repo.`);
 }
 
+// INV-14 (docs/decisions/research-os-data-contract.md): the public site
+// gains no runtime dependency on the private Research OS pipeline. Neither
+// contracts/ (the wire/storage contract) nor src/utils/canonicalization.ts
+// (pure pipeline code that happens to live in this repository) may be
+// imported from anywhere the site actually renders. Today nothing imports
+// either, and the only way that stays true is a check — this is
+// shared-context.md §2's boundary made mechanical.
+const runtimeSourceFiles = listFiles('src/pages').concat(listFiles('src/components'), listFiles('src/layouts'));
+const importSpecifierPattern = /(?:from\s+|require\()\s*['"]([^'"]+)['"]/g;
+
+for (const sourceFile of runtimeSourceFiles) {
+	const source = readFileSync(sourceFile, 'utf8');
+
+	for (const match of source.matchAll(importSpecifierPattern)) {
+		const specifier = match[1];
+		const importsContracts = specifier.includes('/contracts/') || specifier.startsWith('contracts/');
+		const importsCanonicalization = specifier.includes('utils/canonicalization');
+
+		assert.equal(
+			importsContracts || importsCanonicalization,
+			false,
+			`${relative(root, sourceFile)} imports "${specifier}" — must not import contracts/ or src/utils/canonicalization.ts. The public site gains no runtime dependency on the private Research OS pipeline (INV-14).`,
+		);
+	}
+}
+
 const boundaryDoc = read('docs/decisions/product-boundaries.md');
 assert.match(boundaryDoc, /personal trust asset/);
 assert.match(boundaryDoc, /Do not add these to the personal blog/);

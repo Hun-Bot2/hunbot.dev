@@ -74,19 +74,58 @@ Optional relationship fields:
 
 Papers represent concise AI paper cards, not copied paper text.
 
+**Superseded 2026-09-14** by
+[`docs/decisions/research-item-identity.md`](../decisions/research-item-identity.md)
+(T01), applied by
+[T09](../plans/research-os-pre-aws/tasks/T09-paper-schema-migration.md). The
+single legacy `decision` field (`accepted` / `oral` / `spotlight` / `poster` /
+`preprint` / `workshop` / `rejected` / `unknown`) conflated four independent
+facts — acceptance status, honor, presentation format, and provenance — and
+could not express "accepted **and** oral". It is replaced by the fields
+below. See that ADR's §C2 for the full reasoning and the derived value lists.
+
 Required core fields:
 
-- `id`: slug-safe identifier.
+- `id`: slug-safe identifier. The **projection** identity — URL-bearing,
+  human-chosen, never reused.
+- `itemId`: the canonical **work** identity — `itm-` plus a 26-character
+  lowercase Crockford-base32 ULID, opaque and minted once. The only join key
+  to the private Research OS canonical item and to every note anchored to it.
+  Never derived from title, URL, or any other mutable field. See
+  [`research-item-identity.md#Canonical-Item-Identity`](../decisions/research-item-identity.md#canonical-item-identity).
 - `title`: paper title.
 - `url`: canonical paper or landing URL.
-- `decision`: `accepted`, `oral`, `spotlight`, `poster`, `preprint`, `workshop`, `rejected`, or `unknown`.
+- `acceptanceStatus`: the work's status at the referenced venue —
+  `accepted`, `rejected`, `preprint`, or `unknown` (default). Registry-backed
+  (`src/data/paperVocabularies.ts`), cross-checked by
+  `scripts/validate-library.mjs`, never a Zod enum.
+- `honors`: array (max 4, default `[]`) of registry-backed honor ids, e.g.
+  `oral`, `spotlight` — independent of `acceptanceStatus`, because "accepted
+  and oral" was unrepresentable under the old single-enum `decision` field.
+- `presentationFormat`: nullable (default `null`) registry-backed
+  presentation-format id, e.g. `poster`.
+- `provenance`: `VERIFIED` or `RADAR` (default `RADAR`). The one other closed
+  Zod enum in this repository besides `depth` — it drives destructive TTL in
+  the private Research OS and is never assignable by assertion.
+  `scripts/validate-library.mjs` rejects `VERIFIED` unless the record is
+  human-reviewed **and** `venue` resolves to a registry id.
 - `topics`: topic IDs when applicable.
 - `priority`: `high`, `medium`, or `low`.
 - `difficulty`: `beginner`, `intermediate`, `advanced`, or `unknown`.
-- `status`: `draft`, `pending`, `approved`, or `rejected`.
+- `status`: `draft`, `pending`, `approved`, or `rejected`. **Publication
+  review status — unrelated to `acceptanceStatus`, the venue's decision.**
 - `summary`: concise original summary fields.
-- `signals`: optional numeric and availability signals.
-- `source`: manual/source identifiers and check dates.
+- `signals`: citation counts and code/project-page observations. `hasCode`
+  and `hasProjectPage` are nullable (default `null` — "not yet checked" is
+  never the same fact as "false"). The former `topicScore` / `sourceScore` /
+  `usefulnessScore` / `freshnessScore` / `totalScore` composite fields are
+  removed entirely: ranking inputs, not observations, and no single composite
+  quality score is a source-of-truth field anywhere in the system.
+- `source`: manual/source metadata and check dates. `source.externalIds` is a
+  bounded list (max 12) of `{ scheme, value }` entries — replacing the fixed
+  `openReviewId` / `semanticScholarId` / `arxivId` columns — with `scheme`
+  cross-checked against `src/data/identifierSchemes.ts`. A `doi` entry's
+  value must be a well-formed DOI.
 - `review`: publication review metadata.
 
 For approved papers, `summary.ko` must include:
@@ -303,8 +342,65 @@ Do not store these in public content:
 - Unreviewed AI summaries.
 - Mirrored images, fonts, datasets, or other assets without clear permission.
 - Secrets, tokens, private URLs, or credentials.
+- Anything shaped like the private Research OS's corpus record, personal
+  state, or removed ranking inputs — see the next section.
 
-The validator rejects fields named `rawHtml`, `rawPdfText`, `fullPdfText`, `largeCopiedText`, and `copiedAbstract`.
+**2026-09-15 (T10 — boundary validator hardening):**
+[`docs/decisions/research-os-data-contract.md`](../decisions/research-os-data-contract.md)
+defines a public/corpus/personal-state/operational boundary for the
+(not-yet-built) private Research OS, machine-checkable against
+[`contracts/research-os/research-item.schema.json`](../../contracts/research-os/research-item.schema.json)'s
+`x-contract` block. `scripts/validate-library.mjs` now reads that block
+rather than a hand-typed list, and rejects three additional shapes at any
+nesting depth. INV-01/INV-02 are written against `resources` and `papers`;
+the validator applies every name below to `topics` as well, deliberately —
+a topic carrying `readingState` or `jobState` is the same mistake, and no
+topic field collides with any of these names. `mergedInto` is the one name
+that genuinely needs per-collection scoping, and it has it:
+
+- **Corpus-only fields** (T01 + T02 — `x-contract.forbiddenInPublicProjection`):
+  `fieldSources`, `conflicts`, `statusHistory`, `sameWorkAs`, `dedupKey`,
+  `contentHash`, `ttlExempt`, `lifecycle`, `mintedAt`, anything in the `ai`
+  or `derived` namespaces, `bibliographic`, `enrichment`, `operational`,
+  `signalSheet`, `canonicalUrl`, `projectionId`, `identifierIndex`,
+  `embedding`, `abstract`, `fullText` — plus `mergedInto`, but **only** on
+  `papers`/`resources`. The `topics` collection carries its own, unrelated
+  `mergedInto` (T03's taxonomy lifecycle,
+  [`discover-direction.md`](../decisions/discover-direction.md#Taxonomy)) and
+  must keep validating.
+- **Personal-state / operational fields** (`x-contract.personalStateFieldNames`):
+  `readingState`, `readingPriority`, `savedAt`, `unsavedAt`,
+  `queuePosition`, `noteCount`, `lastNoteAt`, `lastOpenedAt`, `noteIds`,
+  `reviewCandidate`, `ttl`, `expiresAt`, `deviceId`, `jobId`, `jobState`,
+  `cursor`, `retryCount`, `idempotencyKey`, `dlqReason`. These belong only in
+  the private Research OS's DynamoDB record, never in a public collection —
+  the error message says so, distinctly from a corpus-shaped violation,
+  because the remedy differs. `readingPriority` is deliberately not named
+  `priority`: `papers.priority` is a legitimate, unrelated editorial field.
+- **Removed ranking-input fields** (`x-contract.removedScoreFields`):
+  `topicScore`, `sourceScore`, `usefulnessScore`, `freshnessScore`,
+  `totalScore`. Also checked against `src/content.config.ts` directly — a
+  reappearance in the schema is a regression even before any content uses it.
+
+A public-collection record over 8192 bytes (measured against the current
+largest real record, 2154 bytes) also fails validation — usually a sign that
+corpus data has leaked into a summary field rather than a human having
+written one.
+
+The validator rejects fields named `rawHtml`, `rawPdfText`, `fullPdfText`,
+`largeCopiedText`, and `copiedAbstract` (unchanged from the original five),
+plus the extended lists above.
+
+Nine of T02's fifteen invariants (INV-05 through INV-13, and INV-15) are
+contract-file-shaped rather than content-shaped — checked by
+`scripts/validate-research-contract.mjs`
+(`npm run research-contract:validate`, part of `content:validate`) against
+`contracts/research-os/research-item.schema.json` and
+`src/utils/canonicalization.ts`, not against `src/content/`. INV-14 (no
+public route or component may import `contracts/` or
+`src/utils/canonicalization.ts`) lives in
+`scripts/validate-product-boundaries.mjs` alongside this repository's other
+boundary-shaped checks.
 
 ## Validation
 
@@ -320,7 +416,13 @@ For focused Library-only checks, run:
 npm run library:validate
 ```
 
-The Library validation script checks duplicate IDs, slug-safe IDs, approved review rules, required Korean summaries, forbidden raw fields, resource license metadata, resource public policies, topic references, resource references, and safe optional deck IDs.
+The Library validation script checks duplicate IDs, slug-safe IDs, approved review rules, required Korean summaries, forbidden raw/corpus/personal-state/removed-score fields (see "What Not To Store" above), a public-collection record size guard, resource license metadata, resource public policies, topic references, resource references, and safe optional deck IDs.
+
+For the private Research OS contract file's own internal-coherence checks (independent of any content), run:
+
+```bash
+npm run research-contract:validate
+```
 
 `content:validate` also runs the blog frontmatter checker and deck metadata validator so public content issues can be caught before a full Astro build.
 

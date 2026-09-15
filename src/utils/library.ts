@@ -8,6 +8,12 @@ export type TopicEntry = CollectionEntry<'topics'>;
 type LocalizedText = Partial<Record<UILanguage, string>>;
 type ResourceSection = ResourceEntry['data']['section'];
 
+// Deterministic "any available" order for the language resolver below. Every
+// UILanguage is listed, so trying requested -> canonical -> this order always
+// terminates and matches the old ko ?? en ?? jp tie-break exactly when
+// canonicalLanguage is 'ko' (today's default for every existing item).
+const FALLBACK_LANGUAGE_ORDER: readonly UILanguage[] = ['ko', 'en', 'jp'];
+
 export const librarySections = [
 	{ id: 'design', translationKey: 'design', kind: 'resources', resourceSection: 'design' },
 	{ id: 'vibe-coding', translationKey: 'vibe-coding', kind: 'resources', resourceSection: 'vibe-coding' },
@@ -56,13 +62,48 @@ export function getActiveTopics(topics: TopicEntry[]): TopicEntry[] {
 	return topics.filter(isActiveTopic);
 }
 
-export function getLocalizedText(value: LocalizedText | undefined, lang: UILanguage): string {
+/**
+ * The single Discover/Library language-fallback rule
+ * (docs/decisions/discover-direction.md#Language-Policy): requested language
+ * -> the item's canonical language -> any available language. This is the
+ * one resolver that replaces the two hard-coded `ko ?? en ?? jp` chains that
+ * used to live separately in `getLocalizedText` and `getPaperTldr` — both now
+ * call through this instead of duplicating the fallback order.
+ *
+ * `getValue` abstracts over whatever localized shape a caller holds (a flat
+ * per-language string, or one field nested inside a per-language summary
+ * object), so both call sites can share this single implementation.
+ */
+function resolveByLanguagePolicy<T>(
+	getValue: (lang: UILanguage) => T | undefined,
+	requestedLanguage: UILanguage,
+	canonicalLanguage: UILanguage,
+): T | undefined {
+	const requested = getValue(requestedLanguage);
+	if (requested) return requested;
+
+	const canonical = getValue(canonicalLanguage);
+	if (canonical) return canonical;
+
+	for (const fallbackLanguage of FALLBACK_LANGUAGE_ORDER) {
+		const value = getValue(fallbackLanguage);
+		if (value) return value;
+	}
+
+	return undefined;
+}
+
+export function getLocalizedText(
+	value: LocalizedText | undefined,
+	lang: UILanguage,
+	canonicalLanguage: UILanguage = 'ko',
+): string {
 	if (!value) return '';
-	return value[lang] ?? value.ko ?? value.en ?? value.jp ?? '';
+	return resolveByLanguagePolicy((language) => value[language], lang, canonicalLanguage) ?? '';
 }
 
 export function getResourceSummary(resource: ResourceEntry, lang: UILanguage): string {
-	return getLocalizedText(resource.data.summary, lang);
+	return getLocalizedText(resource.data.summary, lang, resource.data.canonicalLanguage);
 }
 
 export function getTopicLabel(topic: TopicEntry, lang: UILanguage): string {
@@ -75,7 +116,9 @@ export function getTopicDescription(topic: TopicEntry, lang: UILanguage): string
 
 export function getPaperTldr(paper: PaperEntry, lang: UILanguage): string {
 	const summary = paper.data.summary;
-	return summary[lang]?.tldr ?? summary.ko?.tldr ?? summary.en?.tldr ?? summary.jp?.tldr ?? '';
+	return (
+		resolveByLanguagePolicy((language) => summary[language]?.tldr, lang, paper.data.canonicalLanguage) ?? ''
+	);
 }
 
 export function getResourcesForLibrarySection(

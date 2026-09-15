@@ -1,0 +1,7 @@
+---
+// Fixture: a public route importing pipeline-only code. Proves INV-14 —
+// the public site must gain no runtime dependency on the private Research
+// OS pipeline (docs/decisions/research-os-data-contract.md).
+import { computeContentHash } from '../../utils/canonicalization.ts';
+---
+<p>{computeContentHash({})}</p>
