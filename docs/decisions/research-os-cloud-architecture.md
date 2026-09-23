@@ -657,11 +657,48 @@ control keeps Lambda free under sustained load.
 unbounded bill into a bounded one, which is worth having and is not what the earlier wording
 claimed.
 
-**The fuse that does fail closed is a Budgets action**, and [Budgets pricing](https://aws.amazon.com/aws-cost-management/aws-budgets/pricing/)
-(2026-09-23) gives the first two action-enabled budgets free. Setting reserved concurrency to
-zero deactivates a Function URL outright — the [function URL guide](https://docs.aws.amazon.com/lambda/latest/dg/urls-configuration.html)
-says so explicitly — so a budget action at the $0.01 threshold is a real stop, not an email. The
-existing `zero-spend` budget is notification-only. **This is the one guardrail still missing.**
+**A Budgets action is not that fuse. Corrected 2026-09-23, same day, before anything was built
+on it.** An earlier revision of this section proposed a budget action that sets reserved
+concurrency to zero. [Configuring budget actions](https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-controls.html)
+lists what an action can actually do: *"applying an IAM policy or a service control policy (SCP)
+... targeting specific Amazon EC2 or Amazon RDS instances"*. **Lambda concurrency is not on that
+list**, and this account has no Organization, so SCPs are unavailable too. The claim was written
+from what would have been convenient rather than from the documentation.
+
+What remains, honestly:
+
+| Option | Fails closed? | Cost | Objection |
+|---|---|---|---|
+| Budget action applying a Deny policy to the execution role | no | free | The function is still invoked and still billed; it just fails once it is running |
+| Budget notification → SNS → a second Lambda calling `PutFunctionConcurrency(0)` | yes | free tier | A Lambda whose job is to disable a Lambda, holding a permission to do so. New surface, and it inherits the same lag as the billing signal that triggers it |
+| CloudWatch alarm on `Invocations` → the same kill-switch Lambda | yes | free tier | Reacts to traffic rather than to cost, so it is faster than Budgets — but it is still a second function to maintain |
+| **Reserved concurrency set to 0 until a route exists** | **yes** | **free** | It turns the endpoint off, which is only acceptable while there is nothing behind it — which is exactly the situation today |
+
+**DECISION: the fourth. While `infra/lambda/api/` is a placeholder that returns a constant and
+touches nothing, the correct reserved concurrency is zero.** The distribution is public; the
+CloudFront domain is obscure but not secret; and every request that reaches it is billable
+whether or not the handler does anything. A function with no route to serve has no reason to be
+invocable, and `PutFunctionConcurrency(0)` is free, instantaneous and reversible — the
+[function URL guide](https://docs.aws.amazon.com/lambda/latest/dg/urls-configuration.html)
+confirms it returns HTTP 429 and calls it the way to reject all traffic in an emergency.
+
+Revisit when the first real route lands: at that point the choice is between the kill-switch
+Lambda and accepting the ~$73/month ceiling, and it should be made against a measured invocation
+rate rather than in advance.
+
+### A Public Endpoint With Nothing Behind It
+
+`infra/lambda/api/index.mjs` is a placeholder: it returns `{ ok: true }` and never reads the
+table. Its comment explains that JWT verification is deliberately unimplemented because wiring
+auth for routes that do not exist is speculative code, and that reasoning is sound.
+
+The consequence is worth stating plainly anyway. **CloudFront → Function URL → Lambda is live and
+reachable by anyone who has the distribution domain, and every one of those invocations bills.**
+There is no data exposure — the handler touches nothing — but the execution role already carries
+`grantReadWriteData` on the table, a permission granted ahead of any code that uses it.
+
+So the exposure today is spend, not data, and the mitigation is the one above: leave it at zero
+concurrency until there is something to serve.
 
 ### The Free Tier Page Is A Trailing Indicator
 
