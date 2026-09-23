@@ -657,11 +657,48 @@ control keeps Lambda free under sustained load.
 unbounded bill into a bounded one, which is worth having and is not what the earlier wording
 claimed.
 
-**The fuse that does fail closed is a Budgets action**, and [Budgets pricing](https://aws.amazon.com/aws-cost-management/aws-budgets/pricing/)
-(2026-09-23) gives the first two action-enabled budgets free. Setting reserved concurrency to
-zero deactivates a Function URL outright — the [function URL guide](https://docs.aws.amazon.com/lambda/latest/dg/urls-configuration.html)
-says so explicitly — so a budget action at the $0.01 threshold is a real stop, not an email. The
-existing `zero-spend` budget is notification-only. **This is the one guardrail still missing.**
+**A Budgets action is not that fuse. Corrected 2026-09-23, same day, before anything was built
+on it.** An earlier revision of this section proposed a budget action that sets reserved
+concurrency to zero. [Configuring budget actions](https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-controls.html)
+lists what an action can actually do: *"applying an IAM policy or a service control policy (SCP)
+... targeting specific Amazon EC2 or Amazon RDS instances"*. **Lambda concurrency is not on that
+list**, and this account has no Organization, so SCPs are unavailable too. The claim was written
+from what would have been convenient rather than from the documentation.
+
+What remains, honestly:
+
+| Option | Fails closed? | Cost | Objection |
+|---|---|---|---|
+| Budget action applying a Deny policy to the execution role | no | free | The function is still invoked and still billed; it just fails once it is running |
+| Budget notification → SNS → a second Lambda calling `PutFunctionConcurrency(0)` | yes | free tier | A Lambda whose job is to disable a Lambda, holding a permission to do so. New surface, and it inherits the same lag as the billing signal that triggers it |
+| CloudWatch alarm on `Invocations` → the same kill-switch Lambda | yes | free tier | Reacts to traffic rather than to cost, so it is faster than Budgets — but it is still a second function to maintain |
+| **Reserved concurrency set to 0 until a route exists** | **yes** | **free** | It turns the endpoint off, which is only acceptable while there is nothing behind it — which is exactly the situation today |
+
+**DECISION: the fourth. While `infra/lambda/api/` is a placeholder that returns a constant and
+touches nothing, the correct reserved concurrency is zero.** The distribution is public; the
+CloudFront domain is obscure but not secret; and every request that reaches it is billable
+whether or not the handler does anything. A function with no route to serve has no reason to be
+invocable, and `PutFunctionConcurrency(0)` is free, instantaneous and reversible — the
+[function URL guide](https://docs.aws.amazon.com/lambda/latest/dg/urls-configuration.html)
+confirms it returns HTTP 429 and calls it the way to reject all traffic in an emergency.
+
+Revisit when the first real route lands: at that point the choice is between the kill-switch
+Lambda and accepting the ~$73/month ceiling, and it should be made against a measured invocation
+rate rather than in advance.
+
+### A Public Endpoint With Nothing Behind It
+
+`infra/lambda/api/index.mjs` is a placeholder: it returns `{ ok: true }` and never reads the
+table. Its comment explains that JWT verification is deliberately unimplemented because wiring
+auth for routes that do not exist is speculative code, and that reasoning is sound.
+
+The consequence is worth stating plainly anyway. **CloudFront → Function URL → Lambda is live and
+reachable by anyone who has the distribution domain, and every one of those invocations bills.**
+There is no data exposure — the handler touches nothing — but the execution role already carries
+`grantReadWriteData` on the table, a permission granted ahead of any code that uses it.
+
+So the exposure today is spend, not data, and the mitigation is the one above: leave it at zero
+concurrency until there is something to serve.
 
 ### The Free Tier Page Is A Trailing Indicator
 
@@ -751,6 +788,42 @@ about a project. Four-year-old experiments were quietly drawing on the same allo
 record would have noticed, because the model reasons about what this system will consume,
 never about what else already does. **The Free tier page is therefore a precondition for
 trusting any projection here**, and is worth re-reading whenever the model is revised.
+
+### Background Path, Decided 2026-09-23
+
+**DECISION: collection does not move to AWS yet. It runs as a scheduled GitHub Actions workflow
+in the private repository, and the corpus persists there as an append-only NDJSON ledger
+committed to git, with SQLite rebuilt from it by replay.** Source selection and the full
+verification log live in a private operating record in that repository; this entry records the
+architecture only. Facts retrieved 2026-09-23.
+
+- The [Background path](#proposed-architecture) above — EventBridge Scheduler → Collector Lambda →
+  SQS → Processor — stays the specified target, **not the V1 implementation**. This answers the
+  open question *"Should the collector run in AWS at all in V1"*: no.
+- **Why a ledger rather than a database file.** The corpus is declared regenerable from its
+  sources, but that holds only for sources that serve any item by ID forever. A feed is a rolling
+  window — the [AWS News Blog feed](https://aws.amazon.com/blogs/aws/feed/) returned 20 items —
+  so an item that scrolls out between runs is gone. And `item_id` is minted, not derived: it is
+  the join key from DynamoDB personal state, so re-running ingestion to rebuild the corpus would
+  re-mint IDs and orphan every note that references them. What must persist is therefore the
+  sequence of decisions the pipeline made. **Replay applies recorded decisions; it never re-runs
+  dedup or minting.** Daily shards keep each file under GitHub's recommended 1 MB object size
+  ([repository limits](https://docs.github.com/en/repositories/creating-and-managing-repositories/repository-limits)).
+- **Cost did not decide the scheduler.** Two runs a day is ≤180 of the 2,000 included Actions
+  minutes on GitHub Free ([Actions billing](https://docs.github.com/en/billing/concepts/product-billing/github-actions)),
+  and a rounding error against EventBridge Scheduler's 14M ([pricing](https://aws.amazon.com/eventbridge/pricing/)).
+  What decided it is data locality: the ledger lives in git, so the writer belongs where a
+  short-lived `GITHUB_TOKEN` exists, rather than in a Lambda holding a standing credential with
+  write access to a private repository.
+- **It also fails closed, which AWS does not.** The same billing page: *"If your account does not
+  have a valid payment method on file, usage is blocked once you use up your quota."* That is the
+  hard stop this account lacks on AWS (see [Reliability And Failure Behavior](#reliability-and-failure-behavior)),
+  and it holds only while no payment method is on file — **VERIFY** before the first scheduled run.
+- **The trigger to move is named:** when the phone's *Today's Radar* needs candidates in DynamoDB.
+  The first step at that point is GitHub OIDC federation into a least-privilege IAM role — no
+  long-lived keys — before any EventBridge/Lambda/SQS resource is created.
+- **No AWS resource is added by this decision.** The 10 spare WCU noted in
+  [Capacity, Recomputed](#capacity-recomputed-2026-09-23) remain reserved for that later step.
 
 ---
 
