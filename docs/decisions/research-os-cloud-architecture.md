@@ -533,7 +533,9 @@ the per-component gates below V5. Read from the account, not from this document:
 | Lambda `research-os-api` | `nodejs22.x`, 256 MB, 10 s, x86_64 |
 | — reserved concurrency | **5** |
 | — Function URL | `AWS_IAM` |
-| DynamoDB `research-os-state` | **provisioned 25 RCU / 25 WCU**, 0 items |
+| DynamoDB `research-os-state` | provisioned **10 RCU / 10 WCU** after the correction below (deployed at 25/25), 0 items |
+| — GSI `gsi1`, `Projection: ALL` | provisioned **5 RCU / 5 WCU** |
+| CloudFront distribution + OAC | `PriceClass_All`, caching disabled |
 | — PITR | `DISABLED` |
 | CloudWatch `/aws/lambda/research-os-api` | retention **14 days** |
 | SQS | none |
@@ -556,10 +558,124 @@ which this record names as the slow-burn first bill. None of that happened by ac
   and in use. **DECISION: that deferral is superseded — CDK is the chosen tool.** Recorded as a
   reversal rather than edited away, because the deferral was written down with reasons.
 
-**DECISION: `research-os-state` consumes the entire regional DynamoDB free allowance.** 25 WCU
-and 25 RCU is the whole per-Region grant from V4. A second provisioned table in `ap-northeast-2`
-starts billing immediately. Any future table either shares this one's capacity or the $0
-invariant needs re-deriving first.
+### Enumeration Discipline, 2026-09-23
+
+Three sweeps of this account in one day each reported a state that was not the state, and all
+three failed the same way: **only the thing already in mind was queried.**
+
+| Reported | Actually | Missed because |
+|---|---|---|
+| "the account now holds nothing" (2026-09-16) | 9 stacks, 3 Lambdas, 3 buckets, 10 roles, a Cognito pool, an AppSync API, a REST API, 3 unbounded log groups | only DynamoDB was listed |
+| "provisioned at exactly the free allowance, 25/25" | 30/30 — 120% | `describe-table` was run, `GlobalSecondaryIndexes` was never expanded |
+| the deployed-resource inventory | CloudFront distribution + OAC also exist | CloudFront was never queried; it surfaced only when the stack source was read |
+
+The second and third were found by reading the CDK source and the CloudFormation resource list —
+that is, by asking the account what it contains instead of asking it to confirm a list. The
+generalisation is cheap and worth stating: **`list-stack-resources` before `describe-<thing>`,
+and expand every nested structure the first call returns.** A sweep scoped to the service you
+were already thinking about reports an empty account and leaves nine stacks running.
+
+### Stated But Not In Effect
+
+`minimumProtocolVersion: TLS_V1_2_2021` is set on the CloudFront distribution and **does nothing**.
+CDK warns on every synth: the setting has no effect without a custom certificate, and this
+distribution uses the default `*.cloudfront.net` certificate, whose security policy is fixed at
+TLSv1. Raising the floor requires a custom domain and an ACM certificate, which V1 does not have.
+
+Kept in the stack with a comment saying so, rather than deleted — removing it would make the file
+read as though TLS 1.2 had never been intended, and the honest state is "intended, unenforceable
+today". Recorded here because a security property asserted in code and not enforced by the
+platform is exactly the kind of claim this record exists to catch.
+
+### The Infrastructure Definition Is Not Committed Anywhere
+
+`infra/` in the private repository is **untracked**. Thirteen live resources — CloudFront, a
+Lambda with a Function URL, DynamoDB with a GSI, a Cognito pool — have a single definition, in an
+uncommitted directory on one laptop, in a repository that has no remote. There is no baseline to
+diff against and nothing to restore from.
+
+**DECISION: committing `infra/` is a precondition for any further change to it.** The capacity
+correction above was edited into that file before it had ever been committed, which is the
+concrete version of the risk rather than a hypothetical one.
+
+### Capacity, Recomputed 2026-09-23
+
+The paragraph that stood here said the table consumed the entire regional allowance and stopped
+there. It was wrong, and wrong in the direction that costs money.
+
+**The free allowance is a regional aggregate, and the index counts.** The account's own Free Tier
+page meters `APN2-ReadCapacityUnit-Hrs` against **18,600 per month**, which is 25 units x 744 h —
+so the grant is capacity-unit-hours across the Region, not a per-table number. As deployed:
+
+| | RCU | WCU |
+|---|---|---|
+| table `research-os-state` | 25 | 25 |
+| GSI `gsi1` | 5 | 5 |
+| **total** | **30** | **30** |
+| free allowance | 25 | 25 |
+
+30 units x 744 h = 22,320 against 18,600 = **120%**. About 3,720 unit-hours of each billable,
+roughly $3/month at us-east-1 rates and more in Seoul. **September survived only because the
+stack was deployed on the 23rd** — 183 remaining hours put the month at 31%. October would have
+been the first full month, and the first bill.
+
+**The 25 WCU was never usable.** `gsi1` projects `ALL`, so every item carrying `gsi1pk` consumes
+table *and* index write capacity, and DynamoDB throttles the base write when the index is the
+smaller of the two. Sustained indexed writes were capped at **5/s by the GSI** whatever the table
+said. The extra 15 units bought no throughput; they bought an overage.
+
+**Corrected to 10/10 + 5/5 = 15 units (60%)**, deployed the same day with no table replacement.
+The 5/s indexed-write ceiling is unchanged; what changed is that there are now 10 spare units for
+the background collector when it moves off the laptop. At 25/25 there was no room to move it at
+all without billing — so the reduction *created* the capacity ingestion will need rather than
+taking any away.
+
+**Bias low, always.** Exceeding provisioned capacity throttles and the SDK retries: the symptom
+is latency. Over-provisioning has no symptom until the bill. DynamoDB also caps *decreases* at
+four per day per table while increases are unlimited, so the cheap direction is also the
+reversible one.
+
+### Reserved Concurrency Is Not A $0 Fuse
+
+This record calls reserved concurrency "the primary cost fuse", and that overstates it.
+
+At 256 MB, five reserved concurrent executions is 1.25 GB-s of every wall-clock second. A 30-day
+month pinned at saturation is 3,240,000 GB-s against a 400,000 GB-s allowance, plus up to
+129.6M requests (a Function URL's ceiling is 10 x reserved concurrency = 50 RPS) against 1M.
+That is roughly **$73/month** at us-east-1 rates — bounded, but not zero.
+
+The reserved concurrency that *would* bound the month to the free tier is
+400,000 / (0.25 x 2,592,000) = **0.617**. There is no integer below one, so no setting of this
+control keeps Lambda free under sustained load.
+
+| Control | Over-limit behaviour | Guarantees $0? |
+|---|---|---|
+| DynamoDB provisioned capacity | throttles — fails closed | **yes** |
+| Lambda reserved concurrency | keeps executing up to the cap | **no** — bounds the rate, not the total |
+
+**DECISION: reserved concurrency is a blast-radius limit, not a cost fuse.** It converts an
+unbounded bill into a bounded one, which is worth having and is not what the earlier wording
+claimed.
+
+**The fuse that does fail closed is a Budgets action**, and [Budgets pricing](https://aws.amazon.com/aws-cost-management/aws-budgets/pricing/)
+(2026-09-23) gives the first two action-enabled budgets free. Setting reserved concurrency to
+zero deactivates a Function URL outright — the [function URL guide](https://docs.aws.amazon.com/lambda/latest/dg/urls-configuration.html)
+says so explicitly — so a budget action at the $0.01 threshold is a real stop, not an email. The
+existing `zero-spend` budget is notification-only. **This is the one guardrail still missing.**
+
+### The Free Tier Page Is A Trailing Indicator
+
+The page that found the 2022 tables did not show the stack deployed at 08:52 UTC the same day.
+Read hours later it still reported 352 RCU-Hrs — the residue of the two 1-RCU tables deleted on
+2026-09-16, identical to the unit-hour in `ap-northeast-2` and `us-west-2` because both tables
+were the same size and were deleted together. Thirty units running for two hours would have
+shown 412. Its forecast column extrapolated from data that predated the deployment entirely.
+
+**DECISION: the Free Tier page answers "what did this account do", never "what is it doing".**
+For the second question, read the resource: `describe-table`, `get-function-concurrency`,
+`describe-log-groups`.
+
+
 
 **The lesson is about the gate, not the build.** The checklist above cannot block anything; it
 is prose in a repository, and the deploy ran from a laptop. What it can do is be read first.
