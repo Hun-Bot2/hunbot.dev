@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  getDeploymentKeyNamespace,
   getPageviewsKey,
   getViewHistoryKey,
   isValidViewSlug,
@@ -39,4 +40,44 @@ test('builds Redis keys only for valid slugs', () => {
 
   assert.throws(() => getPageviewsKey('ko/devlog/post:extra'), /Invalid view slug/);
   assert.throws(() => getViewHistoryKey('127.0.0.1', 'ko/devlog/post name'), /Invalid view slug/);
+});
+
+test('production and non-Vercel environments keep the historical key prefixes', () => {
+  // If this ever changes, every stored pageview count is orphaned in Redis with no
+  // migration and no error — the counter would silently restart from zero on the live site.
+  assert.equal(getDeploymentKeyNamespace('production'), '');
+  assert.equal(getDeploymentKeyNamespace(undefined), '');
+});
+
+test('every other deployment environment gets its own namespace', () => {
+  assert.equal(getDeploymentKeyNamespace('preview'), 'preview:');
+  assert.equal(getDeploymentKeyNamespace('development'), 'development:');
+  // An environment Vercel has not introduced yet still gets isolated rather than
+  // falling through to production's keyspace.
+  assert.equal(getDeploymentKeyNamespace('staging'), 'staging:');
+});
+
+test('a preview deployment cannot produce a key production reads', () => {
+  const slug = 'ko/devlog/BLOG/Blog_Develop_10';
+  const clientId = '2001:db8::1';
+
+  // The env argument is threaded in rather than mutating process.env, so the assertion
+  // holds regardless of where the test runs.
+  const preview = (key) => `${getDeploymentKeyNamespace('preview')}${key}`;
+  const production = (key) => `${getDeploymentKeyNamespace('production')}${key}`;
+
+  for (const key of [
+    `pageviews:${slug}`,
+    `history:2001%3Adb8%3A%3A1:${slug}`,
+    `ratelimit:views:2001%3Adb8%3A%3A1`,
+    'feedback:inbox',
+    `ratelimit:feedback:2001%3Adb8%3A%3A1`,
+  ]) {
+    assert.notEqual(preview(key), production(key));
+    assert.ok(preview(key).startsWith('preview:'));
+  }
+
+  // And the real builders agree with that model on the default (test) environment.
+  assert.equal(getPageviewsKey(slug), `pageviews:${slug}`);
+  assert.equal(getViewHistoryKey(clientId, slug), `history:2001%3Adb8%3A%3A1:${slug}`);
 });

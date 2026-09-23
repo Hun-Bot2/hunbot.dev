@@ -8,6 +8,34 @@ const IPV6_PATTERN = /^[0-9a-f:]{2,45}$/i;
 export const VIEW_RATE_LIMIT_WINDOW_SECONDS = 60;
 export const VIEW_RATE_LIMIT_MAX_REQUESTS = 30;
 
+/**
+ * Redis key namespace for the deployment this code is running in.
+ *
+ * Vercel builds a Preview deployment for every push to every branch, and a preview runs
+ * these same serverless functions. Whether it also reaches production's Redis depends
+ * only on how the Upstash variables are scoped in the Vercel project — "All Environments"
+ * is the dashboard default — and neither the request nor the response would reveal it.
+ * A preview visit would then increment a live view count, and a preview test message
+ * would land in the real feedback inbox.
+ *
+ * Production keeps the bare, historical prefixes, so no existing key is migrated. Every
+ * other Vercel environment writes under its own namespace and can never touch a key
+ * production reads. An unset value means this is not a Vercel deployment at all — local
+ * dev and the test runner — where `views.ts` already refuses to count, so reads there stay
+ * on the historical keys and behaviour is unchanged.
+ *
+ * This guard lives in code rather than in environment-variable scoping because a dashboard
+ * checkbox can be unticked later without leaving a trace in the repository. `views.ts`
+ * already skipped counting on localhost; that was the same intent applied to the one
+ * environment that never deploys.
+ */
+export function getDeploymentKeyNamespace(
+  env: string | undefined = process.env.VERCEL_ENV,
+): string {
+  if (env === undefined || env === 'production') return '';
+  return `${env}:`;
+}
+
 export function isValidViewSlug(slug: string | null): slug is string {
   return Boolean(
     slug &&
@@ -21,7 +49,7 @@ export function getPageviewsKey(slug: string): string {
     throw new Error('Invalid view slug');
   }
 
-  return `pageviews:${slug}`;
+  return `${getDeploymentKeyNamespace()}pageviews:${slug}`;
 }
 
 export function getViewHistoryKey(clientId: string, slug: string): string {
@@ -29,11 +57,11 @@ export function getViewHistoryKey(clientId: string, slug: string): string {
     throw new Error('Invalid view slug');
   }
 
-  return `history:${encodeClientId(clientId)}:${slug}`;
+  return `${getDeploymentKeyNamespace()}history:${encodeClientId(clientId)}:${slug}`;
 }
 
 export function getViewRateLimitKey(clientId: string): string {
-  return `ratelimit:views:${encodeClientId(clientId)}`;
+  return `${getDeploymentKeyNamespace()}ratelimit:views:${encodeClientId(clientId)}`;
 }
 
 export function getViewClientId(forwardedFor: string | null): string {

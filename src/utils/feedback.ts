@@ -1,4 +1,4 @@
-import { getViewClientId, isValidViewSlug } from './view-counter.ts';
+import { getDeploymentKeyNamespace, getViewClientId, isValidViewSlug } from './view-counter.ts';
 
 const MAX_FEEDBACK_LENGTH = 1000;
 const MIN_FEEDBACK_LENGTH = 2;
@@ -15,7 +15,14 @@ const CONTROL_CHARACTERS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
 export const FEEDBACK_RATE_LIMIT_WINDOW_SECONDS = 600;
 export const FEEDBACK_RATE_LIMIT_MAX_REQUESTS = 3;
 export const FEEDBACK_RETENTION_SECONDS = 60 * 60 * 24 * 90;
-export const FEEDBACK_LIST_KEY = 'feedback:inbox';
+/**
+ * A function rather than a constant: the namespace is a property of the deployment, and a
+ * module-level constant would freeze whichever environment happened to load the module
+ * first. See `getDeploymentKeyNamespace`.
+ */
+export function getFeedbackListKey(): string {
+	return `${getDeploymentKeyNamespace()}feedback:inbox`;
+}
 export const FEEDBACK_MAX_INBOX_ENTRIES = 500;
 
 export { MAX_FEEDBACK_LENGTH, MIN_FEEDBACK_LENGTH };
@@ -51,7 +58,7 @@ export function normalizeFeedbackMessage(message: unknown): string | null {
 }
 
 export function getFeedbackRateLimitKey(clientId: string): string {
-	return `ratelimit:feedback:${encodeClientId(clientId)}`;
+	return `${getDeploymentKeyNamespace()}ratelimit:feedback:${encodeClientId(clientId)}`;
 }
 
 export function getFeedbackEntryKey(slug: string, submittedAt: string): string {
@@ -63,7 +70,7 @@ export function getFeedbackEntryKey(slug: string, submittedAt: string): string {
 		throw new Error('Invalid feedback timestamp');
 	}
 
-	return `feedback:${slug}:${submittedAt}`;
+	return `${getDeploymentKeyNamespace()}feedback:${slug}:${submittedAt}`;
 }
 
 /**
