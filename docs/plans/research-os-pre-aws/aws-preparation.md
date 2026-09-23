@@ -21,10 +21,10 @@ which is the source of truth.
 
 | # | To verify | Who can resolve it | Status |
 |---|---|---|---|
-| V1 | Account is on the **Paid** plan, not the Free plan | **Owner only** — billing console | **OPEN — the only true blocker** |
+| V1 | Account is on the **Paid** plan, not the Free plan | Owner — billing console | **Resolved 2026-09-16.** No credit balance or expiry shown, and the account dates to at least 2022-04-02 — a Free plan account could not still be open |
 | V2 | CloudFront allowance | Research | Resolved: 100 GB + 1M req/month, $0, no overage charges |
 | V3 | Lambda 1M req + 400,000 GB-s always-free | Research | Resolved: always-free |
-| V4 | DynamoDB 25 WCU / 25 RCU / 25 GB always-free | Research | Resolved: always-free |
+| V4 | DynamoDB 25 WCU / 25 RCU / 25 GB always-free | Research | **Confirmed from the account's own meter** — the Free tier page says "always free per month" |
 | V5 | SQS poller billing when idle | Research | Partially resolved; scheduled drain no longer depends on the answer |
 
 **V1 got worse on inspection, not better.** The Free plan expires at *the earlier of* six
@@ -56,12 +56,23 @@ That is the highest-value work available right now, and it is the natural next s
 None of these can be delegated to an agent. Each needs console access, and the first two
 need billing and identity details.
 
-1. **Confirm or switch the account plan** (V1). Paid plan, per the record's reasoning.
-2. **Root account hygiene** — MFA on root, then stop using root.
-3. **A CloudWatch billing alarm at any non-zero amount.** The record is explicit that this
-   is *detection, not prevention*: by the time it fires, money has been spent. There is no
-   account-wide spending cap in AWS; that finding is recorded and has not changed.
-4. **Region choice** (V14) — confirm it alters no allowance, then fix it and write it down.
+Progress as of 2026-09-16:
+
+1. **Confirm the account plan** (V1) — **DONE.** The account predates the 2025 Free/Paid
+   split (tables found from 2022-04-02) and shows no credit balance or expiry, so it is on
+   pay-as-you-go. A Free plan account would have closed years ago.
+2. **Root account hygiene** — **DONE.** Root MFA enabled, no root access keys present, an
+   `admin` IAM user created with MFA and confirmed working. Root is retired.
+3. **Spend alerting** — **DONE.** A `zero-spend` budget ($0.01 monthly, alert at 100% of
+   actual) with an email subscriber. Still *detection, not prevention*: it reports after
+   money has been spent, and AWS provides no account-wide spending cap.
+4. **Region choice** (V14) — **DONE.** `ap-northeast-2` (Seoul) for the Research OS,
+   `us-east-1` for billing metrics. See
+   [Region](../../decisions/research-os-cloud-architecture.md#region).
+5. **Account baseline** — **DONE.** Three unrelated DynamoDB tables from 2022 were found
+   consuming the free tier in two regions, and removed. See
+   [Account Baseline](../../decisions/research-os-cloud-architecture.md#account-baseline-2026-09-16).
+   The account now holds nothing.
 
 ---
 
@@ -70,12 +81,39 @@ need billing and identity details.
 The corpus is **local and relational** (C3). None of the following touches AWS, and all of
 it is on the critical path:
 
-- The private repository skeleton — it does not exist yet.
-- The local corpus store and its migrations, matching `x-contract`'s `corpus` side.
-- The queue/API envelope implementation against
-  [`contracts/research-os/research-item.schema.json`](../../../contracts/research-os/research-item.schema.json) —
-  already versioned and machine-checked here.
-- The ingestion pipeline, run locally on a schedule, with the per-run cap the record requires.
+**Built 2026-09-16.** The private repository now exists, local only, with no AWS
+resources and no network calls. It has **zero dependencies** — `node:sqlite`,
+`node:crypto` and `node --test` are built in — because a pipeline meant to run
+unattended on a schedule should not be able to break because of someone else's release.
+
+| Piece | State |
+|---|---|
+| Private repository skeleton | Done. Local git, no remote |
+| Corpus store (relational, `corpus` side of `x-contract`) | Done. 10 tables, CHECK constraints in SQL |
+| Queue/API envelope against the contract schema | Done. Rules read from the schema at load time, never retyped |
+| Ingestion pipeline with per-run cap | Done. File-backed source only |
+| Tests | 34, all passing |
+
+What it enforces in code rather than in prose: the ingestion cap has no default at
+the boundary (a missing or zero cap is refused, so forgetting an argument cannot
+start an uncapped run); every ingested item lands `RADAR` and `VERIFIED` requires
+both human review and a registry venue; merged items keep their row and id, with
+identifiers and dedup keys following the merge and chain resolution bounded so a
+cycle raises instead of hanging; the envelope is closed and capped at one 64 KB SQS
+chunk; and the two files vendored from this repository — the contract schema and
+`canonicalization.ts` — are checked **byte-for-byte**, because a drifted
+`CONTENT_HASH_FIELDS` would leave both copies individually valid while silently
+invalidating every stored hash.
+
+**Deliberately absent: any network source.** Every external API, licence and rate
+limit in [`research-discovery-system.md`](../../decisions/research-discovery-system.md)
+is marked as requiring verification, and none has been verified. A fabricated
+adapter is the most expensive kind of shortcut — everything above it would inherit
+an assumption nobody checked, and the failure would arrive as data that looks
+plausible.
+
+**Still local.** The repository has no remote. Pushing it anywhere is an owner
+decision, not a side effect of building it.
 
 Doing this first also de-risks AWS: a pipeline that already works locally arrives in Lambda
 with its behaviour known, and the first cloud deploy stops being the first test.

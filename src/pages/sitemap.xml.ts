@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
+import { getAllPosts } from '../utils/blog';
 import { SITE_URL, SUPPORTED_LANGUAGES } from '../consts';
 import { getBlogUrlFromId } from '../utils/blog-routing';
 import { getAcademicReviewUrlFromId } from '../utils/academic-review-routing';
@@ -9,9 +10,29 @@ import { getLearningPathUrl, getPublishedLearningPaths } from '../utils/learning
 
 export const GET: APIRoute = async ({ site }) => {
   const siteUrl = site ?? new URL(SITE_URL);
-  const posts = await getCollection('blog', ({ data }) => !data.draft);
+  // Submitting a URL that 404s teaches search engines to trust this sitemap
+  // less. The draft filter alone let 15 quality-gate-excluded posts through,
+  // each of them a page that is never built. getAllPosts() is the single
+  // definition of published.
+  const posts = await getAllPosts();
   const academicReviews = await getCollection('academicReviews');
-  const now = new Date().toISOString();
+  // `lastmod` for listing pages is derived from the newest content they can
+  // show, NOT from the build clock.
+  //
+  // `new Date()` made every build claim that every static page had just changed.
+  // That is false — a rebuild with no content change modifies nothing — and
+  // search engines discount a lastmod they find unreliable, so the inaccuracy
+  // costs the signal it was meant to provide. It also made the sitemap the only
+  // build artifact that differed between two builds of identical source.
+  //
+  // Date precision, not milliseconds: a listing page changes on the day new
+  // content lands, and a timestamp implies a precision this value does not have.
+  const contentDates = [
+    ...posts.map((post) => post.data.updatedDate ?? post.data.pubDate),
+    ...academicReviews.map((review) => review.data.pubDate),
+  ].map((date) => date.valueOf());
+  const newestContent = contentDates.length > 0 ? new Date(Math.max(...contentDates)) : new Date(0);
+  const listingLastmod = newestContent.toISOString().slice(0, 10);
   const learningPathPages = SUPPORTED_LANGUAGES.flatMap((lang) => [
     `/${lang}/paths/`,
     ...getPublishedLearningPaths(learningPaths).map((path) => getLearningPathUrl(lang, path.id)),
@@ -37,7 +58,7 @@ export const GET: APIRoute = async ({ site }) => {
   ${staticPages.map((path) => `
   <url>
     <loc>${new URL(path, siteUrl).href}</loc>
-    <lastmod>${now}</lastmod>
+    <lastmod>${listingLastmod}</lastmod>
     <changefreq>${path.includes('/library/') || path.includes('/paths/') ? 'monthly' : 'weekly'}</changefreq>
     <priority>${path === '/' ? '1.0' : path.endsWith('/blog/') ? '0.9' : '0.7'}</priority>
   </url>`).join('')}

@@ -1,5 +1,6 @@
 import type { CollectionEntry } from 'astro:content';
 import type { UILanguage } from '../i18n/ui';
+import { sortStable } from './ordering.ts';
 
 export type ResourceEntry = CollectionEntry<'resources'>;
 export type PaperEntry = CollectionEntry<'papers'>;
@@ -132,18 +133,55 @@ export function getResourcesForLibrarySection(
 }
 
 export function getFeaturedResources(resources: ResourceEntry[], limit = 3): ResourceEntry[] {
-	return [...resources]
-		.sort((a, b) => {
-			if (a.data.featured !== b.data.featured) {
-				return a.data.featured ? -1 : 1;
-			}
+	return sortStable(resources, (a, b) => {
+		if (a.data.featured !== b.data.featured) {
+			return a.data.featured ? -1 : 1;
+		}
 
-			const aDate = a.data.review.reviewedAt ?? a.data.source.lastCheckedAt ?? a.data.source.firstSeenAt;
-			const bDate = b.data.review.reviewedAt ?? b.data.source.lastCheckedAt ?? b.data.source.firstSeenAt;
-			const dateComparison = bDate.localeCompare(aDate);
-			if (dateComparison !== 0) return dateComparison;
+		const aDate = a.data.review.reviewedAt ?? a.data.source.lastCheckedAt ?? a.data.source.firstSeenAt;
+		const bDate = b.data.review.reviewedAt ?? b.data.source.lastCheckedAt ?? b.data.source.firstSeenAt;
+		const dateComparison = bDate.localeCompare(aDate);
+		if (dateComparison !== 0) return dateComparison;
 
-			return a.data.title.localeCompare(b.data.title);
-		})
-		.slice(0, limit);
+		return a.data.title.localeCompare(b.data.title);
+	}).slice(0, limit);
+}
+
+/**
+ * Topics for display, in a deterministic order.
+ *
+ * `order` is the field the taxonomy lifecycle added for exactly this purpose
+ * (docs/decisions/discover-direction.md#Taxonomy) — it is a display weight, so
+ * display is where it should be honoured. Before this existed the Library hub
+ * sliced the first six topics out of whatever order the filesystem produced,
+ * which was harmless with one topic and arbitrary with thirty-two.
+ */
+export function getFeaturedTopics(topics: TopicEntry[], limit = 6): TopicEntry[] {
+	return sortStable(topics, (a, b) => {
+		const orderComparison = (a.data.order ?? 0) - (b.data.order ?? 0);
+		if (orderComparison !== 0) return orderComparison;
+		// Topics carry `label` per language, not a flat `title`. Korean is the
+		// canonical label and the only one the schema requires.
+		return a.data.label.ko.localeCompare(b.data.label.ko);
+	}).slice(0, limit);
+}
+
+/**
+ * Papers for display, newest and most recently reviewed first.
+ *
+ * Mirrors the homepage's freshness ordering so the same paper set does not
+ * appear in two different orders on two pages of the same site.
+ */
+export function getFeaturedPapers(papers: PaperEntry[], limit = 3): PaperEntry[] {
+	return sortStable(papers, (a, b) => {
+		const yearComparison = (b.data.year ?? 0) - (a.data.year ?? 0);
+		if (yearComparison !== 0) return yearComparison;
+
+		const aDate = a.data.review.reviewedAt ?? a.data.source.lastCheckedAt ?? a.data.source.firstSeenAt;
+		const bDate = b.data.review.reviewedAt ?? b.data.source.lastCheckedAt ?? b.data.source.firstSeenAt;
+		const dateComparison = bDate.localeCompare(aDate);
+		if (dateComparison !== 0) return dateComparison;
+
+		return a.data.title.localeCompare(b.data.title);
+	}).slice(0, limit);
 }

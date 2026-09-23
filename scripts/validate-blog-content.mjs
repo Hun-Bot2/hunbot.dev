@@ -134,10 +134,23 @@ if (placeholderReport.length > 0) {
 	);
 }
 
-// Draft leak guard.
-// `draft: true` must remove a post from every public surface. `getAllPosts()` in
-// src/utils/blog.ts is the only helper that filters drafts, so any route reading the
-// blog collection directly must pass its own `!data.draft` predicate.
+// Unpublished-post leak guard.
+//
+// A post is published only when it is not a draft AND has no placeholder
+// frontmatter. `getAllPosts()` in src/utils/blog.ts is the single place that
+// applies both. A route reading the collection itself can only reproduce the
+// first half, and reproducing half of a definition is what this guard exists to
+// prevent.
+//
+// This previously accepted a route that passed its own `!data.draft` predicate,
+// which was too weak twice over: the substring test matched only the bare
+// `getCollection('blog')` form and skipped any route that passed arguments, and
+// a draft filter alone is not what "published" means. The cost was real —
+// src/pages/sitemap.xml.ts and both rss.xml.js routes advertised 15
+// quality-gate-excluded posts as live URLs, so the site submitted 404s to search
+// engines and shipped dead links to every feed reader (found 2026-09-23).
+//
+// The rule is now simply: no route reads the blog collection. Use getAllPosts().
 const routeFiles = [];
 (function collectRoutes(directory) {
 	if (!existsSync(directory)) return;
@@ -158,14 +171,17 @@ const routeFiles = [];
 
 for (const routeFile of routeFiles) {
 	const source = readFileSync(routeFile, 'utf8');
-	if (!source.includes("getCollection('blog')")) continue;
+	// Matches every call shape — bare, with a predicate, with whitespace or a
+	// newline before the argument — because the previous substring test matched
+	// exactly one of them and silently skipped the rest.
+	if (!/getCollection\(\s*['"`]blog['"`]/.test(source)) continue;
 
-	if (!/getCollection\('blog',\s*\(\{\s*data\s*\}\)\s*=>\s*!data\.draft\)/.test(source)) {
-		errors.push(
-			`${relative(root, routeFile)} reads the blog collection without a draft filter. ` +
-				'Use getAllPosts() from src/utils/blog.ts, or pass ({ data }) => !data.draft.',
-		);
-	}
+	errors.push(
+		`${relative(root, routeFile)} reads the blog collection directly. ` +
+			'Use getAllPosts() from src/utils/blog.ts: it is the only place that applies both the draft ' +
+			'filter and the placeholder-frontmatter quality gate, and a route applying just one of them ' +
+			'publishes links to pages that are never built.',
+	);
 }
 
 if (errors.length > 0) {

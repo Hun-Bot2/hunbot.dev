@@ -107,7 +107,7 @@ draft: boolean          # optional, default false — hides from site when true
 ---
 ```
 
-> **Draft system:** `draft: true` removes a post from all listings, the sitemap, RSS, and its own detail page. Every route reads blog content through `getAllPosts()`; `scripts/validate-blog-content.mjs` fails the build if a route reads the collection without a draft filter.
+> **Draft system:** `draft: true` removes a post from all listings, the sitemap, RSS, and its own detail page. Every route reads blog content through `getAllPosts()` — **no route may call `getCollection('blog')` at all**, and `scripts/validate-blog-content.mjs` fails the build if one does. The rule used to be the weaker "pass your own `!data.draft` predicate", which was wrong twice over: its substring test matched only the bare `getCollection('blog')` form and skipped any route that passed arguments, and a draft filter alone is not what *published* means. `sitemap.xml.ts` and both `rss.xml.js` routes therefore advertised 15 quality-gate-excluded posts as live URLs — 404s submitted to search engines, dead links in every feed. Fixed 2026-09-23: `getAllPosts()` is the single definition of published, because it is the only place that applies both the draft filter and the quality gate.
 >
 > **Frontmatter quality gate:** `getAllPosts()` also excludes a non-draft post when its frontmatter is unedited template content (`getFrontmatterIssues()` in `src/utils/blog.ts`) — a placeholder `description` (or one under 10 characters), `tags` containing `tag1`/`tag2`/`tag`, `category` exactly `'category'`, or `series` exactly `'series 이름'`/`'series name'` — or when it shares the same language, `title`, and `pubDate` as another post (always a copy-paste mistake, so every copy is excluded). A post is published only when it is not a draft **and** has no placeholder frontmatter. `scripts/validate-blog-content.mjs` reports every excluded file and reason as a warning, not a build failure.
 
@@ -121,7 +121,7 @@ src/pages/
 ├── api/
 │   ├── feedback.ts                      → POST anonymous feedback, write-only (prerender=false)
 │   └── views.ts                         → POST/GET view counts (prerender=false)
-├── rss.xml.js                           → (unused legacy, see [lang]/rss.xml.js)
+├── rss.xml.js                           → /rss.xml — site-wide feed across all languages, linked from BaseHead on every page
 ├── sitemap.xml.ts                       → custom XML sitemap
 └── [lang]/
     ├── index.astro                      → /ko/, /jp/, /en/ (home)
@@ -131,7 +131,6 @@ src/pages/
     ├── paths.astro                      → /ko/paths/ (learning paths index)
     ├── blog/
     │   ├── index.astro                  → /ko/blog/ (all posts, paginated)
-    │   ├── [slug].astro                 → (legacy, see [...slug].astro)
     │   ├── [...slug].astro              → /ko/blog/{slug}/ (post detail)
     │   ├── page/[page].astro            → /ko/blog/page/2/ (pagination)
     │   ├── categories.astro             → /ko/blog/categories/
@@ -163,7 +162,7 @@ src/pages/
 | `view-counter.ts` | `getViewCount()`, `incrementViewCount()` | Redis-backed view count read/write. |
 | `responsive-public-images.ts` | `getResponsiveImageSet()` | Public image srcset helpers. |
 | `remark-localized-blog-links.mjs` | Remark plugin | Rewrites relative MDX links to localized blog URLs at build time. |
-| `canonicalization.ts` | `canonicalizeUrl()`, `normalizeTitle()`, `computeContentHash()`, `normalizeExternalIdentifier()`, `deriveDedupKey()` | URL canonicalization, CJK-safe title normalization, versioned content hashing, and identifier-index dedup-key derivation for the private Research OS pipeline. Not imported anywhere in the public site. |
+| `canonicalization.ts` | `canonicalizeUrl()`, `normalizeTitle()`, `computeContentHash()`, `normalizeExternalIdentifier()`, `deriveDedupKey()` | URL canonicalization, CJK-safe title normalization, versioned content hashing, and identifier-index dedup-key derivation for the private Research OS pipeline. Not imported anywhere in the public site. **Vendored byte-for-byte by the private Research OS repository**, together with `contracts/research-os/research-item.schema.json`. Editing either file here means the copy there is stale; that repository's `npm run contract:sync` compares them exactly, and `INV-12` guards `CONTENT_HASH_FIELDS` specifically — a change to it leaves both copies individually valid while silently invalidating every stored hash. |
 
 ---
 

@@ -179,13 +179,22 @@ for (const occurrence of xSideOccurrences) {
 // ---------------------------------------------------------------------------
 
 const identityDocPath = join(root, 'docs/decisions/research-item-identity.md');
-// Tolerate a fixture directory that doesn't include this doc — fixtures
-// deliberately mirror only the minimal repo-root-relative slice the case
-// under test needs (test/fixtures/README.md). In the real repo root this
-// file always exists, so the check still runs there.
+// The document is REQUIRED, not tolerated-if-absent.
+//
+// This previously skipped when the file was missing, so that a fixture could
+// ship only the minimal slice it needed. The cost was that INV-09 would also go
+// silent in the real repository if the document were ever moved or renamed —
+// a check that disappears without a word is worse than one that fails, because
+// nothing distinguishes "passing" from "not running". Fixtures are generated
+// from the real repository now (test/helpers/contract-fixture.mjs) and supply
+// this file, so the tolerance buys nothing.
 const identityDoc = existsSync(identityDocPath) ? readFileSync(identityDocPath, 'utf8') : null;
 
-if (identityDoc !== null) {
+if (identityDoc === null) {
+	errors.push(
+		`INV-09: docs/decisions/research-item-identity.md is missing at ${identityDocPath}. It is the source of truth this invariant compares the contract against; without it the check cannot run, and a check that silently does not run is indistinguishable from one that passes.`,
+	);
+} else {
 	// The declaring sentence names T10 explicitly (by design — it IS this
 	// validator's specification), which is what makes it findable without
 	// hardcoding the whole paragraph here.

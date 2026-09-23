@@ -1,4 +1,5 @@
 import type { CollectionEntry } from 'astro:content';
+import { sortStable } from './ordering.ts';
 
 export const ACADEMIC_REVIEW_LANGUAGES = ['ko', 'jp', 'en'] as const;
 
@@ -108,7 +109,8 @@ export function getAcademicReviewUrlFromEntry(review: AcademicReviewLike): strin
 }
 
 export function sortAcademicReviewsByDateDesc(reviews: AcademicReviewEntry[]): AcademicReviewEntry[] {
-	return [...reviews].sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+	// pubDate alone leaves same-day reviews in input order. See ordering.ts.
+	return sortStable(reviews, (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
 }
 
 export function filterAcademicReviewsByLanguage(
