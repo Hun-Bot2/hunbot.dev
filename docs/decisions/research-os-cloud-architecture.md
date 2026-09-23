@@ -405,14 +405,15 @@ Every row must be checked before the corresponding component is created, and thi
 | V4 | DynamoDB 25 WCU / 25 RCU / 25 GB is always-free, not 12-month | **CONFIRMED 2026-09-16 from the account's own metering, not from documentation.** The Billing console's *Free tier* page lists `18600.0 ReadCapacityUnit-Hrs are **always free per month** as part of AWS Free Usage Tier`. 18,600 = 25 x 744 hours, so this is the 25 RCU / 25 WCU allowance stated by AWS's own meter, carrying the words "always free" with no 12-month qualifier. Read and write are metered separately, and so are `APN2-` and `USW2-` — see [Region](#region) |
 | V5 | SQS `ReceiveMessage` polling from a Lambda event source mapping is billable, and at what rate when idle | **Partially resolved 2026-09-16 — and the decision no longer depends on it.** [SQS pricing](https://aws.amazon.com/sqs/pricing/) confirms *"Every Amazon SQS action counts as a request"* and each 64 KB chunk bills as one request; the 1M/month allowance is for all customers. The **idle poll rate** of a Lambda event source mapping is not documented publicly, so the worst case cannot be bounded from sources. Scheduled drain is therefore kept — it is the option whose cost is knowable in advance, which is the property that matters. Remains VERIFY only if an event source mapping is ever reconsidered |
 | V6 | API Gateway HTTP API free tier is 12-month rather than always-free | Before considering it |
-| V7 | S3 free storage is always-free or 12-month | Before any S3 use |
-| V8 | CloudFront OAC supports Lambda Function URL origins, and its configuration | Before the online path |
+| V7 | S3 free storage is always-free or 12-month | **Resolved 2026-09-23: neither — this account has no S3 free tier at all.** [S3 pricing](https://aws.amazon.com/s3/pricing/) describes the post-2025-07-15 structure ($200 credits, a free plan for 6 months after account creation). This account dates to 2022 and was under the previous 12-month allowance, which expired in 2023. **S3 is billed from the first byte here.** Measured the same day: the CDK assets bucket holds 4 objects / 39.6 KB, which rounds below a cent — so the correct statement is not "S3 is free" but "this usage is too small to bill". The distinction matters because it does not scale, and it was crossed before being answered — see [First Deployment](#first-deployment-2026-09-23) |
+| V8 | CloudFront OAC supports Lambda Function URL origins, and its configuration | **Resolved 2026-09-23.** [AWS announcement, April 2024](https://aws.amazon.com/about-aws/whats-new/2024/04/amazon-cloudfront-oac-lambda-function-url-origins): OAC for Lambda Function URL origins is generally available worldwide (excluding CloudFront China), configurable via console/SDK/CLI/CloudFormation, and carries **no additional fee**. Uses SigV4, matching this record's `AWS_IAM` Function URL auth type |
 | V9 | DynamoDB PITR cost, and whether any free allowance applies | **Resolved 2026-09-16: PITR is billed by table size, with no free allowance.** See [Durability Has A Price](#durability-has-a-price) below — this is the first identified conflict between R1 ($0/month) and R5 (notes durability) |
 | V10 | SCPs on a single account, or Organization required | Before Level 3 controls |
-| V11 | Lambda Function URLs carry no separate charge | Before the online path |
+| V11 | Lambda Function URLs carry no separate charge | **Resolved 2026-09-23 by absence, not by statement — and the record says so deliberately.** Neither [Lambda pricing](https://aws.amazon.com/lambda/pricing/) nor the [function URL guide](https://docs.aws.amazon.com/lambda/latest/dg/urls-configuration.html) carries a Function URL line item or any sentence asserting there is no charge; the pricing page bills only requests and duration. Absence of a line item is weaker evidence than a positive statement, so this stays a **watch item**: confirm against the first real bill rather than treating it as closed. The API Gateway contrast is the point — that service has its own published per-request price, and this one does not |
 | V12 | CloudWatch 5 GB is combined across ingestion, archive, and Insights scans | **Partially confirmed 2026-09-16 from the account.** The Free tier page shows `5.0 GB-Mo are always free per month ... (Global-TimedStorage-ByteHrs)`: 5 GB of **archive storage**, always-free, and — per the `Global-` prefix — **account-wide rather than per-region**. Whether ingestion and Insights scans draw on that *same* 5 GB is not shown by this line and stays unverified. Keep assuming they share it: the conservative reading, and the one that keeps retention short |
 | V13 | Cognito Essentials free MAU and its stated indefinite duration | Confirmed 2026-09-14; recheck at go-live |
 | V14 | Region choice does not alter any allowance above | **Answered 2026-09-16, with a caveat that changes the capacity model.** Free-tier *scope* is not uniform across services: [SQS](https://aws.amazon.com/sqs/pricing/) states its allowance is *"calculated each month across all regions (except the GovCloud region)"* — one pool, shared. [DynamoDB](https://aws.amazon.com/dynamodb/pricing/provisioned/) grants its 25 WCU / 25 RCU / 25 GB *"on a per Region, per-payer account basis"* — a separate pool per region. Lambda and CloudWatch region scope is **not verified**; assume account-wide (the conservative reading) until checked. Unit *rates* above free tier are higher in ap-northeast-2 than us-east-1, so an overage costs more there — which matters only if the $0 invariant is already broken |
+| V15 | Lambda **Function URLs are available in `ap-northeast-2`** | **Resolved 2026-09-23 by existence.** `research-os-api` carries a live Function URL at `…lambda-url.ap-northeast-2.on.aws` with `AuthType: AWS_IAM`, so the region supports them. Raised as blocking that morning and answered the same day by a deployment that had already happened — a reminder that a checklist can only gate what it is consulted for. Original note: The [function URL guide](https://docs.aws.amazon.com/lambda/latest/dg/urls-configuration.html) states plainly that *"Function URLs are not supported in all AWS regions"* and points at a regional-services table rather than listing them. The whole online path in this record assumes a Function URL in the Seoul region chosen under [Region](#region), so this is a **blocking** check before the online path — not a formality. Two adjacent facts from the same page are already load-bearing here: a function URL is reachable **only over the public internet** (no PrivateLink), which is why OAC + `AWS_IAM` in V8 is the access control rather than a network boundary; and **reserved concurrency set to zero deactivates the URL outright**, returning HTTP 429 — an emergency off-switch that costs nothing and matches this record's treatment of reserved concurrency as the primary cost fuse |
 
 **V1-V5 and V9 re-checked 2026-09-16** against official AWS pricing and Free Tier pages; answers are inline in the table above and carry that date. Every figure below remains volatile.
 
@@ -479,6 +480,92 @@ headroom rather than removing it.
 
 ---
 
+### Cost Explorer Is Metered, 2026-09-23
+
+**FACT:** the Cost Explorer API costs money per call. [Cost Explorer pricing](https://aws.amazon.com/aws-cost-management/aws-cost-explorer/pricing/),
+retrieved 2026-09-23: *"Each request using your primary billing view, which contains cost
+management data associated with your account, will incur a cost of $0.01."* It is billed per
+request, with no free allowance stated.
+
+This surfaced from a real error while granting the `admin` IAM user billing access — a tool
+calling `ce:GetCostAndUsage` returned `AccessDeniedException: IAM user access not activated`.
+
+**DECISION: nothing in this system may call the Cost Explorer API, and no agent or automation
+may be pointed at it.** A single poller on a five-minute schedule is $86.40/month against an
+account whose entire premise is $0.00 — the most expensive thing here would be the tool that
+watches the cost. The irony is the point: cost *observability* is itself a cost, so it has to
+be chosen as deliberately as any other resource.
+
+The free substitutes already cover what this account needs: the `zero-spend` budget
+(detection after the fact, which is what Budgets is), the Billing console's **Bills** page,
+and the **Free Tier** usage page, which is the one that actually found the 2022 tables above.
+
+**Two different gates are easy to confuse, and the error message names neither cleanly:**
+
+| Gate | Who | Covers |
+|---|---|---|
+| **Activate IAM Access** | root only, once per account | The Billing console *pages* — Bills, Budgets, Cost Explorer UI, Payments, Preferences |
+| Cost Explorer enablement + IAM policy | root / admin | Cost Explorer itself |
+
+[Granting access to your billing information](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/control-access-billing.html),
+retrieved 2026-09-23: *"IAM users and roles in an AWS account can't access the Billing and
+Cost Management console by default. This is true even if they have IAM policies that grant
+access to certain Billing features."* Attaching a policy to `admin` is therefore necessary
+and not sufficient — which is exactly the symptom observed.
+
+The same page also states the setting *"doesn't control access to ... The Billing and Cost
+Management SDK APIs (AWS Cost Explorer, AWS Budgets, and AWS Cost and Usage Reports APIs)"*,
+while [Controlling access to Cost Explorer](https://docs.aws.amazon.com/cost-management/latest/userguide/ce-access.html)
+says Cost Explorer is enabled by the root user and that *"Permissions for Cost Explorer apply
+to all accounts and member accounts, regardless of the IAM policies."* The two pages do not
+resolve cleanly against this error string, and **this record does not pretend they do.** It
+does not matter here, because the decision above is to leave the API unreachable either way.
+
+### First Deployment, 2026-09-23
+
+**FACT: the online path exists.** The owner deployed it deliberately on 2026-09-23, ahead of
+the per-component gates below V5. Read from the account, not from this document:
+
+| Resource | Configuration |
+|---|---|
+| `ResearchOsOnlineStack` (CloudFormation, via CDK) | `UPDATE_COMPLETE`, 08:52 UTC |
+| `CDKToolkit` bootstrap + assets bucket | 08:03 UTC, 4 objects / 39.6 KB |
+| Lambda `research-os-api` | `nodejs22.x`, 256 MB, 10 s, x86_64 |
+| — reserved concurrency | **5** |
+| — Function URL | `AWS_IAM` |
+| DynamoDB `research-os-state` | **provisioned 25 RCU / 25 WCU**, 0 items |
+| — PITR | `DISABLED` |
+| CloudWatch `/aws/lambda/research-os-api` | retention **14 days** |
+| SQS | none |
+| Cognito | `research-os-users` |
+
+**Every cost guardrail this record specifies was applied.** Reserved concurrency is set, so the
+primary fuse exists rather than being a habit. The Function URL is `AWS_IAM`, not `NONE`.
+DynamoDB is provisioned at exactly the free allowance rather than on-demand, which this record
+lists under [Forbidden In V1](#forbidden-in-v1). PITR is off, matching
+[Durability Has A Price](#durability-has-a-price). The log group was created *with* retention,
+which this record names as the slow-burn first bill. None of that happened by accident.
+
+**Two gates were crossed before they were answered, and both are now closed:**
+
+- **V7 — "Before any S3 use."** `cdk bootstrap` always creates an assets bucket, so S3 was in
+  use at 08:03 UTC while V7 was still open. Answered the same day, and the answer is the
+  uncomfortable one: this account has no S3 free tier. The amount is negligible; the reasoning
+  was not available at the time it was needed.
+- **"No Terraform or CDK."** This record defers IaC deliberately, and CDK is now bootstrapped
+  and in use. **DECISION: that deferral is superseded — CDK is the chosen tool.** Recorded as a
+  reversal rather than edited away, because the deferral was written down with reasons.
+
+**DECISION: `research-os-state` consumes the entire regional DynamoDB free allowance.** 25 WCU
+and 25 RCU is the whole per-Region grant from V4. A second provisioned table in `ap-northeast-2`
+starts billing immediately. Any future table either shares this one's capacity or the $0
+invariant needs re-deriving first.
+
+**The lesson is about the gate, not the build.** The checklist above cannot block anything; it
+is prose in a repository, and the deploy ran from a laptop. What it can do is be read first.
+The build was disciplined enough that the guardrails held anyway — which is the argument for
+writing them down, and not an argument that the checklist worked.
+
 ### Account Baseline, 2026-09-16
 
 **FACT:** the account was not empty when this work began. The Free tier page showed DynamoDB
@@ -495,6 +582,52 @@ The two empty 1-RCU tables were what consumed the allowance — 1 RCU x ~341 hou
 341 RCU-Hrs metered in each region exactly. The Amplify-generated `Todo` table was on-demand
 and contributed nothing to it. All three were deleted by the owner on 2026-09-16, after the
 `Todo` table's two items were exported; both regions now list no tables.
+
+**Re-checked 2026-09-23, one week after the deletions.** The owner read the Billing console
+as root and reported the month-to-date bill as **$0.00**. This is the first confirmation that
+the account is quiet *after* the 2022 tables were removed, rather than a claim about the
+architecture: nothing from this system exists yet, so what it establishes is the baseline the
+first resource will be measured against.
+
+Read from the console, not from the Cost Explorer API — see [Cost Explorer Is Metered](#cost-explorer-is-metered-2026-09-23).
+Free-tier consumption was not separately reported in this check, so the 1.83% DynamoDB figure
+above has a deletion recorded against it but no post-deletion reading. Worth one look at the
+Free Tier page before the first resource is created, so the baseline is a measurement rather
+than an inference.
+
+**Corrected 2026-09-23. "The account now holds nothing" was wrong when it was written.**
+Only DynamoDB was checked in 2026-09-16; the rest of the 2022 estate was never enumerated. A
+later look at the IAM console showed **25 roles**, which is what prompted a full sweep. What
+was actually still there, all from 2022-09:
+
+| Kind | Count |
+|---|---|
+| CloudFormation stacks (3 root + 6 nested) | 9 |
+| Lambda functions, all `nodejs14.x` | 3 |
+| S3 deployment buckets | 3 (66 objects, 3.2 MB) |
+| IAM roles | 10 |
+| Cognito user pool | 1 (**0 users**) |
+| AppSync API | 1 |
+| API Gateway REST API | 1 |
+| CloudWatch log groups, **no retention** | 3 |
+
+Contents were checked before anything was removed — the Cognito pool was empty and the buckets
+held only Amplify backend config, so unlike the `Todo` table in 2026-09-16 there was nothing to
+export. Removed 2026-09-23: the owner deleted the three buckets, the three root stacks were
+deleted and cascaded to everything above, and the three orphaned log groups were deleted
+separately because Lambda creates them outside CloudFormation and they therefore survive stack
+deletion. Verified after: 6 IAM roles remain (5 CDK + 1 stack role), one Lambda, one Cognito
+pool, no AppSync, no API Gateway, one log group with 14-day retention, and `us-east-1`,
+`us-west-2` and `ap-northeast-1` return zero stacks, functions, log groups and tables.
+
+Two `unauthRole` entries were live for four years — roles whose whole purpose is unauthenticated
+access, attached to applications nobody had opened since 2022. That is the part worth
+remembering: the cost was nil, the exposure was not.
+
+**The correction is the point.** A sweep that stops at the service you were already thinking
+about reports an empty account and leaves nine stacks running. The 2026-09-16 entry was not a
+lie; it was a check scoped to what had just been found, written up as though it were a scope of
+the whole account.
 
 **The lesson outranks the log entry.** A $0 invariant is a claim about an **account**, not
 about a project. Four-year-old experiments were quietly drawing on the same allowance the
