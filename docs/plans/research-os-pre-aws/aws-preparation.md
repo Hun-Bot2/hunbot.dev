@@ -8,15 +8,25 @@ gates that separately and more strictly:
 
 > items marked **blocking** must be resolved before *any* infrastructure is created
 
-Five items are blocking, and **none is resolved**. So the correct state today is:
-contracts done, account untouched, nothing built.
+Five items were blocking when this was written, and none was resolved.
+
+**Updated 2026-09-23.** All five (V1–V5) are now resolved or resolved-with-a-recorded-residual,
+and every owner-only action in §2 is done. The blocking gate on *creating infrastructure*
+is therefore **open**. What has not changed is the state of the account: still empty, still
+nothing built. That is now a choice rather than a constraint, and the next thing built
+should be the smallest resource that proves the cost model — not the architecture.
+
+Per-component gates below V5 remain: V8 and V11 (2026-09-23) clear the online path's pricing
+questions, but **V15 — whether Lambda Function URLs exist in `ap-northeast-2` at all — is open
+and blocks that path**. V6, V7 and V10 gate components not yet reached.
 
 ---
 
 ## 1. The blocking five
 
-Researched 2026-09-16 against official AWS sources. Four of the five are now answered;
-the answers are recorded in the [cloud record's checklist](../../decisions/research-os-cloud-architecture.md#verification-checklist),
+Researched 2026-09-16 against official AWS sources. All five are now answered — four
+outright, V5 partially and in a way the decision no longer depends on. The answers are
+recorded in the [cloud record's checklist](../../decisions/research-os-cloud-architecture.md#verification-checklist),
 which is the source of truth.
 
 | # | To verify | Who can resolve it | Status |
@@ -61,8 +71,21 @@ Progress as of 2026-09-16:
 1. **Confirm the account plan** (V1) — **DONE.** The account predates the 2025 Free/Paid
    split (tables found from 2022-04-02) and shows no credit balance or expiry, so it is on
    pay-as-you-go. A Free plan account would have closed years ago.
-2. **Root account hygiene** — **DONE.** Root MFA enabled, no root access keys present, an
-   `admin` IAM user created with MFA and confirmed working. Root is retired.
+2. **Root account hygiene** — **DONE, with one part reversed 2026-09-23.** Root MFA enabled,
+   no root access keys present, an `admin` IAM user created with MFA and confirmed working.
+
+   **Root is *not* retired.** The owner decided on 2026-09-23 to keep using root for billing
+   rather than activate IAM access to the Billing console. The trigger was a real one: root
+   is the only identity that can read Billing by default, `Activate IAM Access` is the
+   root-only switch that would extend it to `admin`, and the owner declined it. That is a
+   reasonable call for a single-owner account where the billing check is occasional and
+   manual — it trades a permission boundary for one fewer setting to maintain.
+
+   What the earlier note got wrong was not the hardening but the claim. The hardening is
+   real and now matters *more*, not less: an identity still in regular use with no permission
+   boundary is exactly the one that needs MFA and no long-lived access keys, both of which
+   are in place. Recorded rather than quietly corrected, because "root is retired" was stated
+   as fact in this plan and anything built on that assumption should be re-read.
 3. **Spend alerting** — **DONE.** A `zero-spend` budget ($0.01 monthly, alert at 100% of
    actual) with an email subscriber. Still *detection, not prevention*: it reports after
    money has been spent, and AWS provides no account-wide spending cap.
@@ -140,7 +163,9 @@ this repository. They need their own checks wherever the private system is built
 ## 5. Not yet
 
 - **No Terraform or CDK.** The cloud record defers this deliberately; it has not been revisited.
-- **No resources of any kind** until V1–V5 are resolved.
+- **No resources of any kind** until V1–V5 are resolved. *(Satisfied 2026-09-23. This line
+  stays because it records what the gate was, not because it still blocks; the per-component
+  gates V6–V15 are what remain.)*
 - **Nothing on the [Forbidden In V1](../../decisions/research-os-cloud-architecture.md#forbidden-in-v1) list**
   without a separate written decision — NAT Gateway, RDS/Aurora, load balancers, OpenSearch,
   Secrets Manager, customer-managed KMS keys, DynamoDB on-demand or auto-scaling, and log

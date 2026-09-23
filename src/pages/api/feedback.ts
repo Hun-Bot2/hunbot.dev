@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { Redis } from '@upstash/redis';
 import { getViewClientId } from '../../utils/view-counter';
 import {
-	FEEDBACK_LIST_KEY,
+	getFeedbackListKey,
 	FEEDBACK_MAX_INBOX_ENTRIES,
 	FEEDBACK_RATE_LIMIT_MAX_REQUESTS,
 	FEEDBACK_RATE_LIMIT_WINDOW_SECONDS,
@@ -82,8 +82,9 @@ export const POST: APIRoute = async ({ request }) => {
 		const entry = buildFeedbackEntry(slug, message, submittedAt);
 
 		await redis.set(entryKey, JSON.stringify(entry), { ex: FEEDBACK_RETENTION_SECONDS });
-		await redis.lpush(FEEDBACK_LIST_KEY, entryKey);
-		await redis.ltrim(FEEDBACK_LIST_KEY, 0, FEEDBACK_MAX_INBOX_ENTRIES - 1);
+		const listKey = getFeedbackListKey();
+		await redis.lpush(listKey, entryKey);
+		await redis.ltrim(listKey, 0, FEEDBACK_MAX_INBOX_ENTRIES - 1);
 
 		return jsonResponse({ received: true }, 201);
 	} catch {
