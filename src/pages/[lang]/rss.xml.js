@@ -1,7 +1,7 @@
 import rss from '@astrojs/rss';
-import { getCollection } from 'astro:content';
 import { SITE_TITLE, SITE_DESCRIPTION, SUPPORTED_LANGUAGES } from '../../consts';
 import { getBlogLanguageFromId, getBlogUrlFromId } from '../../utils/blog-routing';
+import { getAllPosts } from '../../utils/blog';
 
 export function getStaticPaths() {
 	return SUPPORTED_LANGUAGES.map((lang) => ({
@@ -15,7 +15,9 @@ export async function GET(context) {
 		return new Response('Not found', { status: 404 });
 	}
 
-	const posts = await getCollection('blog', ({ data }) => !data.draft);
+	// See src/pages/rss.xml.js: the draft filter alone is not what published
+	// means, and this feed carried 15 dead links out of 52 because of it.
+	const posts = await getAllPosts();
 	const languagePosts = posts.filter((post) => {
 		try {
 			return getBlogLanguageFromId(post.id) === lang;

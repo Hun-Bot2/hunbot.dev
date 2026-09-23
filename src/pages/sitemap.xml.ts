@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
+import { getAllPosts } from '../utils/blog';
 import { SITE_URL, SUPPORTED_LANGUAGES } from '../consts';
 import { getBlogUrlFromId } from '../utils/blog-routing';
 import { getAcademicReviewUrlFromId } from '../utils/academic-review-routing';
@@ -9,7 +10,11 @@ import { getLearningPathUrl, getPublishedLearningPaths } from '../utils/learning
 
 export const GET: APIRoute = async ({ site }) => {
   const siteUrl = site ?? new URL(SITE_URL);
-  const posts = await getCollection('blog', ({ data }) => !data.draft);
+  // Submitting a URL that 404s teaches search engines to trust this sitemap
+  // less. The draft filter alone let 15 quality-gate-excluded posts through,
+  // each of them a page that is never built. getAllPosts() is the single
+  // definition of published.
+  const posts = await getAllPosts();
   const academicReviews = await getCollection('academicReviews');
   // `lastmod` for listing pages is derived from the newest content they can
   // show, NOT from the build clock.
