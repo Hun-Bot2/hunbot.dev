@@ -17,8 +17,11 @@
 // referenced by existing content today (ICLR, ICML, NeurIPS, ACL, EMNLP —
 // see the migration of src/content/topics/ai-agents.md and
 // src/content/papers/sample-paper-card.md) plus IEEE VIS, named explicitly
-// as the MVP addition in the T05 task packet. Authoring more than this is
-// the sequencing error the ADR's principle 11 forbids.
+// as the MVP addition in the T05 task packet, plus CHI and UIST (added
+// 2026-09-23) for HCI-field coverage — no content references them yet,
+// which is the same legitimate partial-coverage state as every other field
+// with no venues. Authoring more than this is the sequencing error the
+// ADR's principle 11 forbids.
 
 export type VenueType = 'conference' | 'journal' | 'workshop' | 'symposium';
 
@@ -52,6 +55,18 @@ const SIGNAL_AVAILABILITY_VALUES: readonly SignalAvailability[] = ['available', 
 // and recording a guess as fact is worse than recording that nobody has
 // checked yet. Do not change any entry away from `unverified` without an
 // actual verification pass.
+//
+// `access` (this field) is the venue's CONTENT licensing — whether the
+// paper itself may be ingested and redistributed
+// (research-discovery-system.md#Venue-Registry). That is a different
+// question from METADATA availability — whether title/authors/abstract/
+// venue/year can be fetched from an indexer such as OpenReview, dblp, or
+// Crossref, and under what terms. Several entries' `provenanceNotes` below
+// record verified metadata-source facts (checked 2026-09-23) precisely
+// because that check does not satisfy this field's verification bar — a
+// metadata source's terms say nothing about whether the paper's full text
+// or PDF may be ingested. Do not read a metadata-license note as grounds to
+// move `access` off `unverified`.
 export type VenueAccess = 'unverified' | 'open' | 'restricted' | 'mixed';
 
 const VENUE_ACCESS_VALUES: readonly VenueAccess[] = ['unverified', 'open', 'restricted', 'mixed'];
@@ -109,7 +124,7 @@ export const venues: VenueDefinition[] = [
 		adapter: null,
 		access: 'unverified',
 		provenanceNotes:
-			'Reviews, ratings, and decisions are hosted on OpenReview and are public by default. ICLR has no separate proceedings volume — accepted papers are indexed via OpenReview and arXiv. Whether ICLR runs a formal best-paper award in a given year is not verified here, hence "unavailable" rather than "not-applicable" for awards.',
+			'Reviews, ratings, and decisions are hosted on OpenReview and are public by default. ICLR has no separate proceedings volume — accepted papers are indexed via OpenReview and arXiv. Whether ICLR runs a formal best-paper award in a given year is not verified here, hence "unavailable" rather than "not-applicable" for awards. Metadata (checked 2026-09-23): OpenReview\'s terms (updated 2024-09-24) dedicate record metadata — title, authors, abstract — CC0; its API requires an account. Also indexed in dblp, whose data is CC0. This is a metadata-availability fact, distinct from this entry\'s `access` verification — see the note on the `VenueAccess` type above.',
 	},
 	{
 		id: 'icml',
@@ -131,7 +146,7 @@ export const venues: VenueDefinition[] = [
 		adapter: null,
 		access: 'unverified',
 		provenanceNotes:
-			'ICML runs Best Paper and Test of Time awards. Proceedings are published in PMLR. Recent editions use OpenReview for review management, but public review-score availability has not been verified across years, hence "unavailable" rather than "available".',
+			'ICML runs Best Paper and Test of Time awards. Proceedings are published in PMLR. Recent editions use OpenReview for review management, but public review-score availability has not been verified across years, hence "unavailable" rather than "available". Metadata (checked 2026-09-23): proceedings are PMLR, whose homepage states "Authors retain copyright" — no separate metadata license was found. Also indexed in dblp, whose data is CC0. Metadata availability is a different question from this entry\'s `access` verification — see the note on the `VenueAccess` type above.',
 	},
 	{
 		id: 'neurips',
@@ -153,7 +168,7 @@ export const venues: VenueDefinition[] = [
 		adapter: null,
 		access: 'unverified',
 		provenanceNotes:
-			'Runs Best Paper / Outstanding Paper awards, designates a small fraction of accepted papers as oral and spotlight, and (since moving to OpenReview) publishes reviews. Older editions (pre-OpenReview, "NIPS" branding) may not share all of these; provenance is not year-qualified in this entry.',
+			'Runs Best Paper / Outstanding Paper awards, designates a small fraction of accepted papers as oral and spotlight, and (since moving to OpenReview) publishes reviews. Older editions (pre-OpenReview, "NIPS" branding) may not share all of these; provenance is not year-qualified in this entry. Metadata (checked 2026-09-23): like ICLR, NeurIPS review management runs on OpenReview, whose terms (updated 2024-09-24) dedicate record metadata — title, authors, abstract — CC0; its API requires an account. Also indexed in dblp, whose data is CC0. Metadata availability is a different question from this entry\'s `access` verification — see the note on the `VenueAccess` type above.',
 	},
 	{
 		id: 'acl',
@@ -175,7 +190,7 @@ export const venues: VenueDefinition[] = [
 		adapter: null,
 		access: 'unverified',
 		provenanceNotes:
-			'Uses ACL Rolling Review (ARR) as the shared review process across most *ACL venues; proceedings are archived on the ACL Anthology. Runs Best Paper / Outstanding Paper awards. Does not use a "spotlight" presentation category, so that signal is marked not-applicable rather than unavailable.',
+			'Uses ACL Rolling Review (ARR) as the shared review process across most *ACL venues; proceedings are archived on the ACL Anthology. Runs Best Paper / Outstanding Paper awards. Does not use a "spotlight" presentation category, so that signal is marked not-applicable rather than unavailable. Metadata (checked 2026-09-23): ACL Anthology materials from 2016 onward are CC BY 4.0. Also indexed in dblp. Metadata availability is a different question from this entry\'s `access` verification — see the note on the `VenueAccess` type above.',
 	},
 	{
 		id: 'emnlp',
@@ -197,7 +212,7 @@ export const venues: VenueDefinition[] = [
 		adapter: null,
 		access: 'unverified',
 		provenanceNotes:
-			'Same ARR / ACL Anthology process family as ACL. Runs Best Paper / Outstanding Paper awards. No "spotlight" presentation category.',
+			'Same ARR / ACL Anthology process family as ACL. Runs Best Paper / Outstanding Paper awards. No "spotlight" presentation category. Metadata (checked 2026-09-23): same ACL Anthology terms as ACL — materials from 2016 onward are CC BY 4.0. Also indexed in dblp. Metadata availability is a different question from this entry\'s `access` verification — see the note on the `VenueAccess` type above.',
 	},
 	{
 		id: 'ieee-vis',
@@ -220,6 +235,50 @@ export const venues: VenueDefinition[] = [
 		access: 'unverified',
 		provenanceNotes:
 			'Historically ran as separate InfoVis / SciVis / VAST conferences before unifying under the single IEEE VIS umbrella; track names are not reconstructed here since no venue reference in this repository needs them yet — see "Coverage" in research-discovery-system.md#Venue-Registry. Accepted papers commonly publish as a special issue of IEEE TVCG via IEEE Xplore. Runs Best Paper and honorable-mention awards.',
+	},
+	{
+		id: 'chi',
+		name: 'ACM CHI Conference on Human Factors in Computing Systems',
+		shortName: 'CHI',
+		aliases: ['CHI'],
+		fields: ['hci'],
+		type: 'conference',
+		tier: 'CORE',
+		acceptanceSource: 'acm-sigchi-program-committee',
+		proceedingsSource: 'acm-dl',
+		tracks: [],
+		signalAvailability: {
+			awards: 'available',
+			orals: 'unavailable',
+			spotlights: 'unavailable',
+			reviewScores: 'unavailable',
+		},
+		adapter: null,
+		access: 'unverified',
+		provenanceNotes:
+			'ACM SIGCHI\'s flagship venue. Runs Best Paper and Honorable Mention awards. Proceedings are published in the ACM Digital Library. Whether accepted papers are further split into orally-presented vs. other categories, and whether review scores are ever made public, is not verified here, hence "unavailable" rather than a guessed value. Metadata (checked 2026-09-23): available via Crossref, whose terms state its metadata "you may use it for any purpose", though the abstract text itself may be separately copyrighted; SIGCHI\'s own program data is CC BY-NC-SA 4.0. Metadata availability is a different question from this entry\'s `access` verification — see the note on the `VenueAccess` type above.',
+	},
+	{
+		id: 'uist',
+		name: 'ACM Symposium on User Interface Software and Technology',
+		shortName: 'UIST',
+		aliases: ['UIST'],
+		fields: ['hci'],
+		type: 'symposium',
+		tier: 'CORE',
+		acceptanceSource: 'acm-sigchi-program-committee',
+		proceedingsSource: 'acm-dl',
+		tracks: [],
+		signalAvailability: {
+			awards: 'available',
+			orals: 'unavailable',
+			spotlights: 'unavailable',
+			reviewScores: 'unavailable',
+		},
+		adapter: null,
+		access: 'unverified',
+		provenanceNotes:
+			'ACM SIGCHI-sponsored symposium on HCI systems and interaction techniques. Runs Best Paper and Honorable Mention awards. Proceedings are published in the ACM Digital Library. Orals/spotlights/review-score availability is not verified here, hence "unavailable". Metadata (checked 2026-09-23): available via Crossref, whose terms state its metadata "you may use it for any purpose", though the abstract text itself may be separately copyrighted; SIGCHI\'s own program data is CC BY-NC-SA 4.0. Metadata availability is a different question from this entry\'s `access` verification — see the note on the `VenueAccess` type above.',
 	},
 ];
 
