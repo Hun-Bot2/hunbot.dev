@@ -53,7 +53,8 @@
     "reviewer": "owner"
   },
   "relatedResources": [],
-  "relatedDecks": []
+  "relatedDecks": [],
+  "studiedAt": null
 }
 ---
 

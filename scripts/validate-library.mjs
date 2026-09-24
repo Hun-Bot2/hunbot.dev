@@ -114,7 +114,6 @@ const forbiddenFieldNames = new Set([
 // more external ids) before tripping.
 const MAX_RECORD_BYTES = 8192;
 
-const requiredPaperSummaryFields = ['tldr', 'problem', 'keyIdea', 'whyItMatters', 'limitations', 'readThisIf'];
 const resourcePublicPolicies = new Set([
 	'link-and-summary-only',
 	'open-source',
@@ -500,18 +499,17 @@ function validatePaper(entry, topicIndex, resourceIds) {
 		}
 	}
 
-	const canonicalLanguage = data.canonicalLanguage ?? 'ko';
-
 	if (data.status === 'approved') {
 		if (data.review?.humanReviewed !== true) {
 			errors.push(`${entry.label} is approved but review.humanReviewed is not true.`);
 		}
 
-		for (const field of requiredPaperSummaryFields) {
-			if (!data.summary?.[canonicalLanguage]?.[field]?.trim()) {
-				errors.push(`${entry.label} is approved but summary.${canonicalLanguage}.${field} is missing.`);
-			}
-		}
+		// The six-field canonical-language summary is no longer required for an
+		// approved paper card (docs/decisions/research-item-identity.md#C4): a
+		// public paper card is a reviewed bibliographic record plus a published
+		// study-log statement (`studiedAt`), not an original review. `summary`
+		// stays optional. This requirement is unchanged for `resources`
+		// (validateResource, above) — C4 amends only what a paper card is for.
 	}
 
 	if (data.review?.aiDraftUsed === true && data.review?.humanReviewed !== true) {

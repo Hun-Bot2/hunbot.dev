@@ -279,6 +279,16 @@ const papers = defineCollection({
 			depth,
 			publishedAt: dateString.optional(),
 			canonicalLanguage,
+			// A public, dated statement of whether the owner has studied the
+			// paper (docs/decisions/research-item-identity.md#C4). Distinct from
+			// the private, mutable `readingState` (unread/reading/completed/
+			// abandoned, DynamoDB-owned, still forbidden here): `studiedAt` is a
+			// deliberate, completed, dated fact, or `null` for a selected paper
+			// not yet studied. Source of truth is the study log kept in the
+			// private repository; this projection copies it, exactly as it
+			// copies every other canonical field — C3's one-directional flow is
+			// unchanged.
+			studiedAt: dateString.nullable().default(null),
 		})
 		.superRefine((paper, context) => {
 			if (paper.status === 'approved' && paper.review.humanReviewed !== true) {
@@ -289,18 +299,13 @@ const papers = defineCollection({
 				});
 			}
 
-			if (paper.status === 'approved') {
-				const canonicalSummary = paper.summary[paper.canonicalLanguage];
-				for (const field of ['tldr', 'problem', 'keyIdea', 'whyItMatters', 'limitations', 'readThisIf'] as const) {
-					if (!canonicalSummary?.[field]?.trim()) {
-						context.addIssue({
-							code: z.ZodIssueCode.custom,
-							path: ['summary', paper.canonicalLanguage, field],
-							message: `Approved papers must include summary.${paper.canonicalLanguage}.${field}.`,
-						});
-					}
-				}
-			}
+			// The six-field canonical-language summary is no longer required for
+			// an approved card (docs/decisions/research-item-identity.md#C4): a
+			// public paper card is a reviewed bibliographic record plus a
+			// published study-log statement, not an original review.
+			// `review.humanReviewed` now attests the bibliographic record was
+			// checked against its authoritative source, not that a summary was
+			// written. `summary` stays in the schema, optional.
 		}),
 });
 
