@@ -365,6 +365,36 @@ Each value below traces to at least one legacy enum value. Nothing else is liste
 
 ---
 
+## C4 — Paper Cards As A Study Log
+
+**Decided by the repository owner, 2026-09-23.** Amends what a public paper card is for. [C3](#c3--where-the-canonical-research-item-lives) is unchanged.
+
+**DECISION: a public paper card is a reviewed bibliographic record plus a published statement of whether the owner has studied the paper. It is not an original review.** The value of the card to a reader is the verified record (venue, year, identifiers, link to the authoritative source) and an honest trail of what was actually studied — not a summary.
+
+Two consequences for the projection:
+
+1. **The six-field summary is no longer required for an approved card.** `summary` stays in the schema, optional. Publication review is unchanged and still mandatory: `review.humanReviewed: true` now attests that the bibliographic record was checked against its authoritative source, not that a summary was written. Copied abstracts remain forbidden, as before.
+2. **A new public field, `studiedAt`** — a date, or `null` for a selected paper not yet studied.
+
+### Why This Does Not Contradict C3
+
+C3 forbids writing *reading state* into `src/content/papers/`, and the contract lists `readingState` under `forbiddenInPublicProjection`. That rule stands. `studiedAt` is a different fact:
+
+| | `readingState` (private, unchanged) | `studiedAt` (public, new) |
+|---|---|---|
+| Values | `unread` / `reading` / `completed` / `abandoned` | a date, or `null` |
+| Nature | Live, mutable working state | A deliberate, dated public statement |
+| Owner | Personal state (DynamoDB), rule R1 | **Git**, rule R1a — an authored value committed to a versioned repository |
+| Source of truth | The notebook | A study log committed in the **private** repository |
+
+**The source of truth for `studiedAt` lives in the private repository, not here.** The projection copies it, exactly as it copies every other canonical field. That keeps C3's rules 1 and 2 intact: flow stays one-directional, and a projection record can still be deleted and rebuilt without loss — the study log is what it is rebuilt from.
+
+The names are deliberately unrelated. A field called `readingState`, `read`, or `readAt` in the public schema would sit one rename away from the forbidden one, and the [naming hazard](#a-naming-hazard-that-must-not-be-ignored) recorded under C2 applies with more force here: `status` and `review` already mean publication review on this collection.
+
+**What this does not permit.** Partial progress (`reading`), abandonment, notes, and queue position still never cross. Only the completed, dated statement does.
+
+---
+
 ## Content Hash
 
 **DECISION: one new field, `contentHash`, on the canonical item. Private side only.**
@@ -405,7 +435,7 @@ Per the audit's [Vector Readiness](../plans/research-os-pre-aws/readiness-audit.
 | `priority` | `z.enum(['high','medium','low'])` | yes | — | public | Owner-facing reading priority, not a quality score |
 | `difficulty` | `z.enum(['beginner','intermediate','advanced','unknown'])` | yes | — | public | |
 | `status` | `libraryStatus` | yes | — | public | **Publication review status. Not acceptance status.** See [the naming hazard](#a-naming-hazard-that-must-not-be-ignored) |
-| `summary.{ko,en,jp}` | existing `paperSummaryFields` | yes (object) | — | public | Original human-reviewed summaries |
+| `summary.{ko,en,jp}` **CHANGED** | existing `paperSummaryFields` | yes (object), fields within optional | — | public | Original human-reviewed summaries. **Per-field content no longer required for an approved card** — [C4](#c4--paper-cards-as-a-study-log): a public paper card is a reviewed bibliographic record plus a study-log statement, not an original review. The object shell stays required; every field inside it is optional, approved or not |
 | `signals.citationCount` | `z.number().int().nonnegative().nullable().default(null)` | yes | `null` | public | Observation. `null` = unavailable, never zero |
 | `signals.influentialCitationCount` | same | yes | `null` | public | Observation |
 | `signals.hasCode` **CHANGED** | `z.boolean().nullable().default(null)` | yes | `null` | public | Was `default(false)`. `false` reported "not checked" as "no code" |
@@ -425,6 +455,7 @@ Per the audit's [Vector Readiness](../plans/research-os-pre-aws/readiness-audit.
 | `review.*` | existing `reviewMeta` + `aiDraftUsed` | yes | — | public | The human-review gate. **Unchanged, and not weakened** |
 | `relatedResources` | `relatedIds` | yes | `[]` | public | |
 | `relatedDecks` | `relatedIds` | yes | `[]` | public | |
+| `studiedAt` **NEW** | `dateString.nullable().default(null)` | no | `null` | public | A dated public statement that the paper has been studied, or `null` for a selected paper not yet studied — [C4](#c4--paper-cards-as-a-study-log). Distinct from the private `readingState` (unread/reading/completed/abandoned), which stays forbidden in this projection. Source of truth is the study log committed in the private repository; this field is a copy, like every other canonical field here |
 
 **Validator additions for T09**, each needing a failing-case fixture per `shared-context.md` §6:
 

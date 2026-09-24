@@ -18,7 +18,7 @@ The current implementation uses Astro content collections with Markdown files un
 
 Each file uses JSON frontmatter so the lightweight Node validator can parse metadata without adding dependencies.
 
-The public collections are not a private candidate store. They should contain small, reviewed metadata records and original summaries, not raw source material.
+The public collections are not a private candidate store. They should contain small, reviewed metadata records and, where written, original summaries, not raw source material. For papers, an original summary is optional rather than a requirement of publication review — see [Human Review Rule](#human-review-rule).
 
 ## Public Data Vs Private Candidates
 
@@ -43,6 +43,8 @@ Approved public content must be human reviewed:
 - `review.reviewer` set when practical
 
 AI-generated drafts may help writing, but they cannot bypass review. If `review.aiDraftUsed` is true on a paper, `review.humanReviewed` must still be true before publication.
+
+For papers specifically, `review.humanReviewed: true` attests that the bibliographic record was checked against its authoritative source — not that an original summary was written. A paper card is a reviewed bibliographic record plus a published study-log statement (`studiedAt`), not an original review; see [`research-item-identity.md#C4`](../decisions/research-item-identity.md#c4--paper-cards-as-a-study-log).
 
 ## Resource Schema
 
@@ -114,7 +116,10 @@ Required core fields:
 - `difficulty`: `beginner`, `intermediate`, `advanced`, or `unknown`.
 - `status`: `draft`, `pending`, `approved`, or `rejected`. **Publication
   review status — unrelated to `acceptanceStatus`, the venue's decision.**
-- `summary`: concise original summary fields.
+- `summary`: concise original summary fields, optional. No longer required
+  for an approved card — [`research-item-identity.md#C4`](../decisions/research-item-identity.md#c4--paper-cards-as-a-study-log):
+  a paper card is a reviewed bibliographic record plus a study-log
+  statement, not an original review.
 - `signals`: citation counts and code/project-page observations. `hasCode`
   and `hasProjectPage` are nullable (default `null` — "not yet checked" is
   never the same fact as "false"). The former `topicScore` / `sourceScore` /
@@ -127,15 +132,11 @@ Required core fields:
   cross-checked against `src/data/identifierSchemes.ts`. A `doi` entry's
   value must be a well-formed DOI.
 - `review`: publication review metadata.
-
-For approved papers, `summary.ko` must include:
-
-- `tldr`
-- `problem`
-- `keyIdea`
-- `whyItMatters`
-- `limitations`
-- `readThisIf`
+- `studiedAt`: nullable (default `null`) date, or `null` for a selected
+  paper not yet studied — [`research-item-identity.md#C4`](../decisions/research-item-identity.md#c4--paper-cards-as-a-study-log).
+  A public, dated statement, distinct from the private `readingState`
+  (which stays forbidden here); the study log in the private repository is
+  the source of truth, and this field is a copy.
 
 Optional URLs:
 
