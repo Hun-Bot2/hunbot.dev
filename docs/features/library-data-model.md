@@ -2,7 +2,7 @@
 
 This document defines the data foundation for the Library section. The repository now has public schemas, small sample entries, validation, a Library hub, and first-pass section listing pages. It does not add ingestion jobs, private candidate storage, search UI automation, or publishing workflows.
 
-The broader service direction is documented in [`docs/decisions/discover-direction.md`](../decisions/discover-direction.md). This data model should support that full direction: Design, Vibe Coding, Developer Docs, AI Papers, Useful Feeds, Decks, and future media companion resources.
+The broader service direction is documented in [`docs/decisions/discover-direction.md`](../decisions/discover-direction.md). This data model should support that full direction: Design, Vibe Coding, Developer Docs, Useful Feeds, Decks, and future media companion resources. Paper cards (the `papers` collection) are part of this data model but render on the Research hub, not the Library — see `docs/decisions/site-structure.md`.
 
 Future Library schema, route, ingestion, or publishing workflow changes should be planned against the build order in [`docs/decisions/discover-direction.md`](../decisions/discover-direction.md) before implementation.
 
@@ -55,7 +55,7 @@ Required core fields:
 - `id`: slug-safe identifier.
 - `title`: display title.
 - `url`: valid `http` or `https` URL.
-- `section`: one of `design`, `vibe-coding`, `dev-docs`, `ai-papers`, `useful-feeds`, `library`.
+- `section`: one of `design`, `vibe-coding`, `dev-docs`, `useful-feeds`, `library`.
 - `category`: short slug-like category.
 - `type`: one of `reference`, `tool`, `docs`, `article`, `community`, `feed`, `design-system`, `component-library`, `paper`, `repo`, `video`.
 - `tags`: short slug-like strings.
@@ -438,7 +438,6 @@ npm run build:astro
 Not implemented in this PR:
 
 - Design Library page.
-- AI Papers page.
 - Vibe Coding and Developer Docs section depth.
 - Private candidate store.
 - Review/promote CLI.

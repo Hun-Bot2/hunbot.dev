@@ -9,6 +9,11 @@ const warnings = [];
 const files = existsSync(reviewRoot)
 	? walk(reviewRoot).filter((filePath) => ['.md', '.mdx'].includes(extname(filePath)))
 	: [];
+// Research hub linking (docs/decisions/site-structure.md#Linking-reviews-and-posts-to-paper-cards):
+// an academicReviews entry's optional `paperId` must resolve to an existing
+// `papers` entry `id`. Declared here, on the later artifact — a paper card
+// never lists its own reviews.
+const paperIds = readPaperIds();
 
 for (const filePath of files) {
 	const label = relative(root, filePath);
@@ -64,6 +69,14 @@ for (const filePath of files) {
 	if (!body) {
 		warnings.push(`${label} has no public body content.`);
 	}
+
+	const paperId = getField(frontmatter, 'paperId');
+	if (paperId) {
+		const cleanPaperId = stripQuotes(paperId);
+		if (!paperIds.has(cleanPaperId)) {
+			errors.push(`${label}.paperId references unknown paper "${cleanPaperId}".`);
+		}
+	}
 }
 
 if (errors.length > 0) {
@@ -81,6 +94,30 @@ function walk(directory) {
 		const fullPath = join(directory, entry.name);
 		return entry.isDirectory() ? walk(fullPath) : [fullPath];
 	});
+}
+
+// papers content uses JSON frontmatter (scripts/validate-library.mjs is the
+// authoritative validator for its shape); this only needs the `id` values to
+// check `paperId` references resolve to something real.
+function readPaperIds() {
+	const papersRoot = join(root, 'src/content/papers');
+	if (!existsSync(papersRoot)) return new Set();
+
+	const ids = new Set();
+	for (const filePath of walk(papersRoot).filter((entry) => ['.md', '.mdx'].includes(extname(entry)))) {
+		const source = readFileSync(filePath, 'utf8');
+		const match = source.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+		if (!match) continue;
+
+		try {
+			const data = JSON.parse(match[1]);
+			if (typeof data.id === 'string') ids.add(data.id);
+		} catch {
+			// Malformed papers frontmatter is scripts/validate-library.mjs's concern.
+		}
+	}
+
+	return ids;
 }
 
 function hasField(frontmatter, fieldName) {

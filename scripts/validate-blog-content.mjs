@@ -11,6 +11,11 @@ const warnings = [];
 const files = existsSync(blogRoot)
 	? walk(blogRoot).filter((filePath) => ['.md', '.mdx'].includes(extname(filePath)))
 	: [];
+// Research hub linking (docs/decisions/site-structure.md#Linking-reviews-and-posts-to-paper-cards):
+// a blog post's optional `papers` field must resolve to existing `papers`
+// entry ids. Declared here, on the later artifact — a paper card never lists
+// the posts about it.
+const paperIds = readPaperIds();
 
 // Frontmatter records for the placeholder/duplicate report below, gathered
 // alongside the per-file checks so we don't re-read every file.
@@ -52,6 +57,15 @@ for (const filePath of files) {
 	validateStringField(frontmatter, 'series', label);
 	validateSeriesOrder(frontmatter, label);
 	validateTags(frontmatter, label);
+
+	const papersField = getField(frontmatter, 'papers');
+	if (papersField) {
+		for (const paperId of parseTagList(papersField)) {
+			if (!paperIds.has(paperId)) {
+				errors.push(`${label}.papers references unknown paper "${paperId}".`);
+			}
+		}
+	}
 
 	frontmatterRecords.push({
 		label,
@@ -199,6 +213,30 @@ function walk(directory) {
 		const fullPath = join(directory, entry.name);
 		return entry.isDirectory() ? walk(fullPath) : [fullPath];
 	});
+}
+
+// papers content uses JSON frontmatter (scripts/validate-library.mjs is the
+// authoritative validator for its shape); this only needs the `id` values to
+// check a post's `papers` references resolve to something real.
+function readPaperIds() {
+	const papersRoot = join(root, 'src/content/papers');
+	if (!existsSync(papersRoot)) return new Set();
+
+	const ids = new Set();
+	for (const filePath of walk(papersRoot).filter((entry) => ['.md', '.mdx'].includes(extname(entry)))) {
+		const source = readFileSync(filePath, 'utf8');
+		const match = source.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+		if (!match) continue;
+
+		try {
+			const data = JSON.parse(match[1]);
+			if (typeof data.id === 'string') ids.add(data.id);
+		} catch {
+			// Malformed papers frontmatter is scripts/validate-library.mjs's concern.
+		}
+	}
+
+	return ids;
 }
 
 function getField(frontmatter, fieldName) {

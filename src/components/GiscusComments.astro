@@ -37,7 +37,8 @@ const giscusLang = localeMap[resolvedLang] || config.lang || 'en';
 	{isConfigured ? (
 		<div class="giscus" data-configured="true">
 			<script
-				src="https://giscus.app/client.js"
+				is:inline
+				id="giscus-loader"
 				data-repo={repo}
 				data-repo-id={config.repoId}
 				data-category={config.category}
@@ -50,9 +51,41 @@ const giscusLang = localeMap[resolvedLang] || config.lang || 'en';
 				data-theme={config.theme}
 				data-lang={giscusLang}
 				data-loading={config.loading}
-				crossorigin="anonymous"
-				async
 			>
+				// Giscus's `preferred_color_scheme` follows the OS, not the site toggle, so an
+				// OS-dark reader on the light site got dark-theme (near-white) text on a light
+				// background. Resolve the theme from the site's own `html.dark` class instead,
+				// and push later toggles into the iframe.
+				(() => {
+					const loader = document.getElementById('giscus-loader');
+					if (!loader) return;
+					const followSite = loader.dataset.theme === 'preferred_color_scheme';
+					const siteTheme = () =>
+						document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+
+					const script = document.createElement('script');
+					script.src = 'https://giscus.app/client.js';
+					script.async = true;
+					script.crossOrigin = 'anonymous';
+					for (const [key, value] of Object.entries(loader.dataset)) {
+						script.dataset[key] = value;
+					}
+					if (followSite) script.dataset.theme = siteTheme();
+					loader.after(script);
+
+					if (!followSite) return;
+					let current = script.dataset.theme;
+					new MutationObserver(() => {
+						const next = siteTheme();
+						if (next === current) return;
+						current = next;
+						const frame = document.querySelector('iframe.giscus-frame');
+						frame?.contentWindow?.postMessage(
+							{ giscus: { setConfig: { theme: next } } },
+							'https://giscus.app'
+						);
+					}).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+				})();
 			</script>
 			<noscript class="mt-3 block text-sm text-slate-400">
 				GitHub 계정으로 댓글을 남기려면 JavaScript를 활성화해주세요.

@@ -12,7 +12,7 @@
   "featured": false,
   "qualityScore": 4,
   "freshness": "stable",
-  "status": "approved",
+  "status": "draft",
   "summary": {
     "ko": "개발자가 참고할 수 있는 공식 문서형 리소스를 표현하는 검수된 샘플입니다.",
     "en": "A reviewed sample for an official documentation-style developer resource."

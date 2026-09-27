@@ -89,6 +89,13 @@ const blog = defineCollection({
 		series: z.string().optional(),
 		seriesOrder: z.coerce.number().optional(),
 		draft: z.boolean().optional().default(false),
+		// Research hub linking (docs/decisions/site-structure.md#Linking-reviews-and-posts-to-paper-cards):
+		// `papers` entry `id`s this post is about. Declared here, on the
+		// later artifact; a paper card never lists the posts about it.
+		// Existence of each id is checked by scripts/validate-blog-content.mjs,
+		// not Zod — the id, not itemId, because this is a public-site join
+		// between public records.
+		papers: z.array(slugSafeString).default([]),
 	}),
 });
 
@@ -100,7 +107,10 @@ const resources = defineCollection({
 			title: z.string().min(1),
 			url: httpUrl,
 			repoUrl: optionalHttpUrl,
-			section: z.enum(['design', 'vibe-coding', 'dev-docs', 'ai-papers', 'useful-feeds', 'library']),
+			// 'ai-papers' removed: the Library no longer has an ai-papers section
+			// (docs/decisions/site-structure.md) — papers live in the `papers`
+			// collection, on the Research hub, never as a `resources` section.
+			section: z.enum(['design', 'vibe-coding', 'dev-docs', 'useful-feeds', 'library']),
 			category: shortSlugString,
 			type: z.enum([
 				'reference',
@@ -322,6 +332,21 @@ const academicReviews = defineCollection({
 			year: z.coerce.number().int().min(1900).max(2100).optional(),
 			url: httpUrl,
 		}),
+		// Same rule as blog.draft (docs/decisions/site-structure.md): a draft
+		// review is excluded from every route, getStaticPaths, the sitemap, and
+		// any listing. src/utils/academic-review-routing.ts's
+		// getPublishedAcademicReviews() is the single place that applies this —
+		// mirroring getAllPosts() being the single definition of "published" for
+		// blog posts.
+		draft: z.boolean().default(false),
+		// Research hub linking (docs/decisions/site-structure.md#Linking-reviews-and-posts-to-paper-cards):
+		// declared here, on the later artifact, and derived on the paper card,
+		// which never lists its own reviews. Optional — a `papers` entry `id`,
+		// not its `itemId`, because this is a public-site join between public
+		// records. Existence is checked by scripts/validate-academic-reviews.mjs,
+		// not Zod, following the id-reference pattern relatedResources/relatedTopics
+		// already use elsewhere in this file.
+		paperId: slugSafeString.optional(),
 	}),
 });
 

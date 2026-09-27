@@ -149,6 +149,17 @@
 		font-weight: 700;
 	}
 
+	/* A muted label inside a panel footer (e.g. an item count) that must stay
+	   readable in light mode. Plain `text-slate-*` utility classes on a
+	   non-heading, non-paragraph element (a <span>) are NOT covered by the
+	   global `body.light-theme :where(h1,h2,h3,p,...)` override — that
+	   selector's zero-specificity :where() only beats a same-specificity
+	   Tailwind color utility when the element is one of the tags it lists.
+	   Route through this CSS variable instead of a raw slate utility. */
+	.library-muted-label {
+		color: var(--library-muted-text);
+	}
+
 	.library-panel-footer {
 		display: flex;
 		align-items: center;

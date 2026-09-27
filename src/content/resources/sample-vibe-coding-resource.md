@@ -12,7 +12,7 @@
   "featured": false,
   "qualityScore": 4,
   "freshness": "stable",
-  "status": "approved",
+  "status": "draft",
   "summary": {
     "ko": "AI와 함께 개발 흐름을 실험하는 방법을 설명하는 검수된 샘플 리소스입니다.",
     "en": "A reviewed sample resource about AI-assisted development workflows."

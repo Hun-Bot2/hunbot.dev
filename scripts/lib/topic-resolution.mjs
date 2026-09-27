@@ -118,3 +118,23 @@ export function isResolvableTopicReference(idOrAlias, index) {
 	if (resolved.data.status === 'active') return true;
 	return Boolean(index.resolveMergeTarget(resolved));
 }
+
+/**
+ * Resolves a topic reference to the id of the active topic it ultimately
+ * points at (directly, or through a mergedInto chain), or null when it does
+ * not resolve to anything active. The Research hub groups papers under this
+ * id, so a renamed or merged reference displays under the current topic.
+ * Imported by src/utils/research.ts as well as the validators — one
+ * implementation, so the site and the validators cannot disagree.
+ *
+ * @param {string} idOrAlias
+ * @param {ReturnType<typeof buildTopicIndex>} index
+ * @returns {string | null}
+ */
+export function resolveToActiveTopicId(idOrAlias, index) {
+	const resolved = index.resolveTopic(idOrAlias);
+	if (!resolved) return null;
+	if (resolved.data.status === 'active') return resolved.data.id;
+	const merged = index.resolveMergeTarget(resolved);
+	return merged ? merged.data.id : null;
+}

@@ -1,0 +1,152 @@
+---
+import BaseHead from '../../../../components/BaseHead.astro';
+import Header from '../../../../components/Header.astro';
+import Footer from '../../../../components/Footer.astro';
+import FloatingLanguagePicker from '../../../../components/FloatingLanguagePicker.astro';
+import LibraryIcon from '../../../../components/library/LibraryIcon.astro';
+import LibraryPageStyles from '../../../../components/library/LibraryPageStyles.astro';
+import { getCollection } from 'astro:content';
+import { useTranslations, type UILanguage } from '../../../../i18n/ui';
+import { getAllPosts } from '../../../../utils/blog';
+import { getBlogUrlFromPost } from '../../../../utils/blog-routing';
+import { getVenueDisplayName } from '../../../../data/venues';
+import { getAcceptanceStatusDisplayName, getHonorDisplayName } from '../../../../data/paperVocabularies';
+import {
+	getAcademicReviewUrlFromEntry,
+	getPublishedAcademicReviews,
+} from '../../../../utils/academic-review-routing';
+import { getPaperTldr, getTopicDescription, getTopicLabel } from '../../../../utils/library';
+import { getPostsForPapers, getReviewsForPapers, getTopicsWithLinkedPapers } from '../../../../utils/research';
+
+// Generated ONLY for active topics with at least one linked approved paper
+// (docs/decisions/site-structure.md#Topic-pages). Today every topic has zero
+// linked papers, so this generates zero pages — that is the correct state,
+// not a bug: shipping a page per empty topic would be exactly the
+// placeholder-content defect this record exists to remove.
+export async function getStaticPaths() {
+	const allPapers = await getCollection('papers');
+	const allTopics = await getCollection('topics');
+	const topicsWithPapers = getTopicsWithLinkedPapers(allTopics, allPapers);
+	const languages: UILanguage[] = ['ko', 'jp', 'en'];
+
+	return languages.flatMap((lang) =>
+		topicsWithPapers.map(({ topic, papers }) => ({
+			params: { lang, topic: topic.data.id },
+			props: { topic, papers },
+		})),
+	);
+}
+
+type Props = Awaited<ReturnType<typeof getStaticPaths>>[number]['props'];
+
+const { topic, papers } = Astro.props as Props;
+const lang = (Astro.params.lang ?? 'ko') as UILanguage;
+const t = useTranslations(lang);
+
+const allReviews = getPublishedAcademicReviews(await getCollection('academicReviews'));
+const allPosts = await getAllPosts();
+const paperIds = papers.map((paper) => paper.data.id);
+const linkedReviews = getReviewsForPapers(allReviews, paperIds);
+const linkedPosts = getPostsForPapers(allPosts, paperIds);
+
+const topicLabel = getTopicLabel(topic, lang);
+const topicDescription = getTopicDescription(topic, lang);
+const title = `${topicLabel} - ${t('research.title')} - Hun-Bot Blog`;
+const researchUrl = `/${lang}/research/`;
+
+const panelClass = 'library-panel';
+const subtlePillClass = 'library-pill';
+const actionLinkClass = 'library-action';
+const backActionClass = `${actionLinkClass} library-action--back`;
+const externalActionClass = `${actionLinkClass} library-action--external`;
+---
+
+<!doctype html>
+<html lang={lang}>
+	<head>
+		<BaseHead title={title} description={topicDescription} lang={lang} />
+		<LibraryPageStyles />
+		<meta data-pagefind-meta="title[content]" content={topicLabel} />
+		<meta data-pagefind-meta="description[content]" content={topicDescription} />
+		<meta data-pagefind-filter="language[content]" content={lang} />
+		<meta data-pagefind-filter="section[content]" content="research" />
+	</head>
+	<body>
+		<Header />
+		<FloatingLanguagePicker />
+		<main id="main-content" class="library-page mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8" data-pagefind-body>
+			<section class="mb-8 max-w-5xl space-y-3">
+				<a href={researchUrl} class={backActionClass}>
+					<LibraryIcon name="arrow-left" />
+					{t('research.back-to-research')}
+				</a>
+				<div class="space-y-2">
+					<h1 class="text-4xl font-bold tracking-normal text-slate-100 sm:text-5xl">{topicLabel}</h1>
+					<p class="leading-relaxed text-slate-400">{topicDescription}</p>
+				</div>
+			</section>
+
+			<section class="mb-10 space-y-4" aria-labelledby="topic-papers-heading">
+				<h2 id="topic-papers-heading" class="text-2xl font-bold text-slate-100">
+					{t('research.topic.papers-heading')}
+				</h2>
+				<div class="grid gap-4 lg:grid-cols-3">
+					{papers.map((paper) => (
+						<article class={panelClass}>
+							<div class="mb-3 flex flex-wrap gap-2">
+								{getVenueDisplayName(paper.data.venue) && (
+									<span class={subtlePillClass}>{getVenueDisplayName(paper.data.venue)}</span>
+								)}
+								{paper.data.year && <span class={subtlePillClass}>{paper.data.year}</span>}
+								{getAcceptanceStatusDisplayName(paper.data.acceptanceStatus) && (
+									<span class={subtlePillClass}>{getAcceptanceStatusDisplayName(paper.data.acceptanceStatus)}</span>
+								)}
+								{paper.data.honors.map((honor) => (
+									<span class={subtlePillClass}>{getHonorDisplayName(honor)}</span>
+								))}
+							</div>
+							<h3 class="mb-3 text-lg font-semibold text-slate-100">{paper.data.title}</h3>
+							<p class="mb-5 text-sm leading-relaxed text-slate-400">{getPaperTldr(paper, lang)}</p>
+							<a href={paper.data.url} target="_blank" rel="noopener noreferrer" class={externalActionClass}>
+								{t('research.view-source')}
+								<LibraryIcon name="external" />
+							</a>
+						</article>
+					))}
+				</div>
+			</section>
+
+			{linkedReviews.length > 0 && (
+				<section class="mb-10 space-y-4" aria-labelledby="topic-reviews-heading">
+					<h2 id="topic-reviews-heading" class="text-2xl font-bold text-slate-100">
+						{t('research.topic.reviews-heading')}
+					</h2>
+					<div class="grid gap-4 lg:grid-cols-3">
+						{linkedReviews.map((review) => (
+							<a href={getAcademicReviewUrlFromEntry(review)} class={`${panelClass} library-panel-link`}>
+								<h3 class="mb-3 text-lg font-semibold text-slate-100">{review.data.title}</h3>
+							</a>
+						))}
+					</div>
+				</section>
+			)}
+
+			{linkedPosts.length > 0 && (
+				<section class="mb-10 space-y-4" aria-labelledby="topic-posts-heading">
+					<h2 id="topic-posts-heading" class="text-2xl font-bold text-slate-100">
+						{t('research.topic.posts-heading')}
+					</h2>
+					<div class="grid gap-4 lg:grid-cols-3">
+						{linkedPosts.map((post) => (
+							<a href={getBlogUrlFromPost(post)} class={`${panelClass} library-panel-link`}>
+								<h3 class="mb-3 text-lg font-semibold text-slate-100">{post.data.title}</h3>
+								<p class="text-sm leading-relaxed text-slate-400">{post.data.description}</p>
+							</a>
+						))}
+					</div>
+				</section>
+			)}
+		</main>
+		<Footer />
+	</body>
+</html>

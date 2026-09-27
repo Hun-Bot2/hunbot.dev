@@ -8,15 +8,11 @@ import LibraryPageStyles from '../../../components/library/LibraryPageStyles.ast
 import { getCollection } from 'astro:content';
 import { useTranslations, type UILanguage } from '../../../i18n/ui';
 import { decks } from '../../../data/decks';
-import { getVenueDisplayName } from '../../../data/venues';
-import { getAcceptanceStatusDisplayName, getHonorDisplayName } from '../../../data/paperVocabularies';
 import { getAspectRatioValue } from '../../../lib/decks/validateDeckMeta';
 import {
 	getActiveTopics,
-	getApprovedPapers,
 	getApprovedResources,
 	getLibrarySectionPath,
-	getPaperTldr,
 	getResourceSummary,
 	getResourcesForLibrarySection,
 	getTopicLabel,
@@ -53,15 +49,12 @@ const description = sectionDescription;
 const libraryUrl = `/${lang}/library/`;
 
 const allResources = await getCollection('resources');
-const allPapers = await getCollection('papers');
 const allTopics = await getCollection('topics');
 const approvedResources = getApprovedResources(allResources);
-const approvedPapers = getApprovedPapers(allPapers);
 const activeTopics = getActiveTopics(allTopics);
 
 const sectionResources =
 	sectionMeta.kind === 'resources' ? getResourcesForLibrarySection(approvedResources, sectionId) : [];
-const sectionPapers = sectionMeta.kind === 'papers' ? approvedPapers : [];
 const sectionDecks = sectionMeta.kind === 'decks' ? decks : [];
 const highlightedDeck = sectionDecks.find((deck) => deck.id === 'akiya-ai-paperwork-local-jobs-ko');
 const highlightedDeckUrl = highlightedDeck?.htmlUrl ?? highlightedDeck?.pdfUrl ?? null;
@@ -75,7 +68,7 @@ const highlightedDeckActionLabel = highlightedDeck?.htmlUrl ? t('library.view-de
 const highlightedDeckLanguageLabel = highlightedDeck
 	? t(`library.deck.language.${highlightedDeck.language}` as Parameters<typeof t>[0])
 	: null;
-const itemCount = sectionResources.length + sectionPapers.length + sectionDecks.length;
+const itemCount = sectionResources.length + sectionDecks.length;
 const groupedResourceMap = new Map<string, typeof sectionResources>();
 for (const resource of sectionResources) {
 	const existingGroup = groupedResourceMap.get(resource.data.category) ?? [];
@@ -85,7 +78,6 @@ const resourceGroups = Array.from(groupedResourceMap.entries())
 	.map(([category, resources]) => ({ category, resources }))
 	.sort((a, b) => a.category.localeCompare(b.category));
 const topicsById = new Map(activeTopics.map((topic) => [topic.data.id, topic]));
-const resourcesById = new Map(approvedResources.map((resource) => [resource.data.id, resource]));
 const decksById = new Map(decks.map((deck) => [deck.id, deck]));
 const getTopicLabels = (topicIds: readonly string[] | undefined) =>
 	(topicIds ?? [])
@@ -95,10 +87,6 @@ const getTopicLabels = (topicIds: readonly string[] | undefined) =>
 const getDeckTitles = (deckIds: readonly string[] | undefined) =>
 	(deckIds ?? [])
 		.map((deckId) => decksById.get(deckId)?.title)
-		.filter((title): title is string => Boolean(title));
-const getResourceTitles = (resourceIds: readonly string[] | undefined) =>
-	(resourceIds ?? [])
-		.map((resourceId) => resourcesById.get(resourceId)?.data.title)
 		.filter((title): title is string => Boolean(title));
 const formatSlideCount = (count: number) => t('library.deck.slides-count').replace('{count}', String(count));
 
@@ -203,73 +191,6 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 							</div>
 						</div>
 					))}
-				</section>
-			)}
-
-			{sectionPapers.length > 0 && (
-				<section class="mb-10 space-y-4" aria-labelledby="section-papers-heading">
-					<h2 id="section-papers-heading" class="text-2xl font-bold text-slate-100">
-						{t('library.section.papers-heading')}
-					</h2>
-					<div class="grid gap-4 lg:grid-cols-3">
-						{sectionPapers.map((paper) => {
-							const topicLabels = getTopicLabels(paper.data.topics);
-							const resourceTitles = getResourceTitles(paper.data.relatedResources);
-							const deckTitles = getDeckTitles(paper.data.relatedDecks);
-
-							return (
-								<article class={panelClass}>
-									<div class="mb-3 flex flex-wrap gap-2">
-										{getVenueDisplayName(paper.data.venue) && <span class={subtlePillClass}>{getVenueDisplayName(paper.data.venue)}</span>}
-										{paper.data.year && <span class={subtlePillClass}>{paper.data.year}</span>}
-										<span class={subtlePillClass}>{paper.data.priority}</span>
-										<span class={subtlePillClass}>{paper.data.difficulty}</span>
-										{getAcceptanceStatusDisplayName(paper.data.acceptanceStatus) && (
-											<span class={subtlePillClass}>{getAcceptanceStatusDisplayName(paper.data.acceptanceStatus)}</span>
-										)}
-										{paper.data.honors.map((honor) => (
-											<span class={subtlePillClass}>{getHonorDisplayName(honor)}</span>
-										))}
-									</div>
-									<h3 class="mb-3 text-lg font-semibold text-slate-100">{paper.data.title}</h3>
-									<p class="mb-5 text-sm leading-relaxed text-slate-400">{getPaperTldr(paper, lang)}</p>
-									{topicLabels.length > 0 && (
-										<div class="mb-4 space-y-2">
-											<p class="text-xs font-semibold uppercase text-slate-500">{t('library.related-topics')}</p>
-											<div class="flex flex-wrap gap-2">
-												{topicLabels.map((label) => <span class={subtlePillClass}>{label}</span>)}
-											</div>
-										</div>
-									)}
-									{resourceTitles.length > 0 && (
-										<div class="mb-4 space-y-2">
-											<p class="text-xs font-semibold uppercase text-slate-500">{t('library.related-resources')}</p>
-											<div class="flex flex-wrap gap-2">
-												{resourceTitles.map((title) => <span class={subtlePillClass}>{title}</span>)}
-											</div>
-										</div>
-									)}
-									{deckTitles.length > 0 && (
-										<div class="mb-4 space-y-2">
-											<p class="text-xs font-semibold uppercase text-slate-500">{t('library.related-decks')}</p>
-											<div class="flex flex-wrap gap-2">
-												{deckTitles.map((title) => <span class={subtlePillClass}>{title}</span>)}
-											</div>
-										</div>
-									)}
-									<a
-										href={paper.data.url}
-										target="_blank"
-										rel="noopener noreferrer"
-										class={externalActionClass}
-									>
-										{t('library.view-paper')}
-										<LibraryIcon name="external" />
-									</a>
-								</article>
-							);
-						})}
-					</div>
 				</section>
 			)}
 

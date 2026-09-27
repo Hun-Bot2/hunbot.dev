@@ -14,6 +14,7 @@ import {
 	formatPaperAuthors,
 	getAcademicReviewsByLanguage,
 	getAcademicReviewUrlFromEntry,
+	getPublishedAcademicReviews,
 } from '../../utils/academic-review-routing';
 import { getBlogUrlFromId } from '../../utils/blog-routing';
 import {
@@ -46,7 +47,7 @@ const t = useTranslations(currentLang);
 const languageBasePath = `/${currentLang}`;
 const blogUrl = `${languageBasePath}/blog`;
 const libraryUrl = `${languageBasePath}/library`;
-const reviewsUrl = `${languageBasePath}/reviews`;
+const researchUrl = `${languageBasePath}/research`;
 
 const allPosts = await getAllPosts();
 const allResources = await getCollection('resources');
@@ -58,7 +59,10 @@ const latestBriefs = getLatestBriefPosts(posts, 3);
 const latestPosts = getLatestBlogPosts(posts, 6);
 const libraryPicks = getHomepageLibraryPicks(allResources, allPapers, 3);
 const sectionCounts = getHomepageSectionCounts(allResources, allPapers, decks);
-const academicReviews = getAcademicReviewsByLanguage(allAcademicReviews, currentLang).slice(0, 3);
+const academicReviews = getAcademicReviewsByLanguage(
+	getPublishedAcademicReviews(allAcademicReviews),
+	currentLang,
+).slice(0, 3);
 
 const sectionCards = librarySections.map((section) => {
 	const title = t(`library.section.${section.translationKey}.title` as Parameters<typeof t>[0]);
@@ -81,7 +85,9 @@ const getPickTitle = (pick: (typeof libraryPicks)[number]) =>
 const getPickHref = (pick: (typeof libraryPicks)[number]) =>
 	pick.kind === 'resource' ? pick.resource.data.url : pick.paper.data.url;
 const getPickSectionLabel = (pick: (typeof libraryPicks)[number]) => {
-	if (pick.kind === 'paper') return t('library.section.ai-papers.title');
+	// Papers moved to the Research hub (docs/decisions/site-structure.md); the
+	// Library no longer has an "ai-papers" section to name this pick after.
+	if (pick.kind === 'paper') return t('home.metric.papers');
 
 	const section = librarySections.find(
 		(item) => item.kind === 'resources' && item.resourceSection === pick.resource.data.section,
@@ -190,7 +196,7 @@ const getPickSectionLabel = (pick: (typeof libraryPicks)[number]) => {
 							<div>
 								<h2 id="home-reviews-title">{t('home.reviews.title')}</h2>
 							</div>
-							<a href={reviewsUrl} class="home-text-link home-text-link-review">
+							<a href={researchUrl} class="home-text-link home-text-link-review">
 								<LibraryIcon name="article" class="home-action-icon" />
 								<span>{t('home.reviews.view-all')}</span>
 								<LibraryIcon name="arrow-right" class="home-action-icon" />

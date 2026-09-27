@@ -2,7 +2,9 @@
 
 ## Purpose
 
-The Library hub is the first public entry point for the human-reviewed Library data model. It introduces the curated sections and shows a small set of approved public resources, active topics, and approved paper cards.
+The Library hub is the first public entry point for the human-reviewed Library data model. It introduces the curated sections and shows a small set of approved public resources and active topics.
+
+Paper cards moved off the Library hub onto the Research hub (`/{lang}/research/`, `docs/decisions/site-structure.md`): the Library's claim is "here is a good reference for X," while a paper card is a study-log entry ("here is what I studied"). The `papers` content collection itself is unchanged — only where it renders moved.
 
 The current implementation also adds first-pass section listing pages. It does not add ingestion, private candidate storage, comments, authentication, payments, newsletters, or a database.
 
@@ -15,7 +17,6 @@ The hub and section pages cover:
 - Design
 - Vibe Coding
 - Developer Docs
-- AI Papers
 - Useful Feeds
 - Decks / Presentations
 
@@ -30,9 +31,9 @@ The current site uses explicit language routes for all supported languages:
 - `/ko/library/`
 - `/jp/library/`
 - `/en/library/`
-- `/ko/library/{design,vibe-coding,dev-docs,ai-papers,useful-feeds,decks}/`
-- `/jp/library/{design,vibe-coding,dev-docs,ai-papers,useful-feeds,decks}/`
-- `/en/library/{design,vibe-coding,dev-docs,ai-papers,useful-feeds,decks}/`
+- `/ko/library/{design,vibe-coding,dev-docs,useful-feeds,decks}/`
+- `/jp/library/{design,vibe-coding,dev-docs,useful-feeds,decks}/`
+- `/en/library/{design,vibe-coding,dev-docs,useful-feeds,decks}/`
 
 Even though Astro i18n is configured with Korean as the default locale, the existing source and navigation use `/ko/...` links for Korean pages. The Library hub follows that established convention.
 
@@ -49,14 +50,7 @@ Section resource pages group resources by `category`. Cards show type, tags, loc
 
 ## Paper Selection
 
-The page reads from `src/content/papers/` and displays paper cards only where:
-
-- `status === "approved"`
-- `review.humanReviewed === true`
-
-Cards show concise metadata such as venue, year, and priority only when available. The hub uses the localized TLDR summary and never stores or renders full paper text.
-
-The AI Papers section page shows venue, year, priority, difficulty, decision, localized TLDR, resolved topic labels, and any resolved related resources or decks. Topic and relationship IDs that do not resolve are omitted instead of creating broken links.
+Paper cards are not read or rendered here. They surface on the Research hub instead — see `docs/decisions/site-structure.md` and, once written, a dedicated Research hub feature doc.
 
 ## Topic Selection
 
@@ -116,7 +110,7 @@ The validator checks source wiring, generated section routes after build output 
 Future work may add:
 
 - Library-specific Pagefind filters
-- Deeper Design, Vibe Coding, Developer Docs, AI Papers, Useful Feeds, and Deck section pages
+- Deeper Design, Vibe Coding, Developer Docs, Useful Feeds, and Deck section pages
 - YouTube/media companion links after reviewed metadata exists
 - Private candidate storage
 - Review/promote CLI

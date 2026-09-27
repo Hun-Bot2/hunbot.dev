@@ -12,7 +12,7 @@
   "featured": false,
   "qualityScore": 4,
   "freshness": "stable",
-  "status": "approved",
+  "status": "draft",
   "summary": {
     "ko": "사람이 검수한 한국어 설명입니다.",
     "en": "A human-reviewed English summary.",
