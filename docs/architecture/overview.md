@@ -28,7 +28,6 @@ Current route files:
 | `src/pages/[lang]/blog/[...slug].astro` | Localized post detail | Generates paths from content IDs. |
 | `src/pages/[lang]/blog/categories.astro` | Category index | Builds category counts per language. |
 | `src/pages/[lang]/blog/categories/[category].astro` | Category detail | Generates one static path per language/category pair. |
-| `src/pages/[lang]/blog/tags.astro` | Tag index | Builds tag counts per language. |
 | `src/pages/rss.xml.js` | Global RSS feed | Currently emits links that do not match localized post route shape. |
 | `src/pages/sitemap.xml.ts` | Custom sitemap | Currently emits non-localized post URLs and some routes that do not exist. |
 | `src/pages/api/views.ts` | Page-view API | `prerender = false`; uses Redis-compatible REST persistence. |
@@ -144,7 +143,7 @@ Do not add new external services casually. Each service should have a clear purp
 | --- | --- | --- |
 | URL helpers disagree on localized post URLs | Broken links and SEO regressions | `src/utils/blog.ts`, `src/pages/rss.xml.js`, `src/pages/sitemap.xml.ts`, route files |
 | Alternate links are not translation-aware | Search engines may crawl missing localized pages | `BaseHead.astro`, post route props |
-| Repeated collection loading and sorting | Build-time cost and logic drift as content grows | Home, blog, tags, categories, post series |
+| Repeated collection loading and sorting | Build-time cost and logic drift as content grows | Home, blog, categories, post series |
 | Free-form categories | Duplicate category pages and inconsistent navigation | Content frontmatter, category routes |
 | Monolithic i18n dictionary | Harder review and higher merge-conflict risk | `src/i18n/ui.ts` |
 | Inline scripts everywhere | CSP cannot be tightened cleanly | `BaseHead.astro`, components |
@@ -158,5 +157,5 @@ Do not add new external services casually. Each service should have a clear purp
 - Treat route shape, canonical URLs, `hreflang`, RSS, sitemap, and robots behavior as public contracts.
 - Keep public content separate from private drafts and candidate Library data.
 - Human-review AI-generated translations and summaries before publication.
-- Keep the Library scope broad across Design, Vibe Coding, Developer Docs, AI Papers, Useful Feeds, Decks, and media companion resources.
+- Keep the Library scope broad across Design, Vibe Coding, Developer Docs, Useful Feeds, Decks, and media companion resources. Paper cards render on the Research hub (`/{lang}/research/`), not the Library — see `docs/decisions/site-structure.md`.
 - Do not add payments, accounts, saved resources, review queues, ingestion workers, or newsletter infrastructure to the personal blog without an explicit product separation plan.

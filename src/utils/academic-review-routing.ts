@@ -133,6 +133,17 @@ export function getAcademicReviewsByLanguage(
 	return sortAcademicReviewsByDateDesc(filterAcademicReviewsByLanguage(reviews, lang));
 }
 
+/**
+ * The single definition of "published" for academic reviews — the same rule
+ * getAllPosts() applies to blog posts (docs/decisions/site-structure.md):
+ * `draft: true` removes a review from every route, getStaticPaths, the
+ * sitemap, and any listing. Every read site should filter through this
+ * rather than re-checking `!data.draft` itself.
+ */
+export function getPublishedAcademicReviews(reviews: AcademicReviewEntry[]): AcademicReviewEntry[] {
+	return reviews.filter((review) => !review.data.draft);
+}
+
 export function formatPaperAuthors(authors: string[], visibleCount = 3): string {
 	if (authors.length <= visibleCount) return authors.join(', ');
 	return `${authors.slice(0, visibleCount).join(', ')} et al.`;

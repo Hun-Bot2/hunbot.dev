@@ -3,10 +3,11 @@ import { getCollection } from 'astro:content';
 import { getAllPosts } from '../utils/blog';
 import { SITE_URL, SUPPORTED_LANGUAGES } from '../consts';
 import { getBlogUrlFromId } from '../utils/blog-routing';
-import { getAcademicReviewUrlFromId } from '../utils/academic-review-routing';
+import { getAcademicReviewUrlFromId, getPublishedAcademicReviews } from '../utils/academic-review-routing';
 import { getLibrarySectionPath, librarySections } from '../utils/library';
 import { learningPaths } from '../data/learningPaths';
 import { getLearningPathUrl, getPublishedLearningPaths } from '../utils/learning-paths';
+import { getTopicsWithLinkedPapers } from '../utils/research';
 
 export const GET: APIRoute = async ({ site }) => {
   const siteUrl = site ?? new URL(SITE_URL);
@@ -15,7 +16,17 @@ export const GET: APIRoute = async ({ site }) => {
   // each of them a page that is never built. getAllPosts() is the single
   // definition of published.
   const posts = await getAllPosts();
-  const academicReviews = await getCollection('academicReviews');
+  // getPublishedAcademicReviews() is the single definition of "published" for
+  // reviews (docs/decisions/site-structure.md), the same rule getAllPosts()
+  // is for blog posts — a draft review must never be advertised as a live URL.
+  const academicReviews = getPublishedAcademicReviews(await getCollection('academicReviews'));
+  const allPapers = await getCollection('papers');
+  const allTopics = await getCollection('topics');
+  // Topic pages are generated only for active topics with at least one linked
+  // approved paper (docs/decisions/site-structure.md#Topic-pages) — the same
+  // gate src/pages/[lang]/research/topics/[topic].astro's getStaticPaths uses,
+  // so the sitemap never advertises a URL that build did not actually produce.
+  const topicsWithPapers = getTopicsWithLinkedPapers(allTopics, allPapers);
   // `lastmod` for listing pages is derived from the newest content they can
   // show, NOT from the build clock.
   //
@@ -37,19 +48,26 @@ export const GET: APIRoute = async ({ site }) => {
     `/${lang}/paths/`,
     ...getPublishedLearningPaths(learningPaths).map((path) => getLearningPathUrl(lang, path.id)),
   ]);
+  // Research hub replaces the retired /{lang}/reviews/ index
+  // (docs/decisions/site-structure.md) — reviews now live at /{lang}/research/,
+  // and topic pages are generated (and listed here) only for topics that
+  // actually have at least one linked paper.
+  const researchPages = SUPPORTED_LANGUAGES.flatMap((lang) => [
+    `/${lang}/research/`,
+    ...topicsWithPapers.map(({ topic }) => `/${lang}/research/topics/${topic.data.id}/`),
+  ]);
   const staticPages = [
     '/',
     ...SUPPORTED_LANGUAGES.flatMap((lang) => [
       `/${lang}/`,
       `/${lang}/blog/`,
       `/${lang}/blog/categories/`,
-      `/${lang}/blog/tags/`,
-      `/${lang}/reviews/`,
       `/${lang}/library/`,
       `/${lang}/search/`,
       ...librarySections.map((section) => getLibrarySectionPath(lang, section.id)),
     ]),
     ...learningPathPages,
+    ...researchPages,
   ];
   
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
@@ -59,7 +77,7 @@ export const GET: APIRoute = async ({ site }) => {
   <url>
     <loc>${new URL(path, siteUrl).href}</loc>
     <lastmod>${listingLastmod}</lastmod>
-    <changefreq>${path.includes('/library/') || path.includes('/paths/') ? 'monthly' : 'weekly'}</changefreq>
+    <changefreq>${path.includes('/library/') || path.includes('/paths/') || path.includes('/research/') ? 'monthly' : 'weekly'}</changefreq>
     <priority>${path === '/' ? '1.0' : path.endsWith('/blog/') ? '0.9' : '0.7'}</priority>
   </url>`).join('')}
   

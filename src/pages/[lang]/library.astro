@@ -8,16 +8,12 @@ import LibraryPageStyles from '../../components/library/LibraryPageStyles.astro'
 import { getCollection } from 'astro:content';
 import { useTranslations, type UILanguage } from '../../i18n/ui';
 import { decks } from '../../data/decks';
-import { getVenueDisplayName } from '../../data/venues';
 import {
 	getActiveTopics,
-	getApprovedPapers,
 	getApprovedResources,
 	getFeaturedResources,
 	getFeaturedTopics,
-	getFeaturedPapers,
 	getLibrarySectionPath,
-	getPaperTldr,
 	getResourceSummary,
 	getTopicDescription,
 	getTopicLabel,
@@ -38,19 +34,16 @@ const title = `${t('library.title')} - Hun-Bot Blog`;
 const description = t('library.description');
 
 const allResources = await getCollection('resources');
-const allPapers = await getCollection('papers');
 const allTopics = await getCollection('topics');
 
 const approvedResources = getApprovedResources(allResources);
-const approvedPapers = getApprovedPapers(allPapers);
 const activeTopics = getActiveTopics(allTopics);
 
-// All three go through a deterministic comparator. A bare `.slice()` takes
+// Both go through a deterministic comparator. A bare `.slice()` takes
 // whatever order getCollection() returned, so two builds of identical source
 // could disagree — which makes diffing rendered output worthless, and diffing
 // rendered output is what caught the venue-display regression (audit N4).
 const featuredResources = getFeaturedResources(approvedResources, 3);
-const featuredPapers = getFeaturedPapers(approvedPapers, 3);
 const featuredTopics = getFeaturedTopics(activeTopics, 6);
 
 const resourcesBySection = approvedResources.reduce<Record<string, number>>((counts, resource) => {
@@ -63,12 +56,7 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 const sectionCards = librarySections.map((section) => {
 	const titleKey = `library.section.${section.translationKey}.title` as Parameters<typeof t>[0];
 	const descriptionKey = `library.section.${section.translationKey}.description` as Parameters<typeof t>[0];
-	const count =
-		section.kind === 'papers'
-			? approvedPapers.length
-			: section.kind === 'decks'
-				? decks.length
-				: resourcesBySection[section.resourceSection] ?? 0;
+	const count = section.kind === 'decks' ? decks.length : resourcesBySection[section.resourceSection] ?? 0;
 
 	return {
 		id: section.id,
@@ -139,7 +127,7 @@ const externalActionClass = `${actionLinkClass} library-action--external`;
 								</div>
 								<p class="min-h-[4rem] text-sm leading-relaxed text-slate-400">{section.description}</p>
 								<div class={panelDividerClass}>
-									<span class="font-medium text-slate-300">{formatCount(section.count)}</span>
+									<span class="font-medium library-muted-label">{formatCount(section.count)}</span>
 									<span class="library-section-button">
 										{t('library.open-section')}
 										<LibraryIcon name="arrow-right" />
@@ -204,43 +192,6 @@ const externalActionClass = `${actionLinkClass} library-action--external`;
 					))}
 				</div>
 			</section>
-
-			{featuredPapers.length > 0 && (
-				<section class="mb-10 space-y-4" aria-labelledby="featured-papers-heading">
-					<div>
-						<h2 id="featured-papers-heading" class="text-2xl font-bold text-slate-100">
-							{t('library.featured-papers')}
-						</h2>
-						<p class="mt-1 text-slate-400">{t('library.featured-papers.description')}</p>
-					</div>
-					<div class="grid gap-4 lg:grid-cols-3">
-						{featuredPapers.map((paper) => (
-							<article class={panelClass}>
-								<div class="mb-3 flex flex-wrap gap-2">
-									{getVenueDisplayName(paper.data.venue) && (
-										<span class={subtlePillClass}>{getVenueDisplayName(paper.data.venue)}</span>
-									)}
-									{paper.data.year && (
-										<span class={subtlePillClass}>{paper.data.year}</span>
-									)}
-									<span class={subtlePillClass}>{paper.data.priority}</span>
-								</div>
-								<h3 class="mb-3 text-lg font-semibold text-slate-100">{paper.data.title}</h3>
-								<p class="mb-5 text-sm leading-relaxed text-slate-400">{getPaperTldr(paper, lang)}</p>
-								<a
-									href={paper.data.url}
-									target="_blank"
-									rel="noopener noreferrer"
-									class={externalActionClass}
-								>
-									{t('library.view-paper')}
-									<LibraryIcon name="external" />
-								</a>
-							</article>
-						))}
-					</div>
-				</section>
-			)}
 		</main>
 		<Footer />
 	</body>

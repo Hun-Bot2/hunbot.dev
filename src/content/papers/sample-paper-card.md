@@ -16,7 +16,7 @@
   "topics": ["ai-agents"],
   "priority": "medium",
   "difficulty": "intermediate",
-  "status": "approved",
+  "status": "draft",
   "summary": {
     "ko": {
       "tldr": "이 논문이 무엇을 말하는지 30초 안에 이해할 수 있는 샘플 요약입니다.",

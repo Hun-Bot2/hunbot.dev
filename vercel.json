@@ -41,9 +41,29 @@
       "permanent": false
     },
     {
+      "source": "/:lang(ko|jp|en)/blog/tags/:path*",
+      "destination": "/:lang/blog/",
+      "permanent": true
+    },
+    {
       "source": "/:lang(ko|jp|en)/blog/page/:page",
       "destination": "/:lang/blog/",
       "permanent": false
+    },
+    {
+      "source": "/:lang(ko|jp|en)/reviews",
+      "destination": "/:lang/research/",
+      "permanent": true
+    },
+    {
+      "source": "/:lang(ko|jp|en)/reviews/",
+      "destination": "/:lang/research/",
+      "permanent": true
+    },
+    {
+      "source": "/:lang(ko|jp|en)/library/ai-papers/:path*",
+      "destination": "/:lang/research/",
+      "permanent": true
     }
   ],
   "headers": [

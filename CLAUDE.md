@@ -64,11 +64,13 @@ Defined in `src/content.config.ts`. Each collection has a Zod schema — check i
 |---|---|---|
 | `blog` | `src/content/blog/**/*.{md,mdx}` | Blog posts in ko/jp/en |
 | `resources` | `src/content/resources/**` | Curated external links (Library) |
-| `papers` | `src/content/papers/**` | AI paper cards (Library) |
+| `papers` | `src/content/papers/**` | AI paper cards (Research hub study log) |
 | `topics` | `src/content/topics/**` | Library topic definitions + Discover taxonomy nodes |
 | `academicReviews` | `src/content/academic-reviews/**` | Structured paper review posts |
 
-> **Topic taxonomy lifecycle:** beyond the original Library fields, each topic carries `parent` (a topic id, or `null` — `null` is what makes a node a domain; nesting is not limited to two levels), `order` (display weight within its parent, default `0`), `aliases` (previous ids that must keep resolving after a rename), and `mergedInto` (set alongside `status: "archived"` when a topic is merged into another). Nothing is ever deleted — rename adds an alias, merge sets `mergedInto`, retire sets `status: "archived"`; routes and item references keep resolving. All four fields are optional/defaulted, so existing topic files validate unchanged. Full lifecycle spec: `docs/decisions/discover-direction.md` §Taxonomy. Enforced by `scripts/validate-taxonomy.mjs` (`npm run taxonomy:validate`, part of `content:validate`), which rejects an unresolved `parent`, a `parent`/`mergedInto` cycle, duplicate topic ids, a duplicate or id-colliding alias, an archived topic with an active child, and a paper/resource whose topic reference isn't active or merged into an active topic. Topic reference resolution (a stored id, a uniquely-owned alias, or a bounded `mergedInto` chain to an active topic) is shared logic in `scripts/lib/topic-resolution.mjs` (`buildTopicIndex()`, `isResolvableTopicReference()`), used by both `scripts/validate-library.mjs` and `scripts/validate-learning-paths.mjs` so the two validators cannot silently disagree about what a valid topic reference is.
+> **Site structure (2026-09-26):** `hun-bot.dev` has three public surfaces, one per Research OS loop stage (`docs/decisions/site-structure.md`) — Writing (`/{lang}/blog/`), Research (`/{lang}/research/`, paper study log + reviews + learning paths + topics), and Library (`/{lang}/library/`, curated references only — no papers). `papers` gained `studiedAt` (`YYYY-MM-DD` or `null`; C4's dated "I studied this" statement, distinct from the private, mutable `readingState`). `academicReviews` gained `draft` (default `false`, same rule as `blog.draft` — filter through `getPublishedAcademicReviews()` in `src/utils/academic-review-routing.ts`, never re-check `!data.draft` yourself) and optional `paperId` (a `papers` entry `id`). `blog` gained optional `papers: string[]` (`papers` entry ids the post is about). Both link fields are declared on the *later* artifact and derived on the paper card — a paper card never lists its own reviews or posts (`src/utils/research.ts`: `getReviewForPaper()`, `getPostsForPaper()`). Reference existence is checked by `scripts/validate-academic-reviews.mjs` and `scripts/validate-blog-content.mjs`, not Zod. The `ai-papers` Library section is retired; `librarySections` in `src/utils/library.ts` no longer has a `'papers'` kind.
+
+> **Topic taxonomy lifecycle:** beyond the original Library fields, each topic carries `parent` (a topic id, or `null` — `null` is what makes a node a domain; nesting is not limited to two levels), `order` (display weight within its parent, default `0`), `aliases` (previous ids that must keep resolving after a rename), and `mergedInto` (set alongside `status: "archived"` when a topic is merged into another). Nothing is ever deleted — rename adds an alias, merge sets `mergedInto`, retire sets `status: "archived"`; routes and item references keep resolving. All four fields are optional/defaulted, so existing topic files validate unchanged. Full lifecycle spec: `docs/decisions/discover-direction.md` §Taxonomy. Enforced by `scripts/validate-taxonomy.mjs` (`npm run taxonomy:validate`, part of `content:validate`), which rejects an unresolved `parent`, a `parent`/`mergedInto` cycle, duplicate topic ids, a duplicate or id-colliding alias, an archived topic with an active child, and a paper/resource whose topic reference isn't active or merged into an active topic. Topic reference resolution (a stored id, a uniquely-owned alias, or a bounded `mergedInto` chain to an active topic) is shared logic in `scripts/lib/topic-resolution.mjs` (`buildTopicIndex()`, `isResolvableTopicReference()`, `resolveToActiveTopicId()`), used by `scripts/validate-library.mjs`, `scripts/validate-learning-paths.mjs`, and the Research hub (`src/utils/research.ts`) so the validators and the site cannot silently disagree about what a valid topic reference is.
 
 > **Paper identity and provenance (2026-09-14):** `papers` carries a canonical work identity separate from its projection id — `id` (URL-bearing, human-chosen) and `itemId` (`itm-` + 26-char lowercase Crockford-base32 ULID, opaque, minted once, the join key to the private Research OS item and every note anchored to it). The legacy single-enum `decision` field is removed; it conflated acceptance status, honor, presentation format, and provenance into one value and could not express "accepted **and** oral". It is replaced by `acceptanceStatus` (`accepted`/`rejected`/`preprint`/`unknown`, default `unknown`), `honors` (array, max 4, default `[]`, e.g. `oral`/`spotlight`), and `presentationFormat` (nullable, e.g. `poster`) — all three registry-backed by `src/data/paperVocabularies.ts`, never a Zod enum. `provenance` (`VERIFIED`/`RADAR`, default `RADAR`) is the one other closed Zod enum in this repository besides `depth`: it drives destructive TTL in the private Research OS, so it is never assignable by assertion — `VERIFIED` requires both `review.humanReviewed: true` and a `venue` that resolves to a registry id. `source.openReviewId`/`semanticScholarId`/`arxivId` are replaced by `source.externalIds`, a bounded list (max 12) of `{ scheme, value }` entries — a list, not a map, because one work can carry both a preprint DOI and a publisher DOI — with `scheme` cross-checked against `src/data/identifierSchemes.ts` and any `doi` entry checked for well-formedness. `signals.hasCode`/`hasProjectPage` are now nullable (default `null`, not `false` — "not yet checked" is never "no"); `signals.topicScore`/`sourceScore`/`usefulnessScore`/`freshnessScore`/`totalScore` are removed outright (ranking inputs, not observations; no replacement field). Full spec: `docs/decisions/research-item-identity.md`. All render sites (`src/pages/[lang]/library.astro`, `src/pages/[lang]/library/[section].astro`) must call the `getAcceptanceStatusDisplayName()`/`getHonorDisplayName()`/`getVenueDisplayName()` display helpers — never render a stored id straight into a pill.
 
@@ -129,20 +131,22 @@ src/pages/
     ├── rss.xml.js                       → /ko/rss.xml per-language feed
     ├── library.astro                    → /ko/library/ (Library hub)
     ├── paths.astro                      → /ko/paths/ (learning paths index)
+    ├── research.astro                   → /ko/research/ (Research hub: study log, reviews, paths, topics)
     ├── blog/
     │   ├── index.astro                  → /ko/blog/ (all posts, paginated)
     │   ├── [...slug].astro              → /ko/blog/{slug}/ (post detail)
     │   ├── page/[page].astro            → /ko/blog/page/2/ (pagination)
     │   ├── categories.astro             → /ko/blog/categories/
-    │   ├── categories/[category].astro  → /ko/blog/categories/{cat}/
-    │   └── tags.astro                   → /ko/blog/tags/
+    │   └── categories/[category].astro  → /ko/blog/categories/{cat}/
     ├── library/
     │   └── [section].astro              → /ko/library/{section}/
     ├── paths/
     │   └── [path].astro                 → /ko/paths/{id}/
+    ├── research/
+    │   └── topics/
+    │       └── [topic].astro            → /ko/research/topics/{topic}/ (only active topics with ≥1 linked paper)
     └── reviews/
-        ├── index.astro                  → /ko/reviews/
-        └── [...slug].astro              → /ko/reviews/{slug}/
+        └── [...slug].astro              → /ko/reviews/{slug}/ (index retired — see /ko/research/)
 ```
 
 **i18n config:** `defaultLocale: 'ko'`, `prefixDefaultLocale: false` in `astro.config.mjs` — but the site explicitly links to `/ko/...`. All route helpers prefix the language; do not assume Korean URLs are prefix-free.
@@ -155,9 +159,10 @@ src/pages/
 |---|---|---|
 | `blog.ts` | `getAllPosts()`, `filterPostsByLanguage()`, `getPostsByLanguage()`, `getPaginatedPosts()`, `normalizeCategory()`, `getCategoryCounts()`, `getSeriesPosts()`, `estimateWordCount()` | All blog query/filter/sort logic. **Start here for any blog listing change.** `getAllPosts()` filters `draft: true`. |
 | `blog-routing.ts` | `getBlogUrlFromPost()`, `getBlogUrlFromId()`, `getBlogSlugFromId()`, `getBlogLanguageFromId()` | Converts content IDs → localized URLs. **Only source of truth for post URLs.** |
-| `academic-review-routing.ts` | `getAcademicReviewUrlFromId()` | Same as blog-routing but for `academicReviews`. |
+| `academic-review-routing.ts` | `getAcademicReviewUrlFromId()`, `getPublishedAcademicReviews()` | Same as blog-routing but for `academicReviews`. `getPublishedAcademicReviews()` is the single "published" filter (`!data.draft`) — every route/listing/sitemap reads through it, never `!data.draft` inline. |
 | `homepage.ts` | `getHomepageData()` | Aggregates recent posts + library data for home page. |
-| `library.ts` | `librarySections`, `getLibrarySectionPath()` | Library section metadata and URL helpers. |
+| `library.ts` | `librarySections`, `getLibrarySectionPath()`, `getApprovedPapers()`, `getFeaturedPapers()` | Library section metadata and URL helpers. `librarySections` no longer has a `'papers'` kind — the `ai-papers` section moved to the Research hub (`src/utils/research.ts`). |
+| `research.ts` | `getStudyLog()`, `getSelectedNotYetStudied()`, `getReviewForPaper()`, `getPostsForPaper()`, `getTopicsWithLinkedPapers()`, `getReviewsForPapers()`, `getPostsForPapers()` | Research hub data: study log / selected-not-yet-studied paper splits, and the paper ⇄ review/post ⇄ topic linking derived at build time. Backs `research.astro` and `research/topics/[topic].astro`. |
 | `learning-paths.ts` | `getPublishedLearningPaths()`, `getLearningPathUrl()` | Published learning paths and URLs. |
 | `view-counter.ts` | `getViewCount()`, `incrementViewCount()` | Redis-backed view count read/write. |
 | `responsive-public-images.ts` | `getResponsiveImageSet()` | Public image srcset helpers. |
@@ -201,8 +206,8 @@ src/pages/
 
 | Component | Used in | What it does |
 |---|---|---|
-| `library/LibraryIcon.astro` | Library pages | Section icon display |
-| `library/LibraryPageStyles.astro` | Library pages | Shared Library card styles |
+| `library/LibraryIcon.astro` | Library pages, Research hub | Section icon display |
+| `library/LibraryPageStyles.astro` | Library pages, Research hub | Shared card/panel/pill/badge styles — `research.astro` and `research/topics/[topic].astro` reuse this rather than defining their own theme |
 
 ### Decks / Presentations
 
@@ -300,7 +305,7 @@ src/utils/blog.ts               ← getAllPosts() — filters draft:true, sorts 
         │                       src/pages/[lang]/blog/page/[page].astro
         │                       src/pages/[lang]/index.astro (recent posts)
         │
-        ├── Taxonomy pages      categories.astro, tags.astro, categories/[category].astro
+        ├── Taxonomy pages      categories.astro, categories/[category].astro
         │
         ├── Detail page         src/pages/[lang]/blog/[...slug].astro
         │       │                └─ uses getBlogSlugFromId() → slug
@@ -332,6 +337,31 @@ src/utils/view-counter.ts            ← getViewCount(), incrementViewCount()
     ▼
 Upstash Redis (REDIS_URL + REDIS_TOKEN from .env)
 ```
+
+---
+
+## Data Flow: Research Hub
+
+```
+src/content/papers/**              ← papers (approved, studiedAt dated or null)
+src/content/academic-reviews/**    ← academicReviews (draft filtered)
+src/content/blog/**                ← via getAllPosts()
+src/content/topics/**              ← topics (active only)
+        │
+        ▼
+src/utils/research.ts
+    ├── getStudyLog()               approved papers, studiedAt != null, newest first
+    ├── getSelectedNotYetStudied()  approved papers, studiedAt == null
+    ├── getReviewForPaper()         review.data.paperId === paper.data.id (derived, not declared)
+    ├── getPostsForPaper()          post.data.papers.includes(paper.data.id)
+    └── getTopicsWithLinkedPapers() active topics with ≥1 resolved paper (scripts/lib/topic-resolution.mjs)
+        │
+        ├── Hub                    src/pages/[lang]/research.astro (empty sections don't render)
+        ├── Topic pages            src/pages/[lang]/research/topics/[topic].astro (generated only for qualifying topics)
+        └── Sitemap                src/pages/sitemap.xml.ts (same qualifying-topic gate)
+```
+
+Retired: `/{lang}/reviews/` (index) and `/{lang}/library/ai-papers/` — both 301 to `/{lang}/research/` (`vercel.json`). `/{lang}/reviews/{slug}/` detail pages are unchanged.
 
 ---
 
@@ -388,7 +418,8 @@ docs/
 │   ├── research-os-data-contract.md  Corpus/personal-state/operational/projection boundary, versioned queue+API envelope, content hash, 1 KB record budget
 │   ├── research-os-cloud-architecture.md  Private Research OS on AWS: $0/month invariant, serverless architecture, cost guardrails, free-tier model
 │   ├── research-discovery-system.md  Research discovery → understanding → hypothesis → experiment loop: registry, provenance, graphs, reading paths, AI reader, notebook, gold sets
-│   └── security.md          Security risk register (SEC-001..SEC-012)
+│   ├── security.md          Security risk register (SEC-001..SEC-012)
+│   └── site-structure.md    Public IA: Writing / Research / Library; research hub, study log, placeholder unpublishing, Discover deferred
 ├── plans/
 │   └── research-os-pre-aws/  Pre-AWS readiness audit, task DAG, and per-task packets (AWS_READY gate)
 ├── features/

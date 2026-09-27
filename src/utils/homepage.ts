@@ -99,15 +99,16 @@ export function getHomepageLibraryPicks(
 
 export function getHomepageSectionCounts(
 	resources: ResourceEntry[],
-	papers: PaperEntry[],
+	// Kept for call-site stability (index.astro, scripts/validate-homepage.mjs
+	// both pass the papers collection here) even though no Library section is
+	// paper-shaped anymore — papers now surface on the Research hub, not here.
+	_papers: PaperEntry[],
 	decks: DeckMeta[],
 ): HomepageSectionCounts {
 	const approvedResources = getApprovedResources(resources);
-	const approvedPapers = getApprovedPapers(papers);
 
 	return Object.fromEntries(
 		librarySections.map((section) => {
-			if (section.kind === 'papers') return [section.id, approvedPapers.length];
 			if (section.kind === 'decks') return [section.id, decks.length];
 
 			return [

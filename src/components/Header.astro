@@ -6,9 +6,8 @@ const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const homeUrl = `/${lang}/`;
 const blogUrl = lang === 'ko' ? '/ko/blog' : `/${lang}/blog`;
+const researchUrl = lang === 'ko' ? '/ko/research' : `/${lang}/research`;
 const libraryUrl = lang === 'ko' ? '/ko/library' : `/${lang}/library`;
-const categoriesUrl = lang === 'ko' ? '/ko/blog/categories' : `/${lang}/blog/categories`;
-const tagsUrl = lang === 'ko' ? '/ko/blog/tags' : `/${lang}/blog/tags`;
 const searchUrl = lang === 'ko' ? '/ko/search' : `/${lang}/search`;
 ---
 
@@ -28,6 +27,15 @@ const searchUrl = lang === 'ko' ? '/ko/search' : `/${lang}/search`;
 				</span>
 				<span>{t('nav.blog')}</span>
 			</a>
+			<a href={researchUrl} class="desktop-nav-link">
+				<span class="nav-icon">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M9 3h6" />
+						<path d="M10 3v5.764a2 2 0 0 1-.211.894L5.24 18.71A1.5 1.5 0 0 0 6.573 21h10.854a1.5 1.5 0 0 0 1.333-2.29l-4.55-9.052A2 2 0 0 1 14 8.764V3" />
+					</svg>
+				</span>
+				<span>{t('nav.research')}</span>
+			</a>
 			<a href={libraryUrl} class="desktop-nav-link">
 				<span class="nav-icon">
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -36,25 +44,6 @@ const searchUrl = lang === 'ko' ? '/ko/search' : `/${lang}/search`;
 					</svg>
 				</span>
 				<span>{t('nav.library')}</span>
-			</a>
-			<a href={categoriesUrl} class="desktop-nav-link">
-				<span class="nav-icon">
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					  <polygon points="12 2 2 7 12 12 22 7 12 2" />
-					  <polyline points="2 17 12 22 22 17" />
-					  <polyline points="2 12 12 17 22 12" />
-					</svg>
-				</span>
-				<span>{t('nav.categories')}</span>
-			</a>
-			<a href={tagsUrl} class="desktop-nav-link">
-				<span class="nav-icon">
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M21 11.5L12.5 3H4v8.5L12.5 20a2 2 0 0 0 2.83 0L21 14.33a2 2 0 0 0 0-2.83z"/>
-						<path d="M7 7h.01" />
-					</svg>
-				</span>
-				<span>{t('nav.tags')}</span>
 			</a>
 		</nav>
 		
@@ -129,27 +118,19 @@ const searchUrl = lang === 'ko' ? '/ko/search' : `/${lang}/search`;
 				</svg>
 				<span>{t('nav.blog')}</span>
 			</a>
+			<a href={researchUrl} class="mobile-nav-item">
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M9 3h6" />
+					<path d="M10 3v5.764a2 2 0 0 1-.211.894L5.24 18.71A1.5 1.5 0 0 0 6.573 21h10.854a1.5 1.5 0 0 0 1.333-2.29l-4.55-9.052A2 2 0 0 1 14 8.764V3" />
+				</svg>
+				<span>{t('nav.research')}</span>
+			</a>
 			<a href={libraryUrl} class="mobile-nav-item">
 				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 					<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
 					<path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z" />
 				</svg>
 				<span>{t('nav.library')}</span>
-			</a>
-			<a href={categoriesUrl} class="mobile-nav-item">
-				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<polygon points="12 2 2 7 12 12 22 7 12 2" />
-					<polyline points="2 17 12 22 22 17" />
-					<polyline points="2 12 12 17 22 12" />
-				</svg>
-				<span>{t('nav.categories')}</span>
-			</a>
-			<a href={tagsUrl} class="mobile-nav-item">
-				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<path d="M21 11.5L12.5 3H4v8.5L12.5 20a2 2 0 0 0 2.83 0L21 14.33a2 2 0 0 0 0-2.83z"/>
-					<path d="M7 7h.01" />
-				</svg>
-				<span>{t('nav.tags')}</span>
 			</a>
 			<a href={searchUrl} class="mobile-nav-item">
 				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

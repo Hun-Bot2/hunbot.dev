@@ -42,6 +42,8 @@ These are two unrelated designs occupying one numbered sequence. A reader moving
 
 ### F4 — The tags page is a dead end
 
+> **Resolved 2026-09-26:** the tags page was removed rather than given per-tag routes. `/{lang}/blog/tags/` now redirects permanently to `/{lang}/blog/` (`vercel.json`); tag chips on posts remain as display-only metadata.
+
 [`blog/tags.astro`](../../src/pages/[lang]/blog/tags.astro) contains **zero `href` attributes**. It lists every tag with a count and links none of them. No `/blog/tags/[tag]` route exists to link to.
 
 ### F5 — Series is the wrong primary axis

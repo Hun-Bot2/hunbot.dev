@@ -15,17 +15,19 @@ type ResourceSection = ResourceEntry['data']['section'];
 // canonicalLanguage is 'ko' (today's default for every existing item).
 const FALLBACK_LANGUAGE_ORDER: readonly UILanguage[] = ['ko', 'en', 'jp'];
 
+// Papers moved out of the Library and onto the Research hub
+// (docs/decisions/site-structure.md) — "ai-papers" is no longer a Library
+// section. The `papers` collection itself is unchanged; see src/utils/research.ts.
 export const librarySections = [
 	{ id: 'design', translationKey: 'design', kind: 'resources', resourceSection: 'design' },
 	{ id: 'vibe-coding', translationKey: 'vibe-coding', kind: 'resources', resourceSection: 'vibe-coding' },
 	{ id: 'dev-docs', translationKey: 'dev-docs', kind: 'resources', resourceSection: 'dev-docs' },
-	{ id: 'ai-papers', translationKey: 'ai-papers', kind: 'papers' },
 	{ id: 'useful-feeds', translationKey: 'useful-feeds', kind: 'resources', resourceSection: 'useful-feeds' },
 	{ id: 'decks', translationKey: 'decks', kind: 'decks' },
 ] as const satisfies readonly {
 	id: string;
 	translationKey: string;
-	kind: 'resources' | 'papers' | 'decks';
+	kind: 'resources' | 'decks';
 	resourceSection?: ResourceSection;
 }[];
 

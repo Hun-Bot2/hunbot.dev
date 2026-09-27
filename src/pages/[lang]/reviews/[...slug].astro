@@ -6,10 +6,11 @@ import {
 	ACADEMIC_REVIEW_LANGUAGES,
 	getAcademicReviewLanguageFromId,
 	getAcademicReviewSlugFromId,
+	getPublishedAcademicReviews,
 } from '../../../utils/academic-review-routing';
 
 export async function getStaticPaths() {
-	const reviews = await getCollection('academicReviews');
+	const reviews = getPublishedAcademicReviews(await getCollection('academicReviews'));
 	const slugMap = new Map<string, UILanguage[]>();
 
 	for (const review of reviews) {

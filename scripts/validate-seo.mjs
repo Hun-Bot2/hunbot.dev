@@ -32,7 +32,19 @@ assert.match(sitemapRoute, /getPublishedLearningPaths/);
 assert.match(sitemapRoute, /getLearningPathUrl/);
 assert.match(sitemapRoute, /getLibrarySectionPath/);
 assert.match(sitemapRoute, /getAcademicReviewUrlFromId/);
-assert.match(sitemapRoute, /\/reviews\//);
+assert.match(sitemapRoute, /getPublishedAcademicReviews/);
+assert.match(sitemapRoute, /getTopicsWithLinkedPapers/);
+assert.match(sitemapRoute, /\/research\//);
+// Research hub replaces the retired /{lang}/reviews/ index
+// (docs/decisions/site-structure.md) — the sitemap's own generated static
+// page list must not advertise that URL as live anymore. Review *detail*
+// URLs (`/{lang}/reviews/{slug}/`) are unaffected and still come from
+// getAcademicReviewUrlFromId.
+assert.doesNotMatch(
+	sitemapRoute,
+	/`\/\$\{lang\}\/reviews\/`/,
+	'sitemap.xml.ts should no longer list the retired /{lang}/reviews/ index as a static page.',
+);
 
 for (const outputRoot of [join(root, 'dist/client'), join(root, '.vercel/output/static')]) {
 	if (!existsSync(outputRoot)) continue;

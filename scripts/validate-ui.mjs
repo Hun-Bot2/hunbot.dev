@@ -26,12 +26,13 @@ const pagesWithHeader = [
 	'src/pages/[lang]/blog/categories.astro',
 	'src/pages/[lang]/blog/categories/[category].astro',
 	'src/pages/[lang]/blog/index.astro',
-	'src/pages/[lang]/blog/tags.astro',
 	'src/pages/[lang]/index.astro',
 	'src/pages/[lang]/library.astro',
 	'src/pages/[lang]/library/[section].astro',
 	'src/pages/[lang]/paths.astro',
 	'src/pages/[lang]/paths/[path].astro',
+	'src/pages/[lang]/research.astro',
+	'src/pages/[lang]/research/topics/[topic].astro',
 	'src/pages/[lang]/search.astro',
 ];
 

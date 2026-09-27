@@ -108,8 +108,9 @@ const forbiddenFieldNames = new Set([
 // empirical signature of corpus data (a raw abstract, pasted source text)
 // leaking into public content rather than a human-authored summary, and
 // aligns with the cloud ADR's small-record posture (shared-context.md §8).
-// Measured against the current largest real record — 2154 bytes total file
-// size, src/content/papers/sample-paper-card.md — this threshold gives it
+// Measured against the current largest record — 2172 bytes total file size,
+// src/content/papers/sample-paper-card.md (status: draft, a schema example
+// only — see docs/decisions/site-structure.md) — this threshold gives it
 // roughly 4x headroom for legitimate growth (more languages, more topics,
 // more external ids) before tripping.
 const MAX_RECORD_BYTES = 8192;

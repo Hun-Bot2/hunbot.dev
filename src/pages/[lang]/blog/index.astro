@@ -54,6 +54,8 @@ const series = getMultiPostSeries(posts).map((entry) => ({
 	label: entry.name,
 	count: entry.count,
 }));
+
+const categoriesUrl = `/${currentLang}/blog/categories`;
 ---
 
 <!doctype html>
@@ -104,6 +106,7 @@ const series = getMultiPostSeries(posts).map((entry) => ({
 						<div class="blog-content">
 							<header class="blog-index-header">
 								<h1>{t('blog.all-posts')}</h1>
+								<a href={categoriesUrl} class="blog-index-categories-link">{t('blog.categories-title')}</a>
 							</header>
 
 							<!-- Mobile filter toggle -->
@@ -335,7 +338,23 @@ const series = getMultiPostSeries(posts).map((entry) => ({
 
 	/* ── page title — inside right column ── */
 	.blog-index-header {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 0.5rem 1rem;
 		margin-bottom: 1.5rem;
+	}
+
+	.blog-index-categories-link {
+		color: rgba(203, 213, 225, 0.8);
+		font-size: 0.9rem;
+		font-weight: 600;
+		text-decoration: underline;
+		text-underline-offset: 3px;
+	}
+
+	.blog-index-categories-link:hover {
+		color: rgb(255, 237, 213);
 	}
 
 	.blog-index-header h1 {

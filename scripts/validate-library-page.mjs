@@ -35,19 +35,19 @@ for (const lang of languages) {
 }
 
 assert.match(libraryPage, /getCollection\('resources'\)/);
-assert.match(libraryPage, /getCollection\('papers'\)/);
 assert.match(libraryPage, /getCollection\('topics'\)/);
 assert.match(libraryPage, /getApprovedResources/);
-assert.match(libraryPage, /getApprovedPapers/);
 assert.match(libraryPage, /getActiveTopics/);
 assert.match(libraryPage, /getLibrarySectionPath/);
 assert.match(libraryPage, /data-pagefind-body/);
 assert.match(libraryPage, /data-pagefind-filter="language\[content\]"/);
 assert.match(libraryPage, /data-pagefind-filter="section\[content\]"/);
+// Papers moved to the Research hub (docs/decisions/site-structure.md) — the
+// Library page no longer reads the papers collection at all.
+assert.doesNotMatch(libraryPage, /getCollection\('papers'\)/);
 
 assert.match(sectionPage, /getResourcesForLibrarySection/);
 assert.match(sectionPage, /getApprovedResources/);
-assert.match(sectionPage, /getApprovedPapers/);
 assert.match(sectionPage, /data-pagefind-filter="library-section\[content\]"/);
 
 assert.match(header, /const libraryUrl =/);
