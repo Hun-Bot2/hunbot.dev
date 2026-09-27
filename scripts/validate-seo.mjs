@@ -30,11 +30,17 @@ assert.match(globalRssRoute, /getBlogUrlFromId/);
 assert.match(sitemapRoute, /learningPaths/);
 assert.match(sitemapRoute, /getPublishedLearningPaths/);
 assert.match(sitemapRoute, /getLearningPathUrl/);
-assert.match(sitemapRoute, /getLibrarySectionPath/);
 assert.match(sitemapRoute, /getAcademicReviewUrlFromId/);
 assert.match(sitemapRoute, /getPublishedAcademicReviews/);
 assert.match(sitemapRoute, /getTopicsWithLinkedPapers/);
 assert.match(sitemapRoute, /\/research\//);
+// getLibrarySectionPath is gone from the sitemap: it was kept only to build
+// the temporary /{lang}/library/decks/ path, which moved to
+// /{lang}/research/decks/ (docs/decisions/site-structure.md#2). Pick section
+// paths are built as plain template strings instead (see the sitemap
+// source), same as before this change.
+assert.doesNotMatch(sitemapRoute, /library\/decks/, 'The sitemap must not advertise the retired /library/decks/ path.');
+assert.match(sitemapRoute, /\/research\/decks\//);
 // Research hub replaces the retired /{lang}/reviews/ index
 // (docs/decisions/site-structure.md) — the sitemap's own generated static
 // page list must not advertise that URL as live anymore. Review *detail*

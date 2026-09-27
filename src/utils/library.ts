@@ -7,7 +7,6 @@ export type PaperEntry = CollectionEntry<'papers'>;
 export type TopicEntry = CollectionEntry<'topics'>;
 
 type LocalizedText = Partial<Record<UILanguage, string>>;
-type ResourceSection = ResourceEntry['data']['section'];
 
 // Deterministic "any available" order for the language resolver below. Every
 // UILanguage is listed, so trying requested -> canonical -> this order always
@@ -19,33 +18,14 @@ const FALLBACK_LANGUAGE_ORDER: readonly UILanguage[] = ['ko', 'en', 'jp'];
 // (docs/decisions/site-structure.md) — "ai-papers" is no longer a Library
 // section. The `papers` collection itself is unchanged; see src/utils/research.ts.
 //
-// Superseded by src/data/librarySections.ts (docs/decisions/site-structure.md,
-// revision 2026-09-27): the Library's 외부 링크 tab and its section pages now
-// read picks and that registry instead. This export stays only because
-// src/utils/homepage.ts and src/pages/[lang]/index.astro (the homepage) still
-// read it; it is not used by the Library pages anymore. Remove it once the
-// homepage is rewired to picks.
-export const librarySections = [
-	{ id: 'design', translationKey: 'design', kind: 'resources', resourceSection: 'design' },
-	{ id: 'vibe-coding', translationKey: 'vibe-coding', kind: 'resources', resourceSection: 'vibe-coding' },
-	{ id: 'dev-docs', translationKey: 'dev-docs', kind: 'resources', resourceSection: 'dev-docs' },
-	{ id: 'useful-feeds', translationKey: 'useful-feeds', kind: 'resources', resourceSection: 'useful-feeds' },
-	{ id: 'decks', translationKey: 'decks', kind: 'decks' },
-] as const satisfies readonly {
-	id: string;
-	translationKey: string;
-	kind: 'resources' | 'decks';
-	resourceSection?: ResourceSection;
-}[];
+// The old resources-backed section registry that used to live here
+// (librarySections/LibrarySectionId/isLibrarySectionId/getResourcesForLibrarySection)
+// is gone: the Library's 외부 링크 tab and homepage are both now picks-backed,
+// reading src/data/librarySections.ts instead (docs/decisions/site-structure.md,
+// revision 2026-09-27).
 
-export type LibrarySectionId = (typeof librarySections)[number]['id'];
-
-export function isLibrarySectionId(value: string | undefined): value is LibrarySectionId {
-	return librarySections.some((section) => section.id === value);
-}
-
-export function getLibrarySectionPath(lang: UILanguage, sectionId: LibrarySectionId): string {
-	return `/${lang}/library/${sectionId}/`;
+export function getLibrarySectionPath(lang: UILanguage, slug: string): string {
+	return `/${lang}/library/${slug}/`;
 }
 
 export function isApprovedResource(resource: ResourceEntry): boolean {
@@ -131,14 +111,39 @@ export function getPaperTldr(paper: PaperEntry, lang: UILanguage): string {
 	);
 }
 
-export function getResourcesForLibrarySection(
-	resources: ResourceEntry[],
-	sectionId: LibrarySectionId,
-): ResourceEntry[] {
-	const section = librarySections.find((item) => item.id === sectionId);
-	if (section?.kind !== 'resources' || !section.resourceSection) return [];
+export interface UsefulFeedItem {
+	id: string;
+	title: string;
+	url: string;
+	source: string;
+	date: string;
+	summary: string;
+}
 
-	return resources.filter((resource) => resource.data.section === section.resourceSection);
+/**
+ * Useful Feeds items exactly as delivered (docs/decisions/site-structure.md#3):
+ * approved `resources`, newest first by `publishedAt` (falling back to
+ * `source.firstSeenAt` when a resource predates that facet) — the one
+ * editorial choice made here. Everything else renders as-is: this site never
+ * enriches, summarizes, or translates a Useful Feeds item. Shared by
+ * `src/pages/[lang]/library/useful-feeds.astro` and the homepage's Useful
+ * Feeds panel so the two surfaces cannot silently disagree about ordering.
+ */
+export function getUsefulFeedItems(resources: ResourceEntry[], lang: UILanguage): UsefulFeedItem[] {
+	const approved = getApprovedResources(resources);
+
+	return sortStable(approved, (a, b) => {
+		const aDate = a.data.publishedAt ?? a.data.source.firstSeenAt;
+		const bDate = b.data.publishedAt ?? b.data.source.firstSeenAt;
+		return bDate.localeCompare(aDate);
+	}).map((resource) => ({
+		id: resource.id,
+		title: resource.data.title,
+		url: resource.data.url,
+		source: new URL(resource.data.url).hostname.replace(/^www\./, ''),
+		date: resource.data.publishedAt ?? resource.data.source.firstSeenAt,
+		summary: getResourceSummary(resource, lang),
+	}));
 }
 
 export function getFeaturedResources(resources: ResourceEntry[], limit = 3): ResourceEntry[] {

@@ -16,7 +16,7 @@ import { getCollection } from 'astro:content';
 import { useTranslations, type UILanguage } from '../../i18n/ui';
 import { librarySections as pickLibrarySections } from '../../data/librarySections';
 import { pickTiers, recentPicksLimit } from '../../data/libraryPolicy';
-import { computePickTier, getPickSectionCounts, type PopularitySnapshot } from '../../utils/picks';
+import { computePickTier, getPickSectionCounts, getRecentPicks, type PopularitySnapshot } from '../../utils/picks';
 import { sortStable } from '../../utils/ordering';
 import popularity from '../../data/popularity.json';
 
@@ -46,12 +46,10 @@ const visibleSections = pickLibrarySections
 	.map((section) => ({ slug: section.slug, label: section.label, count: sectionCounts.get(section.slug) ?? 0 }))
 	.filter((section) => section.count > 0);
 
-// "최근 추가": the latest published picks by addedAt, newest first.
-// sortStable's own id tiebreak keeps this deterministic across builds.
-const recentPicks = sortStable(publishedPicks, (a, b) => b.data.addedAt.localeCompare(a.data.addedAt)).slice(
-	0,
-	recentPicksLimit,
-);
+// "최근 추가": the latest published picks by addedAt, newest first. Shared
+// with the homepage Library block so both surfaces derive the same set
+// (src/utils/picks.ts's getRecentPicks).
+const recentPicks = getRecentPicks(publishedPicks, recentPicksLimit);
 
 // Tier groups in pickTiers order (필수 / 인기 / 발굴), each stably sorted by
 // title; an empty tier is skipped entirely.

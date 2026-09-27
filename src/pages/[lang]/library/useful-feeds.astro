@@ -15,8 +15,7 @@ import LibraryPageStyles from '../../../components/library/LibraryPageStyles.ast
 import LibraryTabs from '../../../components/library/LibraryTabs.astro';
 import { getCollection } from 'astro:content';
 import { useTranslations, type UILanguage } from '../../../i18n/ui';
-import { getApprovedResources, getResourceSummary } from '../../../utils/library';
-import { sortStable } from '../../../utils/ordering';
+import { getUsefulFeedItems } from '../../../utils/library';
 
 export function getStaticPaths() {
 	return [
@@ -32,23 +31,7 @@ const title = `${t('library.tab.useful-feeds')} - ${t('library.title')} - Hun-Bo
 const description = t('library.useful-feeds.intro');
 
 const allResources = await getCollection('resources');
-const approvedResources = getApprovedResources(allResources);
-
-// Newest first by publishedAt, falling back to source.firstSeenAt when a
-// resource predates that facet — the one editorial choice this page makes;
-// everything else about a resource renders exactly as delivered.
-const items = sortStable(approvedResources, (a, b) => {
-	const aDate = a.data.publishedAt ?? a.data.source.firstSeenAt;
-	const bDate = b.data.publishedAt ?? b.data.source.firstSeenAt;
-	return bDate.localeCompare(aDate);
-}).map((resource) => ({
-	id: resource.id,
-	title: resource.data.title,
-	url: resource.data.url,
-	source: new URL(resource.data.url).hostname.replace(/^www\./, ''),
-	date: resource.data.publishedAt ?? resource.data.source.firstSeenAt,
-	summary: getResourceSummary(resource, lang),
-}));
+const items = getUsefulFeedItems(allResources, lang);
 ---
 
 <!doctype html>

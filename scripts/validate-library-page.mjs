@@ -51,15 +51,20 @@ assert.doesNotMatch(libraryPage, /getCollection\('topics'\)/);
 assert.doesNotMatch(libraryPage, /getCollection\('papers'\)/);
 
 // Pick section pages replace the old resources-backed design/vibe-coding/
-// dev-docs/useful-feeds sections; only the temporary 'decks' branch still
-// reads src/data/decks.ts (docs/decisions/site-structure.md#2).
+// dev-docs/useful-feeds sections. Decks moved off the Library entirely onto
+// /{lang}/research/decks/ (docs/decisions/site-structure.md#2), so this page
+// no longer has a decks branch at all.
 assert.match(sectionPage, /getCollection\('picks'\)/);
 assert.match(sectionPage, /computePickTier/);
 assert.match(sectionPage, /data-pagefind-filter="library-section\[content\]"/);
-assert.match(sectionPage, /isDecksSection/);
+assert.doesNotMatch(sectionPage, /isDecksSection/);
 assert.doesNotMatch(sectionPage, /getResourcesForLibrarySection/);
+assert.doesNotMatch(sectionPage, /data\/decks/, 'Library section pages should not read the deck registry anymore.');
 
-assert.match(usefulFeedsPage, /getApprovedResources/);
+// getUsefulFeedItems (src/utils/library.ts) replaced this page's own
+// getApprovedResources+sortStable+map — the homepage's Useful Feeds panel
+// shares the exact same helper (docs/decisions/site-structure.md#4).
+assert.match(usefulFeedsPage, /getUsefulFeedItems/);
 assert.match(usefulFeedsPage, /data-pagefind-body/);
 
 assert.match(header, /const libraryUrl =/);
@@ -145,13 +150,11 @@ for (const outputRoot of [join(root, 'dist/client'), join(root, '.vercel/output/
 			}
 		}
 
+		// Decks moved off the Library onto /{lang}/research/decks/
+		// (docs/decisions/site-structure.md#2); /{lang}/library/decks/ must no
+		// longer be a build output (it permanently redirects instead — vercel.json).
 		const decksHtmlPath = join(outputRoot, lang, 'library', 'decks', 'index.html');
-		if (existsSync(decksHtmlPath)) {
-			// Temporary: kept rendering exactly as before this restructure
-			// (docs/decisions/site-structure.md#2) — no Pagefind or copy
-			// assertions changed here.
-			assert.match(readFileSync(decksHtmlPath, 'utf8'), /data-pagefind-body/);
-		}
+		assert.equal(existsSync(decksHtmlPath), false, `${relative(root, decksHtmlPath)} should no longer be generated.`);
 
 		const usefulFeedsHtmlPath = join(outputRoot, lang, 'library', 'useful-feeds', 'index.html');
 		assert.ok(existsSync(usefulFeedsHtmlPath), `${relative(root, usefulFeedsHtmlPath)} should exist after build.`);

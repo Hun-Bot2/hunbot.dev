@@ -4,15 +4,11 @@ import { getAllPosts } from '../utils/blog';
 import { SITE_URL, SUPPORTED_LANGUAGES } from '../consts';
 import { getBlogUrlFromId } from '../utils/blog-routing';
 import { getAcademicReviewUrlFromId, getPublishedAcademicReviews } from '../utils/academic-review-routing';
-// Kept only to build the temporary /{lang}/library/decks/ path
-// (docs/decisions/site-structure.md#2) — the seven pick sections and Useful
-// Feeds below build their own paths, since 'decks' is the one slug left in
-// this old, resources-backed librarySections union.
-import { getLibrarySectionPath } from '../utils/library';
 import { librarySections as pickLibrarySections } from '../data/librarySections';
 import { getPickSectionCounts } from '../utils/picks';
 import { learningPaths } from '../data/learningPaths';
 import { getLearningPathUrl, getPublishedLearningPaths } from '../utils/learning-paths';
+import { decks } from '../data/decks';
 import { getTopicsWithLinkedPapers } from '../utils/research';
 
 export const GET: APIRoute = async ({ site }) => {
@@ -66,10 +62,14 @@ export const GET: APIRoute = async ({ site }) => {
   ]);
   // Research hub replaces the retired /{lang}/reviews/ index
   // (docs/decisions/site-structure.md) — reviews now live at /{lang}/research/,
-  // and topic pages are generated (and listed here) only for topics that
-  // actually have at least one linked paper.
+  // topic pages are generated (and listed here) only for topics that
+  // actually have at least one linked paper, and decks now live at
+  // /{lang}/research/decks/ (#2). The old Library decks path permanently
+  // redirects there (vercel.json) and is not listed here.
+  const listedDeckCount = decks.filter((deck) => deck.placement === 'paper' || deck.placement === 'project').length;
   const researchPages = SUPPORTED_LANGUAGES.flatMap((lang) => [
     `/${lang}/research/`,
+    ...(listedDeckCount > 0 ? [`/${lang}/research/decks/`] : []),
     ...topicsWithPapers.map(({ topic }) => `/${lang}/research/topics/${topic.data.id}/`),
   ]);
   const staticPages = [
@@ -80,9 +80,6 @@ export const GET: APIRoute = async ({ site }) => {
       `/${lang}/blog/categories/`,
       `/${lang}/library/`,
       `/${lang}/library/useful-feeds/`,
-      // Temporary: decks have not moved to /{lang}/research/decks/ yet
-      // (docs/decisions/site-structure.md#2).
-      getLibrarySectionPath(lang, 'decks'),
       ...sectionsWithPicks.map((section) => `/${lang}/library/${section.slug}/`),
       `/${lang}/search/`,
     ]),

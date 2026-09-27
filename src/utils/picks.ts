@@ -1,4 +1,5 @@
-import { freshnessPolicy, pickTiers, type PickTier, type PickTierId } from '../data/libraryPolicy.ts';
+import { freshnessPolicy, pickTiers, recentPicksLimit, type PickTier, type PickTierId } from '../data/libraryPolicy.ts';
+import { sortStable } from './ordering.ts';
 
 /**
  * GitHub popularity data for repo-backed picks, keyed by "owner/name"
@@ -186,4 +187,21 @@ export function getPickSectionCounts(publishedPicks: readonly { data: { section:
 		counts.set(pick.data.section, (counts.get(pick.data.section) ?? 0) + 1);
 	}
 	return counts;
+}
+
+type RecentPickCandidate = { id: string; data: { addedAt: string; draft?: boolean } };
+
+/**
+ * The latest published picks by `addedAt`, newest first — the Library hub's
+ * "최근 추가" strip and, at `recentPicksLimit` (6), the homepage Library
+ * block's compact card list (docs/decisions/site-structure.md, revision
+ * 2026-09-27). Filters drafts itself so every caller gets the same
+ * "published, newest first" set instead of re-deriving it.
+ */
+export function getRecentPicks<T extends RecentPickCandidate>(
+	picks: readonly T[],
+	limit: number = recentPicksLimit,
+): T[] {
+	const published = picks.filter((pick) => pick.data.draft !== true);
+	return sortStable(published, (a, b) => b.data.addedAt.localeCompare(a.data.addedAt)).slice(0, limit);
 }

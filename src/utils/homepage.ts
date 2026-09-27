@@ -1,32 +1,8 @@
 import type { CollectionEntry } from 'astro:content';
 import type { UILanguage } from '../i18n/ui';
-import type { DeckMeta } from '../lib/decks/validateDeckMeta';
-import {
-	getApprovedPapers,
-	getApprovedResources,
-	getFeaturedResources,
-	librarySections,
-	type LibrarySectionId,
-	type PaperEntry,
-	type ResourceEntry,
-} from './library.ts';
 import { sortStable } from './ordering.ts';
 
 export type BlogEntry = CollectionEntry<'blog'>;
-
-export type HomepageLibraryPick =
-	| {
-			kind: 'resource';
-			id: string;
-			resource: ResourceEntry;
-	  }
-	| {
-			kind: 'paper';
-			id: string;
-			paper: PaperEntry;
-	  };
-
-export type HomepageSectionCounts = Record<LibrarySectionId, number>;
 
 const briefMarkers = new Set(['brief', 'briefs', 'library-brief', 'library-briefs', 'editorial-brief']);
 
@@ -38,20 +14,6 @@ function sortBlogPostsByDate(posts: BlogEntry[]): BlogEntry[] {
 	// Date alone is not a total order — several posts share a pubDate, and their
 	// relative order then depends on input order. sortStable appends an id tiebreak.
 	return sortStable(posts, (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
-}
-
-function sortPapersByFreshness(papers: PaperEntry[]): PaperEntry[] {
-	return sortStable(papers, (a, b) => {
-		const yearComparison = (b.data.year ?? 0) - (a.data.year ?? 0);
-		if (yearComparison !== 0) return yearComparison;
-
-		const aDate = a.data.review.reviewedAt ?? a.data.source.lastCheckedAt ?? a.data.source.firstSeenAt;
-		const bDate = b.data.review.reviewedAt ?? b.data.source.lastCheckedAt ?? b.data.source.firstSeenAt;
-		const dateComparison = bDate.localeCompare(aDate);
-		if (dateComparison !== 0) return dateComparison;
-
-		return a.data.title.localeCompare(b.data.title);
-	});
 }
 
 export function getPostsForLanguage(posts: BlogEntry[], lang: UILanguage): BlogEntry[] {
@@ -72,49 +34,9 @@ export function getLatestBlogPosts(posts: BlogEntry[], limit = 6): BlogEntry[] {
 	return sortBlogPostsByDate(posts.filter((post) => !isBriefPost(post))).slice(0, limit);
 }
 
-export function getHomepageLibraryPicks(
-	resources: ResourceEntry[],
-	papers: PaperEntry[],
-	limit = 4,
-): HomepageLibraryPick[] {
-	const approvedResources = getApprovedResources(resources);
-	const approvedPapers = getApprovedPapers(papers);
-	const featuredResources = getFeaturedResources(approvedResources, Math.min(limit, 3));
-	const paperLimit = Math.max(0, limit - featuredResources.length);
-	const featuredPapers = sortPapersByFreshness(approvedPapers).slice(0, paperLimit);
-
-	return [
-		...featuredResources.map((resource) => ({
-			kind: 'resource' as const,
-			id: resource.data.id,
-			resource,
-		})),
-		...featuredPapers.map((paper) => ({
-			kind: 'paper' as const,
-			id: paper.data.id,
-			paper,
-		})),
-	].slice(0, limit);
-}
-
-export function getHomepageSectionCounts(
-	resources: ResourceEntry[],
-	// Kept for call-site stability (index.astro, scripts/validate-homepage.mjs
-	// both pass the papers collection here) even though no Library section is
-	// paper-shaped anymore — papers now surface on the Research hub, not here.
-	_papers: PaperEntry[],
-	decks: DeckMeta[],
-): HomepageSectionCounts {
-	const approvedResources = getApprovedResources(resources);
-
-	return Object.fromEntries(
-		librarySections.map((section) => {
-			if (section.kind === 'decks') return [section.id, decks.length];
-
-			return [
-				section.id,
-				approvedResources.filter((resource) => resource.data.section === section.resourceSection).length,
-			];
-		}),
-	) as HomepageSectionCounts;
-}
+// getHomepageLibraryPicks and getHomepageSectionCounts (papers+resources
+// featured picks, per-section counts) are gone: the homepage's "큐레이션"
+// panel is replaced by a Useful Feeds panel (src/utils/library.ts's
+// getUsefulFeedItems) and the Library block now reads picks directly
+// (src/utils/picks.ts's getRecentPicks) — see src/pages/[lang]/index.astro
+// and docs/decisions/site-structure.md, revision 2026-09-27.

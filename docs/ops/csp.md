@@ -20,6 +20,7 @@ Third-party service reference: [`docs/third-party-services.md`](./third-party-se
 | `src/components/ViewCounter.astro` | Fetch and post page views | Blog posts | No | Could become a public module after slug data binding is designed |
 | `src/pages/[lang]/search.astro` | Pagefind UI initialization and language filter | Search pages | No | Candidate for extraction after Pagefind config is stabilized |
 | `src/pages/[lang]/index.astro` | Home page interaction script | Home page | No | Candidate for route-specific public module |
+| `src/pages/[lang]/research/decks.astro` | Slide-deck preview viewer (prev/next/counter) for the highlighted project deck | `/{lang}/research/decks/` | No | Moved from `library/[section].astro`'s decks branch (docs/decisions/site-structure.md#2); same script, new file |
 | `src/pages/index.astro` | Root redirect | Root fallback page | Yes | Keep until converted to static redirect config |
 | `src/components/GiscusComments.astro` | Inline loader that injects the Giscus client with the site's current theme and forwards theme toggles to the iframe | Blog posts | No | Third-party script; keep CSP domain explicit |
 | `src/pages/[lang]/blog/index.astro` + `public/scripts/blog-filters.js` | Blog listing category/year/series filters | Blog listing | No | External module script; no CSP change needed |

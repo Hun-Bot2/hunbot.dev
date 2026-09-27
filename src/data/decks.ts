@@ -55,6 +55,7 @@ export const decks: DeckMeta[] = [
 			{ length: 52 },
 			(_, index) => `/decks/akiya-ai-paperwork-local-jobs/ko/slides/${String(index + 1).padStart(3, '0')}.jpg`,
 		),
+		placement: 'project',
 	},
 	{
 		id: 'ds-final-project',
@@ -70,6 +71,7 @@ export const decks: DeckMeta[] = [
 		sourceAvailable: false,
 		sourceReviewed: false,
 		slides: [],
+		placement: 'project',
 	},
 	{
 		id: 'ict-project',
@@ -85,6 +87,7 @@ export const decks: DeckMeta[] = [
 		sourceAvailable: false,
 		sourceReviewed: false,
 		slides: [],
+		placement: 'project',
 	},
 	{
 		id: 'miruni-project',
@@ -100,6 +103,7 @@ export const decks: DeckMeta[] = [
 		sourceAvailable: false,
 		sourceReviewed: false,
 		slides: [],
+		placement: 'project',
 	},
 	{
 		id: 'ontheblock-privacy-policy',
@@ -130,6 +134,7 @@ export const decks: DeckMeta[] = [
 		sourceAvailable: false,
 		sourceReviewed: false,
 		slides: [],
+		placement: 'paper',
 	},
 	{
 		id: 'snu-project',
@@ -145,6 +150,8 @@ export const decks: DeckMeta[] = [
 		sourceAvailable: false,
 		sourceReviewed: false,
 		slides: [],
+		placement: 'project',
+		relatedPostIds: ['ko/review/kossda_snu01', 'en/review/kossda_snu01'],
 	},
 	{
 		id: 'we-grow',
@@ -160,6 +167,7 @@ export const decks: DeckMeta[] = [
 		sourceAvailable: false,
 		sourceReviewed: false,
 		slides: [],
+		placement: 'project',
 	},
 ];
 

@@ -1,17 +1,21 @@
 import assert from 'node:assert/strict';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { extname, join, relative } from 'node:path';
+// js-yaml is not a direct dependency of this repo, but it is already
+// installed in node_modules as a direct dependency of astro — same reasoning
+// scripts/validate-library-page.mjs and scripts/validate-picks.mjs already
+// give for using it to parse `picks`' YAML frontmatter.
+import yaml from 'js-yaml';
 
-import { decks } from '../src/data/decks.ts';
 import { ui } from '../src/i18n/ui.ts';
 import {
-	getHomepageLibraryPicks,
-	getHomepageSectionCounts,
 	getLatestBlogPosts,
 	getLatestBriefPosts,
 	getPostsForLanguage,
 } from '../src/utils/homepage.ts';
-import { librarySections } from '../src/utils/library.ts';
+import { getUsefulFeedItems } from '../src/utils/library.ts';
+import { getPickSectionCounts, getRecentPicks } from '../src/utils/picks.ts';
+import { librarySections } from '../src/data/librarySections.ts';
 
 const root = process.cwd();
 const languages = ['ko', 'jp', 'en'];
@@ -23,12 +27,21 @@ assert.match(packageJson.scripts?.['homepage:validate'] ?? '', /validate-homepag
 
 for (const lang of languages) {
 	assert.match(homepage, new RegExp(`params: \\{ lang: '${lang}' \\}`), `Homepage should generate ${lang} route.`);
-	assert.ok(ui[lang]?.['home.picks.title'], `${lang} home.picks.title copy is required.`);
+	// home.picks.* is gone: the "큐레이션" panel was replaced by a Useful Feeds
+	// panel (docs/decisions/site-structure.md#4) — papers moved to Research
+	// and resources are now Useful Feeds, so a papers+resources mixed pick no
+	// longer fits.
+	assert.ok(ui[lang]?.['home.feeds.title'], `${lang} home.feeds.title copy is required.`);
 	assert.ok(ui[lang]?.['home.explore.title'], `${lang} home.explore.title copy is required.`);
 }
 
-assert.match(homepage, /getHomepageLibraryPicks/);
-assert.match(homepage, /getHomepageSectionCounts/);
+// getHomepageLibraryPicks/getHomepageSectionCounts are gone (moved logic):
+// the Useful Feeds panel and the Library block now read src/utils/library.ts's
+// getUsefulFeedItems and src/utils/picks.ts's getRecentPicks directly, the
+// same helpers /{lang}/library/useful-feeds.astro and /{lang}/library.astro
+// use, so this page cannot silently drift from either.
+assert.match(homepage, /getUsefulFeedItems/);
+assert.match(homepage, /getRecentPicks/);
 assert.match(homepage, /getLatestBriefPosts/);
 assert.match(homepage, /getLatestBlogPosts/);
 assert.match(homepage, /getPostsForLanguage/);
@@ -38,9 +51,11 @@ assert.match(homepage, /data-pagefind-filter="section\[content\]"/);
 assert.doesNotMatch(homepage, /<form\b/i, 'Homepage PR must not add newsletter forms.');
 assert.doesNotMatch(homepage, /type=["']email["']/i, 'Homepage PR must not collect email addresses.');
 
+// home-picks -> home-feeds (docs/decisions/site-structure.md#4): same
+// position in the section order, new panel.
 const sectionOrder = [
 	'home-latest',
-	'home-picks',
+	'home-feeds',
 	'home-library',
 	'home-briefs',
 ];
@@ -57,24 +72,48 @@ assert.ok(
 );
 assert.match(homepage, /getLibrarySectionPath/);
 
-const resources = readCollection('resources', 'src/content/resources');
-const papers = readCollection('papers', 'src/content/papers');
-const picks = getHomepageLibraryPicks(resources, papers, 4);
-for (const pick of picks) {
-	if (pick.kind === 'resource') {
-		assert.equal(pick.resource.data.status, 'approved', `${pick.id} resource pick must be approved.`);
-		assert.equal(pick.resource.data.review?.humanReviewed, true, `${pick.id} resource pick must be reviewed.`);
-	} else {
-		assert.equal(pick.paper.data.status, 'approved', `${pick.id} paper pick must be approved.`);
-		assert.equal(pick.paper.data.review?.humanReviewed, true, `${pick.id} paper pick must be reviewed.`);
-	}
+const resources = readJsonFrontmatterCollection('src/content/resources');
+const usefulFeedItems = getUsefulFeedItems(resources, 'ko').slice(0, 3);
+assert.ok(usefulFeedItems.length <= 3, 'Homepage Useful Feeds panel shows at most 3 items.');
+for (const item of usefulFeedItems) {
+	const source = resources.find((entry) => entry.id === item.id);
+	assert.equal(source.data.status, 'approved', `${item.id} Useful Feeds item must be an approved resource.`);
+	assert.equal(source.data.review?.humanReviewed, true, `${item.id} Useful Feeds item must be human reviewed.`);
 }
 
-const sectionCounts = getHomepageSectionCounts(resources, papers, decks);
-for (const section of librarySections) {
-	assert.ok(Number.isInteger(sectionCounts[section.id]), `${section.id} count should be an integer.`);
-	assert.ok(sectionCounts[section.id] >= 0, `${section.id} count should be nonnegative.`);
+const picks = readYamlFrontmatterCollection('src/content/picks');
+const publishedPickCount = picks.filter((pick) => pick.data.draft !== true).length;
+const recentPicks = publishedPickCount >= 3 ? getRecentPicks(picks, 6) : [];
+for (const pick of recentPicks) {
+	assert.notEqual(pick.data.draft, true, `${pick.id} recent pick must not be a draft.`);
 }
+
+const sectionCounts = getPickSectionCounts(picks.filter((pick) => pick.data.draft !== true));
+for (const section of librarySections) {
+	const count = sectionCounts.get(section.slug) ?? 0;
+	assert.ok(Number.isInteger(count) && count >= 0, `${section.slug} pick count should be a nonnegative integer.`);
+}
+
+// Recent-picks / fewer-than-3 fallback logic (docs/decisions/site-structure.md#4):
+// getRecentPicks itself is pure (filters drafts, sorts by addedAt desc, then
+// limits) — a small fixture test here, independent of real content, pins that
+// behavior directly rather than only through the real-content check above.
+const pickFixtures = [
+	pickFixture('a', '2026-01-01'),
+	pickFixture('b', '2026-01-05'),
+	pickFixture('c', '2026-01-03'),
+	pickFixture('draft', '2026-01-10', true),
+];
+assert.deepEqual(
+	getRecentPicks(pickFixtures, 2).map((pick) => pick.id),
+	['b', 'c'],
+	'getRecentPicks should exclude drafts, sort newest addedAt first, and respect the limit.',
+);
+assert.deepEqual(
+	getRecentPicks(pickFixtures.slice(0, 2), 6).map((pick) => pick.id),
+	['b', 'a'],
+	'Below the homepage\'s fewer-than-3-picks threshold, getRecentPicks still returns whatever is published.',
+);
 
 const fixturePosts = [
 	blogFixture('ko/blog/older', '2026-05-01', [], 'devlog'),
@@ -99,14 +138,14 @@ assert.deepEqual(
 );
 
 console.log(
-	`Validated homepage source, filters, and Library picks: ${picks.length} picks, ${Object.keys(sectionCounts).length} sections.`,
+	`Validated homepage source, filters, Useful Feeds, and Library picks: ${usefulFeedItems.length} feed items, ${recentPicks.length} recent picks, ${sectionCounts.size} sections with picks.`,
 );
 
 function read(path) {
 	return readFileSync(join(root, path), 'utf8');
 }
 
-function readCollection(collection, directory) {
+function readJsonFrontmatterCollection(directory) {
 	const fullDirectory = join(root, directory);
 	if (!existsSync(fullDirectory)) return [];
 
@@ -114,12 +153,22 @@ function readCollection(collection, directory) {
 		.filter((filePath) => ['.md', '.mdx'].includes(extname(filePath)))
 		.map((filePath) => {
 			const data = parseJsonFrontmatter(readFileSync(filePath, 'utf8'), filePath);
-			return {
-				collection,
-				id: data.id,
-				filePath,
-				data,
-			};
+			return { id: data.id, filePath, data };
+		});
+}
+
+function readYamlFrontmatterCollection(directory) {
+	const fullDirectory = join(root, directory);
+	if (!existsSync(fullDirectory)) return [];
+
+	return walk(fullDirectory)
+		.filter((filePath) => ['.md', '.mdx'].includes(extname(filePath)))
+		.map((filePath) => {
+			const source = readFileSync(filePath, 'utf8');
+			const match = source.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+			assert.ok(match, `${relative(root, filePath)} is missing frontmatter.`);
+			const data = yaml.load(match[1]) ?? {};
+			return { id: data.title, filePath, data };
 		});
 }
 
@@ -147,4 +196,8 @@ function blogFixture(id, pubDate, tags, category) {
 			category,
 		},
 	};
+}
+
+function pickFixture(id, addedAt, draft = false) {
+	return { id, data: { addedAt, draft } };
 }

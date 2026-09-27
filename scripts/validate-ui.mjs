@@ -35,6 +35,8 @@ const pagesWithHeader = [
 	'src/pages/[lang]/paths.astro',
 	'src/pages/[lang]/paths/[path].astro',
 	'src/pages/[lang]/research.astro',
+	// Decks moved off the Library onto Research (docs/decisions/site-structure.md#2).
+	'src/pages/[lang]/research/decks.astro',
 	'src/pages/[lang]/research/topics/[topic].astro',
 	'src/pages/[lang]/search.astro',
 ];

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { existsSync, readdirSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, extname, join, relative } from 'node:path';
 
 import { decks } from '../src/data/decks.ts';
 import {
@@ -14,7 +14,25 @@ const imagePattern = /\.(svg|png|jpe?g|webp)$/i;
 
 assertValidDeckCollection(decks);
 
+// Deck placement and related-post links (docs/decisions/site-structure.md#2):
+// `placement` gates whether a deck is listed on /{lang}/research/decks/, and
+// `relatedPostIds` must resolve to real blog content ids — the same
+// lowercase `{lang}/{path}` shape `getCollection('blog')` produces (see
+// scripts/validate-learning-paths.mjs's readBlogIds, which this mirrors).
+const blogIds = new Set(readBlogIds());
+
 for (const deck of decks) {
+	if (deck.placement !== undefined) {
+		assert.ok(
+			['paper', 'project'].includes(deck.placement),
+			`${deck.id}.placement must be "paper" or "project" when set.`,
+		);
+	}
+
+	for (const postId of deck.relatedPostIds ?? []) {
+		assert.ok(blogIds.has(postId), `${deck.id} references unknown related post id: ${postId}`);
+	}
+
 	for (const assetPath of [deck.htmlUrl, deck.pdfUrl, deck.pptxUrl, ...deck.slides].filter(Boolean)) {
 		assert.ok(existsSync(toPublicPath(assetPath)), `${deck.id} asset is missing: ${assetPath}`);
 	}
@@ -97,6 +115,9 @@ for (const unsafeUrl of unsafeUrls) {
 	);
 }
 
+assertInvalid({ ...validBaseDeck, placement: 'bogus' }, 'placement must be "paper" or "project" when provided');
+assertInvalid({ ...validBaseDeck, relatedPostIds: [123] }, 'relatedPostIds must contain only strings');
+
 assertInvalid({ ...validBaseDeck, id: '../bad' }, 'deck IDs should reject path-like values');
 assertInvalid({ ...validBaseDeck, language: 'kr' }, 'deck language must use supported language codes');
 assertInvalid({ ...validBaseDeck, pdfPageCount: 0 }, 'pdfPageCount must be positive when provided');
@@ -133,6 +154,31 @@ function assertInvalid(deck, message) {
 
 function toPublicPath(assetPath) {
 	return join(root, 'public', assetPath.slice(1));
+}
+
+function readBlogIds() {
+	const blogRoot = join(root, 'src/content/blog');
+	if (!existsSync(blogRoot)) return [];
+
+	return walk(blogRoot)
+		.filter((filePath) => ['.md', '.mdx'].includes(extname(filePath)))
+		.map((filePath) => normalizeBlogRef(relative(blogRoot, filePath)));
+}
+
+function normalizeBlogRef(value) {
+	return value
+		.trim()
+		.replace(/\\/g, '/')
+		.replace(/^\/+|\/+$/g, '')
+		.replace(/\.(md|mdx)$/i, '')
+		.toLowerCase();
+}
+
+function walk(directory) {
+	return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+		const fullPath = join(directory, entry.name);
+		return entry.isDirectory() ? walk(fullPath) : [fullPath];
+	});
 }
 
 console.log(`Validated ${decks.length} deck metadata entries and unsafe URL fixtures.`);

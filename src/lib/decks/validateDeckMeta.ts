@@ -1,6 +1,11 @@
 export type DeckType = 'html' | 'slides' | 'pdf' | 'source';
 export type DeckAspectRatio = '16:9' | '4:3';
 export type DeckLanguage = 'ko' | 'en' | 'jp' | 'multi' | 'unknown';
+// Where a deck is listed on /{lang}/research/decks/ (docs/decisions/site-structure.md#2).
+// Optional and absent by default: a deck with no placement still works for
+// PresentationEmbed in posts, it is simply not listed on the decks page (test
+// fixtures and the ontheblock-privacy-policy legal document, for example).
+export type DeckPlacement = 'paper' | 'project';
 
 export interface DeckMeta {
 	id: string;
@@ -16,6 +21,16 @@ export interface DeckMeta {
 	sourceAvailable: boolean;
 	sourceReviewed: boolean;
 	slides: string[];
+	placement?: DeckPlacement;
+	/**
+	 * Blog content ids (exactly as `getCollection('blog')` produces them —
+	 * lowercase `{lang}/{path}` with no extension) for posts about this deck.
+	 * Declared here, on the deck, and checked for existence by
+	 * scripts/validate-decks.mjs against src/content/blog/. Whether a given id
+	 * is actually published is a page-rendering concern, not a metadata
+	 * concern — /{lang}/research/decks/ only ever links a published post.
+	 */
+	relatedPostIds?: string[];
 }
 
 export const HTML_DECK_PREFIX = '/decks-html/';
@@ -24,6 +39,7 @@ export const DECK_ASSET_PREFIX = '/decks/';
 const DECK_TYPES: DeckType[] = ['html', 'slides', 'pdf', 'source'];
 const ASPECT_RATIOS: DeckAspectRatio[] = ['16:9', '4:3'];
 const DECK_LANGUAGES: DeckLanguage[] = ['ko', 'en', 'jp', 'multi', 'unknown'];
+const DECK_PLACEMENTS: DeckPlacement[] = ['paper', 'project'];
 const DECK_ID_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$/;
 const LOCAL_PATH_PATTERN = /^\/[A-Za-z0-9._/-]+$/;
 const URL_SCHEME_PATTERN = /^[a-z][a-z0-9+.-]*:/i;
@@ -150,6 +166,22 @@ export function getDeckMetaErrors(deck: unknown, indexLabel = 'deck') {
 
 	if (candidate.type === 'source' && !candidate.pptxUrl) {
 		errors.push(`${indexLabel}.type is "source" but pptxUrl is missing.`);
+	}
+
+	if (candidate.placement !== undefined && !DECK_PLACEMENTS.includes(candidate.placement)) {
+		errors.push(`${indexLabel}.placement must be one of: ${DECK_PLACEMENTS.join(', ')} when provided.`);
+	}
+
+	if (candidate.relatedPostIds !== undefined) {
+		if (!Array.isArray(candidate.relatedPostIds)) {
+			errors.push(`${indexLabel}.relatedPostIds must be an array when provided.`);
+		} else {
+			candidate.relatedPostIds.forEach((postId, postIndex) => {
+				if (!isNonEmptyString(postId)) {
+					errors.push(`${indexLabel}.relatedPostIds[${postIndex}] must be a non-empty string.`);
+				}
+			});
+		}
 	}
 
 	return errors;

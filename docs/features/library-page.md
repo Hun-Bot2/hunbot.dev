@@ -62,7 +62,7 @@ Topics are shown as lightweight cards for future filtering and recommendation wo
 
 ## Deck Selection
 
-The `/library/decks/` page reads from the local deck registry in `src/data/decks.ts`. It does not accept arbitrary URLs from content and does not use external document viewers.
+Decks moved off the Library and onto the Research hub (`docs/decisions/site-structure.md`#2): the `/{lang}/research/decks/` page reads from the local deck registry in `src/data/decks.ts`. It does not accept arbitrary URLs from content and does not use external document viewers. `/{lang}/library/decks/` permanently redirects there.
 
 Deck cards show available viewing formats such as local HTML deck, PDF fallback, static slide count, and reviewed PPTX source availability. PPTX remains secondary and is only shown when deck metadata gates it as reviewed.
 
