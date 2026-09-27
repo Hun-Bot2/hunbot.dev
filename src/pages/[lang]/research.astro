@@ -9,6 +9,7 @@ import { getCollection } from 'astro:content';
 import { useTranslations, type UILanguage } from '../../i18n/ui';
 import { getAllPosts } from '../../utils/blog';
 import { getBlogUrlFromPost } from '../../utils/blog-routing';
+import { decks } from '../../data/decks';
 import { getAcceptanceStatusDisplayName, getHonorDisplayName } from '../../data/paperVocabularies';
 import { getVenueDisplayName } from '../../data/venues';
 import {
@@ -24,7 +25,13 @@ import {
 	getVisibleLearningPaths,
 	resolveLearningPathSteps,
 } from '../../utils/learning-paths';
-import { getPaperTldr, getTopicLabel } from '../../utils/library';
+import {
+	getActiveTopics,
+	getFeaturedTopics,
+	getPaperTldr,
+	getTopicDescription,
+	getTopicLabel,
+} from '../../utils/library';
 import {
 	getPostsForPaper,
 	getReviewForPaper,
@@ -63,12 +70,16 @@ const visiblePaths = getVisibleLearningPaths(learningPaths, allPosts, lang).map(
 	steps: resolveLearningPathSteps(path, allPosts, lang),
 }));
 
-const hasAnyContent =
-	studyLog.length > 0 ||
-	selected.length > 0 ||
-	reviews.length > 0 ||
-	visiblePaths.length > 0 ||
-	topicsWithPapers.length > 0;
+// Decks and Featured Topics render unconditionally below (there is always at
+// least one listed deck and one active topic today), so the hub as a whole
+// is never empty anymore. The honest empty line is scoped to just the
+// paper/study-log part (docs/decisions/site-structure.md).
+const hasStudyContent = studyLog.length > 0 || selected.length > 0;
+
+const listedDeckCount = decks.filter((deck) => deck.placement === 'paper' || deck.placement === 'project').length;
+
+const featuredTopics = getFeaturedTopics(getActiveTopics(allTopics), 6);
+const linkableTopicIds = new Set(topicsWithPapers.map(({ topic }) => topic.data.id));
 
 type PaperEntry = (typeof studyLog)[number];
 
@@ -85,6 +96,7 @@ const actionLinkClass = 'library-action';
 const externalActionClass = `${actionLinkClass} library-action--external`;
 const formatTopicItemCount = (count: number) => t('research.topic-item-count').replace('{count}', String(count));
 const formatStepCount = (count: number) => t('paths.step-count').replace('{count}', String(count));
+const formatItemCount = (count: number) => t('library.item-count').replace('{count}', String(count));
 ---
 
 <!doctype html>
@@ -109,7 +121,7 @@ const formatStepCount = (count: number) => t('paths.step-count').replace('{count
 				</div>
 			</section>
 
-			{!hasAnyContent && (
+			{!hasStudyContent && (
 				<section class={`${panelClass} mb-10`}>
 					<p class="leading-relaxed text-slate-400">{t('research.empty')}</p>
 				</section>
@@ -276,6 +288,66 @@ const formatStepCount = (count: number) => t('paths.step-count').replace('{count
 								</div>
 							</a>
 						))}
+					</div>
+				</section>
+			)}
+
+			{listedDeckCount > 0 && (
+				<section class="mb-10 space-y-4" aria-labelledby="research-decks-heading">
+					<div>
+						<h2 id="research-decks-heading" class="text-2xl font-bold text-slate-100">
+							{t('research.section.decks.title')}
+						</h2>
+					</div>
+					<div class="grid gap-4 md:grid-cols-2">
+						<a href={`/${lang}/research/decks/`} class={`${panelClass} library-panel-link`}>
+							<h3 class="mb-3 text-lg font-semibold text-slate-100">{t('library.section.decks.title')}</h3>
+							<div class="library-panel-footer">
+								<span class="font-medium library-muted-label">{formatItemCount(listedDeckCount)}</span>
+								<span class="library-section-button">
+									{t('library.open-section')}
+									<LibraryIcon name="arrow-right" />
+								</span>
+							</div>
+						</a>
+					</div>
+				</section>
+			)}
+
+			{featuredTopics.length > 0 && (
+				<section class="mb-10 space-y-4" aria-labelledby="research-featured-topics-heading">
+					<div>
+						<h2 id="research-featured-topics-heading" class="text-2xl font-bold text-slate-100">
+							{t('research.section.featured-topics.title')}
+						</h2>
+						<p class="mt-1 text-slate-400">{t('research.section.featured-topics.description')}</p>
+					</div>
+					<div class="grid gap-4 md:grid-cols-2">
+						{featuredTopics.map((topic) => {
+							const isLinked = linkableTopicIds.has(topic.data.id);
+							const label = getTopicLabel(topic, lang);
+							const topicDescription = getTopicDescription(topic, lang);
+							const keywords = topic.data.positiveKeywords.slice(0, 5);
+							const keywordPills = keywords.length > 0 && (
+								<div class="mt-4 flex flex-wrap gap-2" aria-label={t('library.topic-keywords')}>
+									{keywords.map((keyword) => <span class={subtlePillClass}>{keyword}</span>)}
+								</div>
+							);
+
+							return isLinked ? (
+								<a href={`/${lang}/research/topics/${topic.data.id}/`} class={`${panelClass} library-panel-link`}>
+									<h3 class="mb-3 text-lg font-semibold text-slate-100">{label}</h3>
+									<p class="text-sm leading-relaxed text-slate-400">{topicDescription}</p>
+									{keywordPills}
+								</a>
+							) : (
+								<article class={panelClass}>
+									<h3 class="mb-3 text-lg font-semibold text-slate-100">{label}</h3>
+									<p class="text-sm leading-relaxed text-slate-400">{topicDescription}</p>
+									{keywordPills}
+								</article>
+							);
+						})}
 					</div>
 				</section>
 			)}

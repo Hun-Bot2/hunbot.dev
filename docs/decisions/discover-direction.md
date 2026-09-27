@@ -330,4 +330,6 @@ Not meaningful:
 
 - Should a Discover item ever be retired when it becomes obsolete, or does the archive stay permanent with a staleness marker?
 - Does the Library eventually fold into Discover as a set of saved filter views, or stay a separate hand-curated surface? Revisit after Phase 4.
+
+  **Revision 2026-09-27: No — the Library stays a separate, hand-curated surface.** It is two tabs: hand-curated external picks, and owner-selected research-os Useful Feeds. The `DiscoverItem` feed remains deferred, per [`site-structure.md`](./site-structure.md).
 - Should topics carry the `positiveKeywords` / `negativeKeywords` already in the schema into Phase 4 as classifier hints, making the taxonomy file the single place that defines both what a topic *is* and how candidates are matched to it? This is attractive but couples curation to ingestion; decide when Phase 4 starts.

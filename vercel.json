@@ -64,6 +64,21 @@
       "source": "/:lang(ko|jp|en)/library/ai-papers/:path*",
       "destination": "/:lang/research/",
       "permanent": true
+    },
+    {
+      "source": "/:lang(ko|jp|en)/library/decks",
+      "destination": "/:lang/research/decks/",
+      "permanent": true
+    },
+    {
+      "source": "/:lang(ko|jp|en)/library/decks/",
+      "destination": "/:lang/research/decks/",
+      "permanent": true
+    },
+    {
+      "source": "/library/decks",
+      "destination": "/ko/research/decks/",
+      "permanent": true
     }
   ],
   "headers": [

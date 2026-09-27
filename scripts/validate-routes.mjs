@@ -95,7 +95,12 @@ if (existsSync(sitemapPath)) {
   assert.match(sitemap, /https:\/\/hun-bot\.dev\/ko\/blog\//);
   assert.match(sitemap, /https:\/\/hun-bot\.dev\/en\/blog\//);
   assert.match(sitemap, /https:\/\/hun-bot\.dev\/jp\/blog\//);
-  assert.match(sitemap, /https:\/\/hun-bot\.dev\/ko\/library\/design\//);
+  // /ko/library/design/ is no longer unconditional (docs/decisions/site-structure.md#3,5):
+  // design is now a `picks` section, and the sitemap advertises a pick section
+  // only once it has >=1 published pick — today it has zero (the design pick
+  // is still a draft), so /ko/library/ is the stand-in fixture for "the
+  // Library hub is always in the sitemap" instead.
+  assert.match(sitemap, /https:\/\/hun-bot\.dev\/ko\/library\//);
   assert.doesNotMatch(sitemap, /https:\/\/hun-bot\.dev\/blog\//);
   assert.doesNotMatch(sitemap, /https:\/\/hun-bot\.dev\/archive\//);
 }

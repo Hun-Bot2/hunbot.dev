@@ -9,7 +9,6 @@ import { getAllPosts } from '../../utils/blog';
 import FormattedDate from '../../components/FormattedDate.astro';
 import { useTranslations } from '../../i18n/ui';
 import type { UILanguage } from '../../i18n/ui';
-import { decks } from '../../data/decks';
 import {
 	formatPaperAuthors,
 	getAcademicReviewsByLanguage,
@@ -18,16 +17,15 @@ import {
 } from '../../utils/academic-review-routing';
 import { getBlogUrlFromId } from '../../utils/blog-routing';
 import {
-	getHomepageLibraryPicks,
-	getHomepageSectionCounts,
 	getLatestBlogPosts,
 	getLatestBriefPosts,
 	getPostsForLanguage,
 } from '../../utils/homepage';
-import {
-	getLibrarySectionPath,
-	librarySections,
-} from '../../utils/library';
+import { getLibrarySectionPath, getUsefulFeedItems } from '../../utils/library';
+import { librarySections } from '../../data/librarySections';
+import { recentPicksLimit } from '../../data/libraryPolicy';
+import { getPickFacts, getPickSectionCounts, getRecentPicks, formatStarCount, type PopularitySnapshot } from '../../utils/picks';
+import popularity from '../../data/popularity.json';
 import {
 	getResponsivePublicImage,
 	homepagePostImageSizes,
@@ -47,55 +45,57 @@ const t = useTranslations(currentLang);
 const languageBasePath = `/${currentLang}`;
 const blogUrl = `${languageBasePath}/blog`;
 const libraryUrl = `${languageBasePath}/library`;
+const usefulFeedsUrl = `${languageBasePath}/library/useful-feeds`;
 const researchUrl = `${languageBasePath}/research`;
 
 const allPosts = await getAllPosts();
 const allResources = await getCollection('resources');
-const allPapers = await getCollection('papers');
 const allAcademicReviews = await getCollection('academicReviews');
+const allPicks = await getCollection('picks');
 
 const posts = getPostsForLanguage(allPosts, currentLang);
 const latestBriefs = getLatestBriefPosts(posts, 3);
 const latestPosts = getLatestBlogPosts(posts, 6);
-const libraryPicks = getHomepageLibraryPicks(allResources, allPapers, 3);
-const sectionCounts = getHomepageSectionCounts(allResources, allPapers, decks);
 const academicReviews = getAcademicReviewsByLanguage(
 	getPublishedAcademicReviews(allAcademicReviews),
 	currentLang,
 ).slice(0, 3);
 
-const sectionCards = librarySections.map((section) => {
-	const title = t(`library.section.${section.translationKey}.title` as Parameters<typeof t>[0]);
-	const description = t(`home.library.${section.translationKey}.description` as Parameters<typeof t>[0]);
-	const count = sectionCounts[section.id] ?? 0;
+// Useful Feeds panel (docs/decisions/site-structure.md#3, revision 2026-09-27):
+// up to 3 newest approved resources, rendered exactly as delivered — the same
+// shared helper /{lang}/library/useful-feeds.astro uses, so the two surfaces
+// cannot silently disagree about what "newest" means.
+const usefulFeedItems = getUsefulFeedItems(allResources, currentLang).slice(0, 3);
 
-	return {
-		...section,
-		title,
-		description,
-		count,
-		href: getLibrarySectionPath(currentLang, section.id),
-		isAvailable: count > 0,
-	};
-});
+// Library block (docs/decisions/site-structure.md#4): up to `recentPicksLimit`
+// most recently added published picks. Below 3 published picks, a compact
+// card list has nothing to compare itself against, so the block falls back
+// to section cards (only for sections that actually have a published pick)
+// plus a Useful Feeds link card. At zero picks that fallback is just the
+// Useful Feeds card.
+const publishedPickCount = allPicks.filter((pick) => pick.data.draft !== true).length;
+const hasEnoughRecentPicks = publishedPickCount >= 3;
+const recentPicks = hasEnoughRecentPicks ? getRecentPicks(allPicks, recentPicksLimit) : [];
+
+const pickSectionCounts = getPickSectionCounts(allPicks.filter((pick) => pick.data.draft !== true));
+const sectionsWithPicks = hasEnoughRecentPicks
+	? []
+	: librarySections
+			.map((section) => ({ ...section, count: pickSectionCounts.get(section.slug) ?? 0 }))
+			.filter((section) => section.count > 0);
+
+function getPickSectionLabel(pick: (typeof allPicks)[number]) {
+	const section = librarySections.find((item) => item.slug === pick.data.section);
+	return section?.label[currentLang] ?? pick.data.section;
+}
+
+function getPickStarLine(pick: (typeof allPicks)[number]) {
+	const facts = getPickFacts(pick.data, popularity as PopularitySnapshot);
+	if (facts.stars === null || !facts.starsAsOf) return null;
+	return t('library.pick.stars-as-of').replace('{stars}', formatStarCount(facts.stars)).replace('{date}', facts.starsAsOf);
+}
 
 const formatCount = (count: number) => t('library.item-count').replace('{count}', String(count));
-const getPickTitle = (pick: (typeof libraryPicks)[number]) =>
-	pick.kind === 'resource' ? pick.resource.data.title : pick.paper.data.title;
-const getPickHref = (pick: (typeof libraryPicks)[number]) =>
-	pick.kind === 'resource' ? pick.resource.data.url : pick.paper.data.url;
-const getPickSectionLabel = (pick: (typeof libraryPicks)[number]) => {
-	// Papers moved to the Research hub (docs/decisions/site-structure.md); the
-	// Library no longer has an "ai-papers" section to name this pick after.
-	if (pick.kind === 'paper') return t('home.metric.papers');
-
-	const section = librarySections.find(
-		(item) => item.kind === 'resources' && item.resourceSection === pick.resource.data.section,
-	);
-	return section
-		? t(`library.section.${section.translationKey}.title` as Parameters<typeof t>[0])
-		: t('library.title');
-};
 ---
 
 <!doctype html>
@@ -163,23 +163,26 @@ const getPickSectionLabel = (pick: (typeof libraryPicks)[number]) => {
 				</section>
 
 				<section class="home-feature-row" aria-label={t('home.feature-row-label')}>
-					<section class="home-feature-panel home-picks" aria-labelledby="home-picks-title">
+					<section class="home-feature-panel home-feeds" aria-labelledby="home-feeds-title">
 						<div class="home-section-heading">
 							<div>
-								<h2 id="home-picks-title">{t('home.picks.title')}</h2>
+								<h2 id="home-feeds-title">{t('home.feeds.title')}</h2>
 							</div>
+							<a href={usefulFeedsUrl} class="home-text-link">
+								<LibraryIcon name="book-open" class="home-action-icon" />
+								<span>{t('home.feeds.view-all')}</span>
+								<LibraryIcon name="arrow-right" class="home-action-icon" />
+							</a>
 						</div>
-						{libraryPicks.length > 0 ? (
+						{usefulFeedItems.length > 0 ? (
 							<div class="home-pick-grid">
-								{libraryPicks.map((pick) => (
-									<a
-										href={getPickHref(pick)}
-										target="_blank"
-										rel="noopener noreferrer"
-										class="home-pick-card"
-									>
-										<span class="home-pick-label">{getPickSectionLabel(pick)}</span>
-										<h3>{getPickTitle(pick)}</h3>
+								{usefulFeedItems.map((item) => (
+									<a href={item.url} target="_blank" rel="noopener noreferrer" class="home-pick-card">
+										<span class="home-pick-label">{item.source}</span>
+										<div class="home-pick-body">
+											<h3>{item.title}</h3>
+											<p>{item.date}</p>
+										</div>
 										<span class="home-card-icon-button" aria-hidden="true">
 											<LibraryIcon name="external" class="home-action-icon" />
 										</span>
@@ -187,7 +190,7 @@ const getPickSectionLabel = (pick: (typeof libraryPicks)[number]) => {
 								))}
 							</div>
 						) : (
-							<div class="home-empty">{t('home.picks.empty')}</div>
+							<div class="home-empty">{t('home.feeds.empty')}</div>
 						)}
 					</section>
 
@@ -240,15 +243,32 @@ const getPickSectionLabel = (pick: (typeof libraryPicks)[number]) => {
 							<LibraryIcon name="arrow-right" class="home-action-icon" />
 						</a>
 					</div>
-					<div class="home-section-grid">
-						{sectionCards.map((section) =>
-							section.isAvailable ? (
-								<a href={section.href} class="home-section-card">
+					{hasEnoughRecentPicks ? (
+						<div class="home-pick-grid">
+							{recentPicks.map((pick) => {
+								const starLine = getPickStarLine(pick);
+								return (
+									<a href={pick.data.url} target="_blank" rel="noopener noreferrer" class="home-pick-card">
+										<span class="home-pick-label">{getPickSectionLabel(pick)}</span>
+										<div class="home-pick-body">
+											<h3>{pick.data.title}</h3>
+											{starLine && <p>{starLine}</p>}
+										</div>
+										<span class="home-card-icon-button" aria-hidden="true">
+											<LibraryIcon name="external" class="home-action-icon" />
+										</span>
+									</a>
+								);
+							})}
+						</div>
+					) : (
+						<div class="home-section-grid">
+							{sectionsWithPicks.map((section) => (
+								<a href={getLibrarySectionPath(currentLang, section.slug)} class="home-section-card">
 									<div class="home-card-topline">
-										<span>{section.title}</span>
-										<span class="home-status home-status-available">{t('library.available')}</span>
+										<span>{section.label[currentLang]}</span>
 									</div>
-									<p>{section.description}</p>
+									<p>{section.description[currentLang]}</p>
 									<div class="home-card-footer">
 										<strong class="home-count-badge">{formatCount(section.count)}</strong>
 										<span class="home-card-button">
@@ -257,21 +277,21 @@ const getPickSectionLabel = (pick: (typeof libraryPicks)[number]) => {
 										</span>
 									</div>
 								</a>
-							) : (
-								<article class="home-section-card home-section-card-disabled">
-									<div class="home-card-topline">
-										<span>{section.title}</span>
-										<span class="home-status">{t('library.coming-soon')}</span>
-									</div>
-									<p>{section.description}</p>
-									<div class="home-card-footer">
-										<strong class="home-count-badge home-count-badge-muted">{formatCount(section.count)}</strong>
-										<span class="home-card-note">{t('library.section-pages-deferred')}</span>
-									</div>
-								</article>
-							)
-						)}
-					</div>
+							))}
+							<a href={usefulFeedsUrl} class="home-section-card">
+								<div class="home-card-topline">
+									<span>{t('library.tab.useful-feeds')}</span>
+								</div>
+								<p>{t('library.useful-feeds.intro')}</p>
+								<div class="home-card-footer">
+									<span class="home-card-button">
+										{t('library.open-section')}
+										<LibraryIcon name="arrow-right" class="home-action-icon" />
+									</span>
+								</div>
+							</a>
+						</div>
+					)}
 				</section>
 
 				{latestBriefs.length > 0 && (
@@ -576,6 +596,23 @@ const getPickSectionLabel = (pick: (typeof libraryPicks)[number]) => {
 		align-items: center;
 		gap: 0.55rem;
 		padding: 0.42rem 0.58rem;
+	}
+
+	.home-pick-body {
+		display: flex;
+		min-width: 0;
+		flex-direction: column;
+		gap: 0.1rem;
+	}
+
+	.home-pick-body p {
+		margin: 0;
+		overflow: hidden;
+		color: var(--home-faint);
+		font-size: 0.7rem;
+		line-height: 1.2;
+		white-space: nowrap;
+		text-overflow: ellipsis;
 	}
 
 	.home-card-icon-button {

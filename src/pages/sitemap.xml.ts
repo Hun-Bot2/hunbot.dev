@@ -4,9 +4,11 @@ import { getAllPosts } from '../utils/blog';
 import { SITE_URL, SUPPORTED_LANGUAGES } from '../consts';
 import { getBlogUrlFromId } from '../utils/blog-routing';
 import { getAcademicReviewUrlFromId, getPublishedAcademicReviews } from '../utils/academic-review-routing';
-import { getLibrarySectionPath, librarySections } from '../utils/library';
+import { librarySections as pickLibrarySections } from '../data/librarySections';
+import { getPickSectionCounts } from '../utils/picks';
 import { learningPaths } from '../data/learningPaths';
 import { getLearningPathUrl, getPublishedLearningPaths } from '../utils/learning-paths';
+import { decks } from '../data/decks';
 import { getTopicsWithLinkedPapers } from '../utils/research';
 
 export const GET: APIRoute = async ({ site }) => {
@@ -27,6 +29,16 @@ export const GET: APIRoute = async ({ site }) => {
   // gate src/pages/[lang]/research/topics/[topic].astro's getStaticPaths uses,
   // so the sitemap never advertises a URL that build did not actually produce.
   const topicsWithPapers = getTopicsWithLinkedPapers(allTopics, allPapers);
+  // Library picks (docs/decisions/site-structure.md#3,#5): a pick section
+  // page is advertised only once it has at least one published pick, the
+  // same "no thin pages" rule the topic pages above already follow. Design/
+  // vibe-coding/dev-docs still render at zero picks — they must not
+  // 404 (src/pages/[lang]/library/[section].astro) — but are not linked from
+  // the sitemap until they carry real content.
+  const allPicks = await getCollection('picks');
+  const publishedPicks = allPicks.filter((pick) => pick.data.draft !== true);
+  const pickSectionCounts = getPickSectionCounts(publishedPicks);
+  const sectionsWithPicks = pickLibrarySections.filter((section) => (pickSectionCounts.get(section.slug) ?? 0) > 0);
   // `lastmod` for listing pages is derived from the newest content they can
   // show, NOT from the build clock.
   //
@@ -50,10 +62,14 @@ export const GET: APIRoute = async ({ site }) => {
   ]);
   // Research hub replaces the retired /{lang}/reviews/ index
   // (docs/decisions/site-structure.md) — reviews now live at /{lang}/research/,
-  // and topic pages are generated (and listed here) only for topics that
-  // actually have at least one linked paper.
+  // topic pages are generated (and listed here) only for topics that
+  // actually have at least one linked paper, and decks now live at
+  // /{lang}/research/decks/ (#2). The old Library decks path permanently
+  // redirects there (vercel.json) and is not listed here.
+  const listedDeckCount = decks.filter((deck) => deck.placement === 'paper' || deck.placement === 'project').length;
   const researchPages = SUPPORTED_LANGUAGES.flatMap((lang) => [
     `/${lang}/research/`,
+    ...(listedDeckCount > 0 ? [`/${lang}/research/decks/`] : []),
     ...topicsWithPapers.map(({ topic }) => `/${lang}/research/topics/${topic.data.id}/`),
   ]);
   const staticPages = [
@@ -63,8 +79,9 @@ export const GET: APIRoute = async ({ site }) => {
       `/${lang}/blog/`,
       `/${lang}/blog/categories/`,
       `/${lang}/library/`,
+      `/${lang}/library/useful-feeds/`,
+      ...sectionsWithPicks.map((section) => `/${lang}/library/${section.slug}/`),
       `/${lang}/search/`,
-      ...librarySections.map((section) => getLibrarySectionPath(lang, section.id)),
     ]),
     ...learningPathPages,
     ...researchPages,

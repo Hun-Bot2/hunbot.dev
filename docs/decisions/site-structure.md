@@ -1,10 +1,31 @@
 # Site Structure: Writing, Research, Library
 
-Status: Decided by the repository owner, 2026-09-26. Implemented on `feat/site-structure-research-hub` (2026-09-26) — verification: `npm run build`, `content:validate`, `ui:validate`, `routes:validate`, `links:validate`, `seo:validate`, `csp:validate`, `product:validate`, `homepage:validate`, `blog:listing:validate`, `search:validate`, and `npm test` all pass; no sample or `TEMP:` string in `dist/client/**/index.html`; `/{lang}/research/` exists for ko/jp/en; zero topic pages generated (0 approved papers today, as expected).
+Status: Decided by the repository owner, 2026-09-26. Implemented on `feat/site-structure-research-hub` (2026-09-26) — verification: `npm run build`, `content:validate`, `ui:validate`, `routes:validate`, `links:validate`, `seo:validate`, `csp:validate`, `product:validate`, `homepage:validate`, `blog:listing:validate`, `search:validate`, and `npm test` all pass; no sample or `TEMP:` string in `dist/client/**/index.html`; `/{lang}/research/` exists for ko/jp/en; zero topic pages generated (0 approved papers today, as expected). Revised by the repository owner, 2026-09-27 — see [Revision 2026-09-27](#revision-2026-09-27-research-is-own-content-library-is-curation), which supersedes the parts of this record it contradicts.
 
-Reviewed: 2026-09-26
+Reviewed: 2026-09-27
 
 This record sets the public information architecture of `hun-bot.dev` so that the public site reflects the Research OS loop instead of running ahead of it. It amends [`discover-direction.md`](./discover-direction.md) on topic-page placement only (see [Amendments](#amendments)). It does not change any data contract in [`research-item-identity.md`](./research-item-identity.md) or [`research-os-data-contract.md`](./research-os-data-contract.md).
+
+## Revision 2026-09-27: Research is own content, Library is curation
+
+The repository owner made the following decisions on 2026-09-27. They supersede the parts of this record listed in [What This Revision Supersedes](#what-this-revision-supersedes); nothing below is deleted from the record it changes — the earlier text stands as history, and the change is recorded here, matching the convention in [`research-item-identity.md`](./research-item-identity.md#what-this-record-supersedes).
+
+1. **Research is the owner's own research content**: paper cards (study log), academic reviews, learning paths, Featured Topics (the `topics` collection), and the owner's own decks. `/{lang}/research/` stays a first-class menu item, stays in the sitemap, and the home "논문 리뷰" block links to it.
+2. **Decks move out of the Library** to `/{lang}/research/decks/`. Paper-presentation decks and project decks are listed there; a deck links to its related blog post when one exists. Test fixtures (`sample-deck`, `sample-slide-deck`) and the non-presentation `ontheblock-privacy-policy` legal document are not listed. Deck asset URLs under `/decks/` do not move. `/{lang}/library/decks/` permanently redirects to `/{lang}/research/decks/`.
+3. **The Library has two URL-addressable tabs**: **외부 링크** (default, `/{lang}/library/`) — a new hand-curated `picks` collection of external tools and sites — and **Useful Feeds (research-os)** (`/{lang}/library/useful-feeds/`) — the existing `resources` collection, holding only items the owner hand-selected in the private research-os. Useful Feeds items render as delivered (title, source, date, link, and a summary only if the item already carries one); the site never enriches, summarizes, or translates them, and noncommercial lectures are link-only. The label may say "research-os" but never links to the private repository. The old "Useful Feeds" section card is replaced by the tab.
+4. **The Library is not Discover.** The planned `DiscoverItem` feed stays deferred (see [`discover-direction.md`](./discover-direction.md)).
+5. **외부 링크 layout**: a "최근 추가" strip (latest non-draft picks by `addedAt`), then picks grouped by popularity tier **필수 / 인기 / 발굴** with section filter chips; section pages use the same grouping, filtered. "발굴" is presented as hidden gems, not a lower rank. Empty sections are hidden rather than shown as "0개 / 준비 중".
+6. **Popularity**: GitHub repos get a tier computed from stars; non-repo sites get a manual tier; a manual `tier` always overrides. Thresholds live in data (defaults: 필수 ≥ 10k★, 인기 ≥ 1k★, otherwise 발굴). Stars come from a committed snapshot (`src/data/popularity.json`, refreshed by an offline script using the official GitHub REST API), never fetched at build time, and are shown with the snapshot date.
+7. **Pick dates and freshness**: `createdAt` (tool creation; automatic for repos from GitHub `created_at`, optional manual for sites), `lastActivityAt` (automatic for repos from GitHub `pushed_at`), `addedAt` (owner added it, manual), `checkedAt` (owner last verified it, manual, bumped by a script). Badges: "확인 필요" when `checkedAt` is older than 6 months; "업데이트 멈춤" when `lastActivityAt` is older than 12 months. Both thresholds live in data.
+8. **외부 링크 holds external resources only.** The owner's own works (TouchDesigner, art, music) belong in posts or the future `experiments` collection ([`creative-direction.md`](./creative-direction.md#portfolio-decision)).
+9. **Primary navigation stays 글 / 연구 / 라이브러리.**
+
+### What This Revision Supersedes
+
+| Superseded | Where | Replaced by |
+|---|---|---|
+| Library row: "Curated references: design, dev-docs, vibe-coding, useful-feeds, decks" | [Position](#position) surfaces table | Decks move to Research (#2 above); `useful-feeds` becomes one of two Library tabs, alongside the new `picks`-backed 외부 링크 tab (#3 above) |
+| Any statement elsewhere in this record that decks live in, or render under, the Library | throughout | `/{lang}/research/decks/`, redirected from `/{lang}/library/decks/` (#2 above) |
 
 ## Problem
 

@@ -67,9 +67,12 @@ Defined in `src/content.config.ts`. Each collection has a Zod schema — check i
 | `papers` | `src/content/papers/**` | AI paper cards (Research hub study log) |
 | `topics` | `src/content/topics/**` | Library topic definitions + Discover taxonomy nodes |
 | `academicReviews` | `src/content/academic-reviews/**` | Structured paper review posts |
+| `picks` | `src/content/picks/**/*.{md,mdx}` | Hand-curated Library "picks" (tools/SKILLs/sites the owner actually uses) |
 
 > **Site structure (2026-09-26):** `hun-bot.dev` has three public surfaces, one per Research OS loop stage (`docs/decisions/site-structure.md`) — Writing (`/{lang}/blog/`), Research (`/{lang}/research/`, paper study log + reviews + learning paths + topics), and Library (`/{lang}/library/`, curated references only — no papers). `papers` gained `studiedAt` (`YYYY-MM-DD` or `null`; C4's dated "I studied this" statement, distinct from the private, mutable `readingState`). `academicReviews` gained `draft` (default `false`, same rule as `blog.draft` — filter through `getPublishedAcademicReviews()` in `src/utils/academic-review-routing.ts`, never re-check `!data.draft` yourself) and optional `paperId` (a `papers` entry `id`). `blog` gained optional `papers: string[]` (`papers` entry ids the post is about). Both link fields are declared on the *later* artifact and derived on the paper card — a paper card never lists its own reviews or posts (`src/utils/research.ts`: `getReviewForPaper()`, `getPostsForPaper()`). Reference existence is checked by `scripts/validate-academic-reviews.mjs` and `scripts/validate-blog-content.mjs`, not Zod. The `ai-papers` Library section is retired; `librarySections` in `src/utils/library.ts` no longer has a `'papers'` kind.
 
+> **Picks collection:** `picks` is the one content collection with plain YAML frontmatter (`resources`/`papers`/`topics` use JSON frontmatter) — fields are `title`, `url`, optional `repo` (`owner/name`), `section` (`src/data/librarySections.ts` slug), `kind` (`src/data/libraryPolicy.ts`, e.g. `skill`/`tool`/`site`/`reference`), optional manual `tier`, optional `createdAt`, required `addedAt`/`checkedAt` (`YYYY-MM-DD`, quoted or unquoted), and `draft` (default `false`). The Markdown body is a short owner-written note — picks are hand-curated, live outside the research-os projection (no `itemId`, no review/provenance machinery), and a pick's `url` must never duplicate a `resources` entry's `url`/`repoUrl`. `src/utils/picks.ts` derives tier/freshness/star-count display from `src/data/popularity.json`. Three npm scripts manage the collection: `npm run picks:refresh` (refreshes `popularity.json` from the GitHub API), `npm run picks:check -- <slug>` (bumps a pick's `checkedAt` to today), and `npm run picks:validate` (part of `content:validate`).
+>
 > **Topic taxonomy lifecycle:** beyond the original Library fields, each topic carries `parent` (a topic id, or `null` — `null` is what makes a node a domain; nesting is not limited to two levels), `order` (display weight within its parent, default `0`), `aliases` (previous ids that must keep resolving after a rename), and `mergedInto` (set alongside `status: "archived"` when a topic is merged into another). Nothing is ever deleted — rename adds an alias, merge sets `mergedInto`, retire sets `status: "archived"`; routes and item references keep resolving. All four fields are optional/defaulted, so existing topic files validate unchanged. Full lifecycle spec: `docs/decisions/discover-direction.md` §Taxonomy. Enforced by `scripts/validate-taxonomy.mjs` (`npm run taxonomy:validate`, part of `content:validate`), which rejects an unresolved `parent`, a `parent`/`mergedInto` cycle, duplicate topic ids, a duplicate or id-colliding alias, an archived topic with an active child, and a paper/resource whose topic reference isn't active or merged into an active topic. Topic reference resolution (a stored id, a uniquely-owned alias, or a bounded `mergedInto` chain to an active topic) is shared logic in `scripts/lib/topic-resolution.mjs` (`buildTopicIndex()`, `isResolvableTopicReference()`, `resolveToActiveTopicId()`), used by `scripts/validate-library.mjs`, `scripts/validate-learning-paths.mjs`, and the Research hub (`src/utils/research.ts`) so the validators and the site cannot silently disagree about what a valid topic reference is.
 
 > **Paper identity and provenance (2026-09-14):** `papers` carries a canonical work identity separate from its projection id — `id` (URL-bearing, human-chosen) and `itemId` (`itm-` + 26-char lowercase Crockford-base32 ULID, opaque, minted once, the join key to the private Research OS item and every note anchored to it). The legacy single-enum `decision` field is removed; it conflated acceptance status, honor, presentation format, and provenance into one value and could not express "accepted **and** oral". It is replaced by `acceptanceStatus` (`accepted`/`rejected`/`preprint`/`unknown`, default `unknown`), `honors` (array, max 4, default `[]`, e.g. `oral`/`spotlight`), and `presentationFormat` (nullable, e.g. `poster`) — all three registry-backed by `src/data/paperVocabularies.ts`, never a Zod enum. `provenance` (`VERIFIED`/`RADAR`, default `RADAR`) is the one other closed Zod enum in this repository besides `depth`: it drives destructive TTL in the private Research OS, so it is never assignable by assertion — `VERIFIED` requires both `review.humanReviewed: true` and a `venue` that resolves to a registry id. `source.openReviewId`/`semanticScholarId`/`arxivId` are replaced by `source.externalIds`, a bounded list (max 12) of `{ scheme, value }` entries — a list, not a map, because one work can carry both a preprint DOI and a publisher DOI — with `scheme` cross-checked against `src/data/identifierSchemes.ts` and any `doi` entry checked for well-formedness. `signals.hasCode`/`hasProjectPage` are now nullable (default `null`, not `false` — "not yet checked" is never "no"); `signals.topicScore`/`sourceScore`/`usefulnessScore`/`freshnessScore`/`totalScore` are removed outright (ranking inputs, not observations; no replacement field). Full spec: `docs/decisions/research-item-identity.md`. All render sites (`src/pages/[lang]/library.astro`, `src/pages/[lang]/library/[section].astro`) must call the `getAcceptanceStatusDisplayName()`/`getHonorDisplayName()`/`getVenueDisplayName()` display helpers — never render a stored id straight into a pill.
@@ -131,7 +134,7 @@ src/pages/
     ├── rss.xml.js                       → /ko/rss.xml per-language feed
     ├── library.astro                    → /ko/library/ (Library hub)
     ├── paths.astro                      → /ko/paths/ (learning paths index)
-    ├── research.astro                   → /ko/research/ (Research hub: study log, reviews, paths, topics)
+    ├── research.astro                   → /ko/research/ (Research hub: study log, reviews, paths, decks card, featured topics)
     ├── blog/
     │   ├── index.astro                  → /ko/blog/ (all posts, paginated)
     │   ├── [...slug].astro              → /ko/blog/{slug}/ (post detail)
@@ -139,14 +142,16 @@ src/pages/
     │   ├── categories.astro             → /ko/blog/categories/
     │   └── categories/[category].astro  → /ko/blog/categories/{cat}/
     ├── library/
-    │   └── [section].astro              → /ko/library/{section}/
+    │   ├── useful-feeds.astro           → /ko/library/useful-feeds/ (Useful Feeds tab, from `resources`)
+    │   └── [section].astro              → /ko/library/{section}/ (pick sections, slugs from src/data/librarySections.ts)
     ├── paths/
     │   └── [path].astro                 → /ko/paths/{id}/
     ├── research/
+    │   ├── decks.astro                  → /ko/research/decks/ (decks moved out of the Library)
     │   └── topics/
     │       └── [topic].astro            → /ko/research/topics/{topic}/ (only active topics with ≥1 linked paper)
     └── reviews/
-        └── [...slug].astro              → /ko/reviews/{slug}/ (index retired — see /ko/research/)
+        └── [...slug].astro              → /ko/reviews/{slug}/ (detail only — index retired, see /ko/research/)
 ```
 
 **i18n config:** `defaultLocale: 'ko'`, `prefixDefaultLocale: false` in `astro.config.mjs` — but the site explicitly links to `/ko/...`. All route helpers prefix the language; do not assume Korean URLs are prefix-free.
@@ -168,6 +173,7 @@ src/pages/
 | `responsive-public-images.ts` | `getResponsiveImageSet()` | Public image srcset helpers. |
 | `remark-localized-blog-links.mjs` | Remark plugin | Rewrites relative MDX links to localized blog URLs at build time. |
 | `canonicalization.ts` | `canonicalizeUrl()`, `normalizeTitle()`, `computeContentHash()`, `normalizeExternalIdentifier()`, `deriveDedupKey()` | URL canonicalization, CJK-safe title normalization, versioned content hashing, and identifier-index dedup-key derivation for the private Research OS pipeline. Not imported anywhere in the public site. **Vendored byte-for-byte by the private Research OS repository**, together with `contracts/research-os/research-item.schema.json`. Editing either file here means the copy there is stale; that repository's `npm run contract:sync` compares them exactly, and `INV-12` guards `CONTENT_HASH_FIELDS` specifically — a change to it leaves both copies individually valid while silently invalidating every stored hash. |
+| `picks.ts` | `computePickTier()`, `getPickFacts()`, `getFreshnessBadges()`, `formatStarCount()`, `normalizePickUrl()`, `getPickSlug()` | Pure helpers for the `picks` collection: tier derivation (manual override, else GitHub stars via `src/data/popularity.json`, else `discovery`), freshness badges, star-count formatting, and the URL comparison key `scripts/validate-picks.mjs` uses for duplicate detection against `resources`. Deliberately separate from `canonicalization.ts` above. |
 
 ---
 
@@ -208,8 +214,12 @@ src/pages/
 |---|---|---|
 | `library/LibraryIcon.astro` | Library pages, Research hub | Section icon display |
 | `library/LibraryPageStyles.astro` | Library pages, Research hub | Shared card/panel/pill/badge styles — `research.astro` and `research/topics/[topic].astro` reuse this rather than defining their own theme |
+| `library/LibraryTabs.astro` | `library.astro`, `library/[section].astro`, `library/useful-feeds.astro` | Shared 외부 링크/Useful Feeds tab bar; the "research-os" label next to Useful Feeds is plain text, never a link |
+| `library/PickCard.astro` | Library hub, section pages | Renders one `picks` entry — tier, star count, freshness badges |
 
 ### Decks / Presentations
+
+Decks render on `/{lang}/research/decks/`, not under the Library (`/{lang}/library/decks/` permanently redirects there).
 
 | Component | Used in | What it does |
 |---|---|---|
@@ -250,6 +260,9 @@ src/pages/
 | `reviewTopics.ts` | Review topic list | Academic review index |
 | `discoverFacets.ts` | `contentTypes: ContentTypeDefinition[]`, `contentTypeIds`, `isValidContentType()` | The `contentType` facet registry for `resources` (docs/decisions/discover-direction.md#Facets). Data, not an enum — cross-referenced by `scripts/validate-library.mjs`. |
 | `venues.ts` | `venues: VenueDefinition[]`, `venueIds`, `isValidVenueId()`, `resolveVenueId()`, `getVenueRegistryErrors()` | The venue registry for `papers.venue` and `topics.venues` (docs/decisions/research-discovery-system.md#Venue-Registry). Data, not an enum — cross-referenced (with alias resolution) by `scripts/validate-library.mjs`. Coverage is deliberately partial: only venues actually referenced by content, plus IEEE VIS. Every entry's `access` is `unverified` until a real licensing check is done. |
+| `librarySections.ts` | `librarySections: LibrarySection[]`, `librarySectionSlugs`, `isLibrarySectionSlug()` | The `picks.section` registry (slug + ko/en/jp label + description). Data, not an enum — cross-referenced by `scripts/validate-picks.mjs` and `src/content.config.ts`'s `picks` schema. |
+| `libraryPolicy.ts` | `pickTiers`, `pickTierIds`, `isPickTierId()`, `pickKinds`, `isPickKind()`, `freshnessPolicy`, `recentPicksLimit` | Policy data for `picks`: tier star-count thresholds (highest first), kind vocabulary, staleness windows, and the "recently added" strip size. |
+| `popularity.json` | `Record<"owner/name", { stars, createdAt, pushedAt, fetchedAt }>` | GitHub star-count snapshot for repo-backed `picks`, refreshed by `npm run picks:refresh` (`scripts/refresh-popularity.mjs`) — the only script that touches the network. |
 
 ---
 

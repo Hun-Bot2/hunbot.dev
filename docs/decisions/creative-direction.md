@@ -165,6 +165,8 @@ Replacement:
 - **Experiments live inside posts.** The writing is the frame. Each experiment gets a date, a reason, and a story, and abandoning one costs nothing because the post stays true.
 - **An `experiments` content collection**, so the index is a query rather than a maintained section. A `retired` flag lets dead work leave the index without deleting the post.
 
+**Revision 2026-09-27:** the Library's 외부 링크 tab holds external resources only; the owner's own works go in posts or the `experiments` collection, never in that tab.
+
 ## Accepted And Rejected
 
 | Idea | Decision | Reason |
