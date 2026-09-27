@@ -171,3 +171,19 @@ export function getPickSlug(filePathOrId: string): string {
 	const base = filePathOrId.split('/').pop() ?? filePathOrId;
 	return base.replace(/\.(md|mdx)$/i, '');
 }
+
+/**
+ * Counts published picks per section slug. Shared by the Library hub (chip
+ * counts across every section) and each pick section page (the same chip
+ * row, current section marked active) so the two pages cannot silently
+ * disagree about which sections have public content
+ * (docs/decisions/site-structure.md#5 — empty sections are hidden, not
+ * shown as "0개 / 준비 중").
+ */
+export function getPickSectionCounts(publishedPicks: readonly { data: { section: string } }[]): Map<string, number> {
+	const counts = new Map<string, number>();
+	for (const pick of publishedPicks) {
+		counts.set(pick.data.section, (counts.get(pick.data.section) ?? 0) + 1);
+	}
+	return counts;
+}

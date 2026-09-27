@@ -12,6 +12,16 @@ export interface PickTier {
 		en: string;
 		jp: string;
 	};
+	/**
+	 * One-line copy for the Library 외부 링크 tab's tier group headings
+	 * (docs/decisions/site-structure.md#5). '발굴' is phrased as hidden gems,
+	 * never as a lower rank — see the note on `pickTiers` below.
+	 */
+	description: {
+		ko: string;
+		en: string;
+		jp: string;
+	};
 	/** Minimum GitHub star count a repo-backed pick needs to reach this tier. */
 	minStars: number;
 }
@@ -22,9 +32,36 @@ export interface PickTier {
 // others — it is the tier for repos too new or too niche to have
 // accumulated stars yet, not a judgment on quality.
 export const pickTiers: readonly PickTier[] = [
-	{ id: 'essential', label: { ko: '필수', en: 'Essential', jp: '定番' }, minStars: 10000 },
-	{ id: 'popular', label: { ko: '인기', en: 'Popular', jp: '人気' }, minStars: 1000 },
-	{ id: 'discovery', label: { ko: '발굴', en: 'Hidden gems', jp: '掘り出し物' }, minStars: 0 },
+	{
+		id: 'essential',
+		label: { ko: '필수', en: 'Essential', jp: '定番' },
+		description: {
+			ko: '먼저 써 볼 만한 도구',
+			en: 'Worth trying first',
+			jp: 'まず試す価値のあるツール',
+		},
+		minStars: 10000,
+	},
+	{
+		id: 'popular',
+		label: { ko: '인기', en: 'Popular', jp: '人気' },
+		description: {
+			ko: '많은 사람이 쓰는 도구',
+			en: 'Widely used by others',
+			jp: '多くの人が使うツール',
+		},
+		minStars: 1000,
+	},
+	{
+		id: 'discovery',
+		label: { ko: '발굴', en: 'Hidden gems', jp: '掘り出し物' },
+		description: {
+			ko: '아직 덜 알려졌지만 쓸 만한 숨은 도구',
+			en: 'Lesser-known tools still worth using',
+			jp: 'まだあまり知られていないが使える隠れたツール',
+		},
+		minStars: 0,
+	},
 ] as const;
 
 export type PickTierId = (typeof pickTiers)[number]['id'];

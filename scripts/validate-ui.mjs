@@ -29,6 +29,9 @@ const pagesWithHeader = [
 	'src/pages/[lang]/index.astro',
 	'src/pages/[lang]/library.astro',
 	'src/pages/[lang]/library/[section].astro',
+	// New route for the Library restructure's Useful Feeds tab
+	// (docs/decisions/site-structure.md#3).
+	'src/pages/[lang]/library/useful-feeds.astro',
 	'src/pages/[lang]/paths.astro',
 	'src/pages/[lang]/paths/[path].astro',
 	'src/pages/[lang]/research.astro',

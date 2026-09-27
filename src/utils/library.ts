@@ -18,6 +18,13 @@ const FALLBACK_LANGUAGE_ORDER: readonly UILanguage[] = ['ko', 'en', 'jp'];
 // Papers moved out of the Library and onto the Research hub
 // (docs/decisions/site-structure.md) — "ai-papers" is no longer a Library
 // section. The `papers` collection itself is unchanged; see src/utils/research.ts.
+//
+// Superseded by src/data/librarySections.ts (docs/decisions/site-structure.md,
+// revision 2026-09-27): the Library's 외부 링크 tab and its section pages now
+// read picks and that registry instead. This export stays only because
+// src/utils/homepage.ts and src/pages/[lang]/index.astro (the homepage) still
+// read it; it is not used by the Library pages anymore. Remove it once the
+// homepage is rewired to picks.
 export const librarySections = [
 	{ id: 'design', translationKey: 'design', kind: 'resources', resourceSection: 'design' },
 	{ id: 'vibe-coding', translationKey: 'vibe-coding', kind: 'resources', resourceSection: 'vibe-coding' },
