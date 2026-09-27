@@ -1,6 +1,9 @@
 import { glob } from 'astro/loaders';
 import { defineCollection, z } from 'astro:content';
 
+import { isLibrarySectionSlug } from './data/librarySections';
+import { isPickKind, isPickTierId } from './data/libraryPolicy';
+
 const slugSafeString = z
 	.string()
 	.regex(/^[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$/, 'Use lowercase letters, numbers, and hyphens only.');
@@ -18,6 +21,18 @@ const shortSlugString = z
 	.string()
 	.regex(/^[a-z0-9][a-z0-9-]{0,39}$/, 'Use a short lowercase slug.');
 const dateString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD.');
+// `picks` frontmatter is plain YAML (unlike resources/papers/topics' JSON
+// frontmatter), so an unquoted date like `2026-09-27` arrives already parsed
+// into a JS Date by the YAML loader, while a quoted date arrives as a
+// string. This preprocessor normalizes either input to a YYYY-MM-DD string
+// (UTC) before the usual dateString check runs, so both spellings validate
+// and every consumer of a pick's dates always sees the same string shape.
+const yamlDateString = z.preprocess((value) => {
+	if (value instanceof Date) {
+		return value.toISOString().slice(0, 10);
+	}
+	return value;
+}, dateString);
 const httpUrl = z.string().url().refine((value) => /^https?:\/\//.test(value), {
 	message: 'Only http and https URLs are allowed.',
 });
@@ -389,4 +404,48 @@ const topics = defineCollection({
 	}),
 });
 
-export const collections = { blog, resources, papers, topics, academicReviews };
+// Hand-curated "picks" collection (docs/decisions/site-structure.md).
+// Unlike `resources`/`papers`, a pick is written directly by the site owner
+// as a short note about a tool, SKILL, site, or reference they actually use
+// — it sits outside the research-os projection on purpose: no `itemId`, no
+// review/provenance machinery, no AI-assisted drafting flag. Frontmatter is
+// plain YAML (not the JSON-frontmatter style `resources`/`papers` use), and
+// the Markdown body is that note. A pick's `url` must not duplicate a
+// `resources` entry's `url`/`repoUrl` — enforced by scripts/validate-picks.mjs,
+// not Zod, because it is a cross-collection check.
+const picks = defineCollection({
+	loader: glob({ base: './src/content/picks', pattern: '**/*.{md,mdx}' }),
+	schema: z.object({
+		title: z.string().min(1),
+		url: httpUrl,
+		repo: z
+			.string()
+			.regex(/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/, 'Use "owner/name".')
+			.optional(),
+		// Registry-backed, not a Zod enum — matches the section/contentType/
+		// venue pattern elsewhere in this file. src/data/librarySections.ts is
+		// the source of truth for known sections.
+		section: z.string().refine(isLibrarySectionSlug, {
+			message: 'section must be a known Library section slug — see src/data/librarySections.ts.',
+		}),
+		// Registry-backed, not a Zod enum — src/data/libraryPolicy.ts is the
+		// source of truth for known kinds.
+		kind: z.string().refine(isPickKind, {
+			message: 'kind must be one of the known pick kinds — see src/data/libraryPolicy.ts.',
+		}),
+		// Manual tier override. Optional — most repo-backed picks derive their
+		// tier from GitHub stars (src/utils/picks.ts's computePickTier); a
+		// non-repo pick (a site, say) has no star count to derive from, so its
+		// tier must be set here instead (enforced for non-draft picks by
+		// scripts/validate-picks.mjs, not Zod, since it depends on `repo` too).
+		tier: z.string().refine(isPickTierId, {
+			message: 'tier must be a known pick tier id — see src/data/libraryPolicy.ts.',
+		}).optional(),
+		createdAt: yamlDateString.optional(),
+		addedAt: yamlDateString,
+		checkedAt: yamlDateString,
+		draft: z.boolean().default(false),
+	}),
+});
+
+export const collections = { blog, resources, papers, topics, academicReviews, picks };
