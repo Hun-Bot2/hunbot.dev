@@ -28,6 +28,8 @@ const pagesWithHeader = [
 	'src/pages/[lang]/blog/index.astro',
 	'src/pages/[lang]/index.astro',
 	'src/pages/[lang]/library.astro',
+	// Pick section pages (docs/decisions/site-structure.md#3,5) — one route
+	// generated per src/data/librarySections.ts slug.
 	'src/pages/[lang]/library/[section].astro',
 	// New route for the Library restructure's Useful Feeds tab
 	// (docs/decisions/site-structure.md#3).
@@ -52,6 +54,11 @@ for (const outputRoot of [join(root, 'dist/client'), join(root, '.vercel/output/
 		'ko/index.html',
 		'ko/blog/index.html',
 		'ko/library/index.html',
+		// Newer Library/Research routes should get the same #main-content spot
+		// check as the older sample pages above, not just a source-level assert
+		// (docs/decisions/site-structure.md#2,#3).
+		'ko/library/useful-feeds/index.html',
+		'ko/research/decks/index.html',
 		'ko/paths/index.html',
 		'ko/search/index.html',
 	];

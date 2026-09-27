@@ -72,6 +72,40 @@ assert.ok(
 );
 assert.match(homepage, /getLibrarySectionPath/);
 
+// 논문 리뷰 (home-reviews) must link out to the Research hub — papers and
+// reviews moved there (docs/decisions/site-structure.md#1), so a stale link
+// back into the Library would be a dead end.
+assert.match(homepage, /const researchUrl = `\$\{languageBasePath\}\/research`;/);
+{
+	const reviewsPanel = homepage.match(/<section class="home-feature-panel home-reviews"[\s\S]*?<\/section>/);
+	assert.ok(reviewsPanel, 'Homepage should render a home-reviews panel.');
+	assert.match(
+		reviewsPanel[0],
+		/href=\{researchUrl\}/,
+		'home-reviews panel should link to the Research hub via researchUrl.',
+	);
+}
+
+// "라이브러리 보기" (home.primary-cta) must still point at the Library hub.
+assert.match(homepage, /const libraryUrl = `\$\{languageBasePath\}\/library`;/);
+{
+	const libraryPanel = homepage.match(/<section class="home-section home-library"[\s\S]*?<\/section>/);
+	assert.ok(libraryPanel, 'Homepage should render a home-library panel.');
+	assert.match(
+		libraryPanel[0],
+		/href=\{libraryUrl\}/,
+		'home-library panel should link to the Library hub via libraryUrl.',
+	);
+	assert.match(
+		libraryPanel[0],
+		/home\.primary-cta/,
+		'home-library panel should use the primary-cta copy key ("라이브러리 보기").',
+	);
+}
+for (const lang of languages) {
+	assert.ok(ui[lang]?.['home.primary-cta'], `${lang} home.primary-cta copy is required.`);
+}
+
 const resources = readJsonFrontmatterCollection('src/content/resources');
 const usefulFeedItems = getUsefulFeedItems(resources, 'ko').slice(0, 3);
 assert.ok(usefulFeedItems.length <= 3, 'Homepage Useful Feeds panel shows at most 3 items.');

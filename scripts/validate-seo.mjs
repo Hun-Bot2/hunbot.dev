@@ -12,6 +12,7 @@ const baseHead = read('src/components/BaseHead.astro');
 const sitemapRoute = read('src/pages/sitemap.xml.ts');
 const languageRssRoute = read('src/pages/[lang]/rss.xml.js');
 const globalRssRoute = read('src/pages/rss.xml.js');
+const vercelJson = JSON.parse(read('vercel.json'));
 
 assert.match(packageJson.scripts?.['seo:validate'] ?? '', /validate-seo\.mjs/);
 
@@ -41,6 +42,14 @@ assert.match(sitemapRoute, /\/research\//);
 // source), same as before this change.
 assert.doesNotMatch(sitemapRoute, /library\/decks/, 'The sitemap must not advertise the retired /library/decks/ path.');
 assert.match(sitemapRoute, /\/research\/decks\//);
+// The Library's two tabs (docs/decisions/site-structure.md#3) must both be
+// advertised in the sitemap route source, not just the hub.
+assert.match(sitemapRoute, /\$\{lang\}\/library\/`/, 'sitemap.xml.ts should list the /{lang}/library/ hub.');
+assert.match(
+	sitemapRoute,
+	/\$\{lang\}\/library\/useful-feeds\/`/,
+	'sitemap.xml.ts should list the /{lang}/library/useful-feeds/ tab.',
+);
 // Research hub replaces the retired /{lang}/reviews/ index
 // (docs/decisions/site-structure.md) — the sitemap's own generated static
 // page list must not advertise that URL as live anymore. Review *detail*
@@ -51,6 +60,28 @@ assert.doesNotMatch(
 	/`\/\$\{lang\}\/reviews\/`/,
 	'sitemap.xml.ts should no longer list the retired /{lang}/reviews/ index as a static page.',
 );
+
+// Old deck URLs must redirect, not 404, once decks moved to Research
+// (docs/decisions/site-structure.md#2). vercel.json is the single source of
+// truth for these — a missing entry here would only surface as a live 404
+// after deploy, which is exactly what a permanent redirect exists to prevent.
+function findRedirect(source) {
+	return (vercelJson.redirects ?? []).find((entry) => entry.source === source);
+}
+
+for (const source of ['/:lang(ko|jp|en)/library/decks', '/:lang(ko|jp|en)/library/decks/']) {
+	const redirect = findRedirect(source);
+	assert.ok(redirect, `vercel.json should have a redirect for "${source}".`);
+	assert.equal(redirect.destination, '/:lang/research/decks/', `"${source}" should redirect to /:lang/research/decks/.`);
+	assert.equal(redirect.permanent, true, `"${source}" -> /:lang/research/decks/ should be a permanent redirect.`);
+}
+
+{
+	const redirect = findRedirect('/library/decks');
+	assert.ok(redirect, 'vercel.json should have a redirect for "/library/decks".');
+	assert.equal(redirect.destination, '/ko/research/decks/', '"/library/decks" should redirect to /ko/research/decks/.');
+	assert.equal(redirect.permanent, true, '"/library/decks" -> /ko/research/decks/ should be a permanent redirect.');
+}
 
 for (const outputRoot of [join(root, 'dist/client'), join(root, '.vercel/output/static')]) {
 	if (!existsSync(outputRoot)) continue;
@@ -69,7 +100,36 @@ for (const outputRoot of [join(root, 'dist/client'), join(root, '.vercel/output/
 					`${relative(root, sitemapPath)} should include ${lang}/${path.id} path detail.`,
 				);
 			}
+
+			// Both Library tabs (docs/decisions/site-structure.md#3) and the
+			// Research decks route (#2) must round-trip into the built sitemap,
+			// not just the route source checked above.
+			assert.ok(sitemap.includes(`/${lang}/library/`), `${relative(root, sitemapPath)} should include ${lang} library hub.`);
+			assert.ok(
+				sitemap.includes(`/${lang}/library/useful-feeds/`),
+				`${relative(root, sitemapPath)} should include ${lang} library useful-feeds tab.`,
+			);
+			assert.ok(
+				sitemap.includes(`/${lang}/research/decks/`),
+				`${relative(root, sitemapPath)} should include ${lang} research decks page.`,
+			);
+			assert.doesNotMatch(
+				sitemap,
+				new RegExp(`/${lang}/library/decks/`),
+				`${relative(root, sitemapPath)} must never advertise the retired /${lang}/library/decks/ path.`,
+			);
 		}
+	}
+
+	// The retired /{lang}/library/decks/ page must no longer be a build
+	// output for any language — it permanently redirects instead (vercel.json)
+	// — while its replacement, /{lang}/research/decks/, must exist.
+	for (const lang of learningPathLanguages) {
+		const oldDecksPath = join(outputRoot, lang, 'library', 'decks', 'index.html');
+		assert.equal(existsSync(oldDecksPath), false, `${relative(root, oldDecksPath)} should no longer be generated.`);
+
+		const newDecksPath = join(outputRoot, lang, 'research', 'decks', 'index.html');
+		assert.ok(existsSync(newDecksPath), `${relative(root, newDecksPath)} should exist after build.`);
 	}
 
 	for (const lang of learningPathLanguages) {

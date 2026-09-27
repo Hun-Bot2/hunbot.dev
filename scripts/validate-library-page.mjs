@@ -49,6 +49,9 @@ assert.match(libraryPage, /data-pagefind-filter="section\[content\]"/);
 assert.doesNotMatch(libraryPage, /getCollection\('resources'\)/);
 assert.doesNotMatch(libraryPage, /getCollection\('topics'\)/);
 assert.doesNotMatch(libraryPage, /getCollection\('papers'\)/);
+// All three Library pages share one tab bar component so a page cannot drift
+// into its own ad hoc tab markup (docs/decisions/site-structure.md#3).
+assert.match(libraryPage, /<LibraryTabs\b/, 'Library hub should render the shared LibraryTabs component.');
 
 // Pick section pages replace the old resources-backed design/vibe-coding/
 // dev-docs/useful-feeds sections. Decks moved off the Library entirely onto
@@ -60,12 +63,26 @@ assert.match(sectionPage, /data-pagefind-filter="library-section\[content\]"/);
 assert.doesNotMatch(sectionPage, /isDecksSection/);
 assert.doesNotMatch(sectionPage, /getResourcesForLibrarySection/);
 assert.doesNotMatch(sectionPage, /data\/decks/, 'Library section pages should not read the deck registry anymore.');
+assert.match(sectionPage, /<LibraryTabs\b/, 'Library section pages should render the shared LibraryTabs component.');
+// getStaticPaths must derive its section list from the librarySections.ts
+// registry, not a hard-coded array — otherwise a new/renamed section in data
+// would silently fail to get a route (docs/decisions/site-structure.md#5).
+{
+	const staticPathsBody = sectionPage.match(/export function getStaticPaths\(\)\s*\{([\s\S]*?)\n\}/);
+	assert.ok(staticPathsBody, 'Library section page should export getStaticPaths().');
+	assert.match(
+		staticPathsBody[1],
+		/pickLibrarySections\.map/,
+		'getStaticPaths should derive section routes from src/data/librarySections.ts, not a hard-coded list.',
+	);
+}
 
 // getUsefulFeedItems (src/utils/library.ts) replaced this page's own
 // getApprovedResources+sortStable+map — the homepage's Useful Feeds panel
 // shares the exact same helper (docs/decisions/site-structure.md#4).
 assert.match(usefulFeedsPage, /getUsefulFeedItems/);
 assert.match(usefulFeedsPage, /data-pagefind-body/);
+assert.match(usefulFeedsPage, /<LibraryTabs\b/, 'Useful Feeds page should render the shared LibraryTabs component.');
 
 assert.match(header, /const libraryUrl =/);
 assert.match(header, /href=\{libraryUrl\}/);
@@ -103,6 +120,7 @@ for (const outputRoot of [join(root, 'dist/client'), join(root, '.vercel/output/
 		const html = readFileSync(htmlPath, 'utf8');
 		assert.match(html, /data-pagefind-body/);
 		assert.match(html, new RegExp(escapeRegExp(ui[lang]['library.title'])));
+		assertLibraryTabs(html, htmlPath, `/${lang}/library/`);
 
 		for (const entry of draftPicks) {
 			assert.equal(
@@ -126,6 +144,8 @@ for (const outputRoot of [join(root, 'dist/client'), join(root, '.vercel/output/
 				sectionHtml.includes(`content="${section.slug}"`),
 				`${relative(root, sectionHtmlPath)} should include a Pagefind library-section filter.`,
 			);
+			// Section pages count as the 외부 링크 tab (docs/decisions/site-structure.md#3).
+			assertLibraryTabs(sectionHtml, sectionHtmlPath, `/${lang}/library/`);
 
 			for (const entry of draftPicks) {
 				assert.equal(
@@ -160,6 +180,7 @@ for (const outputRoot of [join(root, 'dist/client'), join(root, '.vercel/output/
 		assert.ok(existsSync(usefulFeedsHtmlPath), `${relative(root, usefulFeedsHtmlPath)} should exist after build.`);
 		const usefulFeedsHtml = readFileSync(usefulFeedsHtmlPath, 'utf8');
 		assert.match(usefulFeedsHtml, /data-pagefind-body/);
+		assertLibraryTabs(usefulFeedsHtml, usefulFeedsHtmlPath, `/${lang}/library/useful-feeds/`);
 
 		for (const entry of resources) {
 			const shouldDisplay = entry.data.status === 'approved' && entry.data.review?.humanReviewed === true;
@@ -171,12 +192,63 @@ for (const outputRoot of [join(root, 'dist/client'), join(root, '.vercel/output/
 				);
 			}
 		}
+
+		// Useful Feeds is picks-free, but the "no draft pick title anywhere in
+		// the Library" guarantee should hold across all three page types, not
+		// just the two that read the picks collection directly.
+		for (const entry of draftPicks) {
+			assert.equal(
+				usefulFeedsHtml.includes(entry.data.title),
+				false,
+				`${relative(root, usefulFeedsHtmlPath)} must not display draft pick "${entry.data.title}".`,
+			);
+		}
 	}
 }
 
 console.log(
 	`Validated Library page source and data filters: ${publishedPicks.length} published picks, ${approvedResources.length} approved resources.`,
 );
+
+// Every Library page (hub, section, Useful Feeds) renders the same
+// LibraryTabs component (docs/decisions/site-structure.md#3). Checked once
+// here instead of copy-pasted per call site so the three page checks cannot
+// silently drift apart.
+function assertLibraryTabs(html, htmlPath, expectedActiveHref) {
+	const navMatch = html.match(/<nav class="library-tabs"[\s\S]*?<\/nav>/);
+	assert.ok(navMatch, `${relative(root, htmlPath)} should render the shared Library tab bar.`);
+	const nav = navMatch[0];
+
+	// Exactly one tab is aria-current="page", and it must be the tab this
+	// page actually belongs to — a missing or doubled aria-current silently
+	// breaks the tab bar's accessibility semantics.
+	const currentTabs = [...nav.matchAll(/<a href="([^"]+)" class="library-tab"[^>]*aria-current="page"/g)];
+	assert.equal(
+		currentTabs.length,
+		1,
+		`${relative(root, htmlPath)} should mark exactly one Library tab as aria-current="page".`,
+	);
+	assert.equal(
+		currentTabs[0][1],
+		expectedActiveHref,
+		`${relative(root, htmlPath)} should mark ${expectedActiveHref} as the current Library tab.`,
+	);
+
+	// The "research-os" label names where Useful Feeds items came from; it
+	// must never become a link to the private repository
+	// (docs/decisions/site-structure.md#3).
+	assert.ok(html.includes('research-os'), `${relative(root, htmlPath)} should show the "research-os" label.`);
+	assert.doesNotMatch(
+		html,
+		/<a[^>]*>[^<]*research-os[^<]*<\/a>/,
+		`${relative(root, htmlPath)} "research-os" label must not be inside a link.`,
+	);
+	assert.doesNotMatch(
+		html,
+		/href="[^"]*research-os[^"]*"/,
+		`${relative(root, htmlPath)} must not have any href pointing at "research-os".`,
+	);
+}
 
 function readPopularity() {
 	const popularityPath = join(root, 'src/data/popularity.json');

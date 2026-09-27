@@ -134,7 +134,7 @@ src/pages/
     ├── rss.xml.js                       → /ko/rss.xml per-language feed
     ├── library.astro                    → /ko/library/ (Library hub)
     ├── paths.astro                      → /ko/paths/ (learning paths index)
-    ├── research.astro                   → /ko/research/ (Research hub: study log, reviews, paths, topics)
+    ├── research.astro                   → /ko/research/ (Research hub: study log, reviews, paths, decks card, featured topics)
     ├── blog/
     │   ├── index.astro                  → /ko/blog/ (all posts, paginated)
     │   ├── [...slug].astro              → /ko/blog/{slug}/ (post detail)
@@ -142,14 +142,16 @@ src/pages/
     │   ├── categories.astro             → /ko/blog/categories/
     │   └── categories/[category].astro  → /ko/blog/categories/{cat}/
     ├── library/
-    │   └── [section].astro              → /ko/library/{section}/
+    │   ├── useful-feeds.astro           → /ko/library/useful-feeds/ (Useful Feeds tab, from `resources`)
+    │   └── [section].astro              → /ko/library/{section}/ (pick sections, slugs from src/data/librarySections.ts)
     ├── paths/
     │   └── [path].astro                 → /ko/paths/{id}/
     ├── research/
+    │   ├── decks.astro                  → /ko/research/decks/ (decks moved out of the Library)
     │   └── topics/
     │       └── [topic].astro            → /ko/research/topics/{topic}/ (only active topics with ≥1 linked paper)
     └── reviews/
-        └── [...slug].astro              → /ko/reviews/{slug}/ (index retired — see /ko/research/)
+        └── [...slug].astro              → /ko/reviews/{slug}/ (detail only — index retired, see /ko/research/)
 ```
 
 **i18n config:** `defaultLocale: 'ko'`, `prefixDefaultLocale: false` in `astro.config.mjs` — but the site explicitly links to `/ko/...`. All route helpers prefix the language; do not assume Korean URLs are prefix-free.
@@ -212,8 +214,12 @@ src/pages/
 |---|---|---|
 | `library/LibraryIcon.astro` | Library pages, Research hub | Section icon display |
 | `library/LibraryPageStyles.astro` | Library pages, Research hub | Shared card/panel/pill/badge styles — `research.astro` and `research/topics/[topic].astro` reuse this rather than defining their own theme |
+| `library/LibraryTabs.astro` | `library.astro`, `library/[section].astro`, `library/useful-feeds.astro` | Shared 외부 링크/Useful Feeds tab bar; the "research-os" label next to Useful Feeds is plain text, never a link |
+| `library/PickCard.astro` | Library hub, section pages | Renders one `picks` entry — tier, star count, freshness badges |
 
 ### Decks / Presentations
+
+Decks render on `/{lang}/research/decks/`, not under the Library (`/{lang}/library/decks/` permanently redirects there).
 
 | Component | Used in | What it does |
 |---|---|---|
