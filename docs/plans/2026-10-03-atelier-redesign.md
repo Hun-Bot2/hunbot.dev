@@ -82,7 +82,7 @@
   --paper: #f2f0e9;  --paper-deep: #e7e4db;  --paper-light: #f8f6f0;
   --ink: #171916;    --secondary: #5f625c;   --faint: #8e9089;
   --rule: #cbc9c0;   --rule-strong: #93958e;
-  --accent: #d84e2b;
+  --accent: #b83d1d; // 프로토타입 #d84e2b는 --paper 대비 3.65:1이라 텍스트 AA 미달 → 4.95:1로 어둡게
   --stage: #171816;  --stage-ink: #eeede5;   --stage-muted: #9f9f98;
   --content-max: 980px;
   --font-serif: "Newsreader", "Noto Serif KR", "Noto Serif JP", serif;
