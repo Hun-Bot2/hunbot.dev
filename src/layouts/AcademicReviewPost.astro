@@ -104,7 +104,7 @@ const schema = {
 		{reviewTopics.map((topic) => <meta data-pagefind-filter="topic[content]" content={topic.label} />)}
 	</head>
 	<body>
-		<Header />
+		<Header availableLangs={availableLangs} />
 		<FloatingLanguagePicker availableLangs={availableLangs} />
 		<main id="main-content" class="academic-review-page">
 			<article aria-labelledby={headingId}>

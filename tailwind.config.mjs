@@ -8,8 +8,18 @@ export default {
 	theme: {
 		extend: {
 			colors: {
+				// Atelier tokens (src/styles/tokens.css). They follow html.dark, so
+				// templates need no `dark:` variants for these.
+				paper: 'var(--paper)',
+				'paper-deep': 'var(--paper-deep)',
+				'paper-light': 'var(--paper-light)',
+				ink: 'var(--ink)',
+				secondary: 'var(--secondary)',
+				faint: 'var(--faint)',
+				rule: 'var(--rule)',
+				'rule-strong': 'var(--rule-strong)',
 				accent: {
-					DEFAULT: '#f97316',
+					DEFAULT: 'var(--accent)',
 					dark: '#ea580c',
 					light: '#fb923c',
 				},
@@ -19,7 +29,9 @@ export default {
 				},
 			},
 			fontFamily: {
-				sans: ['Atkinson', 'system-ui', 'sans-serif'],
+				serif: ['var(--font-serif)'],
+				sans: ['var(--font-sans)'],
+				mono: ['var(--font-mono)'],
 			},
 			animation: {
 				'gradient-x': 'gradient-x 15s ease infinite',

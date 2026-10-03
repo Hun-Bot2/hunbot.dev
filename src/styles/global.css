@@ -31,14 +31,11 @@
   --spacing-16: 4rem;
   --spacing-20: 5rem;
   
-	/* Typography - System Fonts */
-	/* Use Montserrat (Latin) and Gowun Dodum (Korean) as primary sans; keep system fallbacks */
-	--fontFamily-sans: "Montserrat", "Gowun Dodum", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-	/* Serif stack without Noto Serif (not imported) */
-	--fontFamily-serif: "Georgia", "Times New Roman", Times, serif;
-  --font-body: var(--fontFamily-serif);
-  --font-heading: var(--fontFamily-sans);
-  
+	/* Typography: the Atelier font stacks live in tokens.css. The legacy names
+	   below are kept because page-scoped styles still read them. */
+	--font-body: var(--font-sans);
+	--font-heading: var(--font-sans);
+	
   /* Font Weights */
   --fontWeight-normal: 400;
   --fontWeight-bold: 700;
@@ -148,7 +145,6 @@
 
 
 :root {
-	--accent: #f97316;
 	--accent-dark: #ea580c;
 	--accent-light: #fb923c;
 	--neural-cyan: #06b6d4;
@@ -168,11 +164,12 @@
 	--surface-muted-text: rgba(203, 213, 225, 0.78);
 }
 
-/* 전역 폰트 설정 */
+/* 전역 기본 요소 (토큰: tokens.css) */
 html {
   font-size: var(--fontSize-root);
-  font-family: var(--font-body);
+  font-family: var(--font-sans);
   line-height: var(--lineHeight-normal);
+  background: var(--paper);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -180,14 +177,20 @@ html {
 body {
 	margin: 0;
 	padding: 0;
-	font-family: var(--font-body);
+	min-width: 320px;
+	font-family: var(--font-sans);
 	font-size: var(--fontSize-1);
-	color: rgb(248, 249, 250);
-	background-color: rgb(40, 40, 40);
+	font-weight: 400;
+	color: var(--ink);
+	background-color: var(--paper);
 	text-align: left;
 	word-wrap: break-word;
 	overflow-wrap: break-word;
 	line-height: var(--lineHeight-relaxed);
+}
+
+::selection {
+	background: color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
 .skip-link {
@@ -196,16 +199,15 @@ body {
 	left: 0.75rem;
 	z-index: 1000;
 	transform: translateY(-160%);
-	border: 1px solid rgba(251, 146, 60, 0.5);
-	border-radius: 0.5rem;
-	background: rgb(15, 23, 42);
-	color: rgb(255, 237, 213);
+	border: 1px solid var(--rule-strong);
+	background: var(--paper);
+	color: var(--ink);
 	padding: 0.65rem 0.9rem;
-	font-family: var(--font-heading);
-	font-size: 0.875rem;
-	font-weight: 700;
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
 	text-decoration: none;
-	box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
 	pointer-events: none;
 	transition: transform 160ms ease;
 }
@@ -217,58 +219,178 @@ body {
 
 .skip-link:focus-visible {
 	transform: translateY(0);
-	outline: 2px solid rgba(251, 146, 60, 0.8);
-	outline-offset: 3px;
 	pointer-events: auto;
 }
 
-
-:where(a, button, input, textarea, select, summary):focus-visible {
-	outline: 2px solid rgba(251, 146, 60, 0.78);
-	outline-offset: 3px;
+:where(a, button, input, textarea, select, summary, [role="button"]):focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 4px;
 }
 
-/* Korean typography (Gowun Dodum) */
-/* 전체 문서가 한국어일 때 기본 본문 폰트로 Gowun Dodum 사용 */
-html[lang^="ko"] body { 
-	font-family: "Gowun Dodum", "Noto Sans KR", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
-	font-weight: 400;
+/* Layout wrapper (docs/plans/2026-10-03-atelier-redesign.md §3.4) */
+.page-frame {
+	width: min(calc(100% - 32px), var(--content-max));
+	margin-inline: auto;
 }
 
-/* 요소 또는 상위에 lang="ko"가 지정된 경우에도 적용 */
-:lang(ko) { 
-	font-family: "Gowun Dodum", "Noto Sans KR", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
-	font-weight: 400;
+@media (min-width: 640px) {
+	.page-frame {
+		width: min(calc(100% - 64px), var(--content-max));
+	}
 }
 
-	/* English typography (Montserrat) */
-	html[lang^="en"] body {
-		font-family: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-		font-weight: 400;
-	}
+/* Shared Atelier vocabulary: labels, section heads, rows, chips. */
+.eyebrow {
+	margin: 0 0 0.9rem;
+	font: 400 0.6875rem/1.45 var(--font-mono);
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	color: var(--secondary);
+}
 
-	:lang(en) {
-		font-family: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-		font-weight: 400;
-	}
+.section-index {
+	display: flex;
+	align-items: center;
+	gap: 1.1rem;
+	font: 400 0.6875rem/1.45 var(--font-mono);
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+}
 
-	/* Japanese typography (M PLUS 1p) */
-	html[lang^="jp"] body {
-		font-family: "M PLUS 1p", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-		font-weight: 500;
-	}
+.section-index > span {
+	color: var(--accent);
+}
 
-	:lang(jp) {
-		font-family: "M PLUS 1p", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-		font-weight: 500;
+.column-heading {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 1rem;
+	margin-bottom: 1.4rem;
+	padding-bottom: 0.8rem;
+	border-bottom: 1px solid var(--rule-strong);
+}
+
+.column-heading :where(h1, h2) {
+	margin: 0;
+	font: 400 1.75rem/1.2 var(--font-serif);
+	letter-spacing: -0.02em;
+}
+
+.column-heading > a {
+	font: 400 0.6875rem/1.45 var(--font-mono);
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	color: var(--secondary);
+}
+
+.subpage-intro {
+	width: min(calc(100% - 32px), var(--content-max));
+	margin-inline: auto;
+	padding: 2rem 0 1.5rem;
+	border-bottom: 1px solid var(--rule-strong);
+}
+
+@media (min-width: 640px) {
+	.subpage-intro {
+		width: min(calc(100% - 64px), var(--content-max));
 	}
+}
+
+.underlined-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 1.2rem;
+	width: max-content;
+	padding-bottom: 0.3rem;
+	border-bottom: 1px solid currentColor;
+	font-size: 0.8125rem;
+}
+
+.underlined-link > span {
+	transition: transform 160ms ease;
+}
+
+.underlined-link:hover > span {
+	transform: translate(2px, -2px);
+}
+
+.rule-list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.rule-list > * {
+	border-top: 1px solid var(--rule);
+}
+
+.rule-list > :last-child {
+	border-bottom: 1px solid var(--rule);
+}
+
+.chip {
+	display: inline-flex;
+	align-items: center;
+	width: max-content;
+	padding: 0.15rem 0.55rem;
+	border: 1px solid var(--rule-strong);
+	border-radius: 999px;
+	font: 400 0.6875rem/1.4 var(--font-mono);
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--secondary);
+}
+
+.state-chip--reviewed,
+.state-chip--reading,
+.state-chip--recommended {
+	--chip-color: var(--accent);
+	color: var(--chip-color);
+	border-color: color-mix(in srgb, var(--chip-color) 55%, var(--rule));
+	background: color-mix(in srgb, var(--chip-color) 9%, transparent);
+}
+
+.state-chip--reviewed {
+	--chip-color: var(--state-reviewed);
+}
+
+.state-chip--reading {
+	--chip-color: var(--state-reading);
+}
+
+.state-chip--queue {
+	background: color-mix(in srgb, var(--secondary) 7%, transparent);
+}
+
+/* Buttons are unstyled by default (Tailwind preflight); opt in explicitly. */
+.btn-text {
+	padding: 0.3rem 0;
+	border: 0;
+	border-bottom: 1px solid var(--rule-strong);
+	background: none;
+	font: 400 0.6875rem/1.4 var(--font-mono);
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	color: inherit;
+}
+
+.btn-pill {
+	padding: 0.4rem 0.9rem;
+	border: 1px solid var(--rule-strong);
+	border-radius: 999px;
+	background: transparent;
+	font: 400 0.6875rem/1.4 var(--font-mono);
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	color: inherit;
+}
+
+.btn-pill:hover {
+	border-color: var(--ink);
+}
 
 /* Dark mode */
-body.dark-theme {
-	background: rgb(40, 40, 40);
-	color: rgb(248, 249, 250);
-}
-
 body.dark-theme h1,
 body.dark-theme h2,
 body.dark-theme h3,
@@ -276,10 +398,6 @@ body.dark-theme h4,
 body.dark-theme h5,
 body.dark-theme h6 {
 	color: rgb(248, 249, 250) !important;
-}
-
-body.dark-theme {
-	color-scheme: dark;
 }
 
 body.dark-theme pre.astro-code {
@@ -299,62 +417,10 @@ body.dark-theme .prose :not(pre) > code {
 	padding: 0.05em 0.35em;
 }
 
-/* light theme */
-body.light-theme {
-	background: #f8fafc;
-	color: #0f172a;
-	color-scheme: light;
-}
-
+/* light theme: surface and ink come from tokens.css; the rules below only patch
+   not-yet-migrated pages and are removed in P5. */
 body.light-theme pre.astro-code {
   background-color: #d0bc9e !important; 
-}
-
-body.light-theme .header-wrapper {
-	background: rgba(255, 255, 255, 0.92);
-	border-color: rgba(15, 23, 42, 0.08);
-}
-
-body.light-theme .site-title a {
-	color: #0f172a;
-}
-
-body.light-theme .desktop-nav-link {
-	color: #334155;
-}
-
-body.light-theme .desktop-nav-link:hover {
-	color: #ea580c;
-}
-
-body.light-theme .icon-button {
-	background: rgba(15, 23, 42, 0.06);
-	color: #1f2937;
-	border-color: rgba(15, 23, 42, 0.12);
-}
-
-body.light-theme .icon-button:hover {
-	background: rgba(249, 115, 22, 0.15);
-	color: #9a3412;
-	border-color: rgba(249, 115, 22, 0.4);
-}
-
-body.light-theme .mobile-menu {
-	background: rgba(255, 255, 255, 0.98);
-	border-bottom-color: rgba(15, 23, 42, 0.08);
-}
-
-body.light-theme .mobile-nav-item {
-	color: #0f172a;
-}
-
-body.light-theme .mobile-nav-item:hover {
-	background: rgba(249, 115, 22, 0.1);
-	color: #9a3412;
-}
-
-body.light-theme .mobile-nav-divider {
-	background: rgba(15, 23, 42, 0.08);
 }
 
 body.light-theme :where(
@@ -364,11 +430,13 @@ body.light-theme :where(
   color: #0f172a;
 }
 
-body.light-theme :where(a) {
+/* Legacy link colouring for not-yet-migrated pages. The Atelier chrome (header,
+   footer, language chips) styles its own links with tokens. */
+body.light-theme :where(a):not(:where(.site-header, .site-footer, .flp-wrap, .language-suggestion) a) {
 	color: #0f172a !important;
 }
 
-body.light-theme :where(a):hover {
+body.light-theme :where(a):not(:where(.site-header, .site-footer, .flp-wrap, .language-suggestion) a):hover {
 	color: #c2410c !important;
 }
 
@@ -417,39 +485,6 @@ body.light-theme .prose :where(h1,h2,h3,h4,h5,h6,li,blockquote,p,strong) {
 body.light-theme .prose blockquote {
 	border-color: #fb923c !important;
 	color: #475569 !important;
-}
-
-/* ── Language picker dropdown — light theme ── */
-body.light-theme .language-menu {
-	background: #ffffff;
-	border-color: rgba(15, 23, 42, 0.12);
-	box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12), 0 2px 6px rgba(15, 23, 42, 0.06);
-}
-
-body.light-theme .lang-option {
-	color: rgba(30, 41, 59, 0.88);
-}
-
-body.light-theme .lang-option:hover {
-	background: rgba(15, 23, 42, 0.06);
-	color: #0f172a;
-}
-
-body.light-theme .lang-option.active {
-	background: rgba(249, 115, 22, 0.1);
-	color: #9a3412;
-}
-
-/* ── Skip link — light theme ── */
-body.light-theme .skip-link {
-	background: #ffffff;
-	border-color: rgba(194, 65, 12, 0.45);
-	color: #9a3412;
-	box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14);
-}
-
-body.light-theme .skip-link:focus-visible {
-	outline-color: rgba(194, 65, 12, 0.7);
 }
 
 /* ════════════════════════════════════════
@@ -566,46 +601,13 @@ h3,
 h4,
 h5,
 h6 {
-	font-family: var(--font-heading);
+	font-family: var(--font-serif);
 	margin-top: var(--spacing-0);
 	margin-bottom: var(--spacing-8);
 	line-height: var(--lineHeight-tight);
-	letter-spacing: -0.025em;
-	font-weight: var(--fontWeight-bold);
-	scroll-margin-top: 5rem;
-}
-
-/* 한국어 헤딩에 Yeon Sung 적용 */
-h1:lang(ko),
-h2:lang(ko),
-h3:lang(ko),
-h4:lang(ko),
-h5:lang(ko),
-h6:lang(ko) {
-	font-family: "Gowun Dodum", "Noto Sans KR", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+	letter-spacing: -0.02em;
 	font-weight: 400;
-}
-
-/* English headings */
-h1:lang(en),
-h2:lang(en),
-h3:lang(en),
-h4:lang(en),
-h5:lang(en),
-h6:lang(en) {
-  font-family: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  font-weight: 600;
-}
-
-/* Japanese headings */
-h1:lang(jp),
-h2:lang(jp),
-h3:lang(jp),
-h4:lang(jp),
-h5:lang(jp),
-h6:lang(jp) {
-  font-family: "M PLUS 1p", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  font-weight: 500;
+	scroll-margin-top: 5rem;
 }
 
 strong, b {
@@ -617,14 +619,8 @@ em, i {
 }
 
 a {
-	color: rgb(248, 249, 250);
+	color: inherit;
 	text-decoration: none;
-}
-
-a:hover,
-a:focus {
-	color: rgba(248, 249, 250, 0.8);
-	text-decoration: underline;
 }
 
 p {
@@ -636,11 +632,11 @@ p {
 /* Removed aggressive global list reset. Lists are targeted with `.prose` rules instead. */
 
 blockquote {
-	color: rgba(248, 249, 250, 0.7);
+	color: var(--secondary);
 	margin-left: calc(-1 * var(--spacing-6));
 	margin-right: var(--spacing-8);
 	padding: var(--spacing-0) var(--spacing-0) var(--spacing-0) var(--spacing-6);
-	border-left: var(--spacing-1) solid #f97316;
+	border-left: var(--spacing-1) solid var(--accent);
 	font-size: var(--fontSize-2);
 	font-style: italic;
 	margin-bottom: var(--spacing-8);
@@ -650,26 +646,6 @@ blockquote {
 	font-size: var(--fontSize-1);
 }
 
-
-button, .button, input[type="submit"] {
-	font-family: inherit;
-	font-size: 1em;
-	padding: 0.55em 1.1em;
-	border-radius: 8px;
-	border: 1px solid rgba(248, 249, 250, 0.2);
-	background: rgba(255, 255, 255, 0.05);
-	color: rgb(248, 249, 250);
-	font-weight: 600;
-	cursor: pointer;
-	transition: background 0.15s, border-color 0.15s, color 0.15s;
-}
-
-button:hover, .button:hover, input[type="submit"]:hover,
-button:focus, .button:focus, input[type="submit"]:focus {
-	background: rgba(255, 255, 255, 0.1);
-	border-color: rgba(248, 249, 250, 0.3);
-	outline: none;
-}
 
 p {
 	margin-bottom: 1.2em;
@@ -685,11 +661,11 @@ p {
 	text-decoration: underline dotted;
 	text-decoration-thickness: 1px;
 	text-underline-offset: 0.3em;
-	text-decoration-color: rgba(148, 163, 184, 0.7);
+	text-decoration-color: var(--rule-strong);
 }
 
 .prose a:not(.toc-link, .presentation-action):hover {
-	color: #fb923c;
+	color: var(--accent);
 	text-decoration-color: currentColor;
 }
 
@@ -754,14 +730,14 @@ table {
 }
 
 table thead tr th {
-	border-bottom: 2px solid var(--color-accent);
+	border-bottom: 2px solid var(--rule-strong);
 	font-weight: var(--fontWeight-bold);
 	text-align: left;
 	padding: var(--spacing-2);
 }
 
 table td {
-	border-bottom: 1px solid var(--color-accent);
+	border-bottom: 1px solid var(--rule);
 	padding: var(--spacing-2);
 }
 
@@ -795,7 +771,7 @@ table td {
 hr {
 	height: 1px;
 	border: 0;
-	background: rgba(248, 249, 250, 0.2);
+	background: var(--rule);
 	margin-bottom: var(--spacing-8);
 }
 
@@ -804,16 +780,16 @@ hr {
 }
 
 ::-webkit-scrollbar-track {
-	background: rgba(248, 249, 250, 0.05);
+	background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-	background: #f97316;
+	background: var(--rule-strong);
 	border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-	background: #ea580c;
+	background: var(--accent);
 }
 
 @media (max-width: 900px) {
@@ -851,33 +827,6 @@ hr {
 	-webkit-line-clamp: 3;
 	-webkit-box-orient: vertical;
 	overflow: hidden;
-}
-
-/* Gowun Dodum utility classes */
-.gowun-dodum-regular {
-	font-family: "Gowun Dodum", system-ui;
-	font-weight: 400;
-	font-style: normal;
-}
-
-/* Backward-compat: map previous class to Gowun Dodum as well */
-.yeon-sung-regular {
-	font-family: "Gowun Dodum", system-ui;
-	font-weight: 400;
-	font-style: normal;
-}
-
-/* Montserrat & M PLUS 1p utility classes */
-.montserrat-regular {
-  font-family: "Montserrat", system-ui;
-  font-weight: 400;
-  font-style: normal;
-}
-
-.mplus1p-regular {
-  font-family: "M PLUS 1p", system-ui;
-  font-weight: 500;
-  font-style: normal;
 }
 
 /* ============================================================
@@ -922,7 +871,7 @@ hr {
 	--state-error: rgb(252, 165, 165);
 }
 
-body.light-theme {
+html:not(.dark) {
 	--surface-panel: rgba(255, 255, 255, 0.78);
 	--surface-border: rgba(15, 23, 42, 0.12);
 	--text-primary: rgb(15, 23, 42);
@@ -937,4 +886,13 @@ body.light-theme {
 	--accent-text: rgb(154, 52, 18);
 	--state-success: rgb(21, 128, 61);
 	--state-error: rgb(153, 27, 27);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		transition: none !important;
+		animation: none !important;
+	}
 }

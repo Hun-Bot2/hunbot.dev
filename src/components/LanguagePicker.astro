@@ -1,153 +1,81 @@
 ---
-import { languages } from '../i18n/ui';
+import { getLangFromUrl, languages } from '../i18n/ui';
 
-const currentLang = Astro.currentLocale || 'ko';
+interface Props {
+	/** Languages this page exists in. Omit when every language has the page. */
+	availableLangs?: string[];
+	class?: string;
+}
+
+const { availableLangs, class: className } = Astro.props as Props;
+const currentLang = getLangFromUrl(Astro.url);
 const currentPath = Astro.url.pathname;
 
-// Remove language prefix from path to get base path
+// Remove the language prefix to get the base path.
 function getBasePath(path: string, lang: string) {
-  if (path.startsWith(`/${lang}/`)) {
-    return path.slice(lang.length + 1);
-  }
-  if (path === `/${lang}`) {
-    return '/';
-  }
-  return path;
+	if (path.startsWith(`/${lang}/`)) {
+		return path.slice(lang.length + 1);
+	}
+	if (path === `/${lang}`) {
+		return '/';
+	}
+	return path;
 }
 
 const basePath = getBasePath(currentPath, currentLang);
 
-// Generate URLs for each language
 // Every language is prefixed, Korean included. Korean pages are only generated at
 // /ko/..., and vercel.json redirects a handful of bare paths, so an unprefixed
 // deep link such as /blog/devlog/x/ has no page and no redirect behind it.
-const languageUrls = Object.keys(languages).reduce((acc, lang) => {
-  acc[lang] = basePath === '/' ? `/${lang}/` : `/${lang}${basePath}`;
-  return acc;
-}, {} as Record<string, string>);
+// Languages without a translation of this page are left out rather than linked
+// to a 404.
+const visibleLangs = Object.keys(languages).filter(
+	(lang) => lang === currentLang || !availableLangs || availableLangs.length === 0 || availableLangs.includes(lang),
+);
+const languageUrls = Object.fromEntries(
+	visibleLangs.map((lang) => [lang, basePath === '/' ? `/${lang}/` : `/${lang}${basePath}`]),
+) as Record<string, string>;
 ---
 
-<div class="language-picker">
-  <button 
-    id="lang-toggle" 
-    class="icon-button flex items-center gap-2"
-    aria-label="언어 선택"
-    title="언어 선택"
-  >
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <circle cx="12" cy="12" r="10"/>
-      <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-    </svg>
-    <span class="text-sm hidden sm:inline">{languages[currentLang as keyof typeof languages]}</span>
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="lang-arrow">
-      <path d="m6 9 6 6 6-6"/>
-    </svg>
-  </button>
-  
-  <div id="lang-menu" class="language-menu hidden">
-    {Object.entries(languages).map(([lang, label]) => (
-      <a 
-        href={languageUrls[lang]}
-        class:list={['lang-option', { active: lang === currentLang }]}
-        data-lang={lang}
-      >
-        <span class="lang-label">{label}</span>
-        {lang === currentLang && (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="20 6 9 17 4 12"/>
-          </svg>
-        )}
-      </a>
-    ))}
-  </div>
-</div>
+<nav class:list={['language-picker', className]} aria-label="Language">
+	{visibleLangs.map((lang) => (
+		<a
+			href={languageUrls[lang]}
+			lang={lang}
+			hreflang={lang}
+			title={languages[lang as keyof typeof languages]}
+			aria-current={lang === currentLang ? 'true' : undefined}
+			class:list={['lang-link', { active: lang === currentLang }]}
+		>
+			{lang.toUpperCase()}
+		</a>
+	))}
+</nav>
 
 <style>
-  .language-picker {
-    position: relative;
-  }
+	.language-picker {
+		display: inline-flex;
+		align-items: center;
+		font: 400 0.6875rem/1 var(--font-mono);
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
+	}
 
-  .language-menu {
-    position: absolute;
-    top: calc(100% + 0.5rem);
-    right: 0;
-    background: rgb(30, 32, 38);
-    border: 1px solid rgba(248, 249, 250, 0.14);
-    border-radius: 10px;
-    padding: 0.375rem;
-    min-width: 150px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.2);
-    z-index: 1000;
-  }
+	.lang-link {
+		display: inline-flex;
+		align-items: center;
+		min-height: 40px;
+		padding: 0 0.4rem;
+		color: var(--secondary);
+	}
 
-  .language-menu.hidden {
-    display: none;
-  }
+	.lang-link:hover {
+		color: var(--accent);
+	}
 
-  .lang-option {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.5rem 0.75rem;
-    border-radius: 6px;
-    color: rgba(203, 213, 225, 0.88);
-    text-decoration: none;
-    transition: background 140ms ease, color 140ms ease;
-    font-size: 0.875rem;
-    font-weight: 500;
-  }
-
-  .lang-option:hover {
-    background: rgba(248, 249, 250, 0.08);
-    color: rgb(248, 249, 250);
-  }
-
-  .lang-option.active {
-    background: rgba(249, 115, 22, 0.18);
-    color: rgb(253, 186, 116);
-    font-weight: 700;
-  }
-
-  /* Light theme overrides live in global.css — Astro scoped styles can't
-     reliably target body.light-theme ancestor from inside a component. */
-
-  .lang-arrow {
-    transition: transform 0.2s;
-  }
-
-  #lang-toggle[aria-expanded="true"] .lang-arrow {
-    transform: rotate(180deg);
-  }
+	.lang-link.active {
+		color: var(--ink);
+		text-decoration: underline;
+		text-underline-offset: 5px;
+	}
 </style>
-
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const toggle = document.getElementById('lang-toggle');
-    const menu = document.getElementById('lang-menu');
-    
-    if (!toggle || !menu) return;
-    
-    toggle.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
-      toggle.setAttribute('aria-expanded', String(!isExpanded));
-      menu.classList.toggle('hidden');
-    });
-    
-    // Close menu when clicking outside
-    document.addEventListener('click', (e) => {
-      if (!toggle.contains(e.target as Node) && !menu.contains(e.target as Node)) {
-        toggle.setAttribute('aria-expanded', 'false');
-        menu.classList.add('hidden');
-      }
-    });
-    
-    // Close menu on ESC key
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        toggle.setAttribute('aria-expanded', 'false');
-        menu.classList.add('hidden');
-      }
-    });
-  });
-</script>

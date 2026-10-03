@@ -1,6 +1,7 @@
 ---
 // Import the global.css file here so that it is included on
 // all pages through the use of the <BaseHead /> component.
+import '../styles/tokens.css';
 import '../styles/global.css';
 import type { SupportedLanguage } from '../consts';
 import {
@@ -47,17 +48,27 @@ const openGraphLocales = {
 	jp: 'ja_JP',
 	en: 'en_US',
 } as const;
+const fontFamilies = {
+	newsreader: 'https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap',
+	plexMono: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap',
+};
 const fontCssConfig: Record<SupportedLanguage, string[]> = {
 	ko: [
-		'https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap',
-		'https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap',
+		fontFamilies.newsreader,
+		fontFamilies.plexMono,
+		'https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500&display=swap',
+		'https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600&display=swap',
 	],
 	jp: [
-		'https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@500&display=swap',
-		'https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap',
+		fontFamilies.newsreader,
+		fontFamilies.plexMono,
+		'https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500&display=swap',
+		'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600&display=swap',
 	],
 	en: [
-		'https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap',
+		fontFamilies.newsreader,
+		fontFamilies.plexMono,
+		'https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600&display=swap',
 	],
 };
 const currentLang = (explicitLang || getLangFromUrl(Astro.url)) as SupportedLanguage;
@@ -186,8 +197,9 @@ const xDefaultHref = alternateLinks.find((link) => link.code === defaultLang)?.h
 <!-- 추가 SEO 최적화 -->
 <meta name="robots" content="index, follow" />
 <meta name="googlebot" content="index, follow" />
-<meta name="theme-color" content="#f97316" />
-<meta name="msapplication-TileColor" content="#f97316" />
+<meta name="theme-color" content="#f2f0e9" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#191a18" media="(prefers-color-scheme: dark)" />
+<meta name="msapplication-TileColor" content="#d84e2b" />
 
 <!-- Performance optimizations -->
 <link rel="dns-prefetch" href="//fonts.googleapis.com" />
