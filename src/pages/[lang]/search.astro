@@ -250,6 +250,28 @@ const pagefindTranslations = {
 		color: var(--pagefind-ui-text);
 	}
 
+	/* Undo the global button box (border, hover/focus fill) so 비우기 reads as a plain text button. */
+	.search-shell :global(.pagefind-ui__search-clear) {
+		border: 0;
+		background: transparent;
+		padding: 0 1rem;
+		font-size: 0.875rem;
+		font-weight: 400;
+		color: var(--pagefind-ui-text);
+		opacity: 0.7;
+	}
+
+	.search-shell :global(.pagefind-ui__search-clear:hover),
+	.search-shell :global(.pagefind-ui__search-clear:focus) {
+		background: transparent;
+		opacity: 1;
+	}
+
+	.search-shell :global(.pagefind-ui__search-clear:focus-visible) {
+		outline: 2px solid var(--pagefind-ui-primary);
+		outline-offset: -2px;
+	}
+
 	:global(.pagefind-ui__result-link) {
 		color: var(--pagefind-ui-text);
 		text-decoration: none;

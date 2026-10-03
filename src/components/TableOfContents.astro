@@ -56,7 +56,7 @@ const t = useTranslations(lang);
 	
 	/* TOC Links - JavaScript에서 동적 생성 */
 	.toc-link {
-		@apply block text-slate-300 no-underline px-1.5 py-0.5 rounded-md text-lg leading-tight break-words transition-all duration-200 hover:bg-orange-500/10 hover:text-orange-400;
+		@apply block text-slate-300 no-underline px-1.5 py-0.5 rounded-md text-sm leading-snug break-words transition-all duration-200 hover:bg-orange-500/10 hover:text-orange-400;
 	}
 	
 	.toc-link.active {
@@ -64,12 +64,12 @@ const t = useTranslations(lang);
 	}
 	
 	/* Heading Levels */
-	.toc-h1 { @apply font-medium; }
+	.toc-h1 { @apply text-[15px] font-semibold; }
 	.toc-h2 { @apply pl-1.5; }
-	.toc-h3 { @apply pl-3 text-[11px]; }
-	.toc-h4 { @apply pl-4 text-[10px]; }
-	.toc-h5 { @apply pl-5 text-[10px]; }
-	.toc-h6 { @apply pl-6 text-[10px]; }
+	.toc-h3 { @apply pl-3 text-[13px]; }
+	.toc-h4 { @apply pl-4 text-xs; }
+	.toc-h5 { @apply pl-5 text-xs; }
+	.toc-h6 { @apply pl-6 text-xs; }
 	
 	/* Custom Scrollbar */
 	.scrollbar-thin::-webkit-scrollbar {
