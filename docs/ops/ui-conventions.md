@@ -84,11 +84,11 @@ Icon-only buttons must have an accessible label. Interactive targets (header act
 
 - One boundary, one line: a section heading rule is the top edge of its list, rows are separated by `border-top` on every row but the first (`.rule-list > * + *`), and there is no outer line below the last row. Check by measuring adjacent `border-top`/`border-bottom` in the browser, not by eye.
 - A fully linked row or title needs no button-style "view / open ↗" link. Section-level links are one quiet mono text link (`.text-link`, no arrow). `↗` appears only on external links in prose.
-- The footer sits on the page paper with a single top rule; no tinted band above it.
+- There is no site footer. Every page keeps `5rem` of bottom padding (`.atelier-page`, `.article-page`); GitHub, LinkedIn, RSS and search live in the header and mobile menu.
 
 ## Responsive
 
-- Breakpoints: **540 / 800 / 1100px**. Two supporting values exist: 640px (page-frame gutter step from 16px to 32px per side, and the list thumbnail size step) and 720px (root font size). Header collapses to the hamburger below 1100px; the article TOC is a floating draggable pill + panel at every width. The language control is the floating globe only; the header carries GitHub/LinkedIn icons, and there is no logo mark.
+- Breakpoints: **540 / 800 / 1100px**. Two supporting values exist: 640px (page-frame gutter step from 16px to 32px per side, and the list thumbnail size step) and 720px (root font size). Header collapses to the hamburger below 1100px; the article TOC is a draggable pill that opens a compact dropdown at every width. The language control is the floating globe only; the header carries GitHub/LinkedIn icons, and there is no logo mark.
 - Mobile side gutters are 16px (`.page-frame`); no horizontal scroll at 375px.
 - Controls wrap instead of shrinking text until unreadable. Avoid viewport-width font scaling except the article title `clamp()`.
 - Avoid horizontal overflow in rows, chips, and action rows.
@@ -104,3 +104,16 @@ npm run ui:validate
 ```
 
 The validator checks the shared skip link, key main landmarks, focus styles, and generated output when build artifacts exist. For visual changes also check light and dark at 1440 and 375px.
+
+## Floating controls
+
+All floating controls are `position: fixed`, paper-coloured with a 1px `--rule-strong` border (no blur, no shadow), and draggable with pointer events (`src/utils/floating.ts`: 4px click threshold, a drag swallows the click that follows it, clamped to the viewport and below the sticky header, position kept in `sessionStorage`). Popovers open under their trigger on the side with room.
+
+| Control | Default position | z-index | Where |
+|---|---|---|---|
+| Language globe (`FloatingLanguagePicker`) | top right, `header-height + 12px`, `right: 1rem` | 90 (menu 95) | every localized page |
+| TOC pill (`TableOfContents`) | right edge, `top: 12rem` (`8.5rem` below 640px) | 90 (panel 95) | posts, reviews |
+| Back to top + progress (`ReadingControls`) | bottom right | 90 (progress line 101) | posts, reviews, after 400px |
+| Filter (`BlogFilterBar`) | left, `header-height + 12px`; bottom-left below 640px (panel = bottom sheet) | 90 (panel 95) | blog index |
+
+Controls sit below the sticky header (z-index 100) so the mobile menu covers them. The globe and TOC defaults never overlap; both can be dragged anywhere. Do not add a fourth control without checking these positions.

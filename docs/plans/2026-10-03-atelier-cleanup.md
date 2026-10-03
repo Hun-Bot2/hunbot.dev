@@ -27,3 +27,15 @@
 
 ## 검증
 `npm run content:validate`, `npm test`, `npm run build`, validators ui, homepage, blog:listing, library-page, seo, csp, routes, links, perf:budget, search. 브라우저(`preview_start {name:"blog-dev"}`; localhost `navigate`가 거부되면 `javascript_tool`의 `location.href`): 홈, 글 목록, 포스트(heroImage 있는 글과 없는 글), 연구, 라이브러리, 검색을 라이트/다크 1440·375로. TOC 드래그·열기·활성, 지구본 메뉴 언어 전환(번역 있는 글에서), 헤더 아이콘 링크, 선 이중 여부, 푸터 띠 없음, 가로 스크롤 없음을 확인한다. 문서(`CLAUDE.md` 컴포넌트 표, `docs/ops/ui-conventions.md`)는 바뀐 사실(Mark 제거, 썸네일 규칙, TOC 플로팅, 지구본)에 맞게 갱신한다.
+
+
+## 플로팅 컨트롤 · 푸터 제거 패스 (2026-10-03)
+
+표현/위치만 바꾸고 동작은 유지했다.
+
+- **TOC**: 드롭다운 팝오버(트리거 바로 아래, 작은 폭, 내부 스크롤, 바깥 클릭/Esc/링크 클릭 닫힘, 활성 하이라이트·15/14/13/12px 스케일 유지). 트리거 드래그는 공용 `src/utils/floating.ts`로 이전. 본문 옆 상시 컬럼 잔재 없음(`prose.css`, 두 레이아웃 확인).
+- **지구본**: 뷰포트 우상단(헤더 아래 12px)에 `position: fixed`, 드래그 가능(드래그 직후 클릭은 무시), 메뉴는 여유 있는 쪽으로 열림, 위치는 sessionStorage(try/catch). 번역 언어만 표시·현재 언어 체크·`availableLangs`·LanguageSuggestion 유지. TOC 기본 위치는 우측 `12rem`(모바일 `8.5rem`)로 겹치지 않음.
+- **푸터 삭제**: `Footer.astro`와 모든 사용처 제거, `footer.*` i18n 키 삭제, `validate-search.mjs`에서 Footer 항목 제거, 홈의 `padding-bottom: 0` 보정 제거. GitHub/LinkedIn/RSS는 헤더·모바일 메뉴에 남아 있음.
+- **긴 글 내비**: `ReadingControls.astro`(글·리뷰 전용) — 400px 이후 우하단 "맨 위로"(퍼센트 표시, `prefers-reduced-motion` 존중)와 상단 2px 진행선. 문자열은 i18n(`post.back-to-top`, `post.reading-progress`).
+- **필터**: 블로그 인덱스의 필터 바를 좌측 플로팅 드래그 버튼(`필터` + 활성 개수 배지)과 팝오버로 전환(<640px는 좌하단 버튼 + 바텀시트). 본문 열은 필터 공간을 예약하지 않음. `blog-filters.js`는 배지 갱신 3줄만 추가, 데이터 속성·URL·localStorage·리셋·빈 상태 동작은 그대로. (카테고리 페이지는 필터 바를 쓰지 않음.)
+- 규약 표: `docs/ops/ui-conventions.md` "Floating controls".

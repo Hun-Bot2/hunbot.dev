@@ -173,6 +173,7 @@ src/pages/
 | `remark-localized-blog-links.mjs` | Remark plugin | Rewrites relative MDX links to localized blog URLs at build time. |
 | `canonicalization.ts` | `canonicalizeUrl()`, `normalizeTitle()`, `computeContentHash()`, `normalizeExternalIdentifier()`, `deriveDedupKey()` | URL canonicalization, CJK-safe title normalization, versioned content hashing, and identifier-index dedup-key derivation for the private Research OS pipeline. Not imported anywhere in the public site. **Vendored byte-for-byte by the private Research OS repository**, together with `contracts/research-os/research-item.schema.json`. Editing either file here means the copy there is stale; that repository's `npm run contract:sync` compares them exactly, and `INV-12` guards `CONTENT_HASH_FIELDS` specifically — a change to it leaves both copies individually valid while silently invalidating every stored hash. |
 | `rehype-external-links.mjs` | Rehype plugin | Marks absolute `http(s)` links to hosts other than `hun-bot.dev` with `target="_blank"`, `rel="noopener noreferrer"`, and class `external-link` (CSS adds the ↗). Registered in `astro.config.mjs` `rehypePlugins` ahead of `rehypeKatex`. |
+| `floating.ts` | `makeDraggable()`, `placePopover()`, `clearPopoverPlacement()` | Shared pointer-drag (4px click threshold, viewport + header clamping, sessionStorage position) and popover placement for the floating controls (globe, TOC, filter). Imported by component scripts, so it is bundled, not inline. |
 | `picks.ts` | `computePickTier()`, `getPickFacts()`, `getFreshnessBadges()`, `formatStarCount()`, `normalizePickUrl()`, `getPickSlug()` | Pure helpers for the `picks` collection: tier derivation (manual override, else GitHub stars via `src/data/popularity.json`, else `discovery`), freshness badges, star-count formatting, and the URL comparison key `scripts/validate-picks.mjs` uses for duplicate detection against `resources`. Deliberately separate from `canonicalization.ts` above. |
 | `display.ts` | `hashString()`, `pickVariant()`, `formatPostDate()` | Pure list-page display helpers: a stable FNV-1a hash and `pickVariant(seed, variants)` so a post/pick keeps the same thumbnail variant on every page and deploy (never an index), and `formatPostDate()` (`YYYY.MM.DD`, UTC). Used by `art/ResourceVisual.astro` and the list pages. |
 
@@ -186,9 +187,8 @@ src/pages/
 |---|---|---|
 | `BaseHead.astro` | All layouts | `<head>`: canonical, hreflang, OG, fonts, analytics, theme bootstrap, JSON-LD |
 | `Header.astro` | All pages | 72px header: wordmark only (no logo mark), centred text nav (글 / 연구 / 라이브러리, active = accent + underline), Search link, theme toggle (`#themeToggleBtn`), GitHub and LinkedIn icon links (language switching is the floating globe). Below 1100px the nav collapses into the `#menuToggle` / `#mobileMenu` panel (also holds GitHub/LinkedIn/RSS). Owns the skip link. |
-| `Footer.astro` | All pages | Original structure on the page paper (one top rule, no tinted band): Hun—Bot + description, Navigation (Home/Blog/Research/Library/Search/RSS), Connect (GitHub, LinkedIn, Email icons + address), `© year` + "Built with Astro & Tailwind CSS"; `data-pagefind-ignore` |
 | `LocalizedLink.astro` | Various | Link that preserves current language prefix |
-| `FloatingLanguagePicker.astro` | Every localized page | Globe button (24px `earth-9-svgrepo-com.svg`, tinted via CSS mask), bottom right; menu lists the languages that have this page, current one checked. The only language control |
+| `FloatingLanguagePicker.astro` | Every localized page | Globe button (24px `earth-9-svgrepo-com.svg`, tinted via CSS mask), `position: fixed` near the top right under the header; draggable (`src/utils/floating.ts`); menu opens on the side with room, lists the languages that have this page, current one checked. The only language control |
 | `Breadcrumb.astro` | Blog posts | `Blog > Category > Post` trail |
 
 ### Blog
@@ -197,11 +197,12 @@ src/pages/
 |---|---|---|
 | `blog/PostListCard.astro` | Blog listing, category pages | `.writing-entry` row: date · thumbnail · serif title / description / meta |
 | `blog/PostThumb.astro` | `PostListCard`, home | 126×84 thumbnail: the post's `heroImage`, else `/images/blank.png` (the original default), both via `getResponsivePublicImage()` |
-| `blog/BlogFilterBar.astro` | Blog listing | Category/year/series filter tabs (behaviour in `public/scripts/blog-filters.js`) |
+| `blog/BlogFilterBar.astro` | Blog listing | Floating draggable `필터` button (left side, active-count badge) opening a popover (bottom sheet below 640px) with category/year/series tabs + reset; the page column reserves no space for it. Behaviour in `public/scripts/blog-filters.js` (queries `[data-blog-filters]`, `[data-facet]`, `[data-filter-*]`) |
 | `TagList.astro` | `PostListCard`, post header | Renders tag chips |
 | `CategoryBadge.astro` | Post rows | Normalized category chip (ai/devlog/review/misc) |
 | `FormattedDate.astro` | Various | Locale-aware date display |
-| `TableOfContents.astro` | Post detail, reviews | Floating, draggable TOC at every width: a small paper pill (`#toc-trigger`, pointer-drag with a 4px click threshold) opens a panel of the headings; active heading in accent; hidden when there are none. Link scale h1 15 / h2 14 / h3 13 / h4+ 12px lives in `prose.css`. The article body is a single centred column |
+| `TableOfContents.astro` | Post detail, reviews | Compact dropdown TOC: a small draggable paper pill (`#toc-trigger`) opens a popover under it (max-height, internal scroll; closes on outside click / Esc / link click); active heading in accent; hidden when there are no headings. Never a permanent column |
+| `ReadingControls.astro` | Post detail, reviews | Long-article navigation: 2px accent reading-progress line at the top and a small bottom-right back-to-top button with percentage; both appear after ~400px of scroll |
 | `ViewCounter.astro` | Post detail | Fetches + POSTs view count via `/api/views` |
 | `GiscusComments.astro` | Post detail | Embeds Giscus comment widget |
 
@@ -267,7 +268,7 @@ Rules: use **tokens, not `dark:` variants** — a token already follows the them
 
 | Layout | Route | What it wraps |
 |---|---|---|
-| `BlogPost.astro` | `[lang]/blog/[...slug].astro` | Full post page: `BaseHead` + `Header` + TOC + `ViewCounter` + `GiscusComments` + `Footer`. Also handles series navigation and hreflang. |
+| `BlogPost.astro` | `[lang]/blog/[...slug].astro` | Full post page: `BaseHead` + `Header` + TOC + `ViewCounter` + `GiscusComments` (no site footer). Also handles series navigation and hreflang. |
 | `AcademicReviewPost.astro` | `[lang]/reviews/[...slug].astro` | Review post page with structured review components. |
 
 ---

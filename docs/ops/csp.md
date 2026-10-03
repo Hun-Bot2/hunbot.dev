@@ -15,8 +15,10 @@ Third-party service reference: [`docs/third-party-services.md`](./third-party-se
 | `src/components/BaseHead.astro` | Theme bootstrap and toggle binding | All pages | Yes | Keep inline until a hash/nonce or pre-paint alternative is designed |
 | `src/components/Header.astro` + `public/scripts/header-menu.js` | Mobile menu toggle and outside-click close | All pages with header | No | Migrated to public module script |
 | `src/components/Header.astro` | Skip-link click handler (moves focus to `#main-content`) | All pages with header | No | Small inline script; candidate for extraction alongside `header-menu.js` |
-| `src/components/FloatingLanguagePicker.astro` | Floating language chip toggle | Localized pages | No | Candidate for next extraction |
-| `src/components/TableOfContents.astro` | Table of contents: heading collection, current-section highlight, toggle panel below 1100px | Blog posts, reviews | No | Larger extraction; test the scroll-based current-section highlight and the mobile panel |
+| `src/components/FloatingLanguagePicker.astro` | Floating language globe toggle, drag, popover placement | Localized pages | No | Bundled by Astro (imports `src/utils/floating.ts`); small enough that Astro may inline it, so it counts as inline until extracted |
+| `src/components/ReadingControls.astro` | Reading-progress line and back-to-top button | Blog posts, reviews | No | New (2026-10-03); bundled Astro script, no third-party domains |
+| `src/components/blog/BlogFilterBar.astro` | Floating filter button: popover open/close and drag | Blog listing | No | New (2026-10-03); filter logic itself stays in `public/scripts/blog-filters.js` |
+| `src/components/TableOfContents.astro` | Table of contents: heading collection, current-section highlight, dropdown open/close, drag | Blog posts, reviews | No | Larger extraction; test the scroll-based current-section highlight and the mobile panel |
 | `src/components/ViewCounter.astro` | Fetch and post page views | Blog posts | No | Could become a public module after slug data binding is designed |
 | `src/pages/[lang]/search.astro` | Pagefind UI initialization and language filter | Search pages | No | Candidate for extraction after Pagefind config is stabilized |
 | `src/pages/[lang]/research/decks.astro` | Slide-deck preview viewer (prev/next/counter) for the highlighted project deck | `/{lang}/research/decks/` | No | Moved from `library/[section].astro`'s decks branch (docs/decisions/site-structure.md#2); same script, new file |

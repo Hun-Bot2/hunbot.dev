@@ -1,7 +1,6 @@
 ---
 import BaseHead from '../../../components/BaseHead.astro';
 import Header from '../../../components/Header.astro';
-import Footer from '../../../components/Footer.astro';
 import '../../../styles/lists.css';
 import FloatingLanguagePicker from '../../../components/FloatingLanguagePicker.astro';
 import { useTranslations, type UILanguage } from '../../../i18n/ui';
@@ -57,7 +56,6 @@ const categories = Array.from(categoryMap.entries())
                 )}
             </div>
         </main>
-        <Footer />
     </body>
 </html>
 

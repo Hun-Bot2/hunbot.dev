@@ -2,9 +2,9 @@
 import type { CollectionEntry } from 'astro:content';
 import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
-import Footer from '../components/Footer.astro';
 import FloatingLanguagePicker from '../components/FloatingLanguagePicker.astro';
 import FormattedDate from '../components/FormattedDate.astro';
+import ReadingControls from '../components/ReadingControls.astro';
 import TableOfContents from '../components/TableOfContents.astro';
 import Breadcrumb from '../components/Breadcrumb.astro';
 import GiscusComments from '../components/GiscusComments.astro';
@@ -130,6 +130,7 @@ const schema = {
 	<body>
 		<Header />
 		<FloatingLanguagePicker availableLangs={availableLangs} />
+		<ReadingControls lang={lang} />
 		<main
 			id="main-content"
 			class="article-page"
@@ -228,7 +229,6 @@ const schema = {
 				</div>
 			</article>
 		</main>
-		<Footer />
 		<script type="module" src="/scripts/feedback-box.js"></script>
 		<script type="module" src="/scripts/language-suggest.js"></script>
 	</body>

@@ -36,7 +36,7 @@ const languageUrls = allowedLangs.reduce((acc, lang) => {
 }, {} as Record<string, string>);
 ---
 
-<div class="flp-wrap">
+<div class="flp-wrap" id="floating-lang-wrap">
 	<button
 		type="button"
 		id="floating-lang-toggle"
@@ -44,6 +44,8 @@ const languageUrls = allowedLangs.reduce((acc, lang) => {
 		aria-label={t('nav.language-select')}
 		title={t('nav.language-select')}
 		aria-haspopup="true"
+		aria-expanded="false"
+		aria-controls="floating-lang-menu"
 	>
 		<span class="flp-icon" aria-hidden="true"></span>
 	</button>
@@ -69,36 +71,53 @@ const languageUrls = allowedLangs.reduce((acc, lang) => {
 </div>
 
 <script>
+	import { clearPopoverPlacement, makeDraggable, placePopover } from '../utils/floating';
+
 	document.addEventListener('DOMContentLoaded', () => {
 		const toggle = document.getElementById('floating-lang-toggle');
-		const menu   = document.getElementById('floating-lang-menu');
-		if (!toggle || !menu) return;
+		const menu = document.getElementById('floating-lang-menu');
+		const wrap = document.getElementById('floating-lang-wrap');
+		if (!toggle || !menu || !wrap) return;
+
+		const place = () => {
+			if (!menu.classList.contains('hidden')) placePopover(toggle, menu);
+		};
+		const drag = makeDraggable(wrap, { storageKey: 'hunbot-float-lang', onMove: place });
+
+		const setOpen = (open: boolean) => {
+			menu.classList.toggle('hidden', !open);
+			toggle.setAttribute('aria-expanded', String(open));
+			if (open) placePopover(toggle, menu);
+			else clearPopoverPlacement(menu);
+		};
 
 		toggle.addEventListener('click', (e) => {
 			e.stopPropagation();
-			menu.classList.toggle('hidden');
+			if (drag.wasDragged()) return;
+			setOpen(menu.classList.contains('hidden'));
 		});
 
 		document.addEventListener('click', (e) => {
-			if (!toggle.contains(e.target as Node) && !menu.contains(e.target as Node)) {
-				menu.classList.add('hidden');
-			}
+			if (!toggle.contains(e.target as Node) && !menu.contains(e.target as Node)) setOpen(false);
 		});
 
 		document.addEventListener('keydown', (e) => {
-			if (e.key === 'Escape') menu.classList.add('hidden');
+			if (e.key === 'Escape') setOpen(false);
 		});
+
+		window.addEventListener('resize', place);
 	});
 </script>
 
 <style is:global>
-	/* Globe button in the bottom-right corner; the menu opens upwards. The TOC pill
-	   sits higher on the right edge, so the two never overlap. */
+	/* Globe control near the top-right of the viewport, just below the sticky header.
+	   Fixed so it stays in reach while reading; draggable (src/utils/floating.ts).
+	   The TOC pill defaults lower on the right edge so the two never overlap. */
 	.flp-wrap {
 		position: fixed;
-		bottom: 1rem;
+		top: calc(var(--header-height) + 12px);
 		right: 1rem;
-		z-index: 150;
+		z-index: 90;
 	}
 
 	.flp-btn {
@@ -111,7 +130,13 @@ const languageUrls = allowedLangs.reduce((acc, lang) => {
 		border: 1px solid var(--rule-strong);
 		background: var(--paper);
 		color: var(--ink);
-		cursor: pointer;
+		cursor: grab;
+		user-select: none;
+		-webkit-user-select: none;
+	}
+
+	.flp-wrap.is-dragging .flp-btn {
+		cursor: grabbing;
 	}
 
 	.flp-btn:hover {
@@ -127,16 +152,17 @@ const languageUrls = allowedLangs.reduce((acc, lang) => {
 		background: currentColor;
 		-webkit-mask: url('/images/earth-9-svgrepo-com.svg') center / contain no-repeat;
 		mask: url('/images/earth-9-svgrepo-com.svg') center / contain no-repeat;
+		pointer-events: none;
 	}
 
+	/* Placed beside the trigger by placePopover(), so it opens towards the side with room. */
 	.flp-menu {
-		position: absolute;
-		bottom: calc(100% + 0.5rem);
-		right: 0;
+		position: fixed;
 		min-width: 9rem;
+		overflow-y: auto;
 		border: 1px solid var(--rule-strong);
 		background: var(--paper);
-		z-index: 200;
+		z-index: 95;
 	}
 
 	.flp-menu.hidden {
@@ -167,11 +193,9 @@ const languageUrls = allowedLangs.reduce((acc, lang) => {
 		color: var(--ink);
 	}
 
-	/* On phones the chip shrinks and tucks into the corner so it covers less of a
-	   row's right end (action links, dates) while scrolling. */
 	@media (max-width: 639px) {
 		.flp-wrap {
-			bottom: 0.75rem;
+			top: calc(var(--header-height) + 8px);
 			right: 0.75rem;
 		}
 

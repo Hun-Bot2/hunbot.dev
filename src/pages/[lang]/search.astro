@@ -1,7 +1,6 @@
 ---
 import BaseHead from '../../components/BaseHead.astro';
 import Header from '../../components/Header.astro';
-import Footer from '../../components/Footer.astro';
 import FloatingLanguagePicker from '../../components/FloatingLanguagePicker.astro';
 import '../../styles/lists.css';
 import { useTranslations, type UILanguage } from '../../i18n/ui';
@@ -75,7 +74,6 @@ const pagefindTranslations = {
 				<p class="search-empty">{emptyText}</p>
 			</div>
 		</main>
-		<Footer />
 		<script src="/pagefind/pagefind-ui.js" defer></script>
 		<script define:vars={{ lang, pagefindTranslations, unavailableText }}>
 			window.addEventListener('DOMContentLoaded', () => {

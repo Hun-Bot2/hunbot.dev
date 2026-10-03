@@ -11,8 +11,9 @@ const t = useTranslations(lang);
 ---
 
 <!--
-	Floating, draggable table of contents at every width: a small paper pill that
-	opens a panel of the post's headings (link styles live in src/styles/prose.css).
+	Table of contents as a compact dropdown: a small, draggable paper pill that opens
+	a popover of the post's headings right under it (link styles live in
+	src/styles/prose.css). Never a permanent column.
 -->
 <button
 	type="button"
@@ -37,22 +38,21 @@ const t = useTranslations(lang);
 	#toc-trigger {
 		position: fixed;
 		top: 12rem;
-		right: 1.5rem;
-		z-index: 60;
+		right: 1rem;
+		z-index: 90;
 		display: inline-flex;
 		align-items: center;
 		gap: 0.4rem;
 		min-height: 36px;
 		background: var(--paper);
 		cursor: grab;
-		touch-action: none;
 		user-select: none;
 		-webkit-user-select: none;
 	}
 
 	@media (max-width: 639px) {
 		#toc-trigger {
-			top: 5.5rem;
+			top: 8.5rem;
 			right: 0.75rem;
 			padding: 0.4rem 0.65rem;
 		}
@@ -60,43 +60,49 @@ const t = useTranslations(lang);
 		#toc-trigger .toc-trigger-label {
 			display: none;
 		}
-
-		#table-of-contents {
-			right: 0.75rem;
-		}
 	}
 
 	#toc-trigger.active {
 		border-color: var(--ink);
 	}
 
-	#toc-trigger.dragging {
+	#toc-trigger.is-dragging {
 		cursor: grabbing;
 	}
 
+	/* Placed under the trigger by placePopover(); small, scrolls inside itself. */
 	#table-of-contents {
 		position: fixed;
-		top: 12rem;
-		right: 1.5rem;
-		z-index: 55;
-		width: min(20rem, calc(100vw - 2rem));
-		max-height: min(60vh, 28rem);
+		z-index: 95;
+		width: min(18rem, calc(100vw - 1.5rem));
+		max-height: min(60vh, 24rem);
 		overflow-y: auto;
-		padding: 1rem 1.1rem 0.75rem;
+		overscroll-behavior: contain;
+		padding: 0.75rem 1rem 0.5rem;
 		border: 1px solid var(--rule-strong);
 		background: var(--paper);
 		visibility: hidden;
 		opacity: 0;
-		transition: opacity 160ms ease, visibility 160ms;
+		pointer-events: none;
+		transition: opacity 120ms ease, visibility 120ms;
 	}
 
 	#table-of-contents.visible {
 		visibility: visible;
 		opacity: 1;
+		pointer-events: auto;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		#table-of-contents {
+			transition: none;
+		}
 	}
 </style>
 
 <script>
+	import { makeDraggable, placePopover } from '../utils/floating';
+
 	document.addEventListener('DOMContentLoaded', () => {
 		const idleCallback = (window as typeof window & { requestIdleCallback?: (cb: IdleRequestCallback) => number }).requestIdleCallback;
 
@@ -134,78 +140,26 @@ const t = useTranslations(lang);
 			const setOpen = (open: boolean) => {
 				if (open) positionPanel();
 				tocContainer.classList.toggle('visible', open);
+				if (open) tocList.querySelector('.active')?.scrollIntoView({ block: 'nearest' });
 				tocTrigger.classList.toggle('active', open);
 				tocTrigger.setAttribute('aria-expanded', String(open));
 			};
 
-			// Open the panel beside the pill wherever it has been dragged to.
-			const positionPanel = () => {
-				const rect = tocTrigger.getBoundingClientRect();
-				const margin = 16;
-				const width = Math.min(320, window.innerWidth - margin * 2);
-				const left = rect.left - 8 - width >= margin
-					? rect.left - 8 - width
-					: Math.max(margin, Math.min(window.innerWidth - width - margin, rect.right - width));
-				const top = rect.left - 8 - width >= margin ? rect.top : rect.bottom + 8;
-				tocContainer.style.left = `${left}px`;
-				tocContainer.style.right = 'auto';
-				tocContainer.style.top = `${Math.max(margin, Math.min(window.innerHeight - 160, top))}px`;
-			};
-
-			// Drag the pill with the pointer; a move under 4px still counts as a click.
-			let pos = { x: 0, y: 0 };
-			let dragging = false;
-			let moved = false;
-			let start = { px: 0, py: 0, x: 0, y: 0 };
-
-			const clamp = (x: number, y: number) => {
-				const base = tocTrigger.getBoundingClientRect();
-				const baseLeft = base.left - pos.x;
-				const baseTop = base.top - pos.y;
-				return {
-					x: Math.max(-baseLeft + 8, Math.min(window.innerWidth - base.width - 8 - baseLeft, x)),
-					y: Math.max(-baseTop + 8, Math.min(window.innerHeight - base.height - 8 - baseTop, y)),
-				};
-			};
-
-			tocTrigger.addEventListener('pointerdown', (e) => {
-				if (e.button !== 0) return;
-				dragging = true;
-				moved = false;
-				start = { px: e.clientX, py: e.clientY, x: pos.x, y: pos.y };
-				tocTrigger.setPointerCapture(e.pointerId);
+			// The dropdown opens under the trigger wherever it has been dragged to.
+			const positionPanel = () => placePopover(tocTrigger, tocContainer);
+			const drag = makeDraggable(tocTrigger, {
+				storageKey: 'hunbot-float-toc',
+				onMove: () => {
+					if (tocContainer.classList.contains('visible')) positionPanel();
+				},
 			});
-
-			tocTrigger.addEventListener('pointermove', (e) => {
-				if (!dragging) return;
-				const dx = e.clientX - start.px;
-				const dy = e.clientY - start.py;
-				if (!moved && Math.hypot(dx, dy) < 4) return;
-				moved = true;
-				tocTrigger.classList.add('dragging');
-				pos = clamp(start.x + dx, start.y + dy);
-				tocTrigger.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
-				if (tocContainer.classList.contains('visible')) positionPanel();
-			});
-
-			const endDrag = () => {
-				dragging = false;
-				tocTrigger.classList.remove('dragging');
-			};
-			tocTrigger.addEventListener('pointerup', endDrag);
-			tocTrigger.addEventListener('pointercancel', endDrag);
-
 			window.addEventListener('resize', () => {
-				pos = clamp(pos.x, pos.y);
-				tocTrigger.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
+				if (tocContainer.classList.contains('visible')) positionPanel();
 			});
 
 			tocTrigger.addEventListener('click', (e) => {
 				e.stopPropagation();
-				if (moved) {
-					moved = false;
-					return;
-				}
+				if (drag.wasDragged()) return;
 				setOpen(!tocContainer.classList.contains('visible'));
 			});
 
