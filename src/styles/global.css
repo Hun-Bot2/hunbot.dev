@@ -201,12 +201,10 @@ body {
 	list-style: none;
 }
 
-.rule-list > * {
+/* Lines sit between rows only; the heading rule above and the next block's own
+   spacing are the outer edges. */
+.rule-list > * + * {
 	border-top: 1px solid var(--rule);
-}
-
-.rule-list > :last-child {
-	border-bottom: 1px solid var(--rule);
 }
 
 .chip {
@@ -244,6 +242,17 @@ body {
 }
 
 /* Buttons are unstyled by default (Tailwind preflight); opt in explicitly. */
+.text-link {
+	font: 400 0.6875rem/1.4 var(--font-mono);
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	color: var(--secondary);
+}
+
+.text-link:hover {
+	color: var(--accent);
+}
+
 .btn-text {
 	padding: 0.3rem 0;
 	border: 0;

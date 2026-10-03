@@ -116,10 +116,6 @@ function getRowProps(paper: (typeof papers)[number]) {
 									<a href={getAcademicReviewUrlFromEntry(review)} class="atelier-row-link">
 										<div class="atelier-row-head">
 											<h3>{review.data.title}</h3>
-											<span class="action-label">
-												{t('research.view-review')}
-												<LibraryIcon name="arrow-right" />
-											</span>
 										</div>
 									</a>
 								</li>
@@ -141,10 +137,6 @@ function getRowProps(paper: (typeof papers)[number]) {
 									<a href={getBlogUrlFromPost(post)} class="atelier-row-link">
 										<div class="atelier-row-head">
 											<h3>{post.data.title}</h3>
-											<span class="action-label">
-												{t('research.view-post')}
-												<LibraryIcon name="arrow-right" />
-											</span>
 										</div>
 										<p class="atelier-row-note">{post.data.description}</p>
 									</a>

@@ -54,7 +54,11 @@
 	gap: 0.4rem 1rem;
 	align-items: start;
 	padding: 0.9rem 0;
-	border-bottom: 1px solid var(--rule);
+}
+
+/* Lines sit between visible rows only; the year rule is the top edge. */
+.writing-list > li:not([hidden]) ~ li:not([hidden]) .writing-entry {
+	border-top: 1px solid var(--rule);
 }
 
 .writing-entry > time {
@@ -130,15 +134,26 @@
 
 @media (max-width: 639px) {
 	.writing-entry {
-		grid-template-columns: minmax(0, 1fr);
-		gap: 0.35rem;
+		grid-template-columns: 72px minmax(0, 1fr);
+		gap: 0.15rem 0.9rem;
+	}
+
+	.writing-entry > time {
+		grid-column: 2;
+		grid-row: 1;
+		padding-top: 0;
 	}
 
 	.writing-entry .post-thumb {
-		display: none;
+		grid-column: 1;
+		grid-row: 1 / span 2;
+		width: 72px;
+		height: 48px;
 	}
 
 	.writing-entry-copy {
+		grid-column: 2;
+		grid-row: 2;
 		min-height: 0;
 	}
 }

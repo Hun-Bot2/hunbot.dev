@@ -75,14 +75,20 @@ Icon-only buttons must have an accessible label. Interactive targets (header act
 
 ## Thumbnails
 
-- Posts: `heroImage` through `getResponsivePublicImage()` when present, otherwise a generated `art/WritingPreview` SVG (3 variants). List thumbnails are 126x84, square-cornered, `object-fit: cover`, hidden below 640px.
+- Posts: `heroImage` through `getResponsivePublicImage()` when present, otherwise the original default `/images/blank.png`. List thumbnails are 126x84 (72x48 below 640px), square-cornered, `object-fit: cover`.
 - Picks and feeds: `art/ResourceVisual` (plot, archive, mechanism, bars, blocks, sphere). Each pick `kind` owns a variant family.
-- The variant is chosen by a **hash of a stable id** (`pickVariant()` in `src/utils/display.ts`: post id or pick slug), never by list index, so the same item shows the same picture on every page and every deploy.
+- The variant is chosen by a **hash of a stable id** (`pickVariant()` in `src/utils/display.ts`: pick slug), never by list index, so the same item shows the same picture on every page and every deploy.
 - Generated art is decorative: `aria-hidden="true"`, `data-pagefind-ignore`, no JavaScript, no motion.
+
+## Lines and links
+
+- One boundary, one line: a section heading rule is the top edge of its list, rows are separated by `border-top` on every row but the first (`.rule-list > * + *`), and there is no outer line below the last row. Check by measuring adjacent `border-top`/`border-bottom` in the browser, not by eye.
+- A fully linked row or title needs no button-style "view / open ↗" link. Section-level links are one quiet mono text link (`.text-link`, no arrow). `↗` appears only on external links in prose.
+- The footer sits on the page paper with a single top rule; no tinted band above it.
 
 ## Responsive
 
-- Breakpoints: **540 / 800 / 1100px**. Two supporting values exist: 640px (page-frame gutter step from 16px to 32px per side, and the list thumbnail cut-off) and 720px (root font size). Header collapses to the hamburger below 1100px; the article TOC becomes a floating panel below 1100px.
+- Breakpoints: **540 / 800 / 1100px**. Two supporting values exist: 640px (page-frame gutter step from 16px to 32px per side, and the list thumbnail size step) and 720px (root font size). Header collapses to the hamburger below 1100px; the article TOC is a floating draggable pill + panel at every width. The language control is the floating globe only; the header carries GitHub/LinkedIn icons, and there is no logo mark.
 - Mobile side gutters are 16px (`.page-frame`); no horizontal scroll at 375px.
 - Controls wrap instead of shrinking text until unreadable. Avoid viewport-width font scaling except the article title `clamp()`.
 - Avoid horizontal overflow in rows, chips, and action rows.

@@ -19,21 +19,20 @@
 }
 
 .article-header {
-	padding: 2.25rem 0 2rem;
+	padding: 1.5rem 0 1.5rem;
 	border-bottom: 1px solid var(--rule-strong);
 }
 
 .article-title {
-	margin: 0 0 1.5rem;
-	font: 400 clamp(2.5rem, 5.5vw, 5rem) / 0.95 var(--font-serif);
-	letter-spacing: -0.04em;
+	margin: 0 0 1rem;
+	font: 400 clamp(1.75rem, 3.6vw, 2.75rem) / 1.15 var(--font-serif);
+	letter-spacing: -0.03em;
 	overflow-wrap: anywhere;
 }
 
 /* CJK glyphs need more line height than the Latin display setting. */
 html:not(:lang(en)) .article-title {
-	line-height: 1.12;
-	letter-spacing: -0.03em;
+	letter-spacing: -0.02em;
 }
 
 html:lang(ko) .article-title {
@@ -41,9 +40,8 @@ html:lang(ko) .article-title {
 }
 
 .article-lead {
-	max-width: 42rem;
-	margin: 0 0 1.75rem;
-	font: 400 1.375rem / 1.55 var(--font-serif);
+	margin: 0 0 1.25rem;
+	font: 400 1.125rem / 1.6 var(--font-serif);
 	color: var(--secondary);
 }
 
@@ -71,13 +69,13 @@ html:lang(ko) .article-title {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 0.5rem;
-	margin: 1.5rem 0 0;
+	margin: 1.1rem 0 0;
 	padding: 0;
 	list-style: none;
 }
 
 .article-hero {
-	margin: 2.5rem auto 0;
+	margin: 1.75rem auto 0;
 }
 
 .article-hero img {
@@ -89,18 +87,16 @@ html:lang(ko) .article-title {
 }
 
 .article-canvas {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr);
-	gap: 2.5rem;
-	margin-top: 3rem;
+	margin-top: 2rem;
 }
 
 .article-main {
 	min-width: 0;
-	max-width: 720px;
+	max-width: 42rem;
+	margin: 0 auto;
 }
 
-/* ── Table of contents (shared by the blog TOC and the review TOC) ── */
+/* ── Floating table of contents (blog and review posts) ── */
 
 .article-toc-title {
 	margin: 0 0 0.5rem;
@@ -133,8 +129,14 @@ html:lang(ko) .article-title {
 	color: var(--accent);
 }
 
+/* Size scale by heading level: h1 15 / h2 14 / h3 13 / h4+ 12px. */
 .toc-h1 {
+	font-size: 0.9375rem;
 	font-weight: 500;
+}
+
+.toc-h2 {
+	font-size: 0.875rem;
 }
 
 .toc-h3 {
@@ -144,27 +146,8 @@ html:lang(ko) .article-title {
 .toc-h4,
 .toc-h5,
 .toc-h6 {
+	font-size: 0.75rem;
 	padding-left: 1.25rem;
-}
-
-@media (min-width: 1100px) {
-	.article-canvas {
-		grid-template-columns: 200px minmax(0, 720px);
-		gap: 60px;
-	}
-
-	.article-main {
-		grid-column: 2;
-	}
-
-	.article-toc {
-		position: sticky;
-		top: calc(var(--header-height) + 1.5rem);
-		align-self: start;
-		max-height: calc(100vh - var(--header-height) - 3rem);
-		overflow-y: auto;
-		scrollbar-width: thin;
-	}
 }
 
 /* ── Blocks under the prose: series navigation ─────────────── */
@@ -181,12 +164,14 @@ html:lang(ko) .article-title {
 
 .series-nav-links {
 	display: grid;
-	border-bottom: 1px solid var(--rule);
 }
 
 .series-nav-link {
 	display: block;
 	padding: 1rem 0;
+}
+
+.series-nav-link + .series-nav-link {
 	border-top: 1px solid var(--rule);
 }
 
@@ -207,6 +192,10 @@ html:lang(ko) .article-title {
 	.series-nav-links {
 		grid-template-columns: 1fr 1fr;
 		column-gap: 2rem;
+	}
+
+	.series-nav-link + .series-nav-link {
+		border-top: 0;
 	}
 
 	.series-nav-link:only-child {

@@ -123,10 +123,7 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 					<section class="home-section home-latest" aria-labelledby="home-latest-title">
 						<div class="column-heading">
 							<h2 id="home-latest-title">{t('home.latest.title')}</h2>
-							<a href={blogUrl} class="home-link">
-								<span>{t('home.latest.view-all')}</span>
-								<span class="home-link-arrow" aria-hidden="true">↗</span>
-							</a>
+							<a href={blogUrl} class="home-link">{t('home.latest.view-all')}</a>
 						</div>
 						{featuredPost ? (
 							<Fragment>
@@ -136,7 +133,6 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 										<p class="eyebrow">{t('home.featured.label')} · <FormattedDate date={featuredPost.data.pubDate} /></p>
 										<h3>{featuredPost.data.title}</h3>
 										<p class="home-featured-description">{featuredPost.data.description}</p>
-										<span class="home-featured-cta">{t('home.featured.read')} <span aria-hidden="true">↗</span></span>
 									</div>
 								</a>
 								{otherPosts.length > 0 && (
@@ -147,7 +143,6 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 													<time datetime={post.data.pubDate.toISOString()}>{formatPostDate(post.data.pubDate)}</time>
 													<PostThumb post={post} sizes="64px" />
 													<h3>{post.data.title}</h3>
-													<span class="home-post-arrow" aria-hidden="true">↗</span>
 												</a>
 											</li>
 										))}
@@ -162,10 +157,7 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 					<section class="home-feature-panel home-reviews" aria-labelledby="home-reviews-title">
 						<div class="column-heading">
 							<h2 id="home-reviews-title">{t('home.reviews.title')}</h2>
-							<a href={researchUrl} class="home-link">
-								<span>{t('home.reviews.view-all')}</span>
-								<span class="home-link-arrow" aria-hidden="true">↗</span>
-							</a>
+							<a href={researchUrl} class="home-link">{t('home.reviews.view-all')}</a>
 						</div>
 						{academicReviews.length > 0 ? (
 							<ul class="rule-list home-review-list">
@@ -198,10 +190,7 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 						<section class="home-section home-feeds" aria-labelledby="home-feeds-title">
 							<div class="column-heading">
 								<h2 id="home-feeds-title">{t('home.feeds.title')}</h2>
-								<a href={usefulFeedsUrl} class="home-link">
-									<span>{t('home.feeds.view-all')}</span>
-									<span class="home-link-arrow" aria-hidden="true">↗</span>
-								</a>
+								<a href={usefulFeedsUrl} class="home-link">{t('home.feeds.view-all')}</a>
 							</div>
 							{usefulFeedItems.length > 0 ? (
 								<ul class="rule-list home-feed-list">
@@ -223,10 +212,7 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 						<section class="home-section home-library" aria-labelledby="home-library-title">
 							<div class="column-heading">
 								<h2 id="home-library-title">{t('home.library.selected')}</h2>
-								<a href={libraryUrl} class="home-link">
-									<span>{t('home.primary-cta')}</span>
-									<span class="home-link-arrow" aria-hidden="true">↗</span>
-								</a>
+								<a href={libraryUrl} class="home-link">{t('home.primary-cta')}</a>
 							</div>
 							{hasEnoughRecentPicks ? (
 								<ul class="home-pick-grid">
@@ -253,7 +239,7 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 												<p class="home-section-card-text">{section.description[currentLang]}</p>
 												<div class="home-section-card-footer">
 													<span class="chip">{formatCount(section.count)}</span>
-													<span class="home-section-card-open">{t('library.open-section')} <span aria-hidden="true">↗</span></span>
+													<span class="home-section-card-open">{t('library.open-section')}</span>
 												</div>
 											</a>
 										</li>
@@ -263,7 +249,7 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 											<p class="home-pick-label">{t('library.tab.useful-feeds')}</p>
 											<p class="home-section-card-text">{t('library.useful-feeds.intro')}</p>
 											<div class="home-section-card-footer">
-												<span class="home-section-card-open">{t('library.open-section')} <span aria-hidden="true">↗</span></span>
+												<span class="home-section-card-open">{t('library.open-section')}</span>
 											</div>
 										</a>
 									</li>
@@ -302,11 +288,6 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 		padding-bottom: 0;
 	}
 
-	/* The tinted band (or the briefs) runs straight into the footer. */
-	:global(.site-footer) {
-		margin-top: 0;
-	}
-
 	/* ── Primary: latest writing | academic reviews ── */
 	.home-primary {
 		display: grid;
@@ -319,27 +300,6 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 	.home-latest,
 	.home-reviews {
 		min-width: 0;
-	}
-
-	.home-link {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.5rem;
-		min-height: 2.5rem;
-		margin-block: -0.6rem;
-		white-space: nowrap;
-	}
-
-	.home-link-arrow {
-		transition: transform 160ms ease;
-	}
-
-	.home-link:hover .home-link-arrow {
-		transform: translate(2px, -2px);
-	}
-
-	.home-link:hover {
-		color: var(--ink);
 	}
 
 	h3 {
@@ -398,16 +358,10 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 		color: var(--secondary);
 	}
 
-	.home-featured-cta {
-		font: 400 0.6875rem/1.45 var(--font-mono);
-		letter-spacing: 0.09em;
-		text-transform: uppercase;
-	}
-
 	/* Post rows */
 	.home-post-row {
 		display: grid;
-		grid-template-columns: 5.5rem 64px minmax(0, 1fr) auto;
+		grid-template-columns: 5.5rem 64px minmax(0, 1fr);
 		gap: 0 0.9rem;
 		align-items: center;
 		padding: 0.7rem 0;
@@ -441,11 +395,6 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 	.home-review-row:hover h3,
 	.home-pick:hover h3 {
 		color: var(--accent);
-	}
-
-	.home-post-arrow {
-		font-size: 0.8125rem;
-		color: var(--secondary);
 	}
 
 	/* Reviews */
@@ -492,27 +441,18 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 	}
 
 	.home-empty {
-		padding: 0.9rem 0;
-		border-block: 1px solid var(--rule);
+		padding: 0.2rem 0 0.4rem;
 		font-size: 0.875rem;
 		color: var(--secondary);
 	}
 
-	/* ── Band: useful feeds + library picks ── */
-	.home-band {
-		background: var(--paper-deep);
-	}
-
+	/* ── Useful feeds + library picks (same paper as the page) ── */
 	.home-band > .page-frame {
-		padding-block: 2.25rem 3rem;
+		padding-block: 0 2.5rem;
 	}
 
 	.home-band .home-library {
 		margin-top: 2.5rem;
-	}
-
-	.home-band .rule-list > * {
-		border-color: var(--rule-strong);
 	}
 
 	.home-feed-row {
@@ -578,12 +518,10 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 		flex-direction: column;
 		gap: 0.6rem;
 		height: 100%;
-		padding: 1rem;
-		border: 1px solid var(--rule-strong);
 	}
 
-	.home-section-card:hover {
-		border-color: var(--ink);
+	.home-section-card:hover .home-section-card-open {
+		color: var(--accent);
 	}
 
 	.home-section-card .home-pick-label {
@@ -680,10 +618,6 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 		.home-post-row h3 {
 			grid-column: 2;
 			grid-row: 2;
-		}
-
-		.home-post-arrow {
-			display: none;
 		}
 
 		.home-feed-row {

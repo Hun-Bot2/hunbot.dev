@@ -174,7 +174,7 @@ src/pages/
 | `canonicalization.ts` | `canonicalizeUrl()`, `normalizeTitle()`, `computeContentHash()`, `normalizeExternalIdentifier()`, `deriveDedupKey()` | URL canonicalization, CJK-safe title normalization, versioned content hashing, and identifier-index dedup-key derivation for the private Research OS pipeline. Not imported anywhere in the public site. **Vendored byte-for-byte by the private Research OS repository**, together with `contracts/research-os/research-item.schema.json`. Editing either file here means the copy there is stale; that repository's `npm run contract:sync` compares them exactly, and `INV-12` guards `CONTENT_HASH_FIELDS` specifically — a change to it leaves both copies individually valid while silently invalidating every stored hash. |
 | `rehype-external-links.mjs` | Rehype plugin | Marks absolute `http(s)` links to hosts other than `hun-bot.dev` with `target="_blank"`, `rel="noopener noreferrer"`, and class `external-link` (CSS adds the ↗). Registered in `astro.config.mjs` `rehypePlugins` ahead of `rehypeKatex`. |
 | `picks.ts` | `computePickTier()`, `getPickFacts()`, `getFreshnessBadges()`, `formatStarCount()`, `normalizePickUrl()`, `getPickSlug()` | Pure helpers for the `picks` collection: tier derivation (manual override, else GitHub stars via `src/data/popularity.json`, else `discovery`), freshness badges, star-count formatting, and the URL comparison key `scripts/validate-picks.mjs` uses for duplicate detection against `resources`. Deliberately separate from `canonicalization.ts` above. |
-| `display.ts` | `hashString()`, `pickVariant()`, `formatPostDate()` | Pure list-page display helpers: a stable FNV-1a hash and `pickVariant(seed, variants)` so a post/pick keeps the same thumbnail variant on every page and deploy (never an index), and `formatPostDate()` (`YYYY.MM.DD`, UTC). Used by `art/*` and `blog/PostThumb.astro`. |
+| `display.ts` | `hashString()`, `pickVariant()`, `formatPostDate()` | Pure list-page display helpers: a stable FNV-1a hash and `pickVariant(seed, variants)` so a post/pick keeps the same thumbnail variant on every page and deploy (never an index), and `formatPostDate()` (`YYYY.MM.DD`, UTC). Used by `art/ResourceVisual.astro` and the list pages. |
 
 ---
 
@@ -185,11 +185,10 @@ src/pages/
 | Component | Used in | What it does |
 |---|---|---|
 | `BaseHead.astro` | All layouts | `<head>`: canonical, hreflang, OG, fonts, analytics, theme bootstrap, JSON-LD |
-| `Header.astro` | All pages | 72px header: brand mark, centred text nav (글 / 연구 / 라이브러리, active = accent + underline), Search link, theme toggle (`#themeToggleBtn`), inline KO·JP·EN language links. Below 1100px the nav collapses into the `#menuToggle` / `#mobileMenu` panel (also holds GitHub/LinkedIn/RSS). Owns the skip link. |
-| `Footer.astro` | All pages | Tagline + about + vertical nav (site links, RSS, GitHub, LinkedIn, back to top) + mono copyright line; `data-pagefind-ignore` |
+| `Header.astro` | All pages | 72px header: wordmark only (no logo mark), centred text nav (글 / 연구 / 라이브러리, active = accent + underline), Search link, theme toggle (`#themeToggleBtn`), GitHub and LinkedIn icon links (language switching is the floating globe). Below 1100px the nav collapses into the `#menuToggle` / `#mobileMenu` panel (also holds GitHub/LinkedIn/RSS). Owns the skip link. |
+| `Footer.astro` | All pages | Original structure on the page paper (one top rule, no tinted band): Hun—Bot + description, Navigation (Home/Blog/Research/Library/Search/RSS), Connect (GitHub, LinkedIn, Email icons + address), `© year` + "Built with Astro & Tailwind CSS"; `data-pagefind-ignore` |
 | `LocalizedLink.astro` | Various | Link that preserves current language prefix |
-| `LanguagePicker.astro` | `Header.astro` | Inline `KO · JP · EN` text links (current = ink, others = faint); links to the translated post when one exists, hides languages the page lacks |
-| `FloatingLanguagePicker.astro` | Every localized page | Small paper-coloured chip (bottom right) for switching to an existing translation |
+| `FloatingLanguagePicker.astro` | Every localized page | Globe button (24px `earth-9-svgrepo-com.svg`, tinted via CSS mask), bottom right; menu lists the languages that have this page, current one checked. The only language control |
 | `Breadcrumb.astro` | Blog posts | `Blog > Category > Post` trail |
 
 ### Blog
@@ -197,12 +196,12 @@ src/pages/
 | Component | Used in | What it does |
 |---|---|---|
 | `blog/PostListCard.astro` | Blog listing, category pages | `.writing-entry` row: date · thumbnail · serif title / description / meta |
-| `blog/PostThumb.astro` | `PostListCard`, home | 126×84 thumbnail: the post's `heroImage` via `getResponsivePublicImage()`, else a generated `art/WritingPreview` |
+| `blog/PostThumb.astro` | `PostListCard`, home | 126×84 thumbnail: the post's `heroImage`, else `/images/blank.png` (the original default), both via `getResponsivePublicImage()` |
 | `blog/BlogFilterBar.astro` | Blog listing | Category/year/series filter tabs (behaviour in `public/scripts/blog-filters.js`) |
 | `TagList.astro` | `PostListCard`, post header | Renders tag chips |
 | `CategoryBadge.astro` | Post rows | Normalized category chip (ai/devlog/review/misc) |
 | `FormattedDate.astro` | Various | Locale-aware date display |
-| `TableOfContents.astro` | Post detail, reviews | TOC built from heading anchors: sticky left column at ≥1100px with the current section in accent, floating `btn-pill` toggle + panel below that. No dragging. Layout lives in `prose.css`. |
+| `TableOfContents.astro` | Post detail, reviews | Floating, draggable TOC at every width: a small paper pill (`#toc-trigger`, pointer-drag with a 4px click threshold) opens a panel of the headings; active heading in accent; hidden when there are none. Link scale h1 15 / h2 14 / h3 13 / h4+ 12px lives in `prose.css`. The article body is a single centred column |
 | `ViewCounter.astro` | Post detail | Fetches + POSTs view count via `/api/views` |
 | `GiscusComments.astro` | Post detail | Embeds Giscus comment widget |
 
@@ -219,7 +218,6 @@ src/pages/
 
 | Component | Used in | What it does |
 |---|---|---|
-| `art/WritingPreview.astro` | `blog/PostThumb.astro` | Generated SVG thumbnail (3 variants) for posts without `heroImage`; variant = hash of the post id (`display.ts`), never a list index. Decorative: `aria-hidden`, no motion, styles in `art.css` |
 | `art/ResourceVisual.astro` | `library/PickCard.astro`, home | Generated illustration (plot / archive / mechanism / bars / blocks / sphere); each pick `kind` owns a variant family, the slug hash chooses within it. Pure CSS, `aria-hidden` |
 | `research/PaperRow.astro` | `research.astro`, `research/topics/[topic].astro` | One paper as a reading-list row: serif title, state chip (studied / reviewed / queue), review/post/source links, mono venue·year meta + topic chips. Venue/acceptance/honors always go through the registry display helpers |
 
@@ -255,9 +253,9 @@ The visual language is "a research notebook on paper": warm paper background, in
 |---|---|
 | `src/styles/tokens.css` | The only colour definitions: `--paper*`, `--ink`, `--secondary`, `--faint`, `--rule*`, `--accent`, `--state-*`, plus font stacks and `--content-max`. Light values on `:root`, dark values on **`html.dark`** (set by the `BaseHead` bootstrap before first paint). Never key colours on `body.dark-theme` / `body.light-theme` — those classes arrive after DOMContentLoaded and would flash the wrong theme. |
 | `src/styles/global.css` | Tailwind layers, base elements, `.skip-link`, `:focus-visible`, and the shared vocabulary: `.page-frame`, `.eyebrow`, `.column-heading`, `.subpage-intro`, `.rule-list`, `.chip`, `.state-chip--*`, `.btn-text`, `.btn-pill`. Imported by `BaseHead`. |
-| `src/styles/prose.css` | Article shell (`.article-page`, 2-column canvas with sticky TOC) and the `.prose` body, Shiki dual theme. Imported by `BlogPost` and `AcademicReviewPost`. |
+| `src/styles/prose.css` | Article shell (`.article-page`, single centred column) and the `.prose` body, Shiki dual theme. Imported by `BlogPost` and `AcademicReviewPost`. |
 | `src/styles/lists.css` | Rule-separated list rows (`.writing-entry`, `.year-separator`, `.atelier-page`) for home, blog, categories, search, and the Library/Research pages (via `LibraryPageStyles`). |
-| `src/styles/art.css` | Decorative thumbnails (`.writing-preview`, `.resource-art--*`). |
+| `src/styles/art.css` | Decorative pick illustrations (`.resource-art--*`). |
 | `src/styles/academic-review.css` | Review MDX component styles. |
 | `tailwind.config.mjs` | Maps the tokens to utilities (`text-ink`, `text-secondary`, `border-rule`, `bg-paper-deep`, `text-accent`, `font-serif`, `font-sans`, `font-mono`). |
 

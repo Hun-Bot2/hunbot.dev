@@ -66,10 +66,6 @@ const visiblePaths = getVisibleLearningPaths(learningPaths, allPosts, lang).map(
 								>
 									<div class="atelier-row-head">
 										<h2>{getLocalizedPathText(path.title, lang)}</h2>
-										<span class="action-label">
-											{t('paths.open-path')}
-											<LibraryIcon name="arrow-right" />
-										</span>
 									</div>
 									<div class="atelier-row-meta">
 										<span>{t('paths.step-count').replace('{count}', String(steps.length))}</span>

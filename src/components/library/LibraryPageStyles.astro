@@ -26,9 +26,7 @@ import '../../styles/lists.css';
 
 	.empty-line {
 		margin: 1.25rem 0 0;
-		padding: 1rem 0;
-		border-top: 1px solid var(--rule);
-		border-bottom: 1px solid var(--rule);
+		padding: 0.25rem 0 0.5rem;
 		font-size: 0.875rem;
 		color: var(--secondary);
 	}
@@ -43,7 +41,10 @@ import '../../styles/lists.css';
 
 	.atelier-row {
 		padding: 0.9rem 0;
-		border-bottom: 1px solid var(--rule);
+	}
+
+	.atelier-row + .atelier-row {
+		border-top: 1px solid var(--rule);
 	}
 
 	.atelier-row-head {
@@ -117,14 +118,8 @@ import '../../styles/lists.css';
 		color: var(--accent);
 	}
 
-	.atelier-row-link .atelier-row-head > .action-label {
-		flex: 0 0 auto;
-	}
-
-	/* Mono text link with a thin underline; the 40px touch box is taller than the line. */
-	.action-link,
-	.action-label {
-		position: relative;
+	/* Mono text link for a row's secondary actions; no underline, no button chrome. */
+	.action-link {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.35rem;
@@ -132,34 +127,13 @@ import '../../styles/lists.css';
 		font: 400 0.6875rem/1.4 var(--font-mono);
 		letter-spacing: 0.09em;
 		text-transform: uppercase;
-		color: var(--ink);
+		color: var(--secondary);
 		transition: color 160ms ease;
 	}
 
-	.action-link::after,
-	.action-label::after {
-		content: '';
-		position: absolute;
-		left: 0;
-		right: 0;
-		bottom: 0.55rem;
-		height: 1px;
-		background: var(--rule-strong);
-		transition: background-color 160ms ease;
-	}
-
 	.action-link:hover,
-	.action-link:focus-visible,
-	.atelier-row-link:hover .action-label,
-	.atelier-row-link:focus-visible .action-label {
+	.action-link:focus-visible {
 		color: var(--accent);
-	}
-
-	.action-link:hover::after,
-	.action-link:focus-visible::after,
-	.atelier-row-link:hover .action-label::after,
-	.atelier-row-link:focus-visible .action-label::after {
-		background: var(--accent);
 	}
 
 	.library-action-icon {

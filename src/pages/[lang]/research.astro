@@ -177,10 +177,6 @@ const formatItemCount = (count: number) => t('library.item-count').replace('{cou
 										<a href={getAcademicReviewUrlFromEntry(review)} class="atelier-row-link">
 											<div class="atelier-row-head">
 												<h3>{review.data.title}</h3>
-												<span class="action-label">
-													{t('research.view-review')}
-													<LibraryIcon name="arrow-right" />
-												</span>
 											</div>
 											{meta && (
 												<div class="atelier-row-meta">
@@ -209,10 +205,6 @@ const formatItemCount = (count: number) => t('library.item-count').replace('{cou
 									<a href={getLearningPathUrl(lang, path.id)} class="atelier-row-link">
 										<div class="atelier-row-head">
 											<h3>{getLocalizedPathText(path.title, lang)}</h3>
-											<span class="action-label">
-												{t('paths.open-path')}
-												<LibraryIcon name="arrow-right" />
-											</span>
 										</div>
 										<div class="atelier-row-meta">
 											<span>{formatStepCount(steps.length)}</span>
@@ -239,10 +231,6 @@ const formatItemCount = (count: number) => t('library.item-count').replace('{cou
 									<a href={`/${lang}/research/topics/${topic.data.id}/`} class="atelier-row-link">
 										<div class="atelier-row-head">
 											<h3>{getTopicLabel(topic, lang)}</h3>
-											<span class="action-label">
-												{t('library.open-section')}
-												<LibraryIcon name="arrow-right" />
-											</span>
 										</div>
 										<div class="atelier-row-meta">
 											<span>{formatTopicItemCount(papers.length)}</span>
@@ -266,10 +254,6 @@ const formatItemCount = (count: number) => t('library.item-count').replace('{cou
 								<a href={`/${lang}/research/decks/`} class="atelier-row-link">
 									<div class="atelier-row-head">
 										<h3>{t('library.section.decks.title')}</h3>
-										<span class="action-label">
-											{t('library.open-section')}
-											<LibraryIcon name="arrow-right" />
-										</span>
 									</div>
 									<div class="atelier-row-meta">
 										<span>{formatItemCount(listedDeckCount)}</span>
@@ -298,12 +282,6 @@ const formatItemCount = (count: number) => t('library.item-count').replace('{cou
 									<>
 										<div class="atelier-row-head">
 											<h3>{label}</h3>
-											{isLinked && (
-												<span class="action-label">
-													{t('library.open-section')}
-													<LibraryIcon name="arrow-right" />
-												</span>
-											)}
 										</div>
 										<p class="atelier-row-note">{topicDescription}</p>
 										{keywords.length > 0 && (
