@@ -1,0 +1,169 @@
+/*
+  Decorative thumbnails (docs/plans/2026-10-03-atelier-redesign.md §6).
+  Pure CSS/SVG, aria-hidden, no motion. Sizes come from the context that places
+  them (--resource-art-height, or the box a .writing-preview sits in).
+*/
+
+/* ── WritingPreview: shown when a post has no heroImage ─────── */
+
+.writing-preview {
+	display: block;
+	width: 100%;
+	height: 100%;
+	background: var(--paper-deep);
+	fill: none;
+	stroke: var(--rule-strong);
+	stroke-width: 1;
+}
+
+.writing-preview rect {
+	fill: var(--accent);
+	stroke: none;
+	opacity: 0.72;
+}
+
+.writing-preview circle:last-child {
+	fill: var(--accent);
+	stroke: none;
+}
+
+.writing-preview.preview-1 circle {
+	fill: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+/* ── ResourceVisual: pick illustrations ─────────────────────── */
+
+.resource-art {
+	display: grid;
+	place-items: center;
+	height: var(--resource-art-height, 12.5rem);
+	overflow: hidden;
+	background: var(--paper-light);
+}
+
+.resource-art > svg {
+	width: 75%;
+	height: 75%;
+}
+
+.resource-art > svg path:first-child {
+	fill: none;
+	stroke: var(--accent);
+	stroke-width: 2;
+}
+
+.resource-art > svg path:last-child {
+	fill: none;
+	stroke: var(--rule-strong);
+}
+
+.archive-visual {
+	position: relative;
+	width: 75%;
+	height: 70%;
+	border: 1px solid var(--rule-strong);
+}
+
+.archive-visual > * {
+	position: absolute;
+	padding: 0.5rem 0.6rem;
+	border: 1px solid var(--rule);
+	background: var(--paper);
+	font: 400 0.6875rem/1 var(--font-mono);
+	font-style: normal;
+	letter-spacing: 0.06em;
+}
+
+.archive-visual b { top: 20%; left: 8%; }
+.archive-visual span { top: 55%; left: 30%; }
+.archive-visual i { top: 15%; right: 8%; }
+.archive-visual em { bottom: 10%; right: 12%; }
+
+.mechanism-visual {
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	width: 75%;
+}
+
+.mechanism-visual::before {
+	content: "";
+	position: absolute;
+	left: 5%;
+	right: 5%;
+	height: 1px;
+	background: var(--rule-strong);
+}
+
+.mechanism-visual i {
+	z-index: 1;
+	width: 17px;
+	height: 17px;
+	border-radius: 50%;
+	background: var(--accent);
+}
+
+.mechanism-visual b {
+	position: absolute;
+	top: 35px;
+	left: 42%;
+	font: 400 0.6875rem/1 var(--font-mono);
+	letter-spacing: 0.06em;
+}
+
+.bar-visual {
+	display: flex;
+	align-items: flex-end;
+	gap: 8px;
+	width: 75%;
+	height: 70%;
+	border-bottom: 1px solid var(--ink);
+}
+
+.bar-visual i {
+	flex: 1;
+	border: 1px solid var(--ink);
+	border-bottom: 0;
+	background: var(--accent);
+}
+
+.bar-visual i:nth-child(1) { height: 30%; }
+.bar-visual i:nth-child(2) { height: 75%; }
+.bar-visual i:nth-child(3) { height: 48%; }
+.bar-visual i:nth-child(4) { height: 90%; }
+.bar-visual i:nth-child(5) { height: 60%; }
+
+.block-visual {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 4px;
+	width: 80%;
+	height: 75%;
+}
+
+.block-visual i {
+	border: 1px solid var(--rule-strong);
+}
+
+.block-visual i:nth-child(3n) {
+	background: var(--accent);
+}
+
+.sphere-visual {
+	position: relative;
+	width: 160px;
+	height: 160px;
+	border: 1px solid var(--rule-strong);
+	border-radius: 50%;
+}
+
+.sphere-visual > * {
+	position: absolute;
+	inset: 25px -15px;
+	border: 1px solid var(--accent);
+	border-radius: 50%;
+}
+
+.sphere-visual span { transform: rotate(60deg); }
+.sphere-visual b { transform: rotate(-60deg); }

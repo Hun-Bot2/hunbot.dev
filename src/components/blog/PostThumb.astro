@@ -1,0 +1,36 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import WritingPreview from '../art/WritingPreview.astro';
+import { getResponsivePublicImage } from '../../utils/responsive-public-images';
+
+interface Props {
+	post: CollectionEntry<'blog'>;
+	/** `sizes` hint for responsive heroes; the default suits the 126px list thumbnail. */
+	sizes?: string;
+	class?: string;
+}
+
+const { post, sizes = '126px', class: className } = Astro.props;
+// A shared placeholder image would take the thumbnail slot while carrying no
+// information, so posts without a heroImage get a generated WritingPreview.
+const hero = post.data.heroImage ? getResponsivePublicImage(post.data.heroImage) : null;
+---
+
+<div class:list={['post-thumb', className]} aria-hidden="true">
+	{hero ? (
+		<picture>
+			{hero.webpSrcSet && <source type="image/webp" srcset={hero.webpSrcSet} sizes={sizes} />}
+			<img
+				src={hero.src}
+				alt=""
+				loading="lazy"
+				decoding="async"
+				width={hero.width}
+				height={hero.height}
+				sizes={sizes}
+			/>
+		</picture>
+	) : (
+		<WritingPreview seed={post.id} />
+	)}
+</div>

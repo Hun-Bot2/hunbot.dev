@@ -1,0 +1,41 @@
+---
+import { pickVariant } from '../../utils/display';
+import '../../styles/art.css';
+
+interface Props {
+	/** Stable identity (post id). The variant is a hash of it, never a list index. */
+	seed: string;
+	class?: string;
+}
+
+const { seed, class: className } = Astro.props;
+const variant = pickVariant(seed, [1, 2, 3] as const);
+---
+
+<svg
+	class:list={['writing-preview', `preview-${variant}`, className]}
+	viewBox="0 0 160 96"
+	aria-hidden="true"
+	focusable="false"
+	data-pagefind-ignore
+>
+	{variant === 1 && (
+		<>
+			<circle cx="42" cy="48" r="22" />
+			<circle cx="78" cy="48" r="22" />
+			<path d="M16 73h128M107 20v56M119 20v56M131 20v56" />
+		</>
+	)}
+	{variant === 2 && (
+		<>
+			<path d="M18 22h124M18 40h88M18 58h112M18 76h65" />
+			<rect x="115" y="34" width="27" height="27" />
+		</>
+	)}
+	{variant === 3 && (
+		<>
+			<path d="M12 77C42 77 36 20 70 20s30 57 72 57M12 20c31 0 35 57 68 57s27-57 62-57" />
+			<circle cx="78" cy="48" r="7" />
+		</>
+	)}
+</svg>

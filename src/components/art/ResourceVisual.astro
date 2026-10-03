@@ -1,0 +1,51 @@
+---
+import { pickVariant } from '../../utils/display';
+import '../../styles/art.css';
+
+const resourceVisualVariants = ['plot', 'archive', 'mechanism', 'bars', 'blocks', 'sphere'] as const;
+type ResourceVisualVariant = (typeof resourceVisualVariants)[number];
+
+// Each pick `kind` owns a small family of variants; the slug hash chooses inside
+// it, so a pick keeps the same picture everywhere while kinds stay recognisable.
+const kindVariants: Record<string, readonly ResourceVisualVariant[]> = {
+	skill: ['mechanism', 'blocks'],
+	tool: ['bars', 'plot'],
+	site: ['sphere', 'archive'],
+	reference: ['archive', 'plot'],
+};
+
+interface Props {
+	/** Pick `kind` (skill / tool / site / reference). Unknown kinds use every variant. */
+	kind?: string;
+	/** Stable identity (pick slug) used to choose within the kind's variants. */
+	seed: string;
+	class?: string;
+}
+
+const { kind, seed, class: className } = Astro.props;
+const variant = pickVariant(seed, (kind && kindVariants[kind]) || resourceVisualVariants);
+---
+
+<div class:list={['resource-art', `resource-art--${variant}`, className]} aria-hidden="true" data-pagefind-ignore>
+	{variant === 'plot' && (
+		<svg viewBox="0 0 300 180" focusable="false">
+			<path d="M25 145 80 112 124 127 176 58 224 76 278 29" />
+			<path d="M25 15v130h255" />
+		</svg>
+	)}
+	{variant === 'archive' && (
+		<div class="archive-visual"><b>AREA</b><span>PROJECT</span><i>ESSAY</i><em>NOTE</em></div>
+	)}
+	{variant === 'mechanism' && (
+		<div class="mechanism-visual"><i></i><i></i><i></i><i></i><b>drag</b></div>
+	)}
+	{variant === 'bars' && (
+		<div class="bar-visual"><i></i><i></i><i></i><i></i><i></i></div>
+	)}
+	{variant === 'blocks' && (
+		<div class="block-visual">{Array.from({ length: 8 }, () => <i></i>)}</div>
+	)}
+	{variant === 'sphere' && (
+		<div class="sphere-visual"><i></i><span></span><b></b></div>
+	)}
+</div>

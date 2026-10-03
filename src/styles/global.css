@@ -391,7 +391,7 @@ body {
 }
 
 /* Dark mode */
-body.dark-theme :where(h1, h2, h3, h4, h5, h6):not(:where(.article-page *)) {
+body.dark-theme :where(h1, h2, h3, h4, h5, h6):not(:where(.article-page *, .atelier-page *)) {
 	color: rgb(248, 249, 250) !important;
 }
 
@@ -400,17 +400,17 @@ body.dark-theme :where(h1, h2, h3, h4, h5, h6):not(:where(.article-page *)) {
 body.light-theme :where(
   h1, h2, h3, h4, h5, h6,
   p, li, small, strong, label, blockquote, figcaption
-):not(:where(.article-page *)) {
+):not(:where(.article-page *, .atelier-page *)) {
   color: #0f172a;
 }
 
 /* Legacy link colouring for not-yet-migrated pages. The Atelier chrome (header,
    footer, language chips) styles its own links with tokens. */
-body.light-theme :where(a):not(:where(.site-header, .site-footer, .flp-wrap, .language-suggestion, .article-page) a) {
+body.light-theme :where(a):not(:where(.site-header, .site-footer, .flp-wrap, .language-suggestion, .article-page, .atelier-page) a) {
 	color: #0f172a !important;
 }
 
-body.light-theme :where(a):not(:where(.site-header, .site-footer, .flp-wrap, .language-suggestion, .article-page) a):hover {
+body.light-theme :where(a):not(:where(.site-header, .site-footer, .flp-wrap, .language-suggestion, .article-page, .atelier-page) a):hover {
 	color: #c2410c !important;
 }
 
@@ -423,110 +423,6 @@ body.light-theme .bg-slate-900\/40,
 body.light-theme .bg-slate-900\/50,
 body.light-theme .bg-slate-800\/50 {
 	background-color: rgba(15, 23, 42, 0.08) !important;
-}
-
-/* ════════════════════════════════════════
-   Blog filter panel — light theme
-   (index.astro + BlogFilterBar.astro)
-════════════════════════════════════════ */
-
-/* h1 headings in blog index */
-body.light-theme .blog-index-header h1,
-body.light-theme .blog-no-posts h1 {
-	color: rgb(15, 23, 42);
-}
-
-/* empty-state box */
-body.light-theme .blog-empty {
-	border-color: rgba(15, 23, 42, 0.12);
-	background: rgba(255, 255, 255, 0.78);
-	color: rgba(51, 65, 85, 0.86);
-}
-
-/* mobile filter toggle button */
-body.light-theme .filter-toggle {
-	border-color: rgba(100, 116, 139, 0.4);
-	background: rgb(255, 255, 255);
-	color: rgb(51, 65, 85);
-}
-body.light-theme .filter-toggle:hover {
-	border-color: rgba(194, 65, 12, 0.3);
-	background: rgba(249, 115, 22, 0.09);
-	color: rgb(154, 52, 18);
-}
-
-/* panel shell — only matters for mobile drawer (desktop has no box) */
-body.light-theme .filter-panel {
-	background: rgb(248, 250, 252);
-	border-right-color: rgba(15, 23, 42, 0.12);
-}
-
-/* panel header */
-body.light-theme .filter-panel-head {
-	border-bottom-color: rgba(15, 23, 42, 0.1);
-}
-body.light-theme .filter-panel-title {
-	color: rgb(15, 23, 42);
-}
-
-/* close button */
-body.light-theme .filter-panel-close {
-	border-color: rgba(100, 116, 139, 0.3);
-	color: rgba(51, 65, 85, 0.8);
-}
-body.light-theme .filter-panel-close:hover {
-	border-color: rgba(194, 65, 12, 0.3);
-	color: rgb(154, 52, 18);
-}
-
-/* ── BlogFilterBar — light theme ── */
-body.light-theme .filter-group-label {
-	color: rgba(51, 65, 85, 0.6);
-}
-
-body.light-theme .filter-group-chevron {
-	color: rgba(51, 65, 85, 0.35);
-}
-
-body.light-theme .filter-group.has-divider,
-body.light-theme .filter-status.has-divider {
-	border-color: rgba(15, 23, 42, 0.1);
-}
-
-body.light-theme .filter-option {
-	color: rgba(30, 41, 59, 0.65);
-}
-
-body.light-theme .filter-option:hover {
-	color: rgba(15, 23, 42, 0.95);
-}
-
-body.light-theme .filter-option.is-active {
-	color: rgb(154, 52, 18);
-}
-
-body.light-theme .filter-option.is-active .filter-option-dot {
-	background: rgb(194, 65, 12);
-}
-
-body.light-theme .filter-option-count {
-	color: rgba(51, 65, 85, 0.4);
-}
-
-body.light-theme .filter-option.is-active .filter-option-count {
-	color: rgba(154, 52, 18, 0.65);
-}
-
-body.light-theme .filter-status p {
-	color: rgba(51, 65, 85, 0.55);
-}
-
-body.light-theme .filter-reset {
-	color: rgba(194, 65, 12, 0.8);
-}
-
-body.light-theme .filter-reset:hover {
-	color: rgb(194, 65, 12);
 }
 
 h1,
