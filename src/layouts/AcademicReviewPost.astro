@@ -4,6 +4,7 @@ import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import FloatingLanguagePicker from '../components/FloatingLanguagePicker.astro';
+import TableOfContents from '../components/TableOfContents.astro';
 import Breadcrumb from '../components/Breadcrumb.astro';
 import FormattedDate from '../components/FormattedDate.astro';
 import GiscusComments from '../components/GiscusComments.astro';
@@ -44,7 +45,6 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 const descriptionParts = [paper.venue, paper.year ? String(paper.year) : null].filter(Boolean);
 const sourceLabel = descriptionParts.length > 0 ? ` (${descriptionParts.join(', ')})` : '';
 const description = `Academic review of "${paper.title}"${sourceLabel}.`;
-const visibleHeadings = headings.filter((heading) => heading.depth >= 2 && heading.depth <= 4);
 const headingId = 'review-title';
 const slug = reviewId ?? `${lang}/${Astro.url.pathname.split('/reviews/')[1]?.replace(/\/$/g, '') ?? ''}`;
 const authorNames = formatPaperAuthors(paper.authors);
@@ -106,7 +106,7 @@ const schema = {
 		{reviewTopics.map((topic) => <meta data-pagefind-filter="topic[content]" content={topic.label} />)}
 	</head>
 	<body>
-		<Header availableLangs={availableLangs} />
+		<Header />
 		<FloatingLanguagePicker availableLangs={availableLangs} />
 		<main id="main-content" class="article-page">
 			<article aria-labelledby={headingId}>
@@ -153,19 +153,7 @@ const schema = {
 				</section>
 
 				<div class="article-canvas page-frame">
-					{visibleHeadings.length > 0 && (
-						<nav class="article-toc" aria-labelledby="review-toc-title">
-							<h2 id="review-toc-title" class="article-toc-title">{t('toc.title')}</h2>
-							<ul>
-								{visibleHeadings.map((heading) => (
-									<li>
-										<a href={`#${heading.slug}`} class={`toc-link toc-h${heading.depth}`}>{heading.text}</a>
-									</li>
-								))}
-							</ul>
-						</nav>
-					)}
-
+					<TableOfContents lang={lang} />
 					<div class="article-main">
 						<div class="prose" data-pagefind-body>
 							<slot />

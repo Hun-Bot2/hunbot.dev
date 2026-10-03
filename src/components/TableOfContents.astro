@@ -11,9 +11,8 @@ const t = useTranslations(lang);
 ---
 
 <!--
-	Below 1100px: a floating toggle button + popup panel.
-	At 1100px and up: the same panel is the sticky left column of .article-canvas
-	(layout and link styles live in src/styles/prose.css).
+	Floating, draggable table of contents at every width: a small paper pill that
+	opens a panel of the post's headings (link styles live in src/styles/prose.css).
 -->
 <button
 	type="button"
@@ -23,7 +22,10 @@ const t = useTranslations(lang);
 	aria-expanded="false"
 	aria-controls="table-of-contents"
 >
-	{t('toc.title')}
+	<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+		<path d="M4 6h16M4 12h16M4 18h8" />
+	</svg>
+	<span class="toc-trigger-label">{t('toc.title')}</span>
 </button>
 
 <nav id="table-of-contents" class="article-toc" aria-label={t('toc.title')}>
@@ -34,45 +36,63 @@ const t = useTranslations(lang);
 <style is:global>
 	#toc-trigger {
 		position: fixed;
-		right: 1rem;
-		bottom: 4rem;
+		top: 12rem;
+		right: 1.5rem;
 		z-index: 60;
-		min-height: 40px;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		min-height: 36px;
 		background: var(--paper);
-		cursor: pointer;
+		cursor: grab;
+		touch-action: none;
+		user-select: none;
+		-webkit-user-select: none;
+	}
+
+	@media (max-width: 639px) {
+		#toc-trigger {
+			top: 5.5rem;
+			right: 0.75rem;
+			padding: 0.4rem 0.65rem;
+		}
+
+		#toc-trigger .toc-trigger-label {
+			display: none;
+		}
+
+		#table-of-contents {
+			right: 0.75rem;
+		}
 	}
 
 	#toc-trigger.active {
 		border-color: var(--ink);
 	}
 
-	@media (max-width: 1099px) {
-		#table-of-contents {
-			position: fixed;
-			right: 1rem;
-			bottom: 7rem;
-			z-index: 55;
-			width: min(20rem, calc(100vw - 2rem));
-			max-height: min(60vh, 28rem);
-			overflow-y: auto;
-			padding: 1rem 1.1rem 0.75rem;
-			border: 1px solid var(--rule-strong);
-			background: var(--paper-light);
-			visibility: hidden;
-			opacity: 0;
-			transition: opacity 160ms ease, visibility 160ms;
-		}
-
-		#table-of-contents.visible {
-			visibility: visible;
-			opacity: 1;
-		}
+	#toc-trigger.dragging {
+		cursor: grabbing;
 	}
 
-	@media (min-width: 1100px) {
-		#toc-trigger {
-			display: none;
-		}
+	#table-of-contents {
+		position: fixed;
+		top: 12rem;
+		right: 1.5rem;
+		z-index: 55;
+		width: min(20rem, calc(100vw - 2rem));
+		max-height: min(60vh, 28rem);
+		overflow-y: auto;
+		padding: 1rem 1.1rem 0.75rem;
+		border: 1px solid var(--rule-strong);
+		background: var(--paper);
+		visibility: hidden;
+		opacity: 0;
+		transition: opacity 160ms ease, visibility 160ms;
+	}
+
+	#table-of-contents.visible {
+		visibility: visible;
+		opacity: 1;
 	}
 </style>
 
@@ -112,17 +132,84 @@ const t = useTranslations(lang);
 			const tocLinks = Array.from(tocList.querySelectorAll<HTMLAnchorElement>('a'));
 
 			const setOpen = (open: boolean) => {
+				if (open) positionPanel();
 				tocContainer.classList.toggle('visible', open);
 				tocTrigger.classList.toggle('active', open);
 				tocTrigger.setAttribute('aria-expanded', String(open));
 			};
 
+			// Open the panel beside the pill wherever it has been dragged to.
+			const positionPanel = () => {
+				const rect = tocTrigger.getBoundingClientRect();
+				const margin = 16;
+				const width = Math.min(320, window.innerWidth - margin * 2);
+				const left = rect.left - 8 - width >= margin
+					? rect.left - 8 - width
+					: Math.max(margin, Math.min(window.innerWidth - width - margin, rect.right - width));
+				const top = rect.left - 8 - width >= margin ? rect.top : rect.bottom + 8;
+				tocContainer.style.left = `${left}px`;
+				tocContainer.style.right = 'auto';
+				tocContainer.style.top = `${Math.max(margin, Math.min(window.innerHeight - 160, top))}px`;
+			};
+
+			// Drag the pill with the pointer; a move under 4px still counts as a click.
+			let pos = { x: 0, y: 0 };
+			let dragging = false;
+			let moved = false;
+			let start = { px: 0, py: 0, x: 0, y: 0 };
+
+			const clamp = (x: number, y: number) => {
+				const base = tocTrigger.getBoundingClientRect();
+				const baseLeft = base.left - pos.x;
+				const baseTop = base.top - pos.y;
+				return {
+					x: Math.max(-baseLeft + 8, Math.min(window.innerWidth - base.width - 8 - baseLeft, x)),
+					y: Math.max(-baseTop + 8, Math.min(window.innerHeight - base.height - 8 - baseTop, y)),
+				};
+			};
+
+			tocTrigger.addEventListener('pointerdown', (e) => {
+				if (e.button !== 0) return;
+				dragging = true;
+				moved = false;
+				start = { px: e.clientX, py: e.clientY, x: pos.x, y: pos.y };
+				tocTrigger.setPointerCapture(e.pointerId);
+			});
+
+			tocTrigger.addEventListener('pointermove', (e) => {
+				if (!dragging) return;
+				const dx = e.clientX - start.px;
+				const dy = e.clientY - start.py;
+				if (!moved && Math.hypot(dx, dy) < 4) return;
+				moved = true;
+				tocTrigger.classList.add('dragging');
+				pos = clamp(start.x + dx, start.y + dy);
+				tocTrigger.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
+				if (tocContainer.classList.contains('visible')) positionPanel();
+			});
+
+			const endDrag = () => {
+				dragging = false;
+				tocTrigger.classList.remove('dragging');
+			};
+			tocTrigger.addEventListener('pointerup', endDrag);
+			tocTrigger.addEventListener('pointercancel', endDrag);
+
+			window.addEventListener('resize', () => {
+				pos = clamp(pos.x, pos.y);
+				tocTrigger.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
+			});
+
 			tocTrigger.addEventListener('click', (e) => {
 				e.stopPropagation();
+				if (moved) {
+					moved = false;
+					return;
+				}
 				setOpen(!tocContainer.classList.contains('visible'));
 			});
 
-			// Close on outside click and Escape (only meaningful for the popup layout).
+			// Close on outside click and Escape.
 			document.addEventListener('click', (e) => {
 				const target = e.target;
 				if (target instanceof Node && !tocContainer.contains(target) && !tocTrigger.contains(target)) {
@@ -134,7 +221,7 @@ const t = useTranslations(lang);
 				if (e.key === 'Escape') setOpen(false);
 			});
 
-			// Smooth scroll; the popup closes after navigating.
+			// Smooth scroll; the panel closes after navigating.
 			tocLinks.forEach((link) => {
 				link.addEventListener('click', (e) => {
 					e.preventDefault();
