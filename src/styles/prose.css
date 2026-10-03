@@ -1,0 +1,459 @@
+/*
+  Article reading layout and the `.prose` body
+  (docs/plans/2026-10-03-atelier-redesign.md §5.2 / §5.3).
+
+  Shared by BlogPost.astro and AcademicReviewPost.astro. Colours and fonts come
+  from tokens.css, so nothing here needs a dark-mode variant except Shiki,
+  which switches on `html.dark`.
+
+  global.css still carries light/dark colour patches for not-yet-migrated pages;
+  they exclude `.article-page`, so text here inherits --ink from body.
+*/
+
+/* ── Article shell ─────────────────────────────────────────── */
+
+/* The page-frame gutters are the only horizontal spacing: neutralise the legacy
+   `main { width; padding }` rules in global.css (removed in P5). */
+.article-page {
+	width: auto;
+	padding: 0 0 5rem;
+}
+
+.article-page .language-suggestion {
+	margin-top: 1.25rem;
+}
+
+.article-header {
+	padding: 2.25rem 0 2rem;
+	border-bottom: 1px solid var(--rule-strong);
+}
+
+.article-title {
+	margin: 0 0 1.5rem;
+	font: 400 clamp(2.5rem, 5.5vw, 5rem) / 0.95 var(--font-serif);
+	letter-spacing: -0.04em;
+	overflow-wrap: anywhere;
+}
+
+/* CJK glyphs need more line height than the Latin display setting. */
+html:not(:lang(en)) .article-title {
+	line-height: 1.12;
+	letter-spacing: -0.03em;
+}
+
+html:lang(ko) .article-title {
+	word-break: keep-all;
+}
+
+.article-lead {
+	max-width: 42rem;
+	margin: 0 0 1.75rem;
+	font: 400 1.375rem / 1.55 var(--font-serif);
+	color: var(--secondary);
+}
+
+.article-meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.4rem 1.5rem;
+	font: 400 0.75rem / 1.6 var(--font-mono);
+	letter-spacing: 0.06em;
+	color: var(--secondary);
+}
+
+.article-meta a {
+	text-decoration: underline;
+	text-underline-offset: 0.25em;
+	text-decoration-color: var(--rule-strong);
+}
+
+.article-meta a:hover {
+	color: var(--accent);
+}
+
+.article-tags {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	margin: 1.5rem 0 0;
+	padding: 0;
+	list-style: none;
+}
+
+.article-hero {
+	margin: 2.5rem auto 0;
+}
+
+.article-hero img {
+	display: block;
+	width: 100%;
+	max-height: 70vh;
+	border-radius: 0;
+	object-fit: contain;
+}
+
+.article-canvas {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 2.5rem;
+	margin-top: 3rem;
+}
+
+.article-main {
+	min-width: 0;
+	max-width: 720px;
+}
+
+/* ── Table of contents (shared by the blog TOC and the review TOC) ── */
+
+.article-toc-title {
+	margin: 0 0 0.5rem;
+	padding-bottom: 0.6rem;
+	border-bottom: 1px solid var(--rule-strong);
+	font: 400 0.6875rem / 1.45 var(--font-mono);
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	color: var(--secondary);
+}
+
+.article-toc ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.toc-link {
+	display: block;
+	padding: 0.4rem 0;
+	font-size: 0.8125rem;
+	line-height: 1.45;
+	color: var(--secondary);
+	overflow-wrap: anywhere;
+	text-decoration: none;
+}
+
+.toc-link:hover,
+.toc-link.active {
+	color: var(--accent);
+}
+
+.toc-h1 {
+	font-weight: 500;
+}
+
+.toc-h3 {
+	padding-left: 0.75rem;
+}
+
+.toc-h4,
+.toc-h5,
+.toc-h6 {
+	padding-left: 1.25rem;
+}
+
+@media (min-width: 1100px) {
+	.article-canvas {
+		grid-template-columns: 200px minmax(0, 720px);
+		gap: 60px;
+	}
+
+	.article-main {
+		grid-column: 2;
+	}
+
+	.article-toc {
+		position: sticky;
+		top: calc(var(--header-height) + 1.5rem);
+		align-self: start;
+		max-height: calc(100vh - var(--header-height) - 3rem);
+		overflow-y: auto;
+		scrollbar-width: thin;
+	}
+}
+
+/* ── Blocks under the prose: series navigation ─────────────── */
+
+.series-nav {
+	margin-top: 4rem;
+	padding-top: 1rem;
+	border-top: 1px solid var(--rule-strong);
+}
+
+.series-nav > .eyebrow {
+	margin-bottom: 0.75rem;
+}
+
+.series-nav-links {
+	display: grid;
+	border-bottom: 1px solid var(--rule);
+}
+
+.series-nav-link {
+	display: block;
+	padding: 1rem 0;
+	border-top: 1px solid var(--rule);
+}
+
+.series-nav-link .eyebrow {
+	margin-bottom: 0.25rem;
+}
+
+.series-nav-link strong {
+	display: block;
+	font: 400 1.25rem / 1.3 var(--font-serif);
+}
+
+.series-nav-link:hover strong {
+	color: var(--accent);
+}
+
+@media (min-width: 640px) {
+	.series-nav-links {
+		grid-template-columns: 1fr 1fr;
+		column-gap: 2rem;
+	}
+
+	.series-nav-link:only-child {
+		grid-column: 1 / -1;
+	}
+
+	.series-nav-link--next {
+		text-align: right;
+	}
+
+	.series-nav-link--next:only-child {
+		text-align: left;
+	}
+}
+
+/* ── .prose ────────────────────────────────────────────────── */
+
+.prose {
+	min-width: 0;
+	font-size: 17px;
+	line-height: 1.85;
+	overflow-wrap: break-word;
+}
+
+html:lang(en) .prose {
+	font-size: 18px;
+	line-height: 1.8;
+}
+
+.prose > :first-child {
+	margin-top: 0;
+}
+
+.prose strong,
+.prose b {
+	font-weight: 700 !important; /* remark-cjk-friendly makes ** work in CJK; keep it visibly bold */
+}
+
+.prose p {
+	margin: 0 0 1.25em;
+}
+
+/* A paragraph introducing a list sits close to it (2026-10-03). */
+.prose p:has(+ ul),
+.prose p:has(+ ol) {
+	margin-bottom: 0.5em;
+}
+
+.prose h1,
+.prose h2 {
+	margin: 64px 0 16px;
+	font: 400 clamp(1.75rem, 3.2vw, 2.125rem) / 1.2 var(--font-serif);
+	letter-spacing: -0.02em;
+}
+
+.prose h3 {
+	margin: 44px 0 12px;
+	font: 400 1.4375rem / 1.3 var(--font-serif);
+	letter-spacing: -0.01em;
+}
+
+.prose :where(h4, h5, h6) {
+	margin: 32px 0 8px;
+	font: 600 1.125rem / 1.4 var(--font-sans);
+	letter-spacing: 0;
+}
+
+.prose :where(h1, h2, h3, h4, h5, h6) {
+	scroll-margin-top: calc(var(--header-height) + 1.5rem);
+}
+
+html:lang(ko) .prose :where(h1, h2, h3, h4, h5, h6) {
+	word-break: keep-all;
+}
+
+.prose :is(ul, ol) {
+	margin: 0 0 1.25em;
+	padding-left: 1.5em;
+}
+
+.prose ul {
+	list-style: disc;
+}
+
+.prose ol {
+	list-style: decimal;
+}
+
+.prose li {
+	margin-bottom: 0.25em;
+	line-height: 1.75;
+}
+
+.prose li :is(ul, ol) {
+	margin: 0.25em 0 0.5em;
+}
+
+/* Keep list-item paragraphs compact and remove extra trailing gap. */
+.prose li > p {
+	margin-bottom: 0;
+}
+
+.prose blockquote {
+	margin: 2em 0;
+	padding: 0.25em 0 0.25em 1.25em;
+	border-left: 2px solid var(--accent);
+	font: normal 400 1.3125rem / 1.6 var(--font-serif);
+	color: var(--ink);
+}
+
+.prose blockquote > :last-child {
+	margin-bottom: 0;
+}
+
+.prose blockquote blockquote {
+	margin: 1em 0;
+	font-size: 1.125rem;
+}
+
+.prose hr {
+	margin: 3em 0;
+}
+
+/* Links: dotted underline, ↗ on external links. */
+.prose a:not(.toc-link, .presentation-action) {
+	color: inherit;
+	text-decoration: underline dotted;
+	text-decoration-thickness: 1px;
+	text-underline-offset: 0.3em;
+	text-decoration-color: var(--rule-strong);
+}
+
+.prose a:not(.toc-link, .presentation-action):hover {
+	color: var(--accent);
+	text-decoration-color: currentColor;
+}
+
+.prose a.external-link:not(:has(img))::after {
+	content: "↗";
+	display: inline-block;
+	margin-left: 0.15em;
+	font-size: 0.75em;
+	text-decoration: none;
+	opacity: 0.7;
+}
+
+/* Code */
+.prose :not(pre) > code {
+	padding: 0.1em 0.35em;
+	border-radius: 2px;
+	background: var(--paper-deep);
+	font: 400 0.88em var(--font-mono);
+	overflow-wrap: anywhere;
+}
+
+.prose pre {
+	max-width: 100%;
+	margin: 2em 0;
+	padding: 1.1rem 1.25rem;
+	border: 0;
+	border-top: 1px solid var(--rule-strong);
+	border-radius: 0;
+	background: var(--paper-deep) !important; /* beats Shiki's inline --shiki-*-bg */
+	overflow-x: auto;
+	font: 400 0.8125rem / 1.7 var(--font-mono);
+}
+
+.prose pre code {
+	padding: 0;
+	background: none;
+	font: inherit;
+}
+
+/* Shiki dual themes: the inline colours are the light ones; switch on html.dark. */
+html.dark .prose .astro-code,
+html.dark .prose .astro-code span {
+	color: var(--shiki-dark) !important;
+}
+
+/* Tables */
+.prose table {
+	display: block;
+	width: 100%;
+	margin: 2em 0;
+	overflow-x: auto;
+	font-size: 0.9375rem;
+	line-height: 1.6;
+}
+
+@media (min-width: 640px) {
+	.prose table {
+		display: table;
+	}
+}
+
+.prose th,
+.prose td {
+	padding: 0.65rem 0.75rem;
+	border-bottom: 1px solid var(--rule);
+	text-align: left;
+	vertical-align: top;
+}
+
+.prose th {
+	border-bottom-color: var(--rule-strong);
+	font: 500 0.75rem / 1.4 var(--font-mono);
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--secondary);
+}
+
+/* Images and figures: no rounding, no shadow. */
+.prose img {
+	border-radius: 0;
+	box-shadow: none;
+}
+
+.prose figure {
+	margin: 2em 0;
+}
+
+.prose figcaption {
+	margin-top: 0.6rem;
+	font: 400 0.6875rem / 1.5 var(--font-mono);
+	letter-spacing: 0.06em;
+	color: var(--secondary);
+}
+
+/* KaTeX */
+.prose .katex-display {
+	max-width: 100%;
+	margin: 1.5em 0;
+	padding: 0.25em 0;
+	overflow-x: auto;
+	overflow-y: hidden;
+	text-align: center;
+}
+
+.prose .footnotes {
+	margin-top: 3em;
+	padding-top: 1em;
+	border-top: 1px solid var(--rule);
+	font-size: 0.92em;
+	color: var(--secondary);
+}

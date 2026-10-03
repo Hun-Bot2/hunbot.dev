@@ -12,13 +12,17 @@ import FeedbackBox from '../components/FeedbackBox.astro';
 import LanguageSuggestion from '../components/LanguageSuggestion.astro';
 import ViewCounter from '../components/ViewCounter.astro';
 import { SITE_TITLE, AUTHOR, AUTHOR_EMAIL, SOCIAL_LINKS } from '../consts';
-import type { UILanguage } from '../i18n/ui';
+import { useTranslations, type UILanguage } from '../i18n/ui';
+import { normalizeCategory } from '../utils/blog';
+import { getBlogSlugFromId, getBlogUrlFromId } from '../utils/blog-routing';
 import { blogHeroImageSizes, getResponsivePublicImage } from '../utils/responsive-public-images';
+import '../styles/prose.css';
 
 type Props = CollectionEntry<'blog'>['data'] & {
 	lang?: UILanguage;
 	availableLangs?: UILanguage[];
 	postId?: string;
+	readMinutes?: number;
 	seriesName?: string;
 	seriesIndex?: number;
 	seriesTotal?: number;
@@ -37,6 +41,7 @@ const {
 	lang = 'ko',
 	availableLangs,
 	postId,
+	readMinutes,
 	seriesName,
 	seriesIndex,
 	seriesTotal,
@@ -48,27 +53,20 @@ const slug = postId ?? Astro.url.pathname;
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 
 const headingId = 'post-title';
-const proseClass = `prose prose-slate max-w-none text-slate-200 leading-relaxed text-base
-	[&>h1]:text-2xl sm:[&>h1]:text-3xl [&>h1]:font-bold [&>h1]:mt-0 [&>h1]:mb-4 [&>h1]:text-slate-900 [&>h1]:dark:text-white [&>h1]:leading-tight [&>h1]:tracking-tight
-	[&>h2]:text-xl sm:[&>h2]:text-2xl [&>h2]:font-semibold [&>h2]:mt-8 [&>h2]:mb-4 [&>h2]:text-slate-800 [&>h2]:dark:text-slate-50 [&>h2]:leading-tight
-	[&>h3]:text-lg sm:[&>h3]:text-xl [&>h3]:font-semibold [&>h3]:mt-6 [&>h3]:mb-3 [&>h3]:text-slate-800 [&>h3]:dark:text-slate-50 [&>h3]:leading-tight
-	[&>h4]:text-base sm:[&>h4]:text-lg [&>h4]:font-semibold [&>h4]:mt-5 [&>h4]:mb-2 [&>h4]:text-slate-800 [&>h4]:dark:text-slate-50
-	[&>h5]:text-base sm:[&>h5]:text-lg [&>h5]:font-semibold [&>h5]:mt-5 [&>h5]:mb-2 [&>h5]:text-slate-800 [&>h5]:dark:text-slate-50
-	[&>h6]:text-base sm:[&>h6]:text-lg [&>h6]:font-semibold [&>h6]:mt-5 [&>h6]:mb-2 [&>h6]:text-slate-800 [&>h6]:dark:text-slate-50
-	[&>p]:mb-5 [&>p:has(+ul)]:mb-2 [&>p:has(+ol)]:mb-2 [&>p]:text-base [&>p]:leading-relaxed
-	[&>ul]:mb-5 [&>ul]:pl-6 [&>ul]:list-disc [&>ol]:mb-5 [&>ol]:pl-6 [&>ol]:list-decimal
-	[&>ul>li]:mb-1 [&>ol>li]:mb-1 [&>li]:leading-relaxed
-	[&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mt-1 [&_li_ul]:mb-2
-	[&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mt-1 [&_li_ol]:mb-2
-	[&_ul>li]:mb-1 [&_ol>li]:mb-1
-	[&_li>ul]:mt-1 [&_li>ol]:mt-1
-	[&>a]:text-slate-900 dark:[&>a]:text-slate-100 [&>a]:no-underline [&>a]:transition-colors [&>a]:hover:text-orange-600 dark:[&>a]:hover:text-orange-400
-	[&>blockquote]:border-l-4 [&>blockquote]:border-orange-500 [&>blockquote]:my-6 [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:text-slate-300 [&>blockquote]:dark:text-slate-300
-	[&>table]:w-full [&>table]:border-collapse [&>table]:my-6 [&>table]:text-sm [&>table]:overflow-x-auto [&>table]:block sm:[&>table]:table
-	[&>th]:border [&>th]:border-slate-200 [&>th]:dark:border-slate-700 [&>th]:p-3 [&>th]:text-left [&>th]:bg-slate-50 [&>th]:dark:bg-slate-900 [&>th]:font-semibold
-	[&>td]:border [&>td]:border-slate-200 [&>td]:dark:border-slate-700 [&>td]:p-3 [&>td]:text-left
-	[&>img]:rounded-lg [&>img]:shadow-sm [&>img]:my-6 [&>img]:max-w-full [&>img]:h-auto
-	[&_.katex-display]:text-center [&_.katex-display]:text-1.5xl sm:[&_.katex-display]:text-2xl [&_.katex-display]:my-6`;
+const t = useTranslations(lang);
+const categoryLabel = category ? t(`blog.category-${normalizeCategory(category)}` as Parameters<typeof t>[0]) : null;
+const eyebrow = [
+	categoryLabel,
+	seriesName,
+	readMinutes ? t('post.read-time').replace('{minutes}', String(readMinutes)) : null,
+].filter(Boolean).join(' · ');
+// Other-language versions of this post (availableLangs is keyed by slug, so the slug is shared).
+const translations = postId
+	? (availableLangs ?? []).filter((code) => code !== lang).map((code) => ({
+			code,
+			url: getBlogUrlFromId(`${code}/${getBlogSlugFromId(postId)}`),
+		}))
+	: [];
 const responsiveHeroImage = heroImage ? getResponsivePublicImage(heroImage) : null;
 
 const schema = {
@@ -134,15 +132,50 @@ const schema = {
 		<FloatingLanguagePicker availableLangs={availableLangs} />
 		<main
 			id="main-content"
-			class="max-w-4xl mx-auto px-6 py-8"
+			class="article-page"
 			data-post-lang={lang}
 			data-available-langs={(availableLangs ?? [lang]).join(",")}
 		>
-			<LanguageSuggestion />
+			<div class="page-frame">
+				<LanguageSuggestion />
+			</div>
 			<article aria-labelledby={headingId}>
-				<!-- Hero Image -->
+				<header class="article-header page-frame">
+					<Breadcrumb items={[
+						{ name: t('nav.home'), href: `/${lang}/` },
+						{ name: t('nav.blog'), href: `/${lang}/blog/` },
+						{ name: title }
+					]} />
+					{eyebrow && <p class="eyebrow">{eyebrow}</p>}
+					<h1 id={headingId} class="article-title" data-pagefind-body data-pagefind-meta="title">
+						{title}
+					</h1>
+					{description && <p class="article-lead">{description}</p>}
+					<div class="article-meta">
+						<span>{t('blog.published')} <FormattedDate date={pubDate} /></span>
+						{updatedDate && <span>{t('blog.updated')} <FormattedDate date={updatedDate} /></span>}
+						<ViewCounter slug={slug} />
+						{translations.length > 0 && (
+							<span>
+								{t('post.translations')}
+								{translations.map((translation) => (
+									<>
+										{' '}
+										<a href={translation.url} hreflang={translation.code === 'jp' ? 'ja' : translation.code}>{translation.code.toUpperCase()}</a>
+									</>
+								))}
+							</span>
+						)}
+					</div>
+					{tags.length > 0 && (
+						<ul class="article-tags" aria-label="Tags">
+							{tags.map((tag: string) => <li class="chip">{tag}</li>)}
+						</ul>
+					)}
+				</header>
+
 				{heroImage && responsiveHeroImage && (
-					<figure class="mb-8">
+					<figure class="article-hero page-frame">
 						<picture>
 							{responsiveHeroImage.webpSrcSet && (
 								<source type="image/webp" srcset={responsiveHeroImage.webpSrcSet} sizes={blogHeroImageSizes} />
@@ -156,95 +189,43 @@ const schema = {
 								width={responsiveHeroImage.width}
 								height={responsiveHeroImage.height}
 								sizes={blogHeroImageSizes}
-								class="w-full max-h-[70vh] rounded-lg shadow-sm object-contain"
 							/>
 						</picture>
 						{(description || title) && <figcaption class="sr-only">{description || title}</figcaption>}
 					</figure>
 				)}
-				
-				<!-- Breadcrumb Navigation -->
-				<Breadcrumb items={[
-					{ name: "Home", href: `/${lang}/` },
-					{ name: "Blog", href: `/${lang}/blog/` },
-					{ name: title }
-				]} />
-				
-				<!-- Title Section -->
-				<div class="mb-8 pb-6 border-b border-slate-200 dark:border-slate-700">
-					<!-- Meta -->
-					<div class="mb-4 flex flex-wrap items-center gap-3 text-slate-600 dark:text-slate-400 text-sm">
-						<div>
-							<FormattedDate date={pubDate} />
-							{updatedDate && (
-								<div class="text-slate-500 dark:text-slate-400 text-xs mt-1">
-									Last updated: <FormattedDate date={updatedDate} />
-								</div>
-							)}
-						</div>
-						<div class="flex items-center before:content-['•'] before:mr-3 before:text-slate-300 dark:before:text-slate-600">
-							<ViewCounter slug={slug} />
-						</div>
-					</div>
-					
-					<!-- Title -->
-					<h1 id={headingId} class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 leading-tight tracking-tight mb-4" data-pagefind-body data-pagefind-meta="title">
-						{title}
-					</h1>
-					
-					<!-- Tags -->
-					{tags && tags.length > 0 && (
-  						<div class="flex flex-wrap gap-2 mt-4">
-    						{tags.map((tag: string) => 
-								(<span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium	border text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-transparent">
-									{tag}
-								</span>
-							))}
-						</div>
-						)}
-				</div>
-				
-				<!-- Main Content -->
-				<div class={proseClass} data-pagefind-body>
-					<slot />
-				</div>
 
-				{seriesName && seriesIndex && seriesTotal && (
-					<section class="mt-12 border-t border-slate-200 dark:border-slate-700 pt-6">
-						<div class="text-sm text-slate-600 dark:text-slate-400 mb-4 text-center font-semibold">
-							<span class="text-slate-800 dark:text-slate-200">{seriesName}</span>
-							<span class="ml-2">{seriesIndex} / {seriesTotal}</span>
+				<div class="article-canvas page-frame">
+					<TableOfContents lang={lang} />
+					<div class="article-main">
+						<div class="prose" data-pagefind-body>
+							<slot />
 						</div>
-						<div class="grid gap-3 sm:grid-cols-2">
-							{seriesPrev ? (
-								<a href={seriesPrev.url} class="group block rounded-lg border border-slate-200 dark:border-slate-700 p-4 text-sm text-slate-700 dark:text-slate-200 hover:border-orange-500/70 hover:text-orange-500 transition-colors">
-									<div class="text-xs text-slate-500 dark:text-slate-400 mb-1 text-center font-semibold">
-										<span aria-hidden="true" class="mr-1">←</span>
-										이전 편
-									</div>
-									<div class="font-semibold text-center">{seriesPrev.title}</div>
-								</a>
-							) : (
-								<div class="rounded-lg border border-slate-200/40 dark:border-slate-700/40 p-4 text-sm text-slate-400 text-center font-semibold">이전 편 없음</div>
-							)}
-							{seriesNext ? (
-								<a href={seriesNext.url} class="group block rounded-lg border border-slate-200 dark:border-slate-700 p-4 text-sm text-slate-700 dark:text-slate-200 hover:border-orange-500/70 hover:text-orange-500 transition-colors">
-									<div class="text-xs text-slate-500 dark:text-slate-400 mb-1 text-center font-semibold">
-										다음 편
-										<span aria-hidden="true" class="ml-1">→</span>
-									</div>
-									<div class="font-semibold text-center">{seriesNext.title}</div>
-								</a>
-							) : (
-								<div class="rounded-lg border border-slate-200/40 dark:border-slate-700/40 p-4 text-sm text-slate-400 text-center font-semibold">다음 편 없음</div>
-							)}
-						</div>
-					</section>
-				)}
-				
-				<TableOfContents lang={lang} />
-				<GiscusComments lang={lang} />
-				<FeedbackBox slug={slug} lang={lang} />
+
+						{seriesName && seriesIndex && seriesTotal && (
+							<nav class="series-nav" aria-label={`${seriesName} ${seriesIndex} / ${seriesTotal}`}>
+								<p class="eyebrow">{seriesName} · {seriesIndex} / {seriesTotal}</p>
+								<div class="series-nav-links">
+									{seriesPrev && (
+										<a href={seriesPrev.url} class="series-nav-link">
+											<span class="eyebrow"><span aria-hidden="true">← </span>{t('post.series-prev')}</span>
+											<strong>{seriesPrev.title}</strong>
+										</a>
+									)}
+									{seriesNext && (
+										<a href={seriesNext.url} class="series-nav-link series-nav-link--next">
+											<span class="eyebrow">{t('post.series-next')}<span aria-hidden="true"> →</span></span>
+											<strong>{seriesNext.title}</strong>
+										</a>
+									)}
+								</div>
+							</nav>
+						)}
+
+						<GiscusComments lang={lang} />
+						<FeedbackBox slug={slug} lang={lang} />
+					</div>
+				</div>
 			</article>
 		</main>
 		<Footer />

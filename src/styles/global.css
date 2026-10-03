@@ -391,52 +391,26 @@ body {
 }
 
 /* Dark mode */
-body.dark-theme h1,
-body.dark-theme h2,
-body.dark-theme h3,
-body.dark-theme h4,
-body.dark-theme h5,
-body.dark-theme h6 {
+body.dark-theme :where(h1, h2, h3, h4, h5, h6):not(:where(.article-page *)) {
 	color: rgb(248, 249, 250) !important;
-}
-
-body.dark-theme pre.astro-code {
-  background-color: var(--shiki-dark-bg) !important;
-  color: var(--shiki-dark) !important;
-}
-
-body.dark-theme pre.astro-code span {
-  color: var(--shiki-dark) !important;
-}
-
-body.dark-theme .prose :not(pre) > code {
-	background: rgba(68, 40, 20, 0.16);
-	color: #ffe7cf;
-	border: 1px solid rgba(251, 146, 60, 0.35);
-	border-radius: 0.35rem;
-	padding: 0.05em 0.35em;
 }
 
 /* light theme: surface and ink come from tokens.css; the rules below only patch
    not-yet-migrated pages and are removed in P5. */
-body.light-theme pre.astro-code {
-  background-color: #d0bc9e !important; 
-}
-
 body.light-theme :where(
   h1, h2, h3, h4, h5, h6,
   p, li, small, strong, label, blockquote, figcaption
-) {
+):not(:where(.article-page *)) {
   color: #0f172a;
 }
 
 /* Legacy link colouring for not-yet-migrated pages. The Atelier chrome (header,
    footer, language chips) styles its own links with tokens. */
-body.light-theme :where(a):not(:where(.site-header, .site-footer, .flp-wrap, .language-suggestion) a) {
+body.light-theme :where(a):not(:where(.site-header, .site-footer, .flp-wrap, .language-suggestion, .article-page) a) {
 	color: #0f172a !important;
 }
 
-body.light-theme :where(a):not(:where(.site-header, .site-footer, .flp-wrap, .language-suggestion) a):hover {
+body.light-theme :where(a):not(:where(.site-header, .site-footer, .flp-wrap, .language-suggestion, .article-page) a):hover {
 	color: #c2410c !important;
 }
 
@@ -449,42 +423,6 @@ body.light-theme .bg-slate-900\/40,
 body.light-theme .bg-slate-900\/50,
 body.light-theme .bg-slate-800\/50 {
 	background-color: rgba(15, 23, 42, 0.08) !important;
-}
-
-body.light-theme .prose {
-	color: #0f172a;
-}
-
-body.light-theme .prose a:not(.toc-link, .presentation-action) {
-	color: #0f172a !important;
-	text-decoration-color: rgba(15, 23, 42, 0.4);
-}
-
-body.light-theme .prose a:not(.toc-link, .presentation-action):hover {
-	color: #c2410c !important;
-}
-
-body.light-theme .prose :not(pre) > code {
-	background: rgba(251, 146, 60, 0.14);
-	color: #7c2d12;
-	border: 1px solid rgba(194, 65, 12, 0.28);
-	border-radius: 0.35rem;
-	padding: 0.05em 0.35em;
-}
-
-body.light-theme .prose pre code {
-	background: transparent !important;
-	border-color: transparent !important;
-	padding: 0 !important;
-}
-
-body.light-theme .prose :where(h1,h2,h3,h4,h5,h6,li,blockquote,p,strong) {
-	color: #0f172a !important;
-}
-
-body.light-theme .prose blockquote {
-	border-color: #fb923c !important;
-	color: #475569 !important;
 }
 
 /* ════════════════════════════════════════
@@ -591,10 +529,6 @@ body.light-theme .filter-reset:hover {
 	color: rgb(194, 65, 12);
 }
 
-.prose strong, .prose b {
-	font-weight: 700 !important;
-}
-
 h1,
 h2,
 h3,
@@ -642,49 +576,8 @@ blockquote {
 	margin-bottom: var(--spacing-8);
 }
 
-.prose blockquote blockquote {
-	font-size: var(--fontSize-1);
-}
-
-
 p {
 	margin-bottom: 1.2em;
-}
-
-.prose p {
-	margin-bottom: 0.5em;
-}
-
-/* Links inside post bodies: dotted underline, ↗ marker on external links. */
-.prose a:not(.toc-link, .presentation-action) {
-	color: inherit;
-	text-decoration: underline dotted;
-	text-decoration-thickness: 1px;
-	text-underline-offset: 0.3em;
-	text-decoration-color: var(--rule-strong);
-}
-
-.prose a:not(.toc-link, .presentation-action):hover {
-	color: var(--accent);
-	text-decoration-color: currentColor;
-}
-
-.prose a.external-link:not(:has(img))::after {
-	content: "↗";
-	display: inline-block;
-	margin-left: 0.15em;
-	font-size: 0.75em;
-	text-decoration: none;
-	opacity: 0.7;
-}
-
-/* Keep list-item paragraphs compact and remove extra trailing gap. */
-.prose li > p {
-	margin-bottom: 0em;
-}
-
-.prose li > p:last-child {
-	margin-bottom: 0 !important;
 }
 
 .prose-none * {
@@ -709,17 +602,6 @@ img {
 	height: auto;
 	border-radius: 8px;
 }
-
-/* Prose code blocks: align with Shiki themes while keeping consistent layout */
-
-.prose pre.astro-code {
-  margin: var(--spacing-8) 0;
-  padding: var(--spacing-4);
-  border-radius: 0.75rem;
-  overflow-x: auto;
-  border: 1px solid #e5e7eb;
-}
-
 
 /* Tables */
 table {
