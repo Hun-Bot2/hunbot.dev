@@ -387,8 +387,13 @@ body.light-theme .prose {
 	color: #0f172a;
 }
 
-body.light-theme .prose a {
-	color: #1d4ed8;
+body.light-theme .prose a:not(.toc-link, .presentation-action) {
+	color: #0f172a !important;
+	text-decoration-color: rgba(15, 23, 42, 0.4);
+}
+
+body.light-theme .prose a:not(.toc-link, .presentation-action):hover {
+	color: #c2410c !important;
 }
 
 body.light-theme .prose :not(pre) > code {
@@ -672,6 +677,29 @@ p {
 
 .prose p {
 	margin-bottom: 0.5em;
+}
+
+/* Links inside post bodies: dotted underline, ↗ marker on external links. */
+.prose a:not(.toc-link, .presentation-action) {
+	color: inherit;
+	text-decoration: underline dotted;
+	text-decoration-thickness: 1px;
+	text-underline-offset: 0.3em;
+	text-decoration-color: rgba(148, 163, 184, 0.7);
+}
+
+.prose a:not(.toc-link, .presentation-action):hover {
+	color: #fb923c;
+	text-decoration-color: currentColor;
+}
+
+.prose a.external-link:not(:has(img))::after {
+	content: "↗";
+	display: inline-block;
+	margin-left: 0.15em;
+	font-size: 0.75em;
+	text-decoration: none;
+	opacity: 0.7;
 }
 
 /* Keep list-item paragraphs compact and remove extra trailing gap. */
