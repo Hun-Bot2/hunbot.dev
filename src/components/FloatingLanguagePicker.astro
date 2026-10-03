@@ -158,4 +158,19 @@ const languageUrls = allowedLangs.reduce((acc, lang) => {
 	.flp-option--active {
 		color: var(--ink);
 	}
+
+	/* On phones the chip shrinks and tucks into the corner so it covers less of a
+	   row's right end (action links, dates) while scrolling. */
+	@media (max-width: 639px) {
+		.flp-wrap {
+			bottom: 0.75rem;
+			right: 0.75rem;
+		}
+
+		.flp-btn {
+			min-height: 32px;
+			padding: 0 0.6rem;
+			gap: 0.35rem;
+		}
+	}
 </style>

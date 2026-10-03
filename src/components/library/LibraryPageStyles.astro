@@ -1,498 +1,516 @@
+---
+// Shared Atelier styles for the Research, Paths and Library pages
+// (docs/plans/2026-10-03-atelier-redesign.md §5.5, §5.6). Colours and fonts come
+// from tokens.css, so nothing here needs a light/dark variant. The page-frame
+// gutters, eyebrow, column-heading, chip and state-chip classes live in global.css.
+import '../../styles/lists.css';
+---
+
 <style is:global>
-	.library-page {
-		--library-panel-bg: linear-gradient(180deg, rgba(59, 55, 49, 0.94), rgba(47, 44, 40, 0.92));
-		--library-panel-border: rgba(251, 191, 36, 0.14);
-		--library-panel-top: rgba(251, 146, 60, 0.38);
-		--library-panel-shadow: 0 18px 44px rgba(0, 0, 0, 0.2);
-		--library-panel-hover-border: rgba(251, 191, 36, 0.28);
-		--library-pill-bg: rgba(255, 255, 255, 0.055);
-		--library-pill-border: rgba(255, 237, 213, 0.12);
-		--library-pill-text: rgba(255, 237, 213, 0.86);
-		--library-muted-text: rgba(226, 232, 240, 0.64);
-		--library-action-bg: rgba(249, 115, 22, 0.11);
-		--library-action-border: rgba(251, 146, 60, 0.36);
-		--library-action-text: #fed7aa;
+	/* ── Sections ───────────────────────────────────────────────── */
+
+	.research-section {
+		margin-top: 2.75rem;
 	}
 
-	.library-page :where(h1, h2, h3, p):not([class*="mb-"]) {
-		margin-bottom: 0;
+	.section-head .column-heading {
+		margin-bottom: 0.7rem;
 	}
 
-	.library-page :where(h1, h2, h3) {
-		margin-top: 0;
+	.section-note {
+		margin: 0 0 0.5rem;
+		font-size: 0.8125rem;
+		line-height: 1.55;
+		color: var(--secondary);
 	}
 
-	.library-kicker {
-		display: inline-flex;
-		border-radius: 0.5rem;
-		border: 1px solid rgba(251, 146, 60, 0.28);
-		background: rgba(249, 115, 22, 0.1);
-		padding: 0.25rem 0.75rem;
-		color: #ffedd5;
+	.empty-line {
+		margin: 1.25rem 0 0;
+		padding: 1rem 0;
+		border-top: 1px solid var(--rule);
+		border-bottom: 1px solid var(--rule);
 		font-size: 0.875rem;
-		font-weight: 700;
+		color: var(--secondary);
 	}
 
-	.library-panel {
-		position: relative;
+	/* ── Rows: title + actions, a mono meta line, a short note ──── */
+
+	.atelier-rows {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.atelier-row {
+		padding: 0.9rem 0;
+		border-bottom: 1px solid var(--rule);
+	}
+
+	.atelier-row-head {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 0.15rem 1.5rem;
+	}
+
+	.atelier-row :where(h2, h3) {
+		margin: 0;
+		font: 400 1.25rem/1.25 var(--font-serif);
+		letter-spacing: -0.01em;
+		transition: color 160ms ease;
+	}
+
+	.atelier-row-actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0 1rem;
+	}
+
+	.atelier-row-meta {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.35rem 0.9rem;
+		margin-top: 0.4rem;
+	}
+
+	.atelier-row-meta > span {
+		font: 400 0.6875rem/1.5 var(--font-mono);
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--secondary);
+	}
+
+	.chip-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.35rem;
+	}
+
+	.atelier-row-note {
+		display: -webkit-box;
+		-webkit-line-clamp: 3;
+		line-clamp: 3;
+		-webkit-box-orient: vertical;
 		overflow: hidden;
-		border-radius: 0.5rem;
-		border: 1px solid var(--library-panel-border);
-		background: var(--library-panel-bg);
-		box-shadow: var(--library-panel-shadow);
-		padding: 1.25rem;
-		transition:
-			border-color 180ms ease,
-			background 180ms ease,
-			box-shadow 180ms ease,
-			transform 180ms ease;
+		margin: 0.5rem 0 0;
+		max-width: 46rem;
+		font-size: 0.8125rem;
+		line-height: 1.55;
+		color: var(--secondary);
 	}
 
-	.library-panel::before {
-		content: '';
-		position: absolute;
-		inset: 0 0 auto;
-		height: 1px;
-		background: linear-gradient(90deg, transparent, var(--library-panel-top), transparent);
-		pointer-events: none;
+	.atelier-row-chips {
+		margin-top: 0.6rem;
 	}
 
-	.library-panel:hover {
-		border-color: var(--library-panel-hover-border);
-		box-shadow: 0 22px 52px rgba(0, 0, 0, 0.24);
-		transform: translateY(-1px);
-	}
-
-	.library-panel-link {
+	/* A row that is one whole link. */
+	.atelier-row-link {
 		display: block;
 		color: inherit;
-		text-decoration: none;
 	}
 
-	.library-panel-link:focus-visible {
-		outline: 2px solid rgba(251, 146, 60, 0.7);
-		outline-offset: 3px;
+	.atelier-row-link:hover :where(h2, h3),
+	.atelier-row-link:focus-visible :where(h2, h3) {
+		color: var(--accent);
 	}
 
-	.library-latest-deck-card {
-		display: grid;
-		gap: 1rem;
-		padding: 1rem;
+	.atelier-row-link .atelier-row-head > .action-label {
+		flex: 0 0 auto;
 	}
 
-	.library-latest-deck-header,
-	.library-latest-deck-actions {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 1rem;
-	}
-
-	.library-deck-preview {
-		aspect-ratio: var(--library-latest-deck-ratio, 16 / 9);
-		overflow: hidden;
-		border: 1px solid rgba(255, 237, 213, 0.1);
-		border-radius: 0.5rem;
-		background: rgba(15, 23, 42, 0.4);
-	}
-
-	.library-deck-preview img {
-		display: block;
-		width: 100%;
-		height: 100%;
-		object-fit: contain;
-		background: rgb(15, 23, 42);
-	}
-
-	.library-deck-controls {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.75rem;
-	}
-
-	.library-deck-control {
+	/* Mono text link with a thin underline; the 40px touch box is taller than the line. */
+	.action-link,
+	.action-label {
+		position: relative;
 		display: inline-flex;
 		align-items: center;
-		justify-content: center;
-		width: 2.375rem;
-		height: 2.375rem;
-		border-radius: 999px;
-		border: 1px solid rgba(255, 237, 213, 0.14);
-		background: rgba(255, 255, 255, 0.055);
-		color: rgba(255, 237, 213, 0.9);
-		padding: 0;
-		transition:
-			background 160ms ease,
-			border-color 160ms ease,
-			color 160ms ease,
-			opacity 160ms ease;
-	}
-
-	.library-deck-control:hover:not(:disabled),
-	.library-deck-control:focus-visible:not(:disabled) {
-		border-color: rgba(251, 146, 60, 0.42);
-		background: rgba(249, 115, 22, 0.12);
-		color: #ffedd5;
-	}
-
-	.library-deck-control:disabled {
-		cursor: not-allowed;
-		opacity: 0.42;
-	}
-
-	.library-deck-counter {
-		min-width: 4.25rem;
-		text-align: center;
-		color: rgba(226, 232, 240, 0.72);
-		font-size: 0.875rem;
-		font-weight: 700;
-	}
-
-	/* A muted label inside a panel footer (e.g. an item count) that must stay
-	   readable in light mode. Plain `text-slate-*` utility classes on a
-	   non-heading, non-paragraph element (a <span>) are NOT covered by the
-	   global `body.light-theme :where(h1,h2,h3,p,...)` override — that
-	   selector's zero-specificity :where() only beats a same-specificity
-	   Tailwind color utility when the element is one of the tags it lists.
-	   Route through this CSS variable instead of a raw slate utility. */
-	.library-muted-label {
-		color: var(--library-muted-text);
-	}
-
-	.library-panel-footer {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 0.75rem;
-		margin-top: 1.25rem;
-		border-top: 1px solid rgba(255, 237, 213, 0.09);
-		padding-top: 1rem;
-		font-size: 0.875rem;
-	}
-
-	.library-section-button {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.375rem;
-		min-height: 2rem;
-		border-radius: 999px;
-		border: 1px solid rgba(251, 146, 60, 0.3);
-		background: rgba(249, 115, 22, 0.11);
-		padding: 0.4rem 0.7rem;
-		color: #fed7aa;
-		font-weight: 700;
-		box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-		transition:
-			background 160ms ease,
-			border-color 160ms ease,
-			color 160ms ease,
-			transform 160ms ease,
-			box-shadow 160ms ease;
-	}
-
-	.library-panel-link:hover .library-section-button,
-	.library-panel-link:focus-visible .library-section-button {
-		border-color: rgba(251, 146, 60, 0.54);
-		background: rgba(249, 115, 22, 0.18);
-		color: #ffedd5;
-		box-shadow: 0 10px 24px rgba(249, 115, 22, 0.12);
-		transform: translateX(2px);
-	}
-
-	.library-pill,
-	.library-badge {
-		border-radius: 0.5rem;
-		border: 1px solid var(--library-pill-border);
-		background: var(--library-pill-bg);
-		color: var(--library-pill-text);
-		font-size: 0.75rem;
-		font-weight: 700;
-		line-height: 1rem;
-	}
-
-	.library-pill {
-		padding: 0.25rem 0.5rem;
-	}
-
-	.library-badge {
-		padding: 0.25rem 0.5rem;
-	}
-
-	.library-badge--available {
-		border-color: rgba(251, 191, 36, 0.26);
-		background: rgba(251, 191, 36, 0.1);
-		color: #fde68a;
-	}
-
-	.library-badge--muted {
-		border-color: rgba(226, 232, 240, 0.12);
-		background: rgba(255, 255, 255, 0.045);
-		color: var(--library-muted-text);
-	}
-
-	.library-action {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.45rem;
+		gap: 0.35rem;
 		min-height: 2.5rem;
-		border-radius: 999px;
-		border: 1px solid var(--library-action-border);
-		background: var(--library-action-bg);
-		padding: 0.58rem 0.9rem;
-		color: var(--library-action-text);
-		font-size: 0.875rem;
-		font-weight: 800;
-		text-decoration: none;
-		box-shadow: 0 10px 24px rgba(0, 0, 0, 0.14);
-		transition:
-			background 160ms ease,
-			border-color 160ms ease,
-			color 160ms ease,
-			box-shadow 160ms ease,
-			transform 160ms ease;
+		font: 400 0.6875rem/1.4 var(--font-mono);
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
+		color: var(--ink);
+		transition: color 160ms ease;
 	}
 
-	.library-action:hover,
-	.library-action:focus-visible {
-		border-color: rgba(251, 146, 60, 0.58);
-		background: rgba(249, 115, 22, 0.2);
-		color: #ffedd5;
-		box-shadow: 0 14px 30px rgba(249, 115, 22, 0.14);
-		text-decoration: none;
-		transform: translateY(-1px);
+	.action-link::after,
+	.action-label::after {
+		content: '';
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 0.55rem;
+		height: 1px;
+		background: var(--rule-strong);
+		transition: background-color 160ms ease;
+	}
+
+	.action-link:hover,
+	.action-link:focus-visible,
+	.atelier-row-link:hover .action-label,
+	.atelier-row-link:focus-visible .action-label {
+		color: var(--accent);
+	}
+
+	.action-link:hover::after,
+	.action-link:focus-visible::after,
+	.atelier-row-link:hover .action-label::after,
+	.atelier-row-link:focus-visible .action-label::after {
+		background: var(--accent);
 	}
 
 	.library-action-icon {
-		width: 1rem;
-		height: 1rem;
 		flex: 0 0 auto;
-		stroke-width: 1.9;
+		width: 0.95em;
+		height: 0.95em;
+		stroke-width: 1.35;
 		transition: transform 160ms ease;
 	}
 
-	.library-action--back:hover .library-action-icon,
-	.library-action--back:focus-visible .library-action-icon {
-		transform: translateX(-2px);
-	}
-
-	.library-panel-link:hover .library-section-button .library-action-icon,
-	.library-panel-link:focus-visible .library-section-button .library-action-icon,
-	.library-action--external:hover .library-action-icon,
-	.library-action--external:focus-visible .library-action-icon,
-	.library-action--deck:hover .library-action-icon,
-	.library-action--deck:focus-visible .library-action-icon,
-	.library-action--download:hover .library-action-icon,
-	.library-action--download:focus-visible .library-action-icon {
+	.action-link:hover .library-action-icon,
+	.atelier-row-link:hover .library-action-icon {
 		transform: translateX(2px);
 	}
 
-	body.light-theme .library-page {
-		--library-panel-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 247, 237, 0.86));
-		--library-panel-border: rgba(194, 65, 12, 0.16);
-		--library-panel-top: rgba(249, 115, 22, 0.36);
-		--library-panel-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
-		--library-panel-hover-border: rgba(194, 65, 12, 0.28);
-		--library-pill-bg: rgba(249, 115, 22, 0.07);
-		--library-pill-border: rgba(194, 65, 12, 0.14);
-		--library-pill-text: #7c2d12;
-		--library-muted-text: #64748b;
-		--library-action-bg: rgba(249, 115, 22, 0.1);
-		--library-action-border: rgba(194, 65, 12, 0.22);
-		--library-action-text: #9a3412;
+	.intro-back:hover .library-action-icon--back {
+		transform: translateX(-2px);
 	}
 
-	body.light-theme .library-kicker {
-		border-color: rgba(194, 65, 12, 0.2);
-		background: rgba(249, 115, 22, 0.1);
-		color: #9a3412;
-	}
+	/* ── Library tabs and section filters ───────────────────────── */
 
-	body.light-theme .library-panel:hover {
-		box-shadow: 0 18px 42px rgba(15, 23, 42, 0.12);
-	}
-
-	body.light-theme .library-deck-preview {
-		border-color: rgba(194, 65, 12, 0.12);
-		background: rgba(255, 247, 237, 0.8);
-	}
-
-	body.light-theme .library-deck-control {
-		border-color: rgba(194, 65, 12, 0.16);
-		background: rgba(249, 115, 22, 0.07);
-		color: #9a3412;
-	}
-
-	body.light-theme .library-deck-control:hover:not(:disabled),
-	body.light-theme .library-deck-control:focus-visible:not(:disabled) {
-		border-color: rgba(194, 65, 12, 0.28);
-		background: rgba(249, 115, 22, 0.12);
-		color: #7c2d12;
-	}
-
-	body.light-theme .library-deck-counter {
-		color: #64748b;
-	}
-
-	body.light-theme .library-badge--available {
-		border-color: rgba(217, 119, 6, 0.22);
-		background: rgba(245, 158, 11, 0.1);
-		color: #92400e;
-	}
-
-	body.light-theme .library-badge--muted {
-		border-color: rgba(15, 23, 42, 0.1);
-		background: rgba(15, 23, 42, 0.035);
-		color: #64748b;
-	}
-
-	body.light-theme .library-action {
-		color: #9a3412 !important;
-	}
-
-	body.light-theme .library-action:hover,
-	body.light-theme .library-action:focus-visible {
-		border-color: rgba(194, 65, 12, 0.34);
-		background: rgba(249, 115, 22, 0.16);
-		color: #7c2d12 !important;
-	}
-
-	body.light-theme .library-section-button {
-		border-color: rgba(194, 65, 12, 0.2);
-		background: rgba(249, 115, 22, 0.1);
-		color: #9a3412;
-	}
-
-	body.light-theme .library-panel-link:hover .library-section-button,
-	body.light-theme .library-panel-link:focus-visible .library-section-button {
-		border-color: rgba(194, 65, 12, 0.34);
-		background: rgba(249, 115, 22, 0.16);
-		color: #7c2d12;
-	}
-
-	/* Library tabs (외부 링크 / Useful Feeds) and section filter chips
-	   (docs/decisions/site-structure.md#3,5). Anchors are not covered by the
-	   global light-theme `:where(h1..h6, p, ...)` override, so both use
-	   `--library-pill-text`/`--library-pill-border`/`--library-pill-bg` for
-	   their resting state and an explicit light-theme block below for the
-	   active state, matching `.library-badge--available`'s pattern. */
 	.library-tabs {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		gap: 0.5rem;
-		margin-top: 0.25rem;
+		gap: 0 1.75rem;
+		margin-top: 0.75rem;
 	}
 
 	.library-tabs-group {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.4rem;
 		flex-wrap: wrap;
+		gap: 0 0.6rem;
 	}
 
 	.library-tab,
 	.library-chip {
+		position: relative;
 		display: inline-flex;
 		align-items: center;
-		gap: 0.35rem;
-		border-radius: 999px;
-		border: 1px solid var(--library-pill-border);
-		background: var(--library-pill-bg);
-		color: var(--library-pill-text);
-		padding: 0.45rem 0.85rem;
-		font-size: 0.8125rem;
-		font-weight: 700;
-		text-decoration: none;
-		transition:
-			border-color 160ms ease,
-			background 160ms ease,
-			color 160ms ease;
+		gap: 0.4rem;
+		min-height: 2.5rem;
+		font: 400 0.6875rem/1.4 var(--font-mono);
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
+		white-space: nowrap;
+		color: var(--secondary);
+		transition: color 160ms ease;
+	}
+
+	.library-tab::after,
+	.library-chip::after {
+		content: '';
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 0.6rem;
+		height: 1px;
+		background: transparent;
 	}
 
 	.library-tab:hover,
 	.library-tab:focus-visible,
 	.library-chip:hover,
 	.library-chip:focus-visible {
-		border-color: var(--library-panel-hover-border);
+		color: var(--ink);
 	}
 
 	.library-tab[aria-current='page'],
 	.library-chip[aria-current='page'] {
-		border-color: rgba(251, 146, 60, 0.5);
-		background: rgba(249, 115, 22, 0.16);
-		color: #ffedd5;
+		color: var(--accent);
 	}
 
-	body.light-theme .library-tab[aria-current='page'],
-	body.light-theme .library-chip[aria-current='page'] {
-		border-color: rgba(194, 65, 12, 0.32);
-		background: rgba(249, 115, 22, 0.14);
-		color: #7c2d12;
+	.library-tab[aria-current='page']::after,
+	.library-chip[aria-current='page']::after {
+		background: var(--accent);
 	}
 
-	/* The plain-text "research-os" label beside the Useful Feeds tab — never
-	   a link (docs/decisions/site-structure.md#3). Reuses the muted-text
-	   variable rather than a bare `text-slate-*` utility, same reasoning as
-	   `.library-muted-label` above. */
+	/* The plain-text "research-os" label beside the Useful Feeds tab: never a link
+	   (docs/decisions/site-structure.md#3). */
 	.library-tab-note {
-		color: var(--library-muted-text);
-		font-size: 0.75rem;
-		font-weight: 600;
+		padding: 0.05rem 0.5rem;
+		border: 1px solid var(--rule);
+		border-radius: 999px;
+		font: 400 0.6875rem/1.5 var(--font-mono);
+		letter-spacing: 0.06em;
+		color: var(--secondary);
 	}
 
-	/* A subtle, non-alarming freshness warning (docs/decisions/site-structure.md#7):
-	   "확인 필요" / "업데이트 멈춤" should read as a gentle flag, not an error. */
-	.library-badge--warning {
-		border-color: rgba(250, 204, 21, 0.32);
-		background: rgba(250, 204, 21, 0.12);
-		color: #fde68a;
+	.library-chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0 1.5rem;
+		margin-top: 1rem;
+		padding-bottom: 0.25rem;
+		border-bottom: 1px solid var(--rule);
 	}
 
-	body.light-theme .library-badge--warning {
-		border-color: rgba(161, 98, 7, 0.28);
-		background: rgba(250, 204, 21, 0.18);
-		color: #854d0e;
+	/* ── Library picks: .knowledge-item cards ───────────────────── */
+
+	.knowledge-grid {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 2.25rem 1.5rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
 	}
 
-	/* A link whose accessible name is provided by a heading/paragraph
-	   ancestor already covered by the global light-theme override — inheriting
-	   color avoids yet another explicit light/dark pair for the same text. */
-	.library-inherit-link {
-		color: inherit;
-		text-decoration: none;
-	}
-
-	.library-inherit-link:hover,
-	.library-inherit-link:focus-visible {
-		text-decoration: underline;
-	}
-
-	/* Tailwind's preflight makes every svg display:block, which pushed the
-	   external icon onto its own line under the title. */
-	.library-inherit-link .library-action-icon {
-		display: inline-block;
-		margin-left: 0.25rem;
-		vertical-align: -0.125em;
-	}
-
-	/* The owner's note (a pick's rendered Markdown body) can contain its own
-	   links; give them a visible, theme-aware color instead of leaving them
-	   to inherit the muted note text color. */
-	.library-pick-note a {
-		color: var(--library-action-text);
-		text-decoration: underline;
-	}
-
-	.library-feed-row {
-		display: block;
-	}
-
-	@media (max-width: 640px) {
-		.library-latest-deck-header,
-		.library-latest-deck-actions {
-			flex-direction: column;
+	@media (min-width: 640px) {
+		.knowledge-grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
 		}
+	}
+
+	@media (min-width: 1100px) {
+		.knowledge-grid {
+			grid-template-columns: repeat(4, minmax(0, 1fr));
+		}
+	}
+
+	.knowledge-item {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+	}
+
+	.knowledge-item .resource-art {
+		--resource-art-height: 10rem;
+		margin-bottom: 1rem;
+	}
+
+	.knowledge-label {
+		margin: 0 0 0.45rem;
+		font: 400 0.6875rem/1.45 var(--font-mono);
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--secondary);
+	}
+
+	.knowledge-item h3 {
+		margin: 0 0 0.5rem;
+		font: 400 1.375rem/1.2 var(--font-serif);
+		letter-spacing: -0.01em;
+		overflow-wrap: anywhere;
+	}
+
+	.knowledge-item h3 a {
+		transition: color 160ms ease;
+	}
+
+	.knowledge-item h3 a:hover,
+	.knowledge-item h3 a:focus-visible {
+		color: var(--accent);
+	}
+
+	.knowledge-item h3 .library-action-icon {
+		display: inline-block;
+		margin-left: 0.2rem;
+		vertical-align: -0.08em;
+		color: var(--secondary);
+	}
+
+	.library-pick-note {
+		margin: 0 0 0.75rem;
+		font-size: 0.8125rem;
+		line-height: 1.55;
+		color: var(--secondary);
+	}
+
+	.library-pick-note :where(p, ul, ol) {
+		margin: 0 0 0.5em;
+	}
+
+	.library-pick-note :where(:last-child) {
+		margin-bottom: 0;
+	}
+
+	.library-pick-note a {
+		color: var(--ink);
+		text-decoration: underline;
+		text-underline-offset: 0.2em;
+	}
+
+	.knowledge-meta {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.35rem 0.75rem;
+		margin-top: auto;
+		padding-top: 0.25rem;
+	}
+
+	.knowledge-meta > span:not(.chip) {
+		font: 400 0.6875rem/1.5 var(--font-mono);
+		letter-spacing: 0.04em;
+		color: var(--secondary);
+	}
+
+	/* ── Useful Feeds rows: the title link covers the whole row ─── */
+
+	.feed-row {
+		position: relative;
+	}
+
+	.feed-row h3 a::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+	}
+
+	.feed-source {
+		font: 400 0.6875rem/1.5 var(--font-mono);
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--secondary);
+	}
+
+	.feed-row h3 .library-action-icon {
+		display: inline-block;
+		margin-left: 0.3rem;
+		vertical-align: -0.05em;
+		color: var(--secondary);
+	}
+
+	.feed-row:hover h3 a,
+	.feed-row:focus-within h3 a {
+		color: var(--accent);
+	}
+
+	/* ── Learning paths ─────────────────────────────────────────── */
+
+	.path-step {
+		display: grid;
+		grid-template-columns: 2.75rem minmax(0, 1fr);
+		gap: 0 0.75rem;
+		padding: 1.1rem 0;
+	}
+
+	.path-step-number {
+		padding-top: 0.35rem;
+		font: 400 0.6875rem/1.4 var(--font-mono);
+		letter-spacing: 0.09em;
+		color: var(--accent);
+	}
+
+	.path-step-title {
+		margin: 0 0 0.35rem;
+		font: 400 0.6875rem/1.45 var(--font-mono);
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--secondary);
+	}
+
+	.support-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+		gap: 0 2.5rem;
+	}
+
+	.support-grid .atelier-row :where(h2, h3) {
+		font-size: 1.0625rem;
+	}
+
+	/* ── Decks ──────────────────────────────────────────────────── */
+
+	.deck-frame {
+		margin-bottom: 1.5rem;
+		padding: 1rem;
+		border: 1px solid var(--rule-strong);
+		background: var(--paper-light);
+	}
+
+	.deck-frame-head {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 0.25rem 1.5rem;
+		margin-bottom: 0.9rem;
+	}
+
+	.deck-frame-head h3 {
+		margin: 0.4rem 0 0;
+		font: 400 1.375rem/1.2 var(--font-serif);
+	}
+
+	.deck-preview {
+		aspect-ratio: var(--library-latest-deck-ratio, 16 / 9);
+		overflow: hidden;
+		border: 1px solid var(--rule);
+		background: var(--stage);
+	}
+
+	.deck-preview img {
+		display: block;
+		width: 100%;
+		height: 100%;
+		border-radius: 0;
+		object-fit: contain;
+	}
+
+	.deck-controls {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.75rem;
+		margin-top: 0.75rem;
+	}
+
+	.deck-control {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 2.5rem;
+		height: 2.5rem;
+		padding: 0;
+		border: 1px solid var(--rule-strong);
+		background: transparent;
+		color: var(--ink);
+		cursor: pointer;
+		transition:
+			border-color 160ms ease,
+			color 160ms ease;
+	}
+
+	.deck-control:hover:not(:disabled),
+	.deck-control:focus-visible:not(:disabled) {
+		border-color: var(--accent);
+		color: var(--accent);
+	}
+
+	.deck-control:disabled {
+		cursor: not-allowed;
+		opacity: 0.4;
+	}
+
+	.deck-counter {
+		min-width: 4.25rem;
+		text-align: center;
+		font: 400 0.75rem/1.4 var(--font-mono);
+		letter-spacing: 0.06em;
+		color: var(--secondary);
+	}
+
+	.deck-frame-note {
+		margin: 0.9rem 0 0;
+		max-width: 46rem;
+		font-size: 0.8125rem;
+		line-height: 1.55;
+		color: var(--secondary);
 	}
 </style>

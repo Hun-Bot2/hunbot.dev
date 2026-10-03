@@ -64,7 +64,6 @@ const tierGroups = pickTiers
 	.filter((group) => group.picks.length > 0);
 
 const now = new Date();
-const panelClass = 'library-panel';
 const chipAllLabel = t('library.chip.all').replace('{count}', String(totalPickCount));
 ---
 
@@ -81,24 +80,20 @@ const chipAllLabel = t('library.chip.all').replace('{count}', String(totalPickCo
 	<body>
 		<Header />
 		<FloatingLanguagePicker />
-		<main id="main-content" class="library-page mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8" data-pagefind-body>
-			<section class="mb-8 max-w-5xl space-y-3">
-				<div class="space-y-2">
-					<h1 class="text-4xl font-bold tracking-normal text-slate-100 sm:text-5xl">{t('library.title')}</h1>
-					<p class="text-xl leading-relaxed text-slate-300">{t('library.subtitle')}</p>
-					<p class="leading-relaxed text-slate-400">{description}</p>
-				</div>
+		<main id="main-content" class="atelier-page" data-pagefind-body>
+			<section class="subpage-intro">
+				<h1 class="eyebrow">{t('library.title')}</h1>
+				<p class="intro-copy">{t('library.subtitle')}</p>
+				<p class="intro-note">{description}</p>
 				<LibraryTabs lang={lang} active="external-links" />
 			</section>
 
-			{totalPickCount === 0 ? (
-				<section class={`${panelClass} mb-10`}>
-					<p class="text-slate-400">{t('library.empty.no-picks')}</p>
-				</section>
-			) : (
-				<>
-					<section class="mb-8 space-y-3" aria-label={chipAllLabel}>
-						<div class="flex flex-wrap gap-2">
+			<div class="page-frame">
+				{totalPickCount === 0 ? (
+					<p class="empty-line">{t('library.empty.no-picks')}</p>
+				) : (
+					<>
+						<section class="library-chips" aria-label={chipAllLabel}>
 							<a href={`/${lang}/library/`} class="library-chip" aria-current="page">
 								{chipAllLabel}
 							</a>
@@ -107,35 +102,37 @@ const chipAllLabel = t('library.chip.all').replace('{count}', String(totalPickCo
 									{section.label[lang]} {section.count}
 								</a>
 							))}
-						</div>
-					</section>
-
-					{recentPicks.length > 0 && (
-						<section class="mb-10 space-y-4" aria-labelledby="library-recent-heading">
-							<h2 id="library-recent-heading" class="text-2xl font-bold text-slate-100">
-								{t('library.recent-added')}
-							</h2>
-							<div class="grid gap-4 lg:grid-cols-3">
-								{recentPicks.map((pick) => <PickCard pick={pick} lang={lang} now={now} showSection={true} />)}
-							</div>
 						</section>
-					)}
 
-					{tierGroups.map((group) => (
-						<section class="mb-10 space-y-4" aria-labelledby={`library-tier-${group.tier.id}-heading`}>
-							<div>
-								<h2 id={`library-tier-${group.tier.id}-heading`} class="text-2xl font-bold text-slate-100">
-									{group.tier.label[lang]}
-								</h2>
-								<p class="mt-1 text-slate-400">{group.tier.description[lang]}</p>
-							</div>
-							<div class="grid gap-4 lg:grid-cols-3">
-								{group.picks.map((pick) => <PickCard pick={pick} lang={lang} now={now} showSection={true} />)}
-							</div>
-						</section>
-					))}
-				</>
-			)}
+						{recentPicks.length > 0 && (
+							<section class="research-section" aria-labelledby="library-recent-heading">
+								<div class="section-head">
+									<div class="column-heading">
+										<h2 id="library-recent-heading">{t('library.recent-added')}</h2>
+									</div>
+								</div>
+								<div class="knowledge-grid">
+									{recentPicks.map((pick) => <PickCard pick={pick} lang={lang} now={now} showSection={true} showTier={true} />)}
+								</div>
+							</section>
+						)}
+
+						{tierGroups.map((group) => (
+							<section class="research-section" aria-labelledby={`library-tier-${group.tier.id}-heading`}>
+								<div class="section-head">
+									<div class="column-heading">
+										<h2 id={`library-tier-${group.tier.id}-heading`}>{group.tier.label[lang]}</h2>
+									</div>
+									<p class="section-note">{group.tier.description[lang]}</p>
+								</div>
+								<div class="knowledge-grid">
+									{group.picks.map((pick) => <PickCard pick={pick} lang={lang} now={now} showSection={true} />)}
+								</div>
+							</section>
+						))}
+					</>
+				)}
+			</div>
 		</main>
 		<Footer />
 	</body>

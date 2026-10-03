@@ -84,136 +84,134 @@ const languageLabels: Record<string, string> = {
 	<body>
 		<Header />
 		<FloatingLanguagePicker />
-		<main id="main-content" class="library-page mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8" data-pagefind-body>
-			<a href={`/${lang}/paths/`} class="library-action library-action--back mb-8">
-				<LibraryIcon name="arrow-left" />
-				{t('paths.detail.back')}
-			</a>
-
-			<section class="mb-12 space-y-4">
-				<div class="flex flex-wrap gap-2" aria-label={t('paths.supporting-label')}>
-					{learningPath.topicIds.map((topicId) => <span class="library-pill">{topicId}</span>)}
-					<span class="library-pill">{t('paths.detail.updated').replace('{date}', learningPath.updatedAt)}</span>
+		<main id="main-content" class="atelier-page" data-pagefind-body>
+			<section class="subpage-intro">
+				<a href={`/${lang}/paths/`} class="intro-back">
+					<LibraryIcon name="arrow-left" class="library-action-icon library-action-icon--back" />
+					{t('paths.detail.back')}
+				</a>
+				<h1 class="eyebrow">{pageTitle}</h1>
+				<p class="intro-copy">{description}</p>
+				<div class="chip-list atelier-row-chips" aria-label={t('paths.supporting-label')}>
+					{learningPath.topicIds.map((topicId) => <span class="chip">{topicId}</span>)}
+					<span class="chip">{t('paths.detail.updated').replace('{date}', learningPath.updatedAt)}</span>
 				</div>
-				<h1 class="text-4xl font-bold tracking-normal text-slate-100 sm:text-5xl">{pageTitle}</h1>
-				<p class="text-lg leading-relaxed text-slate-400">{description}</p>
 			</section>
 
-			<section class="mb-14 space-y-5" aria-labelledby="path-steps-heading">
-				<h2 id="path-steps-heading" class="text-2xl font-bold text-slate-100">{t('paths.detail.steps')}</h2>
-				<ol class="space-y-4">
-					{steps.map((resolvedStep, index) => (
-						<li class="library-panel">
-							<div class="flex flex-col gap-4 sm:flex-row sm:items-start">
+			<div class="page-frame">
+				<section class="research-section" aria-labelledby="path-steps-heading">
+					<div class="section-head">
+						<div class="column-heading">
+							<h2 id="path-steps-heading">{t('paths.detail.steps')}</h2>
+						</div>
+					</div>
+					<ol class="atelier-rows">
+						{steps.map((resolvedStep, index) => (
+							<li class="atelier-row path-step">
 								<div class="path-step-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</div>
-								<div class="min-w-0 flex-1">
-									<div class="mb-2 flex flex-wrap gap-2">
-										<span class="library-pill">{getLocalizedPathText(resolvedStep.step.title, lang)}</span>
+								<div class="min-w-0">
+									<p class="path-step-title">
+										{getLocalizedPathText(resolvedStep.step.title, lang)}
 										{resolvedStep.isLanguageFallback && (
-											<span class="library-badge library-badge--muted">
+											<span class="chip">
 												{t('paths.detail.fallback-language').replace('{language}', languageLabels[resolvedStep.postLanguage])}
 											</span>
 										)}
-									</div>
-									<h3 class="text-xl font-semibold text-slate-100">{resolvedStep.post.data.title}</h3>
-									<p class="mt-2 text-sm leading-relaxed text-slate-400">{resolvedStep.post.data.description}</p>
-									<p class="mt-3 text-sm leading-relaxed text-slate-400">
-										{getLocalizedPathText(resolvedStep.step.note, lang)}
 									</p>
-									<div class="mt-4 flex flex-wrap items-center gap-3">
-										<span class="text-sm text-slate-500"><FormattedDate date={resolvedStep.post.data.pubDate} /></span>
-										<a href={resolvedStep.url} class="library-action">
+									<h3>{resolvedStep.post.data.title}</h3>
+									<p class="atelier-row-note">{resolvedStep.post.data.description}</p>
+									<p class="atelier-row-note">{getLocalizedPathText(resolvedStep.step.note, lang)}</p>
+									<div class="atelier-row-meta">
+										<span><FormattedDate date={resolvedStep.post.data.pubDate} /></span>
+										<a href={resolvedStep.url} class="action-link">
 											{t('paths.detail.open-post')}
 											<LibraryIcon name="arrow-right" />
 										</a>
 									</div>
 								</div>
+							</li>
+						))}
+					</ol>
+				</section>
+
+				<div class="support-grid" aria-label={t('paths.supporting-label')}>
+					{supportingResources.length > 0 && (
+						<section class="research-section">
+							<div class="section-head">
+								<div class="column-heading">
+									<h2>{t('paths.detail.supporting-resources')}</h2>
+								</div>
 							</div>
-						</li>
-					))}
-				</ol>
-			</section>
+							<ul class="atelier-rows">
+								{supportingResources.map((resource) => (
+									<li class="atelier-row">
+										<h3>{resource.data.title}</h3>
+										<p class="atelier-row-note">{getResourceSummary(resource, lang)}</p>
+										<a href={resource.data.url} target="_blank" rel="noopener noreferrer" class="action-link">
+											{t('paths.supporting.open-resource')}
+											<LibraryIcon name="external" />
+										</a>
+									</li>
+								))}
+							</ul>
+						</section>
+					)}
 
-			<section class="grid gap-4 lg:grid-cols-3" aria-label={t('paths.supporting-label')}>
-				{supportingResources.length > 0 && (
-					<div class="library-panel">
-						<h2 class="mb-4 text-lg font-semibold text-slate-100">{t('paths.detail.supporting-resources')}</h2>
-						<div class="space-y-5">
-							{supportingResources.map((resource) => (
-								<article>
-									<h3 class="font-semibold text-slate-100">{resource.data.title}</h3>
-									<p class="mt-2 text-sm leading-relaxed text-slate-400">{getResourceSummary(resource, lang)}</p>
-									<a href={resource.data.url} target="_blank" rel="noopener noreferrer" class="library-action library-action--external mt-3">
-										{t('paths.supporting.open-resource')}
-										<LibraryIcon name="external" />
-									</a>
-								</article>
-							))}
-						</div>
-					</div>
-				)}
+					{supportingPapers.length > 0 && (
+						<section class="research-section">
+							<div class="section-head">
+								<div class="column-heading">
+									<h2>{t('paths.detail.supporting-papers')}</h2>
+								</div>
+							</div>
+							<ul class="atelier-rows">
+								{supportingPapers.map((paper) => (
+									<li class="atelier-row">
+										<h3>{paper.data.title}</h3>
+										<p class="atelier-row-note">{getPaperTldr(paper, lang)}</p>
+										<a href={paper.data.url} target="_blank" rel="noopener noreferrer" class="action-link">
+											{t('paths.supporting.open-paper')}
+											<LibraryIcon name="external" />
+										</a>
+									</li>
+								))}
+							</ul>
+						</section>
+					)}
 
-				{supportingPapers.length > 0 && (
-					<div class="library-panel">
-						<h2 class="mb-4 text-lg font-semibold text-slate-100">{t('paths.detail.supporting-papers')}</h2>
-						<div class="space-y-5">
-							{supportingPapers.map((paper) => (
-								<article>
-									<h3 class="font-semibold text-slate-100">{paper.data.title}</h3>
-									<p class="mt-2 text-sm leading-relaxed text-slate-400">{getPaperTldr(paper, lang)}</p>
-									<a href={paper.data.url} target="_blank" rel="noopener noreferrer" class="library-action library-action--external mt-3">
-										{t('paths.supporting.open-paper')}
-										<LibraryIcon name="external" />
-									</a>
-								</article>
-							))}
-						</div>
-					</div>
-				)}
-
-				{supportingDecks.length > 0 && (
-					<div class="library-panel">
-						<h2 class="mb-4 text-lg font-semibold text-slate-100">{t('paths.detail.supporting-decks')}</h2>
-						<div class="space-y-5">
-							{supportingDecks.map((deck) => {
-								const href = deck.htmlUrl ?? deck.pdfUrl;
-								return (
-									<article>
-										<div class="mb-2 flex flex-wrap gap-2">
-											<span class="library-pill">{deck.type}</span>
-											{deck.pdfUrl && <span class="library-pill">PDF</span>}
-										</div>
-										<h3 class="font-semibold text-slate-100">{deck.title}</h3>
-										<p class="mt-2 text-sm leading-relaxed text-slate-400">{deck.description}</p>
-										{href && (
-											<a href={href} target="_blank" rel="noopener noreferrer" class="library-action library-action--deck mt-3">
-												{t('paths.supporting.open-deck')}
-												<LibraryIcon name="external" />
-											</a>
-										)}
-									</article>
-								);
-							})}
-						</div>
-					</div>
-				)}
-			</section>
+					{supportingDecks.length > 0 && (
+						<section class="research-section">
+							<div class="section-head">
+								<div class="column-heading">
+									<h2>{t('paths.detail.supporting-decks')}</h2>
+								</div>
+							</div>
+							<ul class="atelier-rows">
+								{supportingDecks.map((deck) => {
+									const href = deck.htmlUrl ?? deck.pdfUrl;
+									return (
+										<li class="atelier-row">
+											<h3>{deck.title}</h3>
+											<div class="chip-list atelier-row-chips">
+												<span class="chip">{deck.type}</span>
+												{deck.pdfUrl && <span class="chip">PDF</span>}
+											</div>
+											<p class="atelier-row-note">{deck.description}</p>
+											{href && (
+												<a href={href} target="_blank" rel="noopener noreferrer" class="action-link">
+													{t('paths.supporting.open-deck')}
+													<LibraryIcon name="external" />
+												</a>
+											)}
+										</li>
+									);
+								})}
+							</ul>
+						</section>
+					)}
+				</div>
+			</div>
 		</main>
 		<Footer />
 	</body>
 </html>
-
-<style>
-	.path-step-number {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 3rem;
-		height: 3rem;
-		border-radius: 0.75rem;
-		border: 1px solid rgba(251, 146, 60, 0.24);
-		background: rgba(249, 115, 22, 0.1);
-		color: #fed7aa;
-		font-weight: 800;
-	}
-</style>

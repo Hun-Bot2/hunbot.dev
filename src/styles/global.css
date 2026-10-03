@@ -297,6 +297,43 @@ body {
 	}
 }
 
+/* Subpage intro extras: back link, serif lead line, small note. */
+
+.subpage-intro .eyebrow {
+	margin-bottom: 0.4rem;
+}
+
+.intro-back {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+	min-height: 2.5rem;
+	margin-bottom: 0.2rem;
+	font: 400 0.6875rem/1.4 var(--font-mono);
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	color: var(--secondary);
+	transition: color 160ms ease;
+}
+
+.intro-back:hover {
+	color: var(--accent);
+}
+
+.intro-copy {
+	margin: 0;
+	font: 400 0.9375rem/1.55 var(--font-serif);
+	color: var(--secondary);
+}
+
+.intro-note {
+	margin: 0.4rem 0 0;
+	max-width: 46rem;
+	font-size: 0.8125rem;
+	line-height: 1.55;
+	color: var(--secondary);
+}
+
 .underlined-link {
 	display: inline-flex;
 	align-items: center;
