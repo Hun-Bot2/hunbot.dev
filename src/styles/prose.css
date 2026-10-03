@@ -19,30 +19,31 @@
 }
 
 .article-header {
-	padding: 1.5rem 0 1.5rem;
+	padding: 1.25rem 0 1rem;
 	border-bottom: 1px solid var(--rule-strong);
 }
 
 .article-title {
-	margin: 0 0 1rem;
-	font: 400 clamp(1.75rem, 3.6vw, 2.75rem) / 1.15 var(--font-serif);
-	letter-spacing: -0.03em;
+	margin: 0 0 0.75rem;
+	font: 400 clamp(1.5rem, 2.4vw, 2rem) / 1.25 var(--font-serif);
+	letter-spacing: -0.02em;
 	overflow-wrap: anywhere;
+	text-wrap: balance;
 }
 
 /* CJK glyphs need more line height than the Latin display setting. */
-html:not(:lang(en)) .article-title {
-	letter-spacing: -0.02em;
-}
-
 html:lang(ko) .article-title {
 	word-break: keep-all;
 }
 
 .article-lead {
-	margin: 0 0 1.25rem;
-	font: 400 1.125rem / 1.6 var(--font-serif);
+	margin: 0 0 1rem;
+	font: 400 1.0625rem / 1.6 var(--font-serif);
 	color: var(--secondary);
+}
+
+html:lang(ko) .article-lead {
+	word-break: keep-all;
 }
 
 .article-meta {
@@ -69,7 +70,7 @@ html:lang(ko) .article-title {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 0.5rem;
-	margin: 1.1rem 0 0;
+	margin: 0.9rem 0 0;
 	padding: 0;
 	list-style: none;
 }
@@ -87,13 +88,26 @@ html:lang(ko) .article-title {
 }
 
 .article-canvas {
-	margin-top: 2rem;
+	margin-top: 1.5rem;
 }
 
+/* One container (the page-frame width) for header, body and wide content. Text
+   blocks are capped at --prose-measure and sit on the same left edge as the
+   header; code, tables, figures, KaTeX and embeds use the full container. */
 .article-main {
+	--prose-measure: 46rem;
 	min-width: 0;
-	max-width: 42rem;
-	margin: 0 auto;
+}
+
+.prose > :where(p, ul, ol, dl, blockquote, h1, h2, h3, h4, h5, h6, hr, .footnotes),
+.series-nav,
+.article-main > .feedback-box {
+	max-width: var(--prose-measure);
+}
+
+/* A paragraph that is only an image is a figure: full container width. */
+.prose > p:has(> :is(img, picture):only-child, > a:only-child > img) {
+	max-width: none;
 }
 
 /* ── Floating table of contents (blog and review posts) ── */

@@ -32,7 +32,7 @@ All colours come from `src/styles/tokens.css`; fonts and `--content-max` live th
 
 | Role | Font | Size |
 |---|---|---|
-| Article title (h1) | serif 400, tight tracking | `clamp(2.5rem, 5.5vw, 5rem)` |
+| Article title (h1) | serif 400, line-height 1.25, `text-wrap: balance` (`keep-all` for ko) | `clamp(1.5rem, 2.4vw, 2rem)` |
 | Section heading (`.column-heading h2`) | serif 400 | 28px |
 | List/card title | serif 400 | 19-23px |
 | Lead paragraph | serif | 22px, `--secondary` |
@@ -44,11 +44,18 @@ All colours come from `src/styles/tokens.css`; fonts and `--content-max` live th
 - Never go below **11px** for mono labels or **13px** for secondary sans text.
 - On viewports up to 720px the root font size is 18px (`global.css`), so rem-based sizes grow slightly on phones; do not fight it with px values.
 
+## Article Reading Layout
+
+- Header (breadcrumb, eyebrow, title, lead, meta, tags) and body share one container, the `.page-frame` width (`--content-max`, 980px) and one left edge. Never centre a narrower column under a wider header.
+- Text blocks (`p`, lists, `blockquote`, headings, `hr`, footnotes), the series nav and the feedback box are capped at `--prose-measure` (46rem, about 43em at the 17px body size). Everything else in `.prose` (code `pre`, tables, figures and image-only paragraphs, KaTeX display, embeds, review components) may use the full container width, never past the viewport. `pre`, tables and KaTeX scroll inside themselves on phones; the page itself never scrolls horizontally at 375px.
+- Header bottom padding is 1rem and the gap to the body 1.5rem; keep it tight so the title block flows into the text.
+- Posts (`BlogPost.astro`) and academic reviews (`AcademicReviewPost.astro`) share this shell through `prose.css`; change both together.
+
 ## Lists, Not Cards
 
 - Present collections as **rule-separated rows** (`.rule-list`, `.writing-entry`, `.paper-reading-list` rows): 1px `--rule` between rows, no shadows, no rounded card surfaces. The title turns `--accent` on hover.
 - The one grid is the Library `.knowledge-item` grid (4 columns at 1100px+, 2 at 640px+, 1 below); items are still separated by rules, not boxed.
-- Page headers use `.subpage-intro` (eyebrow + one line); section heads use `.column-heading` (serif title, mono link on the right, `--rule-strong` underline). Empty sections either do not render or show a single `.empty-line`.
+- Page headers use `.subpage-intro` (eyebrow + one line, 14px bottom padding; the blog index is the eyebrow alone); section heads use `.column-heading` (serif title, mono link on the right, `--rule-strong` underline). Empty sections either do not render or show a single `.empty-line`.
 - Shared Library/Research row, tab, and grid styles live in `LibraryPageStyles.astro`; list rows in `src/styles/lists.css`.
 
 ## Chips
@@ -107,7 +114,7 @@ The validator checks the shared skip link, key main landmarks, focus styles, and
 
 ## Floating controls
 
-All floating controls are `position: fixed`, paper-coloured with a 1px `--rule-strong` border (no blur, no shadow), and draggable with pointer events (`src/utils/floating.ts`: 4px click threshold, a drag swallows the click that follows it, clamped to the viewport and below the sticky header, position kept in `sessionStorage`). Popovers open under their trigger on the side with room.
+All floating controls are `position: fixed`, paper-coloured with a 1px `--rule-strong` border (no blur, no shadow), and draggable with pointer events (`src/utils/floating.ts`: 4px click threshold, a drag swallows the click that follows it (a document-level capture listener, so outside-click handlers never see it either; move/up are tracked on the document, and pointer capture is deliberately not used because it retargets the click away from a wrapper's inner button), clamped to the viewport and below the sticky header, position kept in `sessionStorage`). Popovers open under their trigger on the side with room.
 
 | Control | Default position | z-index | Where |
 |---|---|---|---|
