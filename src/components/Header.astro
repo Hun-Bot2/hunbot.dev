@@ -208,7 +208,7 @@ const activeSection = section === 'blog'
 		display: flex;
 		justify-content: flex-end;
 		align-items: center;
-		gap: 1.1rem;
+		gap: 0.5rem;
 		font: 400 0.6875rem/1 var(--font-mono);
 		letter-spacing: 0.09em;
 		text-transform: uppercase;
@@ -221,7 +221,8 @@ const activeSection = section === 'blog'
 		min-height: 40px;
 		min-width: 40px;
 		justify-content: center;
-		padding: 0;
+		padding: 0 0.35rem;
+		line-height: 1;
 		border: 0;
 		background: none;
 		color: var(--ink);
@@ -235,9 +236,10 @@ const activeSection = section === 'blog'
 		color: var(--accent);
 	}
 
+	/* Text actions (search, theme) share one line box with the icons so every
+	   item centres on the same axis; no per-item underline or padding. */
 	.header-action--text span {
-		padding: 4px 0;
-		border-bottom: 1px solid var(--rule-strong);
+		line-height: 1;
 	}
 
 	/* The label names the theme a click switches to; html.dark is set before paint. */
