@@ -12,156 +12,30 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Design System Tokens - Gatsby Starter Blog Inspired */
+/* Layout and rhythm scale read by the base element rules below. Colours, the
+   type stacks and the content width live in tokens.css. */
 :root {
-  /* Max Widths */
   --maxWidth-wrapper: 42rem;
-  
-  /* Spacing */
+
   --spacing-0: 0;
   --spacing-1: 0.25rem;
   --spacing-2: 0.5rem;
-  --spacing-3: 0.75rem;
-  --spacing-4: 1rem;
   --spacing-5: 1.25rem;
   --spacing-6: 1.5rem;
   --spacing-8: 2rem;
   --spacing-10: 2.5rem;
   --spacing-12: 3rem;
-  --spacing-16: 4rem;
   --spacing-20: 5rem;
-  
-	/* Typography: the Atelier font stacks live in tokens.css. The legacy names
-	   below are kept because page-scoped styles still read them. */
-	--font-body: var(--font-sans);
-	--font-heading: var(--font-sans);
-	
-  /* Font Weights */
-  --fontWeight-normal: 400;
+
   --fontWeight-bold: 700;
-  --fontWeight-black: 900;
-  
-  /* Font Sizes - Minor Third Scale (1.200) */
+
   --fontSize-root: 16px;
-  --fontSize-0: 0.833rem;
   --fontSize-1: 1rem;
   --fontSize-2: 1.2rem;
-  --fontSize-3: 1.44rem;
-  --fontSize-4: 1.728rem;
-  --fontSize-5: 2.074rem;
-  --fontSize-6: 2.488rem;
-  --fontSize-7: 2.986rem;
-  
-  /* Line Heights */
-  --lineHeight-none: 1;
+
   --lineHeight-tight: 1.1;
   --lineHeight-normal: 1.5;
   --lineHeight-relaxed: 1.625;
-  
-  /* Colors - Dark Theme */
-  --color-primary: #f97316;
-  --color-text: rgb(248, 249, 250);
-  --color-text-light: rgba(248, 249, 250, 0.7);
-  --color-heading: rgb(248, 249, 250);
-  --color-heading-black: rgb(248, 249, 250);
-  --color-accent: rgba(248, 249, 250, 0.2);
-  --color-white: rgb(248, 249, 250);
-  --color-black: rgb(40, 40, 40);
-  
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-  
-  /* Transitions */
-  --transition-fast: 150ms ease-in-out;
-  --transition-normal: 200ms ease-in-out;
-  --transition-slow: 300ms ease-in-out;
-}
-
-/* Blog Components */
-@layer components {
-	/* Button System */
-	.btn-primary {
-		@apply inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-orange-600 hover:bg-orange-700 rounded-lg transition-all duration-200 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2;
-	}
-	
-	.btn-secondary {
-		@apply inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg transition-all duration-200 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2;
-	}
-	
-	.btn-small {
-		@apply px-4 py-2 text-xs;
-	}
-	
-	/* Navigation Link Styles */
-	.nav-link {
-		@apply px-3 py-2 text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 rounded-md transition-all duration-200;
-	}
-	
-	.nav-link.active {
-		@apply text-orange-400 bg-orange-900/20;
-	}
-	
-	/* Card Base Styles */
-	.card-base {
-		@apply block bg-slate-800/50 border border-slate-700 rounded-2xl shadow-sm transition-all duration-200 overflow-hidden;
-	}
-	
-	.card-hover {
-		@apply hover:bg-slate-800/80 hover:border-orange-600 hover:shadow-lg hover:shadow-slate-900/50;
-	}
-	
-	.card-dark {
-		@apply bg-slate-800/50 border-slate-700 hover:bg-slate-800/80 hover:border-orange-600 hover:shadow-slate-900/50;
-	}
-	
-	/* Line Clamp Utilities */
-	.line-clamp-2 {
-		display: -webkit-box;
-		line-clamp: 2;
-		-webkit-line-clamp: 2;
-		-webkit-box-orient: vertical;
-		overflow: hidden;
-	}
-	
-	.line-clamp-3 {
-		display: -webkit-box;
-		line-clamp: 3;
-		-webkit-line-clamp: 3;
-		-webkit-box-orient: vertical;
-		overflow: hidden;
-	}
-	
-	.line-clamp-4 {
-		display: -webkit-box;
-		line-clamp: 4;
-		-webkit-line-clamp: 4;
-		-webkit-box-orient: vertical;
-		overflow: hidden;
-	}
-}
-
-
-:root {
-	--accent-dark: #ea580c;
-	--accent-light: #fb923c;
-	--neural-cyan: #06b6d4;
-	--neural-pink: #ec4899;
-	--black: 40, 40, 40;
-	--gray: 248, 249, 250;
-	--gray-light: 248, 249, 250;
-	--gray-dark: 40, 40, 40;
-	--gray-gradient: rgba(40, 40, 40, 60%), rgb(40, 40, 40);
-	--box-shadow:
-		0 4px 16px rgba(249, 115, 22, 0.10), 0 12px 32px rgba(249, 115, 22, 0.10),
-		0 24px 48px rgba(249, 115, 22, 0.10);
-	--homepage-wide: 80rem;
-	--surface-panel: rgba(255, 255, 255, 0.055);
-	--surface-panel-strong: rgba(255, 255, 255, 0.08);
-	--surface-border: rgba(248, 249, 250, 0.13);
-	--surface-muted-text: rgba(203, 213, 225, 0.78);
 }
 
 /* 전역 기본 요소 (토큰: tokens.css) */
@@ -248,19 +122,6 @@ body {
 	color: var(--secondary);
 }
 
-.section-index {
-	display: flex;
-	align-items: center;
-	gap: 1.1rem;
-	font: 400 0.6875rem/1.45 var(--font-mono);
-	letter-spacing: 0.09em;
-	text-transform: uppercase;
-}
-
-.section-index > span {
-	color: var(--accent);
-}
-
 .column-heading {
 	display: flex;
 	align-items: baseline;
@@ -332,24 +193,6 @@ body {
 	font-size: 0.8125rem;
 	line-height: 1.55;
 	color: var(--secondary);
-}
-
-.underlined-link {
-	display: inline-flex;
-	align-items: center;
-	gap: 1.2rem;
-	width: max-content;
-	padding-bottom: 0.3rem;
-	border-bottom: 1px solid currentColor;
-	font-size: 0.8125rem;
-}
-
-.underlined-link > span {
-	transition: transform 160ms ease;
-}
-
-.underlined-link:hover > span {
-	transform: translate(2px, -2px);
 }
 
 .rule-list {
@@ -425,41 +268,6 @@ body {
 
 .btn-pill:hover {
 	border-color: var(--ink);
-}
-
-/* Dark mode */
-body.dark-theme :where(h1, h2, h3, h4, h5, h6):not(:where(.article-page *, .atelier-page *)) {
-	color: rgb(248, 249, 250) !important;
-}
-
-/* light theme: surface and ink come from tokens.css; the rules below only patch
-   not-yet-migrated pages and are removed in P5. */
-body.light-theme :where(
-  h1, h2, h3, h4, h5, h6,
-  p, li, small, strong, label, blockquote, figcaption
-):not(:where(.article-page *, .atelier-page *)) {
-  color: #0f172a;
-}
-
-/* Legacy link colouring for not-yet-migrated pages. The Atelier chrome (header,
-   footer, language chips) styles its own links with tokens. */
-body.light-theme :where(a):not(:where(.site-header, .site-footer, .flp-wrap, .language-suggestion, .article-page, .atelier-page) a) {
-	color: #0f172a !important;
-}
-
-body.light-theme :where(a):not(:where(.site-header, .site-footer, .flp-wrap, .language-suggestion, .article-page, .atelier-page) a):hover {
-	color: #c2410c !important;
-}
-
-body.light-theme .border-slate-700,
-body.light-theme .border-slate-800 {
-	border-color: rgba(15, 23, 42, 0.2) !important;
-}
-
-body.light-theme .bg-slate-900\/40,
-body.light-theme .bg-slate-900\/50,
-body.light-theme .bg-slate-800\/50 {
-	background-color: rgba(15, 23, 42, 0.08) !important;
 }
 
 h1,
@@ -569,19 +377,6 @@ table td {
 	padding: 0;
 }
 
-.global-wrapper[data-is-root-path="true"] .bio {
-	margin-bottom: var(--spacing-20);
-}
-
-.global-header {
-	margin-bottom: var(--spacing-12);
-}
-
-.main-heading {
-	font-size: var(--fontSize-7);
-	margin: 0;
-}
-
 /* Duplicate blockquote styles (commented out to avoid redundancy) */
 hr {
 	height: 1px;
@@ -607,100 +402,9 @@ hr {
 	background: var(--accent);
 }
 
-@media (max-width: 900px) {
-	main {
-		padding: 2em 1em;
-		width: calc(100% - 2em);
-	}
-	h1 { font-size: 2.1em; }
-	h2 { font-size: 1.5em; }
-}
-
 @media (max-width: 720px) {
 	html { font-size: 18px; }
 	body { font-size: 0.98rem; }
-	main { padding: 1em 0.2em; }
-}
-
-.sr-only {
-	border: 0;
-	padding: 0;
-	margin: 0;
-	position: absolute !important;
-	height: 1px;
-	width: 1px;
-	overflow: hidden;
-	clip: rect(1px 1px 1px 1px);
-	clip: rect(1px, 1px, 1px, 1px);
-	clip-path: inset(50%);
-	white-space: nowrap;
-}
-
-.line-clamp-3 {
-	display: -webkit-box;
-	line-clamp: 3;
-	-webkit-line-clamp: 3;
-	-webkit-box-orient: vertical;
-	overflow: hidden;
-}
-
-/* ============================================================
-   Semantic Design Tokens (Stage 0)
-   ------------------------------------------------------------
-   See docs/architecture/design-tokens-and-images.md (Part 1).
-
-   This is the ONLY tier of tokens that is theme-aware. The
-   :root block below holds the dark (default) values; the
-   body.light-theme block redefines the SAME token names with
-   light-theme values -- no selector overrides, just new values
-   for the same custom properties.
-
-   Components should consume these tokens (e.g.
-   `color: var(--text-primary)`) instead of writing their own
-   hardcoded colors plus a parallel `body.light-theme .foo { ... }`
-   override block. That per-component override pattern is exactly
-   what this tier replaces.
-
-   Note: --text-muted, --text-subtle, and --text-faint intentionally
-   collapse to the same value (rgba(51, 65, 85, 0.86)) in the light
-   theme. That mirrors the existing hand-written light-theme rules
-   it replaces -- it is not an error or an oversight.
-
-   Nothing in the codebase consumes these tokens yet (Stage 0 only
-   adds the layer); they are wired up to components in later stages.
-   ============================================================ */
-:root {
-	--surface-panel: rgba(255, 255, 255, 0.045);
-	--surface-border: rgba(248, 249, 250, 0.12);
-	--text-primary: rgb(248, 249, 250);
-	--text-muted: rgba(203, 213, 225, 0.78);
-	--text-subtle: rgba(203, 213, 225, 0.72);
-	--text-faint: rgba(148, 163, 184, 0.86);
-	--field-surface: rgba(15, 23, 42, 0.55);
-	--field-text: rgb(226, 232, 240);
-	--field-border: rgba(148, 163, 184, 0.35);
-	--accent-surface: rgba(249, 115, 22, 0.14);
-	--accent-border: rgba(249, 115, 22, 0.58);
-	--accent-text: rgb(255, 237, 213);
-	--state-success: rgb(134, 239, 172);
-	--state-error: rgb(252, 165, 165);
-}
-
-html:not(.dark) {
-	--surface-panel: rgba(255, 255, 255, 0.78);
-	--surface-border: rgba(15, 23, 42, 0.12);
-	--text-primary: rgb(15, 23, 42);
-	--text-muted: rgba(51, 65, 85, 0.86);
-	--text-subtle: rgba(51, 65, 85, 0.86);
-	--text-faint: rgba(51, 65, 85, 0.86);
-	--field-surface: rgb(255, 255, 255);
-	--field-text: rgb(15, 23, 42);
-	--field-border: rgb(203, 213, 225);
-	--accent-surface: rgba(249, 115, 22, 0.1);
-	--accent-border: rgba(194, 65, 12, 0.28);
-	--accent-text: rgb(154, 52, 18);
-	--state-success: rgb(21, 128, 61);
-	--state-error: rgb(153, 27, 27);
 }
 
 @media (prefers-reduced-motion: reduce) {

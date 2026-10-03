@@ -52,7 +52,6 @@ const responsiveImages: Record<string, ResponsiveImageEntry> = {
 	},
 };
 
-export const homepagePostImageSizes = '(max-width: 640px) calc(100vw - 2rem), 6rem';
 export const blogHeroImageSizes = '(min-width: 768px) 768px, calc(100vw - 3rem)';
 
 export function getResponsivePublicImage(src: string): ResponsivePublicImage {

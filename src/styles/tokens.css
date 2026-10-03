@@ -23,6 +23,8 @@
 	--stage-muted: #9f9f98;
 	--state-reviewed: #2f6d57;
 	--state-reading: #3569a0;
+	--state-success: rgb(21, 128, 61);
+	--state-error: rgb(153, 27, 27);
 
 	--content-max: 980px;
 	--header-height: 72px;
@@ -49,6 +51,8 @@ html.dark {
 	--stage-muted: #9f9f98;
 	--state-reviewed: #6fbf9f;
 	--state-reading: #7fb0e0;
+	--state-success: rgb(134, 239, 172);
+	--state-error: rgb(252, 165, 165);
 
 	color-scheme: dark;
 }

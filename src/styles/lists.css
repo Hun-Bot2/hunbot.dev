@@ -5,11 +5,9 @@
   Colours and fonts come from tokens.css; nothing here needs a dark variant.
 */
 
-/* The page-frame gutters are the only horizontal spacing: neutralise the legacy
-   `main { width; padding }` rules in global.css (removed in P5). The bottom
-   padding also keeps the last row clear of the floating language chip. */
+/* The page-frame gutters are the only horizontal spacing. The bottom padding
+   keeps the last row clear of the floating language chip. */
 .atelier-page {
-	width: auto;
 	padding: 0 0 5rem;
 }
 

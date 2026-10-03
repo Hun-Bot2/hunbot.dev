@@ -5,17 +5,12 @@
   Shared by BlogPost.astro and AcademicReviewPost.astro. Colours and fonts come
   from tokens.css, so nothing here needs a dark-mode variant except Shiki,
   which switches on `html.dark`.
-
-  global.css still carries light/dark colour patches for not-yet-migrated pages;
-  they exclude `.article-page`, so text here inherits --ink from body.
 */
 
 /* ── Article shell ─────────────────────────────────────────── */
 
-/* The page-frame gutters are the only horizontal spacing: neutralise the legacy
-   `main { width; padding }` rules in global.css (removed in P5). */
+/* The page-frame gutters are the only horizontal spacing. */
 .article-page {
-	width: auto;
 	padding: 0 0 5rem;
 }
 

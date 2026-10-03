@@ -380,3 +380,40 @@ P1을 먼저 해야 이후 phase가 토큰을 쓸 수 있다. P2–P4는 `global
 | 아티클 오른쪽 notes 열 | 넣지 않음 | 980px 안에 3열은 본문을 망가뜨린다(프로토타입 버그). 메타는 헤더로 |
 | 기본 테마 | 기존과 동일(저장값 > OS 설정) | 기능 보존 |
 | 검색 | 기존 페이지 유지, 오버레이 없음 | 새 기능은 범위 밖 |
+
+---
+
+## 11. 결과 (2026-10-03)
+
+브랜치 `feat/atelier-redesign`. 모든 phase가 §9 체크리스트(validator, 빌드, 라이트·다크 브라우저 확인)를 통과한 뒤 커밋했다.
+
+| Phase | 커밋 | 한 일 | 계획에서 벗어난 점 |
+|---|---|---|---|
+| P1 기반 + 크롬 | `a2173fe` | 토큰(`tokens.css`, `html.dark` 기준), 언어별 폰트 로딩, `global.css` 재작성(전역 button 제거, 공용 클래스), Tailwind 색·폰트 연결, 새 Header·Footer·FloatingLanguagePicker | 헤더 언어 링크가 `availableLangs`를 존중해 번역본이 없으면 링크하지 않는다(계획에 없던 보강) |
+| P1 후속 | `52ae194` | 라이트 `--accent`를 `#d84e2b`에서 `#b83d1d`로 어둡게(대비 3.65:1 → 4.95:1) | 프로토타입 색을 그대로 쓰지 않았다 |
+| P2 읽기 화면 | `5b5c401` | 포스트·학술 리뷰 공용 아티클 셸, `prose.css`, TOC(sticky + 1100px 미만 플로팅), 시리즈/Giscus/피드백 블록, 리뷰 컴포넌트 토큰화 | TOC 드래그 제거(위치 저장이 이미 꺼져 있었음). 새 i18n 키 `post.*`, `comments.title` |
+| P3 목록 + 홈 | `e07ba38` | `art/*`, `display.ts`, 홈 재구성, 글 목록(연도 그룹 행), 카테고리 페이지, 가로 탭 필터 | 페이지네이션 라우트와 `PaginationNav`는 이미 없어져 이식하지 않았다. 필터는 측면 패널/드로어 대신 가로 탭. 연도 그룹은 `:has()`로 숨긴다 |
+| P4 연구 + 라이브러리 + 검색 | `15d5d29` | `PaperRow`, 연구 허브·토픽·패스·덱, 라이브러리 3페이지, `PickCard`, `LibraryPageStyles` 재작성, 검색(Pagefind 변수 → 토큰) | 모바일에서 플로팅 언어 칩이 행 끝을 가리지 않게 크기를 줄임. 새 키 `research.state.studied`, `getTopicLabelsForPaper()` 추가 |
+| P5 정리 | 이 phase의 커밋 | 아래 참고 | 아래 참고 |
+
+### P5 정리 내역
+
+- `global.css`에서 `body.light-theme`/`body.dark-theme` 색 패치와 `.article-page`/`.atelier-page` 제외 셀렉터, 레거시 `--color-*`/`--surface-*`/`--text-*`/`--shadow-*`/`--gray*` 등 변수, `@layer components`(`.btn-primary`, `.card-base`, `.card-dark`, `.nav-link` 등), 미사용 `.underlined-link`/`.section-index`/`.global-header`/`.main-heading`/중복 `.sr-only`·`.line-clamp-*`를 지웠다.
+- `main { width; padding }` 미디어 규칙을 지우고 `.atelier-page`/`.article-page`의 `width: auto` 덮어쓰기를 함께 없앴다. `h1`/`h2` 모바일 크기 규칙도 지웠다.
+- 의도적으로 남긴 것: `@media (max-width: 720px) { html { font-size: 18px } }`. `.atelier-page`/`.article-page`가 이 규칙을 덮어쓰지 않으므로 중복이 아니며, 지우면 모바일의 모든 rem 크기가 달라진다. 별도 결정이 필요하면 따로 다룬다.
+- `--state-success`/`--state-error`(FeedbackBox가 쓰는 유일한 의미 토큰)는 `tokens.css`로 옮겼다. 나머지 시맨틱 토큰 층은 쓰는 곳이 없어 삭제했다.
+- `tailwind.config.mjs`: `accent.dark/light`, `neural.*`, `gradient-*` 애니메이션·키프레임 삭제(`accent`는 `var(--accent)` 하나). Atkinson 폰트 설정은 이미 없었다.
+- 삭제한 파일: `src/styles/controls.css`(import 없음), `BlogCard.astro`, `PostMeta.astro`(BlogCard에서만 쓰임), `Bio.astro`, `HeaderLink.astro`(importer 0), `public/images/earth-9-svgrepo-com.svg`(참조 0). `homepagePostImageSizes`도 삭제.
+- 남긴 것: `components/reviews/*`(MDX 저작용 API라 현재 content가 import하지 않아도 유지), 3D 레거시 스크립트(`neuralNetwork.js` 등, 범위 밖), `.prose-none`(`how2make_resume.mdx`가 사용), `.global-wrapper`(홈이 사용).
+- 전역 스윕: `src/`의 `.astro`/`.css`/`.ts`에 `slate-*`/`orange-*`/`neutral-*`/`dark:`/하드코딩 hex 잔재 없음. 남은 리터럴은 `BaseHead`의 `theme-color`·`msapplication-TileColor` meta(CSS 변수를 못 읽음)뿐이다.
+- 부수 효과: Footer의 소개 문단이 라이트 테마에서 레거시 패치(`#0f172a`) 때문에 `--secondary`가 아니라 거의 검정으로 보이던 것이 설계대로 `--secondary`로 바뀌었다.
+- 문서: `CLAUDE.md`(컴포넌트·유틸 표, Styling 절, 사라진 페이지네이션 항목 정리), `docs/ops/ui-conventions.md` 재작성, `docs/ops/csp.md` 인벤토리 갱신(홈·`LanguagePicker` 인라인 스크립트 제거 반영; 새 인라인 스크립트 없음, 새 서드파티 도메인 없음), `docs/architecture/dependency-map.md`, `docs/architecture/design-tokens-and-images.md`에 갱신 메모.
+
+### 남은 한계
+
+- 모바일에서 Pagefind 필터 패널이 열리면 결과가 아래로 밀린다.
+- 학습 경로 페이지의 토픽 칩이 표시용 이름 대신 raw topic id를 그대로 보여준다.
+- 일본어(jp) 글은 읽는 시간을 표시하지 않는다.
+- `picks`와 `resources`가 모두 `draft`라서, 채워진 상태(픽 카드 그리드, Useful Feeds 행, 홈 하단 띠)는 validator가 검증하지 못한다. 실제 콘텐츠를 공개할 때 한 번 눈으로 확인해야 한다.
+- `--stage-ink`/`--stage-muted` 토큰은 프로토타입 호환용으로 정의돼 있으나 아직 쓰는 곳이 없다.
+- `components/reviews/*` 일부(`EquationNote`, `LimitationBlock`, `MyCommentary`, `ResultHighlight`)는 현재 어떤 리뷰 MDX에서도 쓰이지 않는다.
