@@ -55,9 +55,6 @@ const series = getMultiPostSeries(posts).map((entry) => ({
 	count: entry.count,
 }));
 
-const categoriesUrl = `/${currentLang}/blog/categories`;
-const rssUrl = `/${currentLang}/rss.xml`;
-
 // Posts arrive newest first, so each year's group is already in order.
 const postsByYear = posts.reduce((groups, post) => {
 	const year = post.data.pubDate.getFullYear();
@@ -81,13 +78,6 @@ const postsByYear = posts.reduce((groups, post) => {
 				<Fragment>
 					<section class="subpage-intro">
 						<h1 class="eyebrow">{t('blog.index.eyebrow').replace('{count}', String(posts.length))}</h1>
-						<div class="blog-intro-row">
-							<p>{t('blog.index.description')}</p>
-							<nav class="blog-intro-links" aria-label={t('blog.all-posts')}>
-								<a href={categoriesUrl} class="text-link">{t('blog.categories-title')}</a>
-								<a href={rssUrl} class="text-link">{t('blog.index.rss')}</a>
-							</nav>
-						</div>
 					</section>
 
 					<BlogFilterBar
@@ -132,35 +122,6 @@ const postsByYear = posts.reduce((groups, post) => {
 </html>
 
 <style>
-	.subpage-intro .eyebrow {
-		margin-bottom: 0.4rem;
-	}
-
-	.blog-intro-row {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: baseline;
-		justify-content: space-between;
-		gap: 0.5rem 2rem;
-	}
-
-	.blog-intro-row p {
-		margin: 0;
-		font: 400 0.9375rem/1.55 var(--font-serif);
-		color: var(--secondary);
-	}
-
-	.blog-intro-links {
-		display: flex;
-		gap: 1.35rem;
-	}
-
-	.blog-intro-links a {
-		display: inline-flex;
-		align-items: center;
-		min-height: 2.5rem;
-	}
-
 	.blog-empty {
 		margin-block: 0;
 		padding: 1.5rem 0;

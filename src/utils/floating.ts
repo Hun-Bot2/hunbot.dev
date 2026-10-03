@@ -87,16 +87,11 @@ export function makeDraggable(
 
 	el.style.touchAction = 'none';
 
-	el.addEventListener('pointerdown', (event) => {
-		if (event.button !== 0) return;
-		const rect = el.getBoundingClientRect();
-		dragging = true;
-		moved = false;
-		start = { px: event.clientX, py: event.clientY, left: rect.left, top: rect.top };
-		el.setPointerCapture(event.pointerId);
-	});
-
-	el.addEventListener('pointermove', (event) => {
+	// Move/up are tracked on the document, not the element and not via pointer
+	// capture: capturing on pointerdown retargets the click that follows to `el`
+	// itself, so a wrapper's inner button never saw it (the blog filter trigger did
+	// nothing), while element-level listeners lose a fast drag that outruns the element.
+	const onMove = (event: PointerEvent) => {
 		if (!dragging) return;
 		const dx = event.clientX - start.px;
 		const dy = event.clientY - start.py;
@@ -106,9 +101,12 @@ export function makeDraggable(
 		el.classList.add('is-dragging');
 		place(start.left + dx, start.top + dy);
 		options.onMove?.();
-	});
+	};
 
 	const end = () => {
+		document.removeEventListener('pointermove', onMove);
+		document.removeEventListener('pointerup', end);
+		document.removeEventListener('pointercancel', end);
 		if (!dragging) return;
 		dragging = false;
 		el.classList.remove('is-dragging');
@@ -124,11 +122,22 @@ export function makeDraggable(
 			}
 		}
 	};
-	el.addEventListener('pointerup', end);
-	el.addEventListener('pointercancel', end);
 
-	// Capture phase, so the control's own click handler never sees the post-drag click.
-	el.addEventListener(
+	el.addEventListener('pointerdown', (event) => {
+		if (event.button !== 0) return;
+		const rect = el.getBoundingClientRect();
+		dragging = true;
+		moved = false;
+		start = { px: event.clientX, py: event.clientY, left: rect.left, top: rect.top };
+		document.addEventListener('pointermove', onMove);
+		document.addEventListener('pointerup', end);
+		document.addEventListener('pointercancel', end);
+	});
+
+	// Document capture phase: neither the control's own click handler nor an
+	// outside-click handler (the click after a drag can land on a common ancestor,
+	// not on `el`) ever sees the click that ends a drag.
+	document.addEventListener(
 		'click',
 		(event) => {
 			if (swallowClick) {
