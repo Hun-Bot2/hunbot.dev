@@ -37,17 +37,17 @@
 }
 
 html.dark {
-	--paper: #191a18;
-	--paper-deep: #22231f;
-	--paper-light: #1e1f1c;
-	--ink: #eeede5;
-	--secondary: #aaa9a1;
-	--faint: #777871;
-	--rule: #3f403b;
-	--rule-strong: #65665f;
+	--paper: #282828;
+	--paper-deep: #353534;
+	--paper-light: #2f2f2e;
+	--ink: #e6e4de;
+	--secondary: #b4b2ab;
+	--faint: #8a8983;
+	--rule: #3d3d3c;
+	--rule-strong: #5a5a57;
 	--accent: #ee6841;
-	--stage: #10110f;
-	--stage-ink: #f2f0e9;
+	--stage: #1f1f1e;
+	--stage-ink: #e6e4de;
 	--stage-muted: #9f9f98;
 	--state-reviewed: #6fbf9f;
 	--state-reading: #7fb0e0;
