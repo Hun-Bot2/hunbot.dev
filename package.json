@@ -43,6 +43,7 @@
     "astro": "astro"
   },
   "dependencies": {
+    "@astrojs/check": "^0.9.10",
     "@astrojs/mdx": "^4.3.13",
     "@astrojs/rss": "^4.0.14",
     "@astrojs/sitemap": "^3.6.0",
@@ -56,6 +57,7 @@
     "remark-cjk-friendly": "^2.3.2",
     "remark-math": "^6.0.0",
     "sharp": "^0.34.2",
+    "typescript": "^5.9.3",
     "unist-util-visit": "^5.1.0"
   },
   "devDependencies": {
