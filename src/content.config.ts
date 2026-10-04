@@ -114,6 +114,20 @@ const blog = defineCollection({
 	}),
 });
 
+// One preview image per resource (docs/features/library-data-model.md, preview
+// images exception): the site's og image or a reviewed screenshot, converted
+// by the research-os export into public/images/resources/, or a typographic
+// card drawn from the title when nothing could be fetched.
+const resourceImage = z.discriminatedUnion('kind', [
+	z.object({
+		kind: z.enum(['og', 'screenshot']),
+		src: z.string().regex(/^\/images\/resources\/[a-z0-9-]+\.webp$/),
+		width: z.number().int().positive(),
+		height: z.number().int().positive(),
+	}),
+	z.object({ kind: z.literal('typographic'), label: z.string().min(1).max(120) }),
+]);
+
 const resources = defineCollection({
 	loader: glob({ base: './src/content/resources', pattern: '**/*.{md,mdx}' }),
 	schema: z
@@ -163,6 +177,7 @@ const resources = defineCollection({
 			publishedAt: dateString.optional(),
 			canonicalLanguage,
 			whyRelevant: localizedOneLiner.optional(),
+			image: resourceImage.optional(),
 		})
 		.superRefine((resource, context) => {
 			if (resource.status === 'approved' && resource.review.humanReviewed !== true) {

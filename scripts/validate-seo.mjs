@@ -43,14 +43,9 @@ assert.match(sitemapRoute, /\/explore\//, 'sitemap should list /{lang}/explore/.
 // source), same as before this change.
 assert.doesNotMatch(sitemapRoute, /library\/decks/, 'The sitemap must not advertise the retired /library/decks/ path.');
 assert.match(sitemapRoute, /\/research\/decks\//);
-// The Library's two tabs (docs/decisions/site-structure.md#3) must both be
-// advertised in the sitemap route source, not just the hub.
 assert.match(sitemapRoute, /\$\{lang\}\/library\/`/, 'sitemap.xml.ts should list the /{lang}/library/ hub.');
-assert.match(
-	sitemapRoute,
-	/\$\{lang\}\/library\/useful-feeds\/`/,
-	'sitemap.xml.ts should list the /{lang}/library/useful-feeds/ tab.',
-);
+// Useful Feeds merged into /{lang}/library/ (2026-10-04) and redirects there.
+assert.doesNotMatch(sitemapRoute, /library\/useful-feeds/, 'The sitemap must not advertise the retired /library/useful-feeds/ path.');
 // Research hub replaces the retired /{lang}/reviews/ index
 // (docs/decisions/site-structure.md) — the sitemap's own generated static
 // page list must not advertise that URL as live anymore. Review *detail*
@@ -102,14 +97,10 @@ for (const outputRoot of [join(root, 'dist/client'), join(root, '.vercel/output/
 				);
 			}
 
-			// Both Library tabs (docs/decisions/site-structure.md#3) and the
-			// Research decks route (#2) must round-trip into the built sitemap,
-			// not just the route source checked above.
+			// The Library and the Research decks route (#2) must round-trip into
+			// the built sitemap, not just the route source checked above.
 			assert.ok(sitemap.includes(`/${lang}/library/`), `${relative(root, sitemapPath)} should include ${lang} library hub.`);
-			assert.ok(
-				sitemap.includes(`/${lang}/library/useful-feeds/`),
-				`${relative(root, sitemapPath)} should include ${lang} library useful-feeds tab.`,
-			);
+			assert.ok(!sitemap.includes(`/${lang}/library/useful-feeds/`), `${relative(root, sitemapPath)} must not include the retired useful-feeds path.`);
 			assert.ok(
 				sitemap.includes(`/${lang}/research/decks/`),
 				`${relative(root, sitemapPath)} should include ${lang} research decks page.`,

@@ -40,6 +40,12 @@
   "relatedDecks": [],
   "publishedAt": "2026-10-04",
   "canonicalLanguage": "en",
+  "image": {
+    "kind": "og",
+    "src": "/images/resources/repomix.webp",
+    "width": 1200,
+    "height": 630
+  },
   "contentType": "tool"
 }
 ---

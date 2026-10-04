@@ -1,23 +1,22 @@
 ---
-// 외부 링크 tab — the Library's default route (docs/decisions/site-structure.md,
-// revision 2026-09-27). Data comes entirely from the `picks` collection now:
-// the old section-card grid, Featured Resources, and Featured Topics are
-// gone. `getFeaturedTopics`/`getFeaturedResources` in src/utils/library.ts
-// are left in place (tests and a later commit still use them) even though
-// this page no longer calls them.
+// The Library (docs/decisions/site-structure.md, revision 2026-10-04): one
+// list of external tools, repos and sites as image cards, filtered with the
+// same floating filter the blog uses. It used to be split into 외부 링크
+// (`picks`) and Useful Feeds (`resources` from research-os) tabs — a
+// distinction of where an item was written, which visitors cannot see — so
+// both collections now render here together (src/utils/library.ts's
+// getLibraryItems) and /{lang}/library/useful-feeds/ redirects here.
 import BaseHead from '../../components/BaseHead.astro';
 import Header from '../../components/Header.astro';
 import FloatingLanguagePicker from '../../components/FloatingLanguagePicker.astro';
-import LibraryPageStyles from '../../components/library/LibraryPageStyles.astro';
-import LibraryTabs from '../../components/library/LibraryTabs.astro';
-import PickCard from '../../components/library/PickCard.astro';
+import BlogFilterBar from '../../components/blog/BlogFilterBar.astro';
+import LibraryCard from '../../components/library/LibraryCard.astro';
 import { getCollection } from 'astro:content';
 import { useTranslations, type UILanguage } from '../../i18n/ui';
-import { librarySections as pickLibrarySections } from '../../data/librarySections';
-import { pickTiers, recentPicksLimit } from '../../data/libraryPolicy';
-import { computePickTier, getPickSectionCounts, getRecentPicks, type PopularitySnapshot } from '../../utils/picks';
-import { sortStable } from '../../utils/ordering';
-import popularity from '../../data/popularity.json';
+import { getLibraryItems } from '../../utils/library';
+import { getLibraryKindLabel, getLibraryTopicLabel } from '../../utils/library-labels';
+import { getLibraryArea, libraryAreas } from '../../data/libraryAreas';
+import '../../styles/lists.css';
 
 export function getStaticPaths() {
 	return [
@@ -32,45 +31,39 @@ const t = useTranslations(lang);
 const title = `${t('library.title')} - Hun-Bot Blog`;
 const description = t('library.description');
 
-const allPicks = await getCollection('picks');
-const publishedPicks = allPicks.filter((pick) => pick.data.draft !== true);
-const totalPickCount = publishedPicks.length;
+const items = getLibraryItems(await getCollection('resources'), await getCollection('picks'));
 
-// Section filter chips: hide a section entirely at 0 published picks
-// (docs/decisions/site-structure.md#5 — empty sections are hidden, not
-// shown as "0개 / 준비 중"). Shared with each pick section page so the two
-// surfaces cannot disagree about which sections are visible.
-const sectionCounts = getPickSectionCounts(publishedPicks);
-const visibleSections = pickLibrarySections
-	.map((section) => ({ slug: section.slug, label: section.label, count: sectionCounts.get(section.slug) ?? 0 }))
-	.filter((section) => section.count > 0);
+// Facet options with counts, most common first (ties by label).
+function facetOptions(values: string[], label: (value: string) => string) {
+	const counts = new Map<string, number>();
+	for (const value of values) counts.set(value, (counts.get(value) ?? 0) + 1);
+	return [...counts]
+		.map(([value, count]) => ({ value, label: label(value), count }))
+		.sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+}
 
-// "최근 추가": the latest published picks by addedAt, newest first. Shared
-// with the homepage Library block so both surfaces derive the same set
-// (src/utils/picks.ts's getRecentPicks).
-const recentPicks = getRecentPicks(publishedPicks, recentPicksLimit);
+// 분야 keeps the registry order (src/data/libraryAreas.ts), 기타 last; each
+// 주제 chip belongs to its items' area, so picking an area narrows the topics.
+const areaOrder = [...libraryAreas.map((area) => area.id), 'other'];
+const areaOptions = facetOptions(items.map((item) => item.area), (area) => getLibraryArea(area).label[lang]).sort(
+	(a, b) => areaOrder.indexOf(a.value) - areaOrder.indexOf(b.value),
+);
+const areaOfTopic = new Map(items.map((item) => [item.topic, item.area]));
+const topicOptions = facetOptions(items.map((item) => item.topic), (topic) => getLibraryTopicLabel(topic, lang))
+	.map((option) => ({ ...option, parent: { facet: 'area', value: areaOfTopic.get(option.value)! } }))
+	.sort((a, b) => areaOrder.indexOf(a.parent.value) - areaOrder.indexOf(b.parent.value));
 
-// Tier groups in pickTiers order (필수 / 인기 / 발굴), each stably sorted by
-// title; an empty tier is skipped entirely.
-const tierGroups = pickTiers
-	.map((tier) => ({
-		tier,
-		picks: sortStable(
-			publishedPicks.filter((pick) => computePickTier(pick.data, popularity as PopularitySnapshot, pickTiers).tier === tier.id),
-			(a, b) => a.data.title.localeCompare(b.data.title),
-		),
-	}))
-	.filter((group) => group.picks.length > 0);
-
-const now = new Date();
-const chipAllLabel = t('library.chip.all').replace('{count}', String(totalPickCount));
+const filterGroups = [
+	{ facet: 'area', label: t('library.filter-area'), options: areaOptions },
+	{ facet: 'topic', label: t('library.filter-topic'), options: topicOptions },
+	{ facet: 'kind', label: t('library.filter-kind'), options: facetOptions(items.map((item) => item.kind), (kind) => getLibraryKindLabel(kind, lang)) },
+];
 ---
 
 <!doctype html>
 <html lang={lang}>
 	<head>
 		<BaseHead title={title} description={description} lang={lang} />
-		<LibraryPageStyles />
 		<meta data-pagefind-meta="title[content]" content={t('library.title')} />
 		<meta data-pagefind-meta="description[content]" content={description} />
 		<meta data-pagefind-filter="language[content]" content={lang} />
@@ -81,55 +74,79 @@ const chipAllLabel = t('library.chip.all').replace('{count}', String(totalPickCo
 		<FloatingLanguagePicker />
 		<main id="main-content" class="atelier-page" data-pagefind-body>
 			<section class="subpage-intro">
-				<h1 class="eyebrow">{t('library.title')}</h1>
-				<LibraryTabs lang={lang} active="external-links" />
+				<h1 class="eyebrow">{t('library.title')} · {items.length}</h1>
+				<p class="library-intro">{t('library.intro')}</p>
 			</section>
 
-			<div class="page-frame">
-				{totalPickCount === 0 ? (
-					<p class="empty-line">{t('library.empty.no-picks')}</p>
-				) : (
-					<>
-						<section class="library-chips" aria-label={chipAllLabel}>
-							<a href={`/${lang}/library/`} class="library-chip" aria-current="page">
-								{chipAllLabel}
-							</a>
-							{visibleSections.map((section) => (
-								<a href={`/${lang}/library/${section.slug}/`} class="library-chip">
-									{section.label[lang]} {section.count}
-								</a>
-							))}
-						</section>
+			{items.length === 0 ? (
+				<p class="page-frame library-empty">{t('library.empty')}</p>
+			) : (
+				<Fragment>
+					<BlogFilterBar
+						lang={lang}
+						groups={filterGroups}
+						storageKey="hunbot-library-filters"
+						resultsTemplate={t('library.filter-results')}
+						label={t('library.filter-label')}
+						totalCount={items.length}
+					/>
 
-						{recentPicks.length > 0 && (
-							<section class="research-section" aria-labelledby="library-recent-heading">
-								<div class="section-head">
-									<div class="column-heading">
-										<h2 id="library-recent-heading">{t('library.recent-added')}</h2>
-									</div>
-								</div>
-								<div class="knowledge-grid">
-									{recentPicks.map((pick) => <PickCard pick={pick} lang={lang} now={now} showSection={true} showTier={true} />)}
-								</div>
-							</section>
-						)}
-
-						{tierGroups.map((group) => (
-							<section class="research-section" aria-labelledby={`library-tier-${group.tier.id}-heading`}>
-								<div class="section-head">
-									<div class="column-heading">
-										<h2 id={`library-tier-${group.tier.id}-heading`}>{group.tier.label[lang]}</h2>
-									</div>
-									<p class="section-note">{group.tier.description[lang]}</p>
-								</div>
-								<div class="knowledge-grid">
-									{group.picks.map((pick) => <PickCard pick={pick} lang={lang} now={now} showSection={true} />)}
-								</div>
-							</section>
+					<ul class="page-frame library-grid" data-blog-posts>
+						{items.map((item) => (
+							<li id={item.id} data-post-card data-post-area={item.area} data-post-kind={item.kind} data-post-topic={item.topic}>
+								<LibraryCard
+									item={item}
+									kindLabel={getLibraryKindLabel(item.kind, lang)}
+									topicLabel={getLibraryTopicLabel(item.topic, lang)}
+								/>
+							</li>
 						))}
-					</>
-				)}
-			</div>
+					</ul>
+
+					<p class="page-frame library-empty" data-blog-empty hidden>{t('library.filter-no-results')}</p>
+				</Fragment>
+			)}
 		</main>
+		<script type="module" src="/scripts/blog-filters.js"></script>
 	</body>
 </html>
+
+<style>
+	.library-intro {
+		max-width: 38rem;
+		margin: 0.75rem 0 0;
+		color: var(--secondary);
+		font-size: 0.9375rem;
+		line-height: 1.65;
+	}
+
+	.library-grid {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 2.5rem 1.75rem;
+		margin-block: 0 4rem;
+		padding: 0;
+		list-style: none;
+	}
+
+	.library-grid > li[hidden] {
+		display: none;
+	}
+
+	.library-empty {
+		margin-block: 0 4rem;
+		color: var(--secondary);
+	}
+
+	@media (min-width: 640px) {
+		.library-grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+
+	@media (min-width: 900px) {
+		.library-grid {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+		}
+	}
+</style>

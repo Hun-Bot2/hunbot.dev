@@ -35,8 +35,6 @@ export function getLatestBlogPosts(posts: BlogEntry[], limit = 6): BlogEntry[] {
 }
 
 // getHomepageLibraryPicks and getHomepageSectionCounts (papers+resources
-// featured picks, per-section counts) are gone: the homepage's "큐레이션"
-// panel is replaced by a Useful Feeds panel (src/utils/library.ts's
-// getUsefulFeedItems) and the Library block now reads picks directly
-// (src/utils/picks.ts's getRecentPicks) — see src/pages/[lang]/index.astro
-// and docs/decisions/site-structure.md, revision 2026-09-27.
+// featured picks, per-section counts) are gone: the homepage's Library block
+// reads src/utils/library.ts's getLibraryItems, the same list /{lang}/library/
+// shows — see docs/decisions/site-structure.md, revision 2026-10-04.

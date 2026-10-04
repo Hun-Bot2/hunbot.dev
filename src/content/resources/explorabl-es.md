@@ -39,6 +39,12 @@
   "relatedTopics": [],
   "relatedDecks": [],
   "publishedAt": "2026-10-04",
-  "canonicalLanguage": "en"
+  "canonicalLanguage": "en",
+  "image": {
+    "kind": "og",
+    "src": "/images/resources/explorabl-es.webp",
+    "width": 1200,
+    "height": 637
+  }
 }
 ---

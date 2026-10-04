@@ -41,6 +41,12 @@
   "relatedDecks": [],
   "publishedAt": "2026-10-04",
   "canonicalLanguage": "en",
+  "image": {
+    "kind": "og",
+    "src": "/images/resources/superpowers.webp",
+    "width": 1200,
+    "height": 600
+  },
   "contentType": "repo"
 }
 ---
