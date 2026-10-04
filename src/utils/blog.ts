@@ -1,6 +1,11 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
 import { getBlogLanguageFromId, getBlogSlugFromId, getBlogUrlFromPost } from './blog-routing';
+import { selectPublishedPosts } from './blog-publishing.ts';
 import type { UILanguage } from '../i18n/ui';
+
+// The publishing rules live in ./blog-publishing.ts (no astro:content import)
+// so Node scripts share them; re-exported here so existing imports keep working.
+export { excludeDuplicates, getFrontmatterIssues, isPublishable } from './blog-publishing.ts';
 
 export type BlogPost = CollectionEntry<'blog'>;
 
@@ -37,84 +42,6 @@ const CATEGORY_ALIASES: Record<string, 'ai' | 'devlog' | 'review' | 'misc'> = {
   'thoughts': 'misc',
 };
 
-// Template frontmatter left over from copy-pasting a new post. These values are
-// structurally valid per the Zod schema (a string is a string, an array of
-// strings is an array of strings) but are never real content.
-const PLACEHOLDER_DESCRIPTIONS = new Set(['설명 입력', 'Enter description', '説明を入力']);
-const PLACEHOLDER_TAGS = new Set(['tag1', 'tag2', 'tag']);
-const PLACEHOLDER_CATEGORY = 'category';
-const PLACEHOLDER_SERIES = new Set(['series 이름', 'series name']);
-
-/**
- * List the reasons a post's frontmatter looks like unedited template content,
- * rather than real values. An empty array means the frontmatter is clean.
- */
-export function getFrontmatterIssues(post: BlogPost): string[] {
-  const issues: string[] = [];
-  const { description, tags, category, series } = post.data;
-
-  // Only exact template strings count. A short description is a style choice,
-  // not a defect: gating on length hid real posts whose descriptions were simply
-  // terse. Use `draft: true` to hold back a stub.
-  const trimmedDescription = description?.trim() ?? '';
-  if (PLACEHOLDER_DESCRIPTIONS.has(trimmedDescription)) {
-    issues.push('placeholder description');
-  }
-
-  if (tags?.some((tag) => PLACEHOLDER_TAGS.has(tag.trim().toLowerCase()))) {
-    issues.push('placeholder tags');
-  }
-
-  if (category?.trim().toLowerCase() === PLACEHOLDER_CATEGORY) {
-    issues.push('placeholder category');
-  }
-
-  if (series && PLACEHOLDER_SERIES.has(series.trim().toLowerCase())) {
-    issues.push('placeholder series');
-  }
-
-  return issues;
-}
-
-/**
- * A post is publishable when it is not a draft and its frontmatter contains
- * no template placeholder values.
- */
-export function isPublishable(post: BlogPost): boolean {
-  return !post.data.draft && getFrontmatterIssues(post).length === 0;
-}
-
-function getDuplicateKey(post: BlogPost): string | null {
-  let language: string;
-  try {
-    language = getBlogLanguageFromId(post.id);
-  } catch {
-    return null;
-  }
-
-  return `${language}::${post.data.title.trim()}::${post.data.pubDate.toISOString().slice(0, 10)}`;
-}
-
-/**
- * Same language + same title + same pubDate is always a mistake (a copy-pasted
- * post that was never renamed), never a legitimate case. Excludes every copy,
- * not just the extras.
- */
-export function excludeDuplicates(posts: BlogPost[]): BlogPost[] {
-  const counts = new Map<string, number>();
-
-  for (const post of posts) {
-    const key = getDuplicateKey(post);
-    if (key === null) continue;
-    counts.set(key, (counts.get(key) ?? 0) + 1);
-  }
-
-  return posts.filter((post) => {
-    const key = getDuplicateKey(post);
-    return key === null || counts.get(key) === 1;
-  });
-}
-
 /**
  * Get all blog posts sorted by publication date (newest first).
  *
@@ -126,9 +53,7 @@ export function excludeDuplicates(posts: BlogPost[]): BlogPost[] {
  */
 export async function getAllPosts(): Promise<BlogPost[]> {
   const posts = await getCollection('blog', ({ data }) => !data.draft);
-  const withoutPlaceholders = posts.filter((post) => isPublishable(post));
-  const withoutDuplicates = excludeDuplicates(withoutPlaceholders);
-  return sortPostsByDateDesc(withoutDuplicates);
+  return sortPostsByDateDesc(selectPublishedPosts(posts));
 }
 
 export function sortPostsByDateDesc(posts: BlogPost[]): BlogPost[] {

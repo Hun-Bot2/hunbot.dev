@@ -8,7 +8,7 @@ import LibraryIcon from '../library/LibraryIcon.astro';
 import { useTranslations, type UILanguage } from '../../i18n/ui';
 import { getAcceptanceStatusDisplayName, getHonorDisplayName } from '../../data/paperVocabularies';
 import { getVenueDisplayName } from '../../data/venues';
-import { getPaperTldr, type PaperEntry } from '../../utils/library';
+import { getPaperAnchorId, getPaperTldr, type PaperEntry } from '../../utils/library';
 
 interface Props {
 	paper: PaperEntry;
@@ -44,7 +44,7 @@ const meta = [
 const studiedAt = paper.data.studiedAt;
 ---
 
-<li class="atelier-row paper-row">
+<li class="atelier-row paper-row" id={getPaperAnchorId(paper.data.id)}>
 	<div class="atelier-row-head">
 		<h3>{paper.data.title}</h3>
 		<div class="atelier-row-actions">
@@ -80,3 +80,10 @@ const studiedAt = paper.data.studiedAt;
 	)}
 	<p class="atelier-row-note">{getPaperTldr(paper, lang)}</p>
 </li>
+
+<style>
+	/* Keep an anchored row (#paper-<id>) clear of the sticky header. No visual change. */
+	.paper-row {
+		scroll-margin-top: calc(var(--header-height) + 1.5rem);
+	}
+</style>

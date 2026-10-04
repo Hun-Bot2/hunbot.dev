@@ -1,0 +1,208 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hun-bot.dev/contracts/public-artifact/v1",
+  "title": "Hun-Bot public artifact contract",
+  "description": "What any producer (Hun-Bot's own collection adapters, the Research OS exporter) publishes for Explore, lineage strips, and future public surfaces. Owned by Hun-Bot. Producers map their internals onto it; Hun-Bot never reads a producer's internal schema. Design: docs/plans/2026-10-03-explore-living-atlas.md §2. Enforced by scripts/validate-artifacts.mjs (hand-written checks, no JSON Schema library); vocabulary in src/data/publicArtifactVocabulary.ts must match the enums here.",
+  "x-contract": {
+    "version": 1,
+    "owner": "hunbot",
+    "compatibility": "Additive optional fields and new pipeline stages are minor changes. Any change of meaning, a removed field, or a new required field is a major version; producers then emit both versions for one release.",
+    "minorRevisions": ["1.1: optional artifact.series (blog series; language-independent id plus per-language title)"],
+    "exportLocation": "Research OS writes src/data/research-os-export/public-artifacts.json (one export object). Hun-Bot's own export is built in memory at build time."
+  },
+  "$ref": "#/$defs/export",
+  "$defs": {
+    "export": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contractVersion", "producer", "generatedAt", "artifacts", "relations", "aggregates"],
+      "properties": {
+        "contractVersion": { "type": "integer", "const": 1 },
+        "producer": { "$ref": "#/$defs/producer" },
+        "generatedAt": { "type": "string", "format": "date-time" },
+        "artifacts": { "type": "array", "items": { "$ref": "#/$defs/artifact" } },
+        "relations": { "type": "array", "items": { "$ref": "#/$defs/relation" } },
+        "aggregates": { "type": "array", "items": { "$ref": "#/$defs/aggregate" } }
+      }
+    },
+
+    "producer": {
+      "type": "string",
+      "enum": ["hunbot", "research-os"]
+    },
+
+    "domain": {
+      "description": "Activity domain = Explore lane. Always explicit and already resolved by the producer; consumers never derive it.",
+      "type": "string",
+      "enum": ["learn", "research", "build", "collect", "create"]
+    },
+
+    "date": {
+      "description": "A calendar date (YYYY-MM-DD) or month (YYYY-MM).",
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}(-\\d{2})?$"
+    },
+
+    "localizedText": {
+      "description": "Human-written text by language. 'original' holds text in its source language when that is not a site language or unknown (e.g. a paper's title). A missing language is absent, never machine-filled.",
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "enum": ["ko", "en", "jp", "original"] },
+      "additionalProperties": { "type": "string", "minLength": 1 }
+    },
+
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "domain", "domainsAlso", "title", "summary", "time", "state", "topics", "href", "externalUrl", "landmark", "addedAt", "origin", "sourceRef"],
+      "properties": {
+        "id": {
+          "description": "'<kind>:<local id>'. Hun-Bot's public id, stable across builds. Never a producer-internal id. Local id: lowercase, no whitespace, ':', '?', '#', or leading/trailing '/'; Unicode letters allowed.",
+          "type": "string",
+          "pattern": "^[a-z]+:[^\\s:?#A-Z]+$",
+          "maxLength": 220
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["paper", "review", "writing", "project", "experiment", "resource", "work"],
+          "x-producers": {
+            "paper": ["hunbot", "research-os"],
+            "resource": ["hunbot", "research-os"],
+            "review": ["hunbot"],
+            "writing": ["hunbot"],
+            "project": ["hunbot"],
+            "experiment": ["hunbot"],
+            "work": ["hunbot"]
+          }
+        },
+        "domain": { "$ref": "#/$defs/domain" },
+        "domainsAlso": {
+          "description": "Secondary domains. Shown in detail views; never move the mark.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/domain" }
+        },
+        "title": { "$ref": "#/$defs/localizedText" },
+        "summary": {
+          "oneOf": [{ "$ref": "#/$defs/localizedText" }, { "type": "null" }]
+        },
+        "time": {
+          "description": "Point kinds (paper, review, writing, resource, work) carry only 'start'. Span kinds (project, experiment) always carry 'end'; null = ongoing.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["start"],
+          "properties": {
+            "start": { "$ref": "#/$defs/date" },
+            "end": { "oneOf": [{ "$ref": "#/$defs/date" }, { "type": "null" }] }
+          }
+        },
+        "state": {
+          "description": "paper: selected | studied. review, writing, resource, work: published. project, experiment: planned | ongoing | paused | finished | abandoned.",
+          "type": "string"
+        },
+        "topics": {
+          "description": "Active Hun-Bot topic ids (src/content/topics), already resolved through aliases and merges.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string" }
+        },
+        "href": {
+          "description": "Internal site path per language, '/<lang>/…/', optionally with an in-page anchor ('/ko/research/#paper-<id>').",
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": { "enum": ["ko", "en", "jp"] },
+          "additionalProperties": { "type": "string", "pattern": "^/(ko|en|jp)/([^#\\s]*/)?(#[A-Za-z][A-Za-z0-9_-]*)?$" }
+        },
+        "externalUrl": {
+          "oneOf": [{ "type": "string", "pattern": "^https?://\\S+$" }, { "type": "null" }]
+        },
+        "landmark": {
+          "description": "Owner flag: labelled in Explore's default view.",
+          "type": "boolean"
+        },
+        "addedAt": {
+          "description": "When it entered the public site, YYYY-MM-DD.",
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "origin": { "$ref": "#/$defs/producer" },
+        "sourceRef": {
+          "description": "Opaque producer reference (e.g. a Research OS item id). Hun-Bot never parses, joins on, or displays it.",
+          "oneOf": [{ "type": "string", "minLength": 1, "maxLength": 128 }, { "type": "null" }]
+        },
+        "series": {
+          "description": "Optional (minor revision 1.1). The series this artifact belongs to; null or absent = standalone. Hun-Bot emits it for blog writing.",
+          "oneOf": [{ "$ref": "#/$defs/series" }, { "type": "null" }]
+        }
+      }
+    },
+
+    "series": {
+      "description": "A series of related artifacts. Every artifact in one series carries the same id and the same title, so a lane label never depends on which artifact is read.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title"],
+      "properties": {
+        "id": {
+          "description": "Language-independent lane key: lowercase, no whitespace, ':', '?' or '#'. Internal, never a URL.",
+          "type": "string",
+          "pattern": "^[^\\s:?#A-Z]+$",
+          "maxLength": 120
+        },
+        "title": { "$ref": "#/$defs/localizedText" }
+      }
+    },
+
+    "relation": {
+      "description": "A directed lineage edge between two public artifacts. Kind pairs and time order per relation are defined in src/data/publicArtifactVocabulary.ts (relationTypes).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["from", "to", "rel", "basis"],
+      "properties": {
+        "from": { "type": "string" },
+        "to": { "type": "string" },
+        "rel": {
+          "type": "string",
+          "enum": ["informed", "uses", "developedInto", "resultedIn", "explains", "cites"]
+        },
+        "basis": {
+          "description": "declared = the owner asserted it. verified = bibliographic evidence; only 'cites', only from research-os.",
+          "type": "string",
+          "enum": ["declared", "verified"]
+        }
+      },
+      "x-never": {
+        "description": "Documentary only. These exist privately and have no representation in this contract; validation rejects them by name with an explanation.",
+        "relations": ["relatedTo", "related_to", "relatedto", "related-to"],
+        "bases": ["candidate", "claimed", "inferred", "proposed", "unverified"]
+      }
+    },
+
+    "aggregate": {
+      "description": "One cell of the Research OS reading pipeline: count of papers at a stage, per month, per top-level topic. Only counts cross the boundary — no titles, no per-paper rows.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["period", "topic", "stage", "count", "coverage"],
+      "properties": {
+        "period": { "type": "string", "pattern": "^\\d{4}-\\d{2}$" },
+        "topic": {
+          "description": "A top-level active topic id (parent: null), or null for all topics. Deeper levels are reserved and currently rejected.",
+          "oneOf": [{ "type": "string" }, { "type": "null" }]
+        },
+        "stage": {
+          "description": "Pipeline stage. Open set: consumers ignore stages they do not know (with a warning), so adding one is a minor change.",
+          "type": "string",
+          "examples": ["discovered", "selected", "reviewed", "used"]
+        },
+        "count": {
+          "description": "null = unknown, which is never the same as 0.",
+          "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }]
+        },
+        "coverage": {
+          "type": "string",
+          "enum": ["complete", "partial", "unknown"]
+        }
+      }
+    }
+  }
+}
