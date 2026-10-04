@@ -36,7 +36,6 @@ const categories = Array.from(categoryMap.entries())
         <main id="main-content" class="atelier-page">
             <section class="subpage-intro">
                 <h1 class="eyebrow">{t('blog.categories-title')} · {categories.length}</h1>
-                <p class="category-intro">{t('blog.categories-description')}</p>
             </section>
 
             <div class="page-frame category-index">
@@ -62,12 +61,6 @@ const categories = Array.from(categoryMap.entries())
 <style>
     .subpage-intro .eyebrow {
         margin-bottom: 0.4rem;
-    }
-
-    .category-intro {
-        margin: 0;
-        font: 400 0.9375rem/1.55 var(--font-serif);
-        color: var(--secondary);
     }
 
     .category-index {

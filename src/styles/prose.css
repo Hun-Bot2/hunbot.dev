@@ -91,23 +91,11 @@ html:lang(ko) .article-lead {
 	margin-top: 1.5rem;
 }
 
-/* One container (the page-frame width) for header, body and wide content. Text
-   blocks are capped at --prose-measure and sit on the same left edge as the
-   header; code, tables, figures, KaTeX and embeds use the full container. */
+/* One container (the page-frame width) for header, body and wide content. The
+   prose, series nav and feedback box all fill it and share one left and right
+   edge. */
 .article-main {
-	--prose-measure: 46rem;
 	min-width: 0;
-}
-
-.prose > :where(p, ul, ol, dl, blockquote, h1, h2, h3, h4, h5, h6, hr, .footnotes),
-.series-nav,
-.article-main > .feedback-box {
-	max-width: var(--prose-measure);
-}
-
-/* A paragraph that is only an image is a figure: full container width. */
-.prose > p:has(> :is(img, picture):only-child, > a:only-child > img) {
-	max-width: none;
 }
 
 /* ── Floating table of contents (blog and review posts) ── */

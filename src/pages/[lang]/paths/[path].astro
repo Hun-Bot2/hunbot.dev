@@ -90,7 +90,6 @@ const languageLabels: Record<string, string> = {
 					{t('paths.detail.back')}
 				</a>
 				<h1 class="eyebrow">{pageTitle}</h1>
-				<p class="intro-copy">{description}</p>
 				<div class="chip-list atelier-row-chips" aria-label={t('paths.supporting-label')}>
 					{learningPath.topicIds.map((topicId) => <span class="chip">{topicId}</span>)}
 					<span class="chip">{t('paths.detail.updated').replace('{date}', learningPath.updatedAt)}</span>

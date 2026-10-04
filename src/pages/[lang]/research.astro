@@ -109,8 +109,6 @@ const formatItemCount = (count: number) => t('library.item-count').replace('{cou
 		<main id="main-content" class="atelier-page" data-pagefind-body>
 			<section class="subpage-intro">
 				<h1 class="eyebrow">{t('research.title')}</h1>
-				<p class="intro-copy">{t('research.subtitle')}</p>
-				<p class="intro-note">{description}</p>
 			</section>
 
 			<div class="page-frame">
@@ -241,28 +239,6 @@ const formatItemCount = (count: number) => t('library.item-count').replace('{cou
 					</section>
 				)}
 
-				{listedDeckCount > 0 && (
-					<section class="research-section" aria-labelledby="research-decks-heading">
-						<div class="section-head">
-							<div class="column-heading">
-								<h2 id="research-decks-heading">{t('research.section.decks.title')}</h2>
-							</div>
-						</div>
-						<ul class="atelier-rows">
-							<li class="atelier-row">
-								<a href={`/${lang}/research/decks/`} class="atelier-row-link">
-									<div class="atelier-row-head">
-										<h3>{t('library.section.decks.title')}</h3>
-									</div>
-									<div class="atelier-row-meta">
-										<span>{formatItemCount(listedDeckCount)}</span>
-									</div>
-								</a>
-							</li>
-						</ul>
-					</section>
-				)}
-
 				{featuredTopics.length > 0 && (
 					<section class="research-section" aria-labelledby="research-featured-topics-heading">
 						<div class="section-head">
@@ -303,6 +279,28 @@ const formatItemCount = (count: number) => t('library.item-count').replace('{cou
 									</li>
 								);
 							})}
+						</ul>
+					</section>
+				)}
+
+				{listedDeckCount > 0 && (
+					<section class="research-section" aria-labelledby="research-decks-heading">
+						<div class="section-head">
+							<div class="column-heading">
+								<h2 id="research-decks-heading">{t('research.section.decks.title')}</h2>
+							</div>
+						</div>
+						<ul class="atelier-rows">
+							<li class="atelier-row">
+								<a href={`/${lang}/research/decks/`} class="atelier-row-link">
+									<div class="atelier-row-head">
+										<h3>{t('library.section.decks.title')}</h3>
+									</div>
+									<div class="atelier-row-meta">
+										<span>{formatItemCount(listedDeckCount)}</span>
+									</div>
+								</a>
+							</li>
 						</ul>
 					</section>
 				)}
