@@ -40,6 +40,10 @@
   "relatedTopics": [],
   "relatedDecks": [],
   "publishedAt": "2026-10-04",
-  "canonicalLanguage": "en"
+  "canonicalLanguage": "en",
+  "image": {
+    "kind": "typographic",
+    "label": "tympanus.net/codrops"
+  }
 }
 ---

@@ -1,0 +1,134 @@
+---
+// One Library item (src/utils/library.ts's getLibraryItems): the preview image
+// and the title, both one external link. The image is the site's og image or
+// a reviewed screenshot (docs/features/library-data-model.md, preview images
+// exception); without one the card is typographic — host in mono behind an
+// accent square, title in italic serif, on ruled paper — so it follows the theme.
+import type { LibraryItem } from '../../utils/library';
+
+interface Props {
+	item: LibraryItem;
+	kindLabel: string;
+	topicLabel: string;
+}
+
+const { item, kindLabel, topicLabel } = Astro.props;
+const { image } = item;
+// Icons and small square og images look broken when cropped to the frame.
+const isSmall = image.kind !== 'typographic' && image.width < 600;
+---
+
+<a href={item.url} target="_blank" rel="noopener noreferrer" class="library-card">
+	<div class:list={['library-card-thumb', { 'is-small': isSmall, 'is-typo': image.kind === 'typographic' }]}>
+		{image.kind === 'typographic' ? (
+			<Fragment>
+				<span class="library-card-typo-label">{image.label}</span>
+				<span class="library-card-typo-word" aria-hidden="true">{item.title}</span>
+			</Fragment>
+		) : (
+			<img src={image.src} width={image.width} height={image.height} alt="" loading="lazy" decoding="async" />
+		)}
+	</div>
+	<p class="library-card-meta">{kindLabel} · {topicLabel}</p>
+	<h3 class="library-card-title">{item.title}<span class="library-card-arrow" aria-hidden="true"> ↗</span></h3>
+</a>
+
+<style>
+	.library-card {
+		display: block;
+		color: var(--ink);
+		text-decoration: none;
+	}
+
+	.library-card-thumb {
+		position: relative;
+		aspect-ratio: 1.91;
+		overflow: hidden;
+		border: 1px solid var(--rule);
+		background: var(--paper-deep);
+	}
+
+	.library-card-thumb img {
+		display: block;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		transition: transform 240ms ease;
+	}
+
+	.library-card-thumb.is-small img {
+		object-fit: contain;
+		padding: 12%;
+	}
+
+	.library-card:hover .library-card-thumb img {
+		transform: scale(1.02);
+	}
+
+	.library-card-thumb.is-typo {
+		background-color: var(--paper);
+		background-image: repeating-linear-gradient(0deg, transparent 0 13px, var(--rule) 13px 14px);
+	}
+
+	.library-card-typo-label {
+		position: absolute;
+		top: 0.6rem;
+		left: 0.65rem;
+		max-width: calc(100% - 1.3rem);
+		padding-right: 0.3rem;
+		overflow: hidden;
+		background: var(--paper);
+		color: var(--secondary);
+		font: 400 0.6875rem/1 var(--font-mono);
+		white-space: nowrap;
+		text-overflow: ellipsis;
+	}
+
+	.library-card-typo-label::before {
+		content: "";
+		display: inline-block;
+		width: 6px;
+		height: 6px;
+		margin-right: 0.4rem;
+		vertical-align: 1px;
+		background: var(--accent);
+	}
+
+	.library-card-typo-word {
+		position: absolute;
+		left: 0.65rem;
+		right: 0.65rem;
+		bottom: 0.6rem;
+		overflow: hidden;
+		background: var(--paper);
+		font: italic 400 2.25rem/1 var(--font-serif);
+		letter-spacing: -0.02em;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+	}
+
+	.library-card-meta {
+		margin: 0.85rem 0 0;
+		color: var(--secondary);
+		font: 400 0.6875rem/1.4 var(--font-mono);
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
+	}
+
+	.library-card-title {
+		margin: 0.35rem 0 0;
+		font: 400 1.3rem/1.25 var(--font-serif);
+		letter-spacing: -0.01em;
+		transition: color 160ms ease;
+	}
+
+	.library-card:hover .library-card-title,
+	.library-card:focus-visible .library-card-title {
+		color: var(--accent);
+	}
+
+	.library-card-arrow {
+		color: var(--accent);
+		font: 400 0.8em/1 var(--font-mono);
+	}
+</style>

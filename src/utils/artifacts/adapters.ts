@@ -384,7 +384,7 @@ export function adaptPapers(papers: PaperSource[], context: AdapterContext): Ada
 }
 
 // ---------------------------------------------------------------------------
-// picks → resource (Library 외부 링크)
+// picks → resource (Library cards, hand-written here)
 // ---------------------------------------------------------------------------
 
 export function adaptPicks(picks: PickSource[], context: AdapterContext): AdapterResult[] {
@@ -408,7 +408,7 @@ export function adaptPicks(picks: PickSource[], context: AdapterContext): Adapte
 					time: { start: addedAt },
 					state: 'published',
 					topics: [],
-					href: everyLanguage((lang) => `/${lang}/library/${pick.data.section}/`),
+					href: everyLanguage((lang) => `/${lang}/library/#pick-${slug}`),
 					externalUrl: pick.data.url,
 					landmark: false,
 					addedAt,
@@ -423,7 +423,7 @@ export function adaptPicks(picks: PickSource[], context: AdapterContext): Adapte
 }
 
 // ---------------------------------------------------------------------------
-// resources → resource (Library Useful Feeds; approved + human-reviewed only)
+// resources → resource (Library cards; approved + human-reviewed only)
 // ---------------------------------------------------------------------------
 
 export function adaptResources(resources: ResourceSource[], context: AdapterContext): AdapterResult[] {
@@ -448,7 +448,7 @@ export function adaptResources(resources: ResourceSource[], context: AdapterCont
 					time: { start: resource.data.publishedAt ?? resource.data.source.firstSeenAt },
 					state: 'published',
 					topics: resolveTopics(context, id, resource.data.relatedTopics ?? []),
-					href: everyLanguage((lang) => `/${lang}/library/useful-feeds/`),
+					href: everyLanguage((lang) => `/${lang}/library/#${resource.data.id}`),
 					externalUrl: resource.data.url,
 					landmark: false,
 					addedAt: resource.data.source.firstSeenAt,

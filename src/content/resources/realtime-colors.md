@@ -40,6 +40,12 @@
   "relatedTopics": [],
   "relatedDecks": [],
   "publishedAt": "2026-10-04",
-  "canonicalLanguage": "en"
+  "canonicalLanguage": "en",
+  "image": {
+    "kind": "og",
+    "src": "/images/resources/realtime-colors.webp",
+    "width": 801,
+    "height": 419
+  }
 }
 ---

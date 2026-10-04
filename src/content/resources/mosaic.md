@@ -41,6 +41,12 @@
   "relatedDecks": [],
   "publishedAt": "2026-10-04",
   "canonicalLanguage": "en",
+  "image": {
+    "kind": "screenshot",
+    "src": "/images/resources/mosaic.webp",
+    "width": 1200,
+    "height": 750
+  },
   "contentType": "repo"
 }
 ---

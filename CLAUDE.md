@@ -132,7 +132,7 @@ src/pages/
     ├── index.astro                      → /ko/, /jp/, /en/ (home)
     ├── search.astro                     → /ko/search/ (Pagefind UI)
     ├── rss.xml.js                       → /ko/rss.xml per-language feed
-    ├── library.astro                    → /ko/library/ (Library hub)
+    ├── library.astro                    → /ko/library/ (one list of image cards + blog filter; resources + picks)
     ├── explore.astro                    → /ko/explore/ (Living Atlas: public artifacts on a time × domain lane chart; reads only the public artifact contract)
     ├── paths.astro                      → /ko/paths/ (learning paths index)
     ├── research.astro                   → /ko/research/ (Research hub: study log, reviews, paths, decks card, featured topics)
@@ -142,8 +142,7 @@ src/pages/
     │   ├── categories.astro             → /ko/blog/categories/
     │   └── categories/[category].astro  → /ko/blog/categories/{cat}/
     ├── library/
-    │   ├── useful-feeds.astro           → /ko/library/useful-feeds/ (Useful Feeds tab, from `resources`)
-    │   └── [section].astro              → /ko/library/{section}/ (pick sections, slugs from src/data/librarySections.ts)
+    │   └── [section].astro              → /ko/library/{section}/ (pick sections, slugs from src/data/librarySections.ts; /library/useful-feeds/ 301s to /library/)
     ├── paths/
     │   └── [path].astro                 → /ko/paths/{id}/
     ├── research/
@@ -168,7 +167,7 @@ src/pages/
 | `blog-routing.ts` | `getBlogUrlFromPost()`, `getBlogUrlFromId()`, `getBlogSlugFromId()`, `getBlogLanguageFromId()` | Converts content IDs → localized URLs. **Only source of truth for post URLs.** |
 | `academic-review-routing.ts` | `getAcademicReviewUrlFromId()`, `getPublishedAcademicReviews()` | Same as blog-routing but for `academicReviews`. `getPublishedAcademicReviews()` is the single "published" filter (`!data.draft`) — every route/listing/sitemap reads through it, never `!data.draft` inline. |
 | `homepage.ts` | `getHomepageData()` | Aggregates recent posts + library data for home page. |
-| `library.ts` | `librarySections`, `getLibrarySectionPath()`, `getApprovedPapers()`, `getFeaturedPapers()` | Library section metadata and URL helpers. `librarySections` no longer has a `'papers'` kind — the `ai-papers` section moved to the Research hub (`src/utils/research.ts`). |
+| `library.ts` | `librarySections`, `getLibrarySectionPath()`, `getApprovedPapers()`, `getFeaturedPapers()`, `getLibraryItems()` | Library section metadata and URL helpers. `getLibraryItems()` merges approved `resources` and published `picks` into the one Library list (labels: `library-labels.ts`). `librarySections` no longer has a `'papers'` kind — the `ai-papers` section moved to the Research hub (`src/utils/research.ts`). |
 | `research.ts` | `getStudyLog()`, `getSelectedNotYetStudied()`, `getReviewForPaper()`, `getPostsForPaper()`, `getTopicsWithLinkedPapers()`, `getReviewsForPapers()`, `getPostsForPapers()` | Research hub data: study log / selected-not-yet-studied paper splits, and the paper ⇄ review/post ⇄ topic linking derived at build time. Backs `research.astro` and `research/topics/[topic].astro`. |
 | `learning-paths.ts` | `getPublishedLearningPaths()`, `getLearningPathUrl()` | Published learning paths and URLs. |
 | `view-counter.ts` | `getViewCount()`, `incrementViewCount()` | Redis-backed view count read/write. |
@@ -203,7 +202,7 @@ src/pages/
 |---|---|---|
 | `blog/PostListCard.astro` | Blog listing, category pages | `.writing-entry` row: date · thumbnail · serif title / description / meta |
 | `blog/PostThumb.astro` | `PostListCard`, home | 126×84 thumbnail: the post's `heroImage`, else `/images/blank.png` (the original default), both via `getResponsivePublicImage()` |
-| `blog/BlogFilterBar.astro` | Blog listing | Floating draggable `필터` button (left side, active-count badge) opening a popover (bottom sheet below 640px) with category/year/series tabs + reset; the page column reserves no space for it. Behaviour in `public/scripts/blog-filters.js` (queries `[data-blog-filters]`, `[data-facet]`, `[data-filter-*]`) |
+| `blog/BlogFilterBar.astro` | Blog listing, Library | Floating draggable `필터` button (left side, active-count badge) opening a popover (bottom sheet below 640px) with category/year/series tabs + reset; the page column reserves no space for it. Behaviour in `public/scripts/blog-filters.js` (queries `[data-blog-filters]`, `[data-facet]`, `[data-filter-*]`) |
 | `TagList.astro` | `PostListCard`, post header | Renders tag chips |
 | `CategoryBadge.astro` | Post rows | Normalized category chip (ai/devlog/review/misc) |
 | `FormattedDate.astro` | Various | Locale-aware date display |
@@ -218,7 +217,7 @@ src/pages/
 |---|---|---|
 | `library/LibraryIcon.astro` | Library pages, Research hub | Section icon display |
 | `library/LibraryPageStyles.astro` | Library pages, Research hub, Paths, Decks | One `is:global` stylesheet for the rule-separated row/grid vocabulary (`.research-section`, `.knowledge-item` grid, paper rows, tabs, empty lines) built purely on tokens; also imports `lists.css`. Research, Paths and Decks pages reuse it rather than defining their own theme |
-| `library/LibraryTabs.astro` | `library.astro`, `library/[section].astro`, `library/useful-feeds.astro` | Shared 외부 링크/Useful Feeds tab bar; the "research-os" label next to Useful Feeds is plain text, never a link |
+| `library/LibraryCard.astro` | `library.astro`, home | One Library item (`getLibraryItems()`): preview image (or typographic card) → mono kind · topic → serif title, all one external link |
 | `library/PickCard.astro` | Library hub, section pages, home | One `picks` entry as a `.knowledge-item`: `art/ResourceVisual` → mono kind·section label → serif title → owner note → meta line (tier · ★ stars · freshness chips). Tier/stars/freshness still come from `picks.ts`. |
 
 ### Art / Research
@@ -300,6 +299,7 @@ Rules: use **tokens, not `dark:` variants** — a token already follows the them
 | `libraryPolicy.ts` | `pickTiers`, `pickTierIds`, `isPickTierId()`, `pickKinds`, `isPickKind()`, `freshnessPolicy`, `recentPicksLimit` | Policy data for `picks`: tier star-count thresholds (highest first), kind vocabulary, staleness windows, and the "recently added" strip size. |
 | `publicArtifactVocabulary.ts` | kinds, domains, `relationTypes`, bases, `pipelineStages` | Registry for the public artifact contract; must equal the schema enums (validator fails on drift). No `relatedTo`, no candidate basis. |
 | `artifactDomains.ts` | `blogCategoryDomains`, `artifactDomainOverrides` | The one place blog category → Explore domain is defined, plus per-artifact overrides. |
+| `libraryAreas.ts` | `libraryAreas`, `getLibraryAreaId()`, `getLibraryArea()` | The Library's 분야 filter: which resource tags / pick sections belong to 디자인, 코드·프론트엔드, AI 엔지니어링, … Unlisted tags fall into 기타. |
 | `popularity.json` | `Record<"owner/name", { stars, createdAt, pushedAt, fetchedAt }>` | GitHub star-count snapshot for repo-backed `picks`, refreshed by `npm run picks:refresh` (`scripts/refresh-popularity.mjs`) — the only script that touches the network. |
 
 ---

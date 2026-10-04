@@ -13,9 +13,8 @@ import {
 	getLatestBriefPosts,
 	getPostsForLanguage,
 } from '../src/utils/homepage.ts';
-import { getUsefulFeedItems } from '../src/utils/library.ts';
-import { getPickSectionCounts, getRecentPicks } from '../src/utils/picks.ts';
-import { librarySections } from '../src/data/librarySections.ts';
+import { getLibraryItems } from '../src/utils/library.ts';
+import { getRecentPicks } from '../src/utils/picks.ts';
 
 const root = process.cwd();
 const languages = ['ko', 'jp', 'en'];
@@ -27,21 +26,14 @@ assert.match(packageJson.scripts?.['homepage:validate'] ?? '', /validate-homepag
 
 for (const lang of languages) {
 	assert.match(homepage, new RegExp(`params: \\{ lang: '${lang}' \\}`), `Homepage should generate ${lang} route.`);
-	// home.picks.* is gone: the "큐레이션" panel was replaced by a Useful Feeds
-	// panel (docs/decisions/site-structure.md#4) — papers moved to Research
-	// and resources are now Useful Feeds, so a papers+resources mixed pick no
-	// longer fits.
-	assert.ok(ui[lang]?.['home.feeds.title'], `${lang} home.feeds.title copy is required.`);
+	assert.ok(ui[lang]?.['home.library.title'], `${lang} home.library.title copy is required.`);
 	assert.ok(ui[lang]?.['home.explore.title'], `${lang} home.explore.title copy is required.`);
 }
 
-// getHomepageLibraryPicks/getHomepageSectionCounts are gone (moved logic):
-// the Useful Feeds panel and the Library block now read src/utils/library.ts's
-// getUsefulFeedItems and src/utils/picks.ts's getRecentPicks directly, the
-// same helpers /{lang}/library/useful-feeds.astro and /{lang}/library.astro
-// use, so this page cannot silently drift from either.
-assert.match(homepage, /getUsefulFeedItems/);
-assert.match(homepage, /getRecentPicks/);
+// One Library block (docs/decisions/site-structure.md, revision 2026-10-04):
+// the newest items from src/utils/library.ts's getLibraryItems, the same
+// helper /{lang}/library/ uses, so the two cannot drift apart.
+assert.match(homepage, /getLibraryItems/);
 assert.match(homepage, /getLatestBriefPosts/);
 assert.match(homepage, /getLatestBlogPosts/);
 assert.match(homepage, /getPostsForLanguage/);
@@ -51,11 +43,8 @@ assert.match(homepage, /data-pagefind-filter="section\[content\]"/);
 assert.doesNotMatch(homepage, /<form\b/i, 'Homepage PR must not add newsletter forms.');
 assert.doesNotMatch(homepage, /type=["']email["']/i, 'Homepage PR must not collect email addresses.');
 
-// home-picks -> home-feeds (docs/decisions/site-structure.md#4): same
-// position in the section order, new panel.
 const sectionOrder = [
 	'home-latest',
-	'home-feeds',
 	'home-library',
 	'home-briefs',
 ];
@@ -66,11 +55,6 @@ for (const token of sectionOrder) {
 	previousIndex = index;
 }
 
-assert.ok(
-	existsSync(join(root, 'src/pages/[lang]/library/[section].astro')),
-	'Dynamic Library section route should exist before homepage links to section pages.',
-);
-assert.match(homepage, /getLibrarySectionPath/);
 
 // 논문 리뷰 (home-reviews) must link out to the Research hub — papers and
 // reviews moved there (docs/decisions/site-structure.md#1), so a stale link
@@ -107,25 +91,16 @@ for (const lang of languages) {
 }
 
 const resources = readJsonFrontmatterCollection('src/content/resources');
-const usefulFeedItems = getUsefulFeedItems(resources, 'ko').slice(0, 3);
-assert.ok(usefulFeedItems.length <= 3, 'Homepage Useful Feeds panel shows at most 3 items.');
-for (const item of usefulFeedItems) {
-	const source = resources.find((entry) => entry.id === item.id);
-	assert.equal(source.data.status, 'approved', `${item.id} Useful Feeds item must be an approved resource.`);
-	assert.equal(source.data.review?.humanReviewed, true, `${item.id} Useful Feeds item must be human reviewed.`);
-}
-
 const picks = readYamlFrontmatterCollection('src/content/picks');
-const publishedPickCount = picks.filter((pick) => pick.data.draft !== true).length;
-const recentPicks = publishedPickCount >= 3 ? getRecentPicks(picks, 6) : [];
-for (const pick of recentPicks) {
-	assert.notEqual(pick.data.draft, true, `${pick.id} recent pick must not be a draft.`);
+const libraryItems = getLibraryItems(resources, picks).slice(0, 3);
+for (const item of libraryItems) {
+	const source = resources.find((entry) => entry.data.id === item.id);
+	if (!source) continue; // a pick; drafts are checked below
+	assert.equal(source.data.status, 'approved', `${item.id} Library item must be an approved resource.`);
+	assert.equal(source.data.review?.humanReviewed, true, `${item.id} Library item must be human reviewed.`);
 }
-
-const sectionCounts = getPickSectionCounts(picks.filter((pick) => pick.data.draft !== true));
-for (const section of librarySections) {
-	const count = sectionCounts.get(section.slug) ?? 0;
-	assert.ok(Number.isInteger(count) && count >= 0, `${section.slug} pick count should be a nonnegative integer.`);
+for (const pick of picks.filter((entry) => entry.data.draft === true)) {
+	assert.ok(!libraryItems.some((item) => item.title === pick.data.title), `${pick.id} draft pick must not be on the homepage.`);
 }
 
 // Recent-picks / fewer-than-3 fallback logic (docs/decisions/site-structure.md#4):
@@ -172,7 +147,7 @@ assert.deepEqual(
 );
 
 console.log(
-	`Validated homepage source, filters, Useful Feeds, and Library picks: ${usefulFeedItems.length} feed items, ${recentPicks.length} recent picks, ${sectionCounts.size} sections with picks.`,
+	`Validated homepage source, filters and the Library block: ${libraryItems.length} library items.`,
 );
 
 function read(path) {

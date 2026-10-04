@@ -2,7 +2,6 @@
 import BaseHead from '../../components/BaseHead.astro';
 import Header from '../../components/Header.astro';
 import FloatingLanguagePicker from '../../components/FloatingLanguagePicker.astro';
-import LibraryIcon from '../../components/library/LibraryIcon.astro';
 import { getCollection } from 'astro:content';
 import { getAllPosts } from '../../utils/blog';
 import FormattedDate from '../../components/FormattedDate.astro';
@@ -20,13 +19,10 @@ import {
 	getLatestBriefPosts,
 	getPostsForLanguage,
 } from '../../utils/homepage';
-import { getLibrarySectionPath, getUsefulFeedItems } from '../../utils/library';
-import { librarySections } from '../../data/librarySections';
-import { recentPicksLimit } from '../../data/libraryPolicy';
-import { getPickFacts, getPickSectionCounts, getPickSlug, getRecentPicks, formatStarCount, type PopularitySnapshot } from '../../utils/picks';
-import popularity from '../../data/popularity.json';
+import { getLibraryItems } from '../../utils/library';
+import { getLibraryKindLabel, getLibraryTopicLabel } from '../../utils/library-labels';
+import LibraryCard from '../../components/library/LibraryCard.astro';
 import PostThumb from '../../components/blog/PostThumb.astro';
-import ResourceVisual from '../../components/art/ResourceVisual.astro';
 import { formatPostDate } from '../../utils/display';
 import '../../styles/lists.css';
 
@@ -44,7 +40,6 @@ const t = useTranslations(currentLang);
 const languageBasePath = `/${currentLang}`;
 const blogUrl = `${languageBasePath}/blog`;
 const libraryUrl = `${languageBasePath}/library`;
-const usefulFeedsUrl = `${languageBasePath}/library/useful-feeds`;
 const researchUrl = `${languageBasePath}/research`;
 
 const allPosts = await getAllPosts();
@@ -60,48 +55,12 @@ const academicReviews = getAcademicReviewsByLanguage(
 	currentLang,
 ).slice(0, 3);
 
-// Useful Feeds panel (docs/decisions/site-structure.md#3, revision 2026-09-27):
-// up to 3 newest approved resources, rendered exactly as delivered — the same
-// shared helper /{lang}/library/useful-feeds.astro uses, so the two surfaces
-// cannot silently disagree about what "newest" means.
-const usefulFeedItems = getUsefulFeedItems(allResources, currentLang).slice(0, 3);
-
-// Library block (docs/decisions/site-structure.md#4): up to `recentPicksLimit`
-// most recently added published picks. Below 3 published picks, a compact
-// card list has nothing to compare itself against, so the block falls back
-// to section cards (only for sections that actually have a published pick)
-// plus a Useful Feeds link card. At zero picks that fallback is just the
-// Useful Feeds card.
-const publishedPickCount = allPicks.filter((pick) => pick.data.draft !== true).length;
-const hasEnoughRecentPicks = publishedPickCount >= 3;
-const recentPicks = hasEnoughRecentPicks ? getRecentPicks(allPicks, recentPicksLimit) : [];
-
-const pickSectionCounts = getPickSectionCounts(allPicks.filter((pick) => pick.data.draft !== true));
-const sectionsWithPicks = hasEnoughRecentPicks
-	? []
-	: librarySections
-			.map((section) => ({ ...section, count: pickSectionCounts.get(section.slug) ?? 0 }))
-			.filter((section) => section.count > 0);
-
-function getPickSectionLabel(pick: (typeof allPicks)[number]) {
-	const section = librarySections.find((item) => item.slug === pick.data.section);
-	return section?.label[currentLang] ?? pick.data.section;
-}
-
-function getPickStarLine(pick: (typeof allPicks)[number]) {
-	const facts = getPickFacts(pick.data, popularity as PopularitySnapshot);
-	if (facts.stars === null || !facts.starsAsOf) return null;
-	return t('library.pick.stars-as-of').replace('{stars}', formatStarCount(facts.stars)).replace('{date}', facts.starsAsOf);
-}
-
-function getPickKindLabel(pick: (typeof allPicks)[number]) {
-	return t(`library.pick.kind.${pick.data.kind}` as Parameters<typeof t>[0]);
-}
+// Library block: the three newest Library items, the same set and order
+// /{lang}/library/ shows (src/utils/library.ts's getLibraryItems).
+const libraryItems = getLibraryItems(allResources, allPicks).slice(0, 3);
 
 const featuredPost = latestPosts[0];
 const otherPosts = latestPosts.slice(1);
-
-const formatCount = (count: number) => t('library.item-count').replace('{count}', String(count));
 ---
 
 <!doctype html>
@@ -186,73 +145,25 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 
 				<div class="home-band">
 					<div class="page-frame">
-						<section class="home-section home-feeds" aria-labelledby="home-feeds-title">
-							<div class="column-heading">
-								<h2 id="home-feeds-title">{t('home.feeds.title')}</h2>
-								<a href={usefulFeedsUrl} class="home-link">{t('home.feeds.view-all')}</a>
-							</div>
-							{usefulFeedItems.length > 0 ? (
-								<ul class="rule-list home-feed-list">
-									{usefulFeedItems.map((item) => (
-										<li>
-											<a href={item.url} target="_blank" rel="noopener noreferrer" class="home-feed-row">
-												<span class="home-feed-source">{item.source}</span>
-												<h3>{item.title}</h3>
-												<span class="home-feed-date">{item.date}</span>
-											</a>
-										</li>
-									))}
-								</ul>
-							) : (
-								<div class="home-empty">{t('home.feeds.empty')}</div>
-							)}
-						</section>
-
 						<section class="home-section home-library" aria-labelledby="home-library-title">
 							<div class="column-heading">
-								<h2 id="home-library-title">{t('home.library.selected')}</h2>
+								<h2 id="home-library-title">{t('home.library.title')}</h2>
 								<a href={libraryUrl} class="home-link">{t('home.primary-cta')}</a>
 							</div>
-							{hasEnoughRecentPicks ? (
+							{libraryItems.length > 0 ? (
 								<ul class="home-pick-grid">
-									{recentPicks.map((pick) => {
-										const starLine = getPickStarLine(pick);
-										return (
-											<li>
-												<a href={pick.data.url} target="_blank" rel="noopener noreferrer" class="home-pick">
-													<ResourceVisual kind={pick.data.kind} seed={getPickSlug(pick.id)} />
-													<p class="home-pick-label">{getPickKindLabel(pick)} · {getPickSectionLabel(pick)}</p>
-													<h3>{pick.data.title}</h3>
-													{starLine && <p class="home-pick-meta">{starLine}</p>}
-												</a>
-											</li>
-										);
-									})}
-								</ul>
-							) : (
-								<ul class="home-pick-grid home-section-grid">
-									{sectionsWithPicks.map((section) => (
+									{libraryItems.map((item) => (
 										<li>
-											<a href={getLibrarySectionPath(currentLang, section.slug)} class="home-section-card">
-												<p class="home-pick-label">{section.label[currentLang]}</p>
-												<p class="home-section-card-text">{section.description[currentLang]}</p>
-												<div class="home-section-card-footer">
-													<span class="chip">{formatCount(section.count)}</span>
-													<span class="home-section-card-open">{t('library.open-section')}</span>
-												</div>
-											</a>
+											<LibraryCard
+												item={item}
+												kindLabel={getLibraryKindLabel(item.kind, currentLang)}
+												topicLabel={getLibraryTopicLabel(item.topic, currentLang)}
+											/>
 										</li>
 									))}
-									<li>
-										<a href={usefulFeedsUrl} class="home-section-card">
-											<p class="home-pick-label">{t('library.tab.useful-feeds')}</p>
-											<p class="home-section-card-text">{t('library.useful-feeds.intro')}</p>
-											<div class="home-section-card-footer">
-												<span class="home-section-card-open">{t('library.open-section')}</span>
-											</div>
-										</a>
-									</li>
 								</ul>
+							) : (
+								<div class="home-empty">{t('library.empty')}</div>
 							)}
 						</section>
 					</div>
@@ -385,9 +296,7 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 
 	.home-post-row:hover h3,
 	.home-brief-row:hover h3,
-	.home-feed-row:hover h3,
-	.home-review-row:hover h3,
-	.home-pick:hover h3 {
+	.home-review-row:hover h3 {
 		color: var(--accent);
 	}
 
@@ -440,41 +349,9 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 		color: var(--secondary);
 	}
 
-	/* ── Useful feeds + library picks (same paper as the page) ── */
+	/* ── Library (same paper as the page) ── */
 	.home-band > .page-frame {
-		padding-block: 0 2.5rem;
-	}
-
-	.home-band .home-library {
-		margin-top: 2.5rem;
-	}
-
-	.home-feed-row {
-		display: grid;
-		grid-template-columns: 9rem minmax(0, 1fr) auto;
-		gap: 0 1rem;
-		align-items: baseline;
-		padding: 0.8rem 0;
-	}
-
-	.home-feed-source,
-	.home-feed-date,
-	.home-pick-label {
-		font: 400 0.6875rem/1.45 var(--font-mono);
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		color: var(--secondary);
-	}
-
-	.home-feed-source {
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	.home-feed-row h3 {
-		font: 400 1.1875rem/1.25 var(--font-serif);
-		transition: color 160ms ease;
+		padding-block: 2.5rem;
 	}
 
 	.home-pick-grid {
@@ -484,64 +361,6 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 		margin: 0;
 		padding: 0;
 		list-style: none;
-	}
-
-	.home-pick {
-		display: block;
-	}
-
-	.home-pick .home-pick-label {
-		margin: 0.9rem 0 0.4rem;
-	}
-
-	.home-pick h3 {
-		font: 400 1.375rem/1.15 var(--font-serif);
-		letter-spacing: -0.02em;
-		transition: color 160ms ease;
-	}
-
-	.home-pick-meta {
-		margin: 0.4rem 0 0;
-		font-size: 0.8125rem;
-		color: var(--secondary);
-	}
-
-	/* Fewer than three picks: section cards */
-	.home-section-card {
-		display: flex;
-		flex-direction: column;
-		gap: 0.6rem;
-		height: 100%;
-	}
-
-	.home-section-card:hover .home-section-card-open {
-		color: var(--accent);
-	}
-
-	.home-section-card .home-pick-label {
-		margin: 0;
-	}
-
-	.home-section-card-text {
-		margin: 0;
-		font-size: 0.875rem;
-		line-height: 1.6;
-		color: var(--secondary);
-	}
-
-	.home-section-card-footer {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 0.75rem;
-		margin-top: auto;
-		padding-top: 0.6rem;
-	}
-
-	.home-section-card-open {
-		font: 400 0.6875rem/1.45 var(--font-mono);
-		letter-spacing: 0.09em;
-		text-transform: uppercase;
 	}
 
 	/* ── Briefs ── */
@@ -614,18 +433,8 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 			grid-row: 2;
 		}
 
-		.home-feed-row {
-			grid-template-columns: minmax(0, 1fr);
-			gap: 0.2rem;
-		}
-
-		.home-feed-source {
-			order: -1;
-		}
-
 		.home-pick-grid {
 			grid-template-columns: minmax(0, 1fr);
-			--resource-art-height: 10rem;
 		}
 
 		.home-brief-row {

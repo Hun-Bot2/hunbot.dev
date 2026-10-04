@@ -5,26 +5,47 @@ interface FacetOption {
 	value: string;
 	label: string;
 	count: number;
+	/** Only shown while this other facet is 'all' or set to this value (e.g. a topic under an area). */
+	parent?: { facet: string; value: string };
 }
 
+interface FacetGroup {
+	facet: string;
+	label: string;
+	options: FacetOption[];
+}
+
+// The blog passes categories/years/series; another list (the Library) passes
+// its own `groups`, a `storageKey` so its choice is remembered separately, and
+// its own result-count copy. public/scripts/blog-filters.js reads the facet
+// names from `data-facets`, so items carry `data-post-<facet>` either way.
 interface Props {
 	lang: UILanguage;
-	categories: FacetOption[];
-	years: FacetOption[];
-	series: FacetOption[];
+	categories?: FacetOption[];
+	years?: FacetOption[];
+	series?: FacetOption[];
+	groups?: FacetGroup[];
+	storageKey?: string;
+	resultsTemplate?: string;
+	label?: string;
 	totalCount: number;
 }
 
-const { lang, categories, years, series, totalCount } = Astro.props;
+const { lang, categories = [], years = [], series = [], totalCount } = Astro.props;
 const t = useTranslations(lang);
 
-const groups = [
-	{ facet: 'category', label: t('blog.filter-category'), options: categories },
-	{ facet: 'year',     label: t('blog.filter-year'),     options: years      },
-	{ facet: 'series',   label: t('blog.filter-series'),   options: series     },
-].filter((group) => group.options.length > 0);
+const groups = (
+	Astro.props.groups ?? [
+		{ facet: 'category', label: t('blog.filter-category'), options: categories },
+		{ facet: 'year',     label: t('blog.filter-year'),     options: years      },
+		{ facet: 'series',   label: t('blog.filter-series'),   options: series     },
+	]
+).filter((group) => group.options.length > 0);
 
-const resultsTemplate = t('blog.filter-results');
+const facets = (Astro.props.groups ?? [{ facet: 'category' }, { facet: 'year' }, { facet: 'series' }]).map((group) => group.facet).join(',');
+const storageKey = Astro.props.storageKey ?? 'neural-blog-filters';
+const resultsTemplate = Astro.props.resultsTemplate ?? t('blog.filter-results');
+const label = Astro.props.label ?? t('blog.filter-label');
 const initialResults = resultsTemplate.replace('{count}', String(totalCount));
 ---
 
@@ -35,7 +56,7 @@ const initialResults = resultsTemplate.replace('{count}', String(totalCount));
 	class="btn-pill blog-filter-trigger"
 	aria-expanded="false"
 	aria-controls="blog-filter-panel"
-	aria-label={t('blog.filter-label')}
+	aria-label={label}
 >
 	<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
 		<path d="M4 6h16M7 12h10M10 18h4" />
@@ -44,7 +65,14 @@ const initialResults = resultsTemplate.replace('{count}', String(totalCount));
 	<span class="blog-filter-badge" data-filter-count hidden>0</span>
 </button>
 
-<section id="blog-filter-panel" class="blog-filter-bar" aria-label={t('blog.filter-label')} data-blog-filters>
+<section
+	id="blog-filter-panel"
+	class="blog-filter-bar"
+	aria-label={label}
+	data-blog-filters
+	data-facets={facets}
+	data-storage-key={storageKey}
+>
 	{groups.map((group) => (
 		<div class="filter-group">
 			<span class="filter-group-label">{group.label}</span>
@@ -64,6 +92,8 @@ const initialResults = resultsTemplate.replace('{count}', String(totalCount));
 						class="filter-option"
 						data-facet={group.facet}
 						data-value={option.value}
+						data-parent-facet={option.parent?.facet}
+						data-parent-value={option.parent?.value}
 						aria-pressed="false"
 					>
 						{option.label}
@@ -198,6 +228,10 @@ const initialResults = resultsTemplate.replace('{count}', String(totalCount));
 		bottom: 0.5rem;
 		height: 1px;
 		background: transparent;
+	}
+
+	.filter-option[hidden] {
+		display: none;
 	}
 
 	.filter-option.is-active {

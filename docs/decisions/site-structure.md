@@ -6,6 +6,15 @@ Reviewed: 2026-09-27
 
 This record sets the public information architecture of `hun-bot.dev` so that the public site reflects the Research OS loop instead of running ahead of it. It amends [`discover-direction.md`](./discover-direction.md) on topic-page placement only (see [Amendments](#amendments)). It does not change any data contract in [`research-item-identity.md`](./research-item-identity.md) or [`research-os-data-contract.md`](./research-os-data-contract.md).
 
+## Revision 2026-10-04: one Library list
+
+The repository owner made these decisions on 2026-10-04 ("라이브러리에 외부링크, 라이브러리에서 고른것 이런 애들이 정확하게 뭔지 모호함"; chose "탭 하나로 합치기"). They supersede #3 and #5 of the 2026-09-27 revision below.
+
+1. **The Library is one list, no tabs.** 외부 링크 (`picks`, written here) and Useful Feeds (`resources`, exported from research-os) differed only in where an item was written, which visitors cannot see; on that day 외부 링크 had 0 public items and Useful Feeds had all 44. `/{lang}/library/` now lists approved resources and published picks together (`src/utils/library.ts`'s `getLibraryItems()`), newest first. `/{lang}/library/useful-feeds/` permanently redirects there (`vercel.json`). Pick section pages (`/{lang}/library/{section}/`) still exist so their URLs keep working, without the tab bar.
+2. **Cards are image + title** (`src/components/library/LibraryCard.astro`): the preview image from research-os (og image or reviewed screenshot, WebP ≤ 1200 px in `public/images/resources/`, `resources.image` in `src/content.config.ts`), else a typographic card drawn from the title. Summaries are not shown on the card.
+3. **Filtering reuses the blog's floating filter** (`BlogFilterBar.astro` + `public/scripts/blog-filters.js`, now parameterized by facet names and storage key): facets **분야** (디자인 / 코드·프론트엔드 / AI 엔지니어링 / 데이터 시각화 / 배움·생각 도구 / 창작 / 기타; tag → area map in `src/data/libraryAreas.ts`), **주제** (the resource's first tag, or a pick's section; once an area is picked only its topics are offered), and **종류** (tool / repo / site / skill / reference). A tag no area lists falls into 기타 and `library-page:validate` warns.
+4. **Home has one Library block** (three newest items as cards) instead of "Useful Feeds" + "Library에서 고른 것". The "research-os" label is gone from the public site.
+
 ## Revision 2026-09-27: Research is own content, Library is curation
 
 The repository owner made the following decisions on 2026-09-27. They supersede the parts of this record listed in [What This Revision Supersedes](#what-this-revision-supersedes); nothing below is deleted from the record it changes — the earlier text stands as history, and the change is recorded here, matching the convention in [`research-item-identity.md`](./research-item-identity.md#what-this-record-supersedes).

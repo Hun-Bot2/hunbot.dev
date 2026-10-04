@@ -1,10 +1,10 @@
-const FILTER_STORAGE_KEY = 'neural-blog-filters';
-const FACETS = ['category', 'year', 'series'];
-
 const filterBar = document.querySelector('[data-blog-filters]');
 const postList = document.querySelector('[data-blog-posts]');
 
 if (filterBar && postList) {
+	// The blog uses the defaults; the Library passes its own facets and key.
+	const FILTER_STORAGE_KEY = filterBar.getAttribute('data-storage-key') || 'neural-blog-filters';
+	const FACETS = (filterBar.getAttribute('data-facets') || 'category,year,series').split(',');
 	const chips = Array.from(filterBar.querySelectorAll('[data-facet][data-value]'));
 	const posts = Array.from(postList.querySelectorAll('[data-post-card]'));
 	const resultsEl = filterBar.querySelector('[data-filter-results]');
@@ -13,7 +13,7 @@ if (filterBar && postList) {
 	const emptyEl = document.querySelector('[data-blog-empty]');
 	const resultsTemplate = resultsEl?.getAttribute('data-results-template') ?? '{count}';
 
-	const state = { category: 'all', year: 'all', series: 'all' };
+	const state = Object.fromEntries(FACETS.map((facet) => [facet, 'all']));
 
 	function readStored() {
 		try {
@@ -39,7 +39,21 @@ if (filterBar && postList) {
 		return chips.some((chip) => chip.dataset.facet === facet && chip.dataset.value === value);
 	}
 
+	// A chip with a parent (a topic under an area) is offered only while its
+	// parent facet is 'all' or that value; picking another parent clears it.
+	function applyParents() {
+		chips.forEach((chip) => {
+			const parentFacet = chip.dataset.parentFacet;
+			if (!parentFacet) return;
+			const parent = state[parentFacet];
+			const offered = parent === 'all' || parent === chip.dataset.parentValue;
+			chip.hidden = !offered;
+			if (!offered && state[chip.dataset.facet] === chip.dataset.value) state[chip.dataset.facet] = 'all';
+		});
+	}
+
 	function applyStateToChips() {
+		applyParents();
 		chips.forEach((chip) => {
 			const active = state[chip.dataset.facet] === chip.dataset.value;
 			chip.classList.toggle('is-active', active);

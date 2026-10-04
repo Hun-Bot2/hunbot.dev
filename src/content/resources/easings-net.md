@@ -40,6 +40,12 @@
   "relatedTopics": [],
   "relatedDecks": [],
   "publishedAt": "2026-10-04",
-  "canonicalLanguage": "en"
+  "canonicalLanguage": "en",
+  "image": {
+    "kind": "og",
+    "src": "/images/resources/easings-net.webp",
+    "width": 192,
+    "height": 192
+  }
 }
 ---

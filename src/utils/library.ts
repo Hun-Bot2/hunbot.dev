@@ -1,6 +1,8 @@
 import type { CollectionEntry } from 'astro:content';
 import type { UILanguage } from '../i18n/ui';
 import { sortStable } from './ordering.ts';
+import { getPickSlug } from './picks.ts';
+import { getLibraryAreaId } from '../data/libraryAreas.ts';
 
 export type ResourceEntry = CollectionEntry<'resources'>;
 export type PaperEntry = CollectionEntry<'papers'>;
@@ -124,41 +126,6 @@ export function getPaperTldr(paper: PaperEntry, lang: UILanguage): string {
 	);
 }
 
-export interface UsefulFeedItem {
-	id: string;
-	title: string;
-	url: string;
-	source: string;
-	date: string;
-	summary: string;
-}
-
-/**
- * Useful Feeds items exactly as delivered (docs/decisions/site-structure.md#3):
- * approved `resources`, newest first by `publishedAt` (falling back to
- * `source.firstSeenAt` when a resource predates that facet) — the one
- * editorial choice made here. Everything else renders as-is: this site never
- * enriches, summarizes, or translates a Useful Feeds item. Shared by
- * `src/pages/[lang]/library/useful-feeds.astro` and the homepage's Useful
- * Feeds panel so the two surfaces cannot silently disagree about ordering.
- */
-export function getUsefulFeedItems(resources: ResourceEntry[], lang: UILanguage): UsefulFeedItem[] {
-	const approved = getApprovedResources(resources);
-
-	return sortStable(approved, (a, b) => {
-		const aDate = a.data.publishedAt ?? a.data.source.firstSeenAt;
-		const bDate = b.data.publishedAt ?? b.data.source.firstSeenAt;
-		return bDate.localeCompare(aDate);
-	}).map((resource) => ({
-		id: resource.id,
-		title: resource.data.title,
-		url: resource.data.url,
-		source: new URL(resource.data.url).hostname.replace(/^www\./, ''),
-		date: resource.data.publishedAt ?? resource.data.source.firstSeenAt,
-		summary: getResourceSummary(resource, lang),
-	}));
-}
-
 export function getFeaturedResources(resources: ResourceEntry[], limit = 3): ResourceEntry[] {
 	return sortStable(resources, (a, b) => {
 		if (a.data.featured !== b.data.featured) {
@@ -211,4 +178,71 @@ export function getFeaturedPapers(papers: PaperEntry[], limit = 3): PaperEntry[]
 
 		return a.data.title.localeCompare(b.data.title);
 	}).slice(0, limit);
+}
+
+export type PickEntry = CollectionEntry<'picks'>;
+
+/** A resource's `type` as a Library kind; picks already carry one (src/data/libraryPolicy.ts). */
+const resourceKinds: Partial<Record<ResourceEntry['data']['type'], string>> = {
+	tool: 'tool',
+	repo: 'repo',
+	reference: 'site',
+};
+
+export type LibraryItemImage =
+	| { kind: 'og' | 'screenshot'; src: string; width: number; height: number }
+	| { kind: 'typographic'; label: string };
+
+export interface LibraryItem {
+	id: string;
+	title: string;
+	url: string;
+	/** Filter facet: tool / repo / site / skill / reference. */
+	kind: string;
+	/** Filter facet: the coarse area (src/data/libraryAreas.ts). */
+	area: string;
+	/** Filter facet: the resource's first tag, or the pick's section slug. */
+	topic: string;
+	date: string;
+	image: LibraryItemImage;
+}
+
+function hostLabel(url: string): string {
+	const parsed = new URL(url);
+	return parsed.host.replace(/^www\./, '') + parsed.pathname.replace(/\/$/, '');
+}
+
+/**
+ * Everything the Library lists, as one set (docs/decisions/site-structure.md,
+ * revision 2026-10-04): approved `resources` (exported from research-os) and
+ * published `picks` (hand-written here). Where an item was authored is not a
+ * distinction visitors need, so the page has no tabs. Newest first, then by
+ * title. An item without a preview image gets the typographic card.
+ */
+export function getLibraryItems(resources: ResourceEntry[], picks: PickEntry[]): LibraryItem[] {
+	const fromResources = getApprovedResources(resources).map((resource): LibraryItem => ({
+		id: resource.data.id,
+		title: resource.data.title,
+		url: resource.data.url,
+		kind: resourceKinds[resource.data.type] ?? 'reference',
+		area: getLibraryAreaId([resource.data.category, ...resource.data.tags]),
+		topic: resource.data.category,
+		date: resource.data.publishedAt ?? resource.data.source.firstSeenAt,
+		image: resource.data.image ?? { kind: 'typographic', label: hostLabel(resource.data.url) },
+	}));
+
+	const fromPicks = picks
+		.filter((pick) => pick.data.draft !== true)
+		.map((pick): LibraryItem => ({
+			id: `pick-${getPickSlug(pick.id)}`,
+			title: pick.data.title,
+			url: pick.data.url,
+			kind: pick.data.kind,
+			area: getLibraryAreaId([pick.data.section]),
+			topic: pick.data.section,
+			date: String(pick.data.addedAt).slice(0, 10),
+			image: { kind: 'typographic', label: hostLabel(pick.data.url) },
+		}));
+
+	return sortStable([...fromResources, ...fromPicks], (a, b) => b.date.localeCompare(a.date) || a.title.localeCompare(b.title));
 }
