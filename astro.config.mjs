@@ -14,7 +14,10 @@ const rehypePlugins = [rehypeExternalLinks, [rehypeKatex, { strict: false }]];
 
 export default defineConfig({
   site: 'https://hun-bot.dev',
-  
+
+  // The dev toolbar floats over the bottom of every page in `astro dev`.
+  devToolbar: { enabled: false },
+
   adapter: vercel({
     webAnalytics: { enabled: false } 
   }),
