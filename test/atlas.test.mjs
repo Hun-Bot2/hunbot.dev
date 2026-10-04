@@ -352,23 +352,29 @@ test('axes: a multi-valued axis shows an artifact in every lane, counts per lane
 	assert.equal(layout.lanes.flatMap((lane) => lane.marks).filter((mark) => mark.id === 'paper:a').length, 2);
 });
 
-test('real content: the offered axes are Activity and Series (Type and Topic are hidden)', () => {
+test('real content: Activity and Series are offered; Type only once more than one kind is published', () => {
 	const { export: result } = buildHunbotArtifactExport(readArtifactSources(repoRoot));
+	const kinds = new Set(result.artifacts.map((artifact) => artifact.kind));
+	const offered = getOfferedAxes(result.artifacts).map((axis) => axis.id);
 	assert.deepEqual(
-		getOfferedAxes(result.artifacts).map((axis) => axis.id),
+		offered.filter((id) => id !== 'type'),
 		['activity', 'series'],
-		'every artifact is writing, so Type is hidden; none has a topic, so Topic is dormant',
+		'none has a topic, so Topic is dormant',
 	);
+	assert.equal(offered.includes('type'), kinds.size > 1, 'Type is offered exactly when artifacts of more than one kind are published');
 
 	const bySeries = computeAtlasLayout(result.artifacts, result.relations, { now: NOW, axis: seriesAxis });
 	assert.equal(bySeries.lanes.at(-1).key, STANDALONE_LANE);
 	assert.equal(bySeries.lanes.reduce((total, lane) => total + lane.count, 0), result.artifacts.length, 'a post is in exactly one series lane');
 	assert.equal(bySeries.lanes.at(-1).count, result.artifacts.filter((artifact) => !artifact.series).length);
 
-	// Every view places every artifact exactly once and never shares a row between overlapping marks.
+	// Every view places every artifact exactly once and never shares a row between overlapping
+	// marks, except in a lane that hit maxRows: there the layout stacks onto the emptiest row by
+	// design (layout.ts), e.g. many Library resources published on one day.
 	const activity = computeAtlasLayout(result.artifacts, result.relations, { now: NOW, axis: activityAxis });
 	for (const layout of [activity, bySeries]) {
 		for (const lane of layout.lanes) {
+			if (lane.rows >= atlasLayoutConfig.maxRows) continue;
 			const byRow = Map.groupBy(lane.marks, (mark) => mark.row);
 			for (const marks of byRow.values()) {
 				const sorted = [...marks].sort((a, b) => a.x - b.x);

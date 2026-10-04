@@ -1,0 +1,46 @@
+---
+{
+  "id": "ecc",
+  "title": "Everything Claude Code (ECC)",
+  "url": "https://github.com/affaan-m/ECC",
+  "repoUrl": "https://github.com/affaan-m/ECC",
+  "section": "useful-feeds",
+  "category": "agent-skills",
+  "type": "repo",
+  "tags": [
+    "agent-skills",
+    "agent-harness"
+  ],
+  "language": "en",
+  "featured": false,
+  "qualityScore": 3,
+  "freshness": "fresh",
+  "status": "approved",
+  "summary": {
+    "en": "Large collection of agents, skills, rules, hooks and memory setup for Claude Code, Cursor, Codex and OpenCode."
+  },
+  "license": {
+    "code": "MIT",
+    "appliesTo": "code",
+    "attributionRequired": false,
+    "canRepublishAssets": false,
+    "publicPolicy": "open-source"
+  },
+  "source": {
+    "kind": "manual",
+    "firstSeenAt": "2026-10-04",
+    "lastCheckedAt": "2026-10-04"
+  },
+  "review": {
+    "status": "approved",
+    "humanReviewed": true,
+    "reviewedAt": "2026-10-04",
+    "reviewer": "owner"
+  },
+  "relatedTopics": [],
+  "relatedDecks": [],
+  "publishedAt": "2026-10-04",
+  "canonicalLanguage": "en",
+  "contentType": "repo"
+}
+---

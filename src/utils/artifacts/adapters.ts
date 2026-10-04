@@ -414,6 +414,8 @@ export function adaptPicks(picks: PickSource[], context: AdapterContext): Adapte
 					addedAt,
 					origin: 'hunbot',
 					sourceRef: null,
+					// Links are not part of a writing series; say so explicitly (contract: null = none).
+					series: null,
 				},
 				relations: [],
 			};
@@ -452,6 +454,7 @@ export function adaptResources(resources: ResourceSource[], context: AdapterCont
 					addedAt: resource.data.source.firstSeenAt,
 					origin: 'hunbot',
 					sourceRef: null,
+					series: null,
 				},
 				relations: [],
 			};
