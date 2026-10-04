@@ -1,0 +1,334 @@
+---
+// The Living Atlas (docs/plans/2026-10-03-explore-living-atlas.md §4–§5).
+//
+// Everything is rendered at build time from computeAtlasLayout(): for every
+// offered lane axis (src/utils/atlas/dimensions.ts) one view of semantic HTML
+// (a list of real links per lane) with an SVG layer for grid lines and
+// relation arcs behind it. The default view is visible; the others are
+// `hidden` until the visitor picks them from the axis label. Without
+// JavaScript the default view works and every mark is a link.
+// ./atlas-client.ts adds the axis selector, selection, the inspector,
+// lineage highlighting, and keyboard navigation.
+import '../../styles/atlas.css';
+import { useTranslations, type UILanguage } from '../../i18n/ui';
+import { artifactDomains, getArtifactKind } from '../../data/publicArtifactVocabulary';
+import type { PublicArtifact, PublicRelation } from '../../utils/artifacts/contract';
+import { STANDALONE_LANE, UNASSIGNED_LANE } from '../../utils/atlas/dimensions';
+import { getLegendOptionals } from '../../utils/atlas/legend';
+import type { AtlasLayout } from '../../utils/atlas/layout';
+import { relationKey } from '../../utils/atlas/lineage';
+import { formatArtifactDate, formatArtifactTime, resolveHref, resolveText } from '../../utils/atlas/display';
+
+interface Props {
+	lang: UILanguage;
+	artifacts: PublicArtifact[];
+	relations: PublicRelation[];
+	/** One layout per offered lane axis; the first is the default view. */
+	views: AtlasLayout[];
+	topicLabels: Record<string, string>;
+}
+
+const { lang, artifacts, relations, views, topicLabels } = Astro.props;
+const t = useTranslations(lang);
+type Key = Parameters<typeof t>[0];
+
+const layout = views[0]; // axis, ticks, and growth are identical in every view
+const defaultView = layout.axisId;
+
+const kindLabel = (kind: string) => t(`explore.kind.${kind}` as Key);
+const domainLabel = (domain: string) => t(`explore.domain.${domain}` as Key);
+const axisLabel = (axisId: string) => t(`explore.axis.${axisId}` as Key);
+// Series lane labels: the series' own title in the page language (shared by every artifact of the series).
+const seriesLabels = Object.fromEntries(
+	artifacts.flatMap((artifact) => (artifact.series ? [[artifact.series.id, resolveText(artifact.series.title, lang)?.text ?? artifact.series.id]] : [])),
+);
+const laneLabel = (axisId: string, key: string) =>
+	axisId === 'activity'
+		? domainLabel(key)
+		: axisId === 'series'
+			? key === STANDALONE_LANE
+				? t('explore.lane.standalone')
+				: (seriesLabels[key] ?? key)
+			: axisId === 'type'
+				? kindLabel(key)
+				: key === UNASSIGNED_LANE
+					? t('explore.lane.unassigned')
+					: (topicLabels[key] ?? key);
+const pct = (x: number) => `${((x / layout.config.trackWidth) * 100).toFixed(3)}%`;
+const legendRows = (axisId: string) => t(`explore.legend.y.${axisId}` as Key);
+
+// "Only in Korean" names the language in the reader's language (the site uses `jp` for Japanese).
+const bcp47 = (code: string) => (code === 'jp' ? 'ja' : code);
+const languageNames = new Intl.DisplayNames([bcp47(lang)], { type: 'language' });
+
+// Display data per artifact, resolved for this page's language.
+const items = Object.fromEntries(
+	artifacts.map((artifact) => {
+		const title = resolveText(artifact.title, lang)!;
+		const summary = resolveText(artifact.summary, lang);
+		const href = resolveHref(artifact, lang);
+		const time = formatArtifactTime(artifact, t('explore.ongoing'));
+		const topics = artifact.topics.map((topic) => topicLabels[topic] ?? topic);
+		return [
+			artifact.id,
+			{
+				id: artifact.id,
+				kind: kindLabel(artifact.kind),
+				domain: domainLabel(artifact.domain),
+				title: title.text,
+				titleLang: title.lang,
+				summary: summary?.text ?? null,
+				time,
+				// Compact tooltip line: kind · date, and the first topic when there is one.
+				tipMeta: [kindLabel(artifact.kind), time, topics[0]].filter(Boolean).join(' · '),
+				href: href.href,
+				onlyIn: href.lang === lang ? null : t('explore.inspector.only-in').replace('{lang}', languageNames.of(bcp47(href.lang)) ?? href.lang),
+				topics,
+				label: `${title.text} — ${kindLabel(artifact.kind)}, ${time}`,
+			},
+		];
+	}),
+);
+
+const relationLabels = Object.fromEntries(
+	['informed', 'uses', 'developedInto', 'resultedIn', 'explains', 'cites'].flatMap((rel) => [
+		[`${rel}.out`, t(`explore.rel.${rel}.out` as Key)],
+		[`${rel}.in`, t(`explore.rel.${rel}.in` as Key)],
+	]),
+);
+
+const clientData = {
+	items,
+	relations: relations.map(({ from, to, rel }) => ({ from, to, rel })),
+	axes: Object.fromEntries(views.map((view) => [view.axisId, axisLabel(view.axisId)])),
+	strings: {
+		...Object.fromEntries(Object.entries(relationLabels).map(([key, value]) => [`rel.${key}`, value])),
+		noLinks: t('explore.inspector.no-links'),
+		announceAxis: t('explore.axis.announce'),
+	},
+};
+// `<` escaped so the JSON can never close its own script element.
+const clientJson = JSON.stringify(clientData).replace(/</g, '\\u003c');
+
+// Quarter ticks too close to "now" would collide with its label.
+const ticks = layout.ticks.filter((tick) => Math.abs(tick.x - layout.axis.nowX) > layout.config.trackWidth * 0.05);
+const yearLines = layout.ticks.filter((tick) => tick.year);
+const kindsPresent = [...new Set(artifacts.map((artifact) => artifact.kind))];
+const legendOptionals = getLegendOptionals({ relationCount: relations.length, kindCount: kindsPresent.length });
+const summaryParts = [
+	t('explore.summary.artifacts').replace('{count}', String(layout.growth.artifacts)),
+	t('explore.summary.links').replace('{count}', String(layout.growth.relations)),
+	layout.growth.since ? t('explore.summary.since').replace('{date}', formatArtifactDate(layout.growth.since.slice(0, 7))) : null,
+	layout.growth.lastAdded ? t('explore.summary.last-added').replace('{date}', formatArtifactDate(layout.growth.lastAdded)) : null,
+	layout.growth.recent > 0 ? t('explore.summary.recent').replace('{count}', String(layout.growth.recent)) : null,
+].filter(Boolean);
+
+// Mobile list: newest first, grouped by year. Always grouped by activity.
+const byYear = new Map<string, PublicArtifact[]>();
+for (const artifact of [...artifacts].sort((a, b) => (a.time.start < b.time.start ? 1 : a.time.start > b.time.start ? -1 : 0))) {
+	const year = artifact.time.start.slice(0, 4);
+	byYear.set(year, [...(byYear.get(year) ?? []), artifact]);
+}
+const activityCounts = Object.fromEntries(artifactDomains.map((domain) => [domain, artifacts.filter((artifact) => artifact.domain === domain).length]));
+const selectable = views.length > 1;
+---
+
+<p class="atlas-summary" data-atlas-summary>{summaryParts.join(' · ')}</p>
+
+<section
+	class="atlas"
+	data-atlas
+	aria-label={t('explore.title')}
+>
+	<div class="atlas-chart" role="group" aria-label={t('explore.chart.label')} aria-describedby="atlas-help">
+		<p id="atlas-help" class="sr-only">{t('explore.chart.help')}</p>
+
+		<div class="atlas-axis">
+			<div class="atlas-axis-y">
+				{selectable ? (
+					<>
+						<button
+							type="button"
+							class="atlas-axis-control"
+							data-atlas-axis-button
+							aria-haspopup="menu"
+							aria-expanded="false"
+							aria-controls="atlas-axis-menu"
+							aria-describedby="atlas-axis-hint"
+							title={t('explore.axis.change')}
+						>
+							<span data-atlas-axis-name>{axisLabel(defaultView)}</span>
+							<svg class="atlas-axis-caret" viewBox="0 0 10 10" width="8" height="8" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="m2 3.5 3 3 3-3" /></svg>
+						</button>
+						<span id="atlas-axis-hint" class="sr-only">{t('explore.axis.change')}</span>
+						<div class="atlas-axis-menu" id="atlas-axis-menu" role="menu" aria-label={t('explore.axis.change')} data-atlas-axis-menu hidden>
+							{views.map((view) => (
+								<button type="button" role="menuitemradio" aria-checked={view.axisId === defaultView ? 'true' : 'false'} data-axis={view.axisId}>
+									{axisLabel(view.axisId)}
+								</button>
+							))}
+						</div>
+					</>
+				) : (
+					<span class="atlas-axis-name">{axisLabel(defaultView)}</span>
+				)}
+			</div>
+			<div class="atlas-axis-track" aria-hidden="true">
+				{ticks.map((tick) => (
+					<span class:list={['atlas-tick', { 'atlas-tick--year': tick.year }]} style={`left:${pct(tick.x)}`}>{tick.label}</span>
+				))}
+				<span class="atlas-tick atlas-tick--now" style={`left:${pct(layout.axis.nowX)}`}>{t('explore.now')}</span>
+			</div>
+		</div>
+
+		{views.map((view) => (
+			<div
+				class="atlas-lanes"
+				data-atlas-view={view.axisId}
+				data-edge-mode={view.edgeVisibility.mode}
+				data-edge-exceeded={view.edgeVisibility.exceeded.join(' ') || undefined}
+				hidden={view.axisId !== defaultView}
+				style={`--atlas-height:${view.height}px;--hit-w:${pct(view.config.minGap)};--row-h:${view.config.rowHeight}px`}
+			>
+				<svg
+					class="atlas-canvas"
+					viewBox={`0 0 ${view.config.trackWidth} ${view.height}`}
+					preserveAspectRatio="none"
+					aria-hidden="true"
+					focusable="false"
+				>
+					{yearLines.map((tick) => <line class="atlas-year-line" x1={tick.x} x2={tick.x} y1="0" y2={view.height} />)}
+					<line class="atlas-now-line" x1={view.axis.nowX} x2={view.axis.nowX} y1="0" y2={view.height} />
+					<g class="atlas-arcs">
+						{view.arcs.map((arc) => (
+							<path
+								d={arc.d}
+								class:list={['atlas-arc', arc.forward ? 'atlas-arc--forward' : 'atlas-arc--backward']}
+								data-from={arc.from}
+								data-to={arc.to}
+								data-key={relationKey(arc)}
+							/>
+						))}
+					</g>
+				</svg>
+
+				{view.lanes.map((lane) => (
+					<section class="atlas-lane" data-lane={lane.key} style={`height:${lane.height}px`} aria-labelledby={`atlas-lane-${view.axisId}-${lane.key}`}>
+						<h2 class="atlas-lane-label" id={`atlas-lane-${view.axisId}-${lane.key}`} title={laneLabel(view.axisId, lane.key)}>
+							<span class="atlas-lane-name">{laneLabel(view.axisId, lane.key)}</span>
+							<span class="atlas-lane-count">{lane.count}</span>
+						</h2>
+						<div class="atlas-lane-track">
+							{lane.count === 0 ? (
+								<p class="atlas-lane-empty">{t('explore.lane.empty')}</p>
+							) : (
+								<ol class="atlas-marks" data-lane={lane.key}>
+									{lane.marks.map((mark) => (
+										<li
+											class="atlas-mark"
+											data-kind={mark.kind}
+											data-shape={getArtifactKind(mark.kind)?.timeShape}
+											data-filled={mark.filled ? 'true' : 'false'}
+											data-recent={mark.recent ? 'true' : undefined}
+											data-ongoing={mark.ongoing ? 'true' : undefined}
+											data-align={mark.labelAlign}
+											data-x={mark.x.toFixed(1)}
+											style={`--x:${pct(mark.x)};--top:${mark.y - lane.top}px${mark.x2 !== undefined ? `;--w:${pct(mark.x2 - mark.x)}` : ''}`}
+										>
+											<a href={items[mark.id].href} data-artifact-id={mark.id} aria-label={items[mark.id].label}>
+												<span class="atlas-glyph" aria-hidden="true"></span>
+												<span class="atlas-tip" aria-hidden="true">
+													<span class="atlas-tip-title">{items[mark.id].title}</span>
+													<span class="atlas-tip-meta">{items[mark.id].tipMeta}</span>
+													<span class="atlas-tip-action">{t('explore.tip.open')}</span>
+												</span>
+											</a>
+										</li>
+									))}
+								</ol>
+							)}
+						</div>
+					</section>
+				))}
+			</div>
+		))}
+
+		<div class="atlas-axis-foot" aria-hidden="true">
+			<span class="atlas-axis-name">{axisLabel('time')} →</span>
+		</div>
+	</div>
+
+	<aside class="atlas-inspector" data-atlas-inspector aria-labelledby="atlas-inspector-title" hidden>
+		<div class="atlas-inspector-head">
+			<p class="eyebrow" data-slot="eyebrow"></p>
+			<button type="button" class="atlas-inspector-close" data-atlas-clear aria-label={t('explore.inspector.close')} title={t('explore.inspector.close')}>
+				<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m3 3 10 10M13 3 3 13" /></svg>
+			</button>
+		</div>
+		<h2 class="atlas-inspector-title" id="atlas-inspector-title" data-slot="title"></h2>
+		<p class="atlas-inspector-summary" data-slot="summary"></p>
+		<div class="chip-list atlas-inspector-topics" data-slot="topics" aria-label={t('explore.inspector.topics')}></div>
+		<div class="atlas-inspector-links">
+			<p class="atlas-inspector-label">{t('explore.inspector.links')}</p>
+			<div data-slot="links"></div>
+		</div>
+		<p class="atlas-inspector-open">
+			<a class="btn-text" data-slot="open" href="#">{t('explore.inspector.open')} →</a>
+			<span class="atlas-inspector-note" data-slot="only-in"></span>
+		</p>
+	</aside>
+
+	<p class="sr-only" aria-live="polite" data-atlas-live></p>
+
+	<p class="atlas-legend">
+		<span class="atlas-legend-title">{t('explore.legend.how')}</span>
+		<span>{t('explore.legend.x')}</span>
+		{views.map((view) => (
+			<span data-legend-view={view.axisId} hidden={view.axisId !== defaultView}>{legendRows(view.axisId)}</span>
+		))}
+		<span>{t('explore.legend.select')}</span>
+		{legendOptionals.includes('types') && kindsPresent.map((kind) => (
+			<span class="atlas-legend-kind" data-kind={kind} data-shape={getArtifactKind(kind)?.timeShape}>
+				<span class="atlas-glyph" aria-hidden="true"></span>{kindLabel(kind)}
+			</span>
+		))}
+		{legendOptionals.includes('relations') && <span>{t('explore.legend.links')}</span>}
+	</p>
+
+	<section class="atlas-list" aria-label={t('explore.list.label')}>
+		<ol class="atlas-list-lanes-key" aria-hidden="true">
+			{artifactDomains.map((domain) => (
+				<li><span>{domainLabel(domain)}</span><span>{activityCounts[domain]}</span></li>
+			))}
+		</ol>
+		{[...byYear].map(([year, entries]) => (
+			<section class="atlas-list-year" aria-labelledby={`atlas-year-${year}`}>
+				<h2 class="atlas-list-year-label" id={`atlas-year-${year}`}>{year}</h2>
+				<ol class="atlas-list-rows">
+					{entries.map((artifact) => (
+						<li>
+							<a href={items[artifact.id].href}>
+								<span class="atlas-list-glyphs" aria-hidden="true">
+									{artifactDomains.map((domain) => <span class:list={{ on: domain === artifact.domain }}></span>)}
+								</span>
+								<span class="atlas-list-text">
+									<span class="atlas-list-title">{items[artifact.id].title}</span>
+									<span class="atlas-list-meta">{items[artifact.id].domain} · {items[artifact.id].kind} · {items[artifact.id].time}{items[artifact.id].onlyIn && ` · ${items[artifact.id].onlyIn}`}</span>
+								</span>
+							</a>
+						</li>
+					))}
+				</ol>
+			</section>
+		))}
+	</section>
+
+	<script type="application/json" id="atlas-data" set:html={clientJson} />
+</section>
+
+<script>
+	import { initAtlas } from './atlas-client';
+
+	const root = document.querySelector<HTMLElement>('[data-atlas]');
+	if (root) initAtlas(root);
+</script>

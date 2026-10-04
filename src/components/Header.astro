@@ -8,6 +8,7 @@ const homeUrl = `/${lang}/`;
 const blogUrl = lang === 'ko' ? '/ko/blog' : `/${lang}/blog`;
 const researchUrl = lang === 'ko' ? '/ko/research' : `/${lang}/research`;
 const libraryUrl = lang === 'ko' ? '/ko/library' : `/${lang}/library`;
+const exploreUrl = `/${lang}/explore/`;
 const searchUrl = lang === 'ko' ? '/ko/search' : `/${lang}/search`;
 const brandName = SITE_TITLE.replace('-', '\u2014');
 
@@ -20,7 +21,9 @@ const activeSection = section === 'blog'
 		? 'research'
 		: section === 'library'
 			? 'library'
-			: null;
+			: section === 'explore'
+				? 'explore'
+				: null;
 ---
 
 <header class="site-header" data-pagefind-ignore>
@@ -34,6 +37,7 @@ const activeSection = section === 'blog'
 			<a href={blogUrl} class:list={{ active: activeSection === 'blog' }} aria-current={activeSection === 'blog' ? 'page' : undefined}>{t('nav.blog')}</a>
 			<a href={researchUrl} class:list={{ active: activeSection === 'research' }} aria-current={activeSection === 'research' ? 'page' : undefined}>{t('nav.research')}</a>
 			<a href={libraryUrl} class:list={{ active: activeSection === 'library' }} aria-current={activeSection === 'library' ? 'page' : undefined}>{t('nav.library')}</a>
+			<a href={exploreUrl} class:list={{ active: activeSection === 'explore' }} aria-current={activeSection === 'explore' ? 'page' : undefined}>{t('nav.explore')}</a>
 		</nav>
 
 		<div class="header-actions">
@@ -87,6 +91,7 @@ const activeSection = section === 'blog'
 			<a href={blogUrl} class:list={['mobile-nav-item', { active: activeSection === 'blog' }]} aria-current={activeSection === 'blog' ? 'page' : undefined}>{t('nav.blog')}</a>
 			<a href={researchUrl} class:list={['mobile-nav-item', { active: activeSection === 'research' }]} aria-current={activeSection === 'research' ? 'page' : undefined}>{t('nav.research')}</a>
 			<a href={libraryUrl} class:list={['mobile-nav-item', { active: activeSection === 'library' }]} aria-current={activeSection === 'library' ? 'page' : undefined}>{t('nav.library')}</a>
+			<a href={exploreUrl} class:list={['mobile-nav-item', { active: activeSection === 'explore' }]} aria-current={activeSection === 'explore' ? 'page' : undefined}>{t('nav.explore')}</a>
 			<a href={searchUrl} class="mobile-nav-item">{t('nav.search')}</a>
 			<div class="mobile-nav-meta">
 				<span class="mobile-links">

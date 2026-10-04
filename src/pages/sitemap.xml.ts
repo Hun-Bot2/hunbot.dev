@@ -80,6 +80,8 @@ export const GET: APIRoute = async ({ site }) => {
       `/${lang}/blog/categories/`,
       `/${lang}/library/`,
       `/${lang}/library/useful-feeds/`,
+      // Explore / Living Atlas (docs/plans/2026-10-03-explore-living-atlas.md §4.1).
+      `/${lang}/explore/`,
       ...sectionsWithPicks.map((section) => `/${lang}/library/${section.slug}/`),
       `/${lang}/search/`,
     ]),

@@ -35,6 +35,7 @@ assert.match(sitemapRoute, /getAcademicReviewUrlFromId/);
 assert.match(sitemapRoute, /getPublishedAcademicReviews/);
 assert.match(sitemapRoute, /getTopicsWithLinkedPapers/);
 assert.match(sitemapRoute, /\/research\//);
+assert.match(sitemapRoute, /\/explore\//, 'sitemap should list /{lang}/explore/.');
 // getLibrarySectionPath is gone from the sitemap: it was kept only to build
 // the temporary /{lang}/library/decks/ path, which moved to
 // /{lang}/research/decks/ (docs/decisions/site-structure.md#2). Pick section

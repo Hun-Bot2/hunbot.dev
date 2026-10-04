@@ -19,7 +19,9 @@ assert.match(globalCss, /:focus-visible/);
 
 for (const lang of ['ko', 'jp', 'en']) {
 	assert.ok(ui[lang]?.['nav.skip'], `${lang} nav.skip copy is required.`);
+	assert.ok(ui[lang]?.['nav.explore'], `${lang} nav.explore copy is required.`);
 }
+assert.match(header, /nav\.explore/, 'Header should link to Explore (docs/plans/2026-10-03-explore-living-atlas.md §4.1).');
 
 const pagesWithHeader = [
 	'src/layouts/BlogPost.astro',
@@ -41,6 +43,8 @@ const pagesWithHeader = [
 	'src/pages/[lang]/research/decks.astro',
 	'src/pages/[lang]/research/topics/[topic].astro',
 	'src/pages/[lang]/search.astro',
+	// Explore / Living Atlas (docs/plans/2026-10-03-explore-living-atlas.md §4.1).
+	'src/pages/[lang]/explore.astro',
 ];
 
 for (const page of pagesWithHeader) {
@@ -61,6 +65,7 @@ for (const outputRoot of [join(root, 'dist/client'), join(root, '.vercel/output/
 		'ko/research/decks/index.html',
 		'ko/paths/index.html',
 		'ko/search/index.html',
+		'ko/explore/index.html',
 	];
 
 	for (const page of samplePages) {
