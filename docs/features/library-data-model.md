@@ -186,6 +186,8 @@ If the license or reuse policy is unclear, use:
 
 Do not mirror third-party assets unless license and permission are clear. Prefer linking and summarizing over copying.
 
+Exception, preview images (2026-10-04): a resource card may show one representative image, chosen in this order: (1) the site's own `og:image` / `twitter:image` (GitHub's social preview for repos), (2) if there is none, a first-screen screenshot the owner has reviewed, (3) if the site refuses automated access, no image. Images are resized to at most 1200 px wide and link back to the resource. Producer side: research-os `docs/decisions/resources.md`.
+
 ## Add A Resource
 
 Create a Markdown file under `src/content/resources/` with JSON frontmatter:
