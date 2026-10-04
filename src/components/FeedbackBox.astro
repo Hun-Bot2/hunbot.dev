@@ -46,47 +46,43 @@ const t = useTranslations(lang);
 
 <style>
 	.feedback-box {
-		margin-top: 2.5rem;
-		border: 1px solid var(--surface-border);
-		border-radius: 0.85rem;
-		background: var(--surface-panel);
-		padding: 1.25rem;
+		margin-top: 4rem;
+		border-top: 1px solid var(--rule-strong);
+		padding-top: 2rem;
 	}
 
 	.feedback-box h2 {
 		margin: 0;
-		color: var(--text-primary);
-		font-family: var(--font-heading);
-		font-size: 1.05rem;
-		font-weight: 800;
+		font: 400 1.5rem / 1.3 var(--font-serif);
 	}
 
 	.feedback-description {
-		margin: 0.35rem 0 0.9rem;
-		color: var(--text-muted);
-		font-size: 0.88rem;
-		line-height: 1.5;
+		margin: 0.5rem 0 1.25rem;
+		color: var(--secondary);
+		font-size: 0.875rem;
+		line-height: 1.6;
 	}
 
 	.feedback-label {
 		display: block;
-		margin-bottom: 0.35rem;
-		color: var(--text-subtle);
-		font-size: 0.8rem;
-		font-weight: 700;
+		margin-bottom: 0.4rem;
+		font: 400 0.6875rem / 1.45 var(--font-mono);
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
+		color: var(--secondary);
 	}
 
 	.feedback-form textarea {
 		width: 100%;
 		box-sizing: border-box;
-		border: 1px solid var(--field-border);
-		border-radius: 0.6rem;
-		background: var(--field-surface);
-		padding: 0.65rem 0.75rem;
-		color: var(--field-text);
+		border: 1px solid var(--rule-strong);
+		border-radius: 0;
+		background: var(--paper-light);
+		padding: 0.7rem 0.8rem;
+		color: var(--ink);
 		font: inherit;
-		font-size: 0.92rem;
-		line-height: 1.55;
+		font-size: 1rem;
+		line-height: 1.6;
 		resize: vertical;
 	}
 
@@ -96,31 +92,31 @@ const t = useTranslations(lang);
 		align-items: center;
 		justify-content: space-between;
 		gap: 0.75rem;
-		margin-top: 0.7rem;
+		margin-top: 0.75rem;
 	}
 
 	.feedback-note {
 		margin: 0;
-		color: var(--text-faint);
-		font-size: 0.78rem;
+		color: var(--secondary);
+		font-size: 0.8125rem;
 	}
 
 	.feedback-submit {
-		min-height: 2.25rem;
-		border: 1px solid var(--accent-border);
+		min-height: 2.5rem;
+		padding: 0.4rem 1.1rem;
+		border: 1px solid var(--rule-strong);
 		border-radius: 999px;
-		background: var(--accent-surface);
-		padding: 0.4rem 1rem;
-		color: var(--accent-text);
-		font: inherit;
-		font-size: 0.86rem;
-		font-weight: 800;
+		background: transparent;
+		font: 400 0.6875rem / 1.4 var(--font-mono);
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
+		color: var(--ink);
 		cursor: pointer;
 	}
 
 	.feedback-submit:hover:not(:disabled) {
-		/* TODO: needs a hover-state token */
-		background: rgba(249, 115, 22, 0.24);
+		border-color: var(--ink);
+		color: var(--accent);
 	}
 
 	.feedback-submit:disabled {
@@ -130,8 +126,7 @@ const t = useTranslations(lang);
 
 	.feedback-status {
 		margin: 0.75rem 0 0;
-		font-size: 0.86rem;
-		font-weight: 700;
+		font-size: 0.875rem;
 	}
 
 	.feedback-status[data-state='error'] {

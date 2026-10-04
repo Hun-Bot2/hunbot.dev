@@ -3,16 +3,21 @@ import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 import tailwind from '@astrojs/tailwind';
 import remarkMath from 'remark-math';
+import remarkCjkFriendly from 'remark-cjk-friendly';
 import rehypeKatex from 'rehype-katex';
 import vercel from '@astrojs/vercel';
 import remarkLocalizedBlogLinks from './src/utils/remark-localized-blog-links.mjs';
+import rehypeExternalLinks from './src/utils/rehype-external-links.mjs';
 
-const remarkPlugins = [remarkLocalizedBlogLinks, remarkMath];
-const rehypePlugins = [[rehypeKatex, { strict: false }]];
+const remarkPlugins = [remarkLocalizedBlogLinks, remarkCjkFriendly, remarkMath];
+const rehypePlugins = [rehypeExternalLinks, [rehypeKatex, { strict: false }]];
 
 export default defineConfig({
   site: 'https://hun-bot.dev',
-  
+
+  // The dev toolbar floats over the bottom of every page in `astro dev`.
+  devToolbar: { enabled: false },
+
   adapter: vercel({
     webAnalytics: { enabled: false } 
   }),

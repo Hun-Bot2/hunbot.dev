@@ -1,22 +1,26 @@
 ---
 import BaseHead from '../../../../components/BaseHead.astro';
 import Header from '../../../../components/Header.astro';
-import Footer from '../../../../components/Footer.astro';
 import FloatingLanguagePicker from '../../../../components/FloatingLanguagePicker.astro';
 import LibraryIcon from '../../../../components/library/LibraryIcon.astro';
 import LibraryPageStyles from '../../../../components/library/LibraryPageStyles.astro';
+import PaperRow from '../../../../components/research/PaperRow.astro';
 import { getCollection } from 'astro:content';
 import { useTranslations, type UILanguage } from '../../../../i18n/ui';
 import { getAllPosts } from '../../../../utils/blog';
 import { getBlogUrlFromPost } from '../../../../utils/blog-routing';
-import { getVenueDisplayName } from '../../../../data/venues';
-import { getAcceptanceStatusDisplayName, getHonorDisplayName } from '../../../../data/paperVocabularies';
 import {
 	getAcademicReviewUrlFromEntry,
 	getPublishedAcademicReviews,
 } from '../../../../utils/academic-review-routing';
-import { getPaperTldr, getTopicDescription, getTopicLabel } from '../../../../utils/library';
-import { getPostsForPapers, getReviewsForPapers, getTopicsWithLinkedPapers } from '../../../../utils/research';
+import { getTopicDescription, getTopicLabel } from '../../../../utils/library';
+import {
+	getPostsForPapers,
+	getReviewForPaper,
+	getReviewsForPapers,
+	getTopicLabelsForPaper,
+	getTopicsWithLinkedPapers,
+} from '../../../../utils/research';
 
 // Generated ONLY for active topics with at least one linked approved paper
 // (docs/decisions/site-structure.md#Topic-pages). Today every topic has zero
@@ -43,6 +47,7 @@ const { topic, papers } = Astro.props as Props;
 const lang = (Astro.params.lang ?? 'ko') as UILanguage;
 const t = useTranslations(lang);
 
+const allTopics = await getCollection('topics');
 const allReviews = getPublishedAcademicReviews(await getCollection('academicReviews'));
 const allPosts = await getAllPosts();
 const paperIds = papers.map((paper) => paper.data.id);
@@ -54,11 +59,12 @@ const topicDescription = getTopicDescription(topic, lang);
 const title = `${topicLabel} - ${t('research.title')} - Hun-Bot Blog`;
 const researchUrl = `/${lang}/research/`;
 
-const panelClass = 'library-panel';
-const subtlePillClass = 'library-pill';
-const actionLinkClass = 'library-action';
-const backActionClass = `${actionLinkClass} library-action--back`;
-const externalActionClass = `${actionLinkClass} library-action--external`;
+function getRowProps(paper: (typeof papers)[number]) {
+	return {
+		state: getReviewForPaper(allReviews, paper.data.id) ? ('reviewed' as const) : paper.data.studiedAt ? ('studied' as const) : ('queue' as const),
+		topicLabels: getTopicLabelsForPaper(paper, allTopics, lang),
+	};
+}
 ---
 
 <!doctype html>
@@ -74,79 +80,70 @@ const externalActionClass = `${actionLinkClass} library-action--external`;
 	<body>
 		<Header />
 		<FloatingLanguagePicker />
-		<main id="main-content" class="library-page mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8" data-pagefind-body>
-			<section class="mb-8 max-w-5xl space-y-3">
-				<a href={researchUrl} class={backActionClass}>
-					<LibraryIcon name="arrow-left" />
+		<main id="main-content" class="atelier-page" data-pagefind-body>
+			<section class="subpage-intro">
+				<a href={researchUrl} class="intro-back">
+					<LibraryIcon name="arrow-left" class="library-action-icon library-action-icon--back" />
 					{t('research.back-to-research')}
 				</a>
-				<div class="space-y-2">
-					<h1 class="text-4xl font-bold tracking-normal text-slate-100 sm:text-5xl">{topicLabel}</h1>
-					<p class="leading-relaxed text-slate-400">{topicDescription}</p>
-				</div>
+				<h1 class="eyebrow">{topicLabel}</h1>
 			</section>
 
-			<section class="mb-10 space-y-4" aria-labelledby="topic-papers-heading">
-				<h2 id="topic-papers-heading" class="text-2xl font-bold text-slate-100">
-					{t('research.topic.papers-heading')}
-				</h2>
-				<div class="grid gap-4 lg:grid-cols-3">
-					{papers.map((paper) => (
-						<article class={panelClass}>
-							<div class="mb-3 flex flex-wrap gap-2">
-								{getVenueDisplayName(paper.data.venue) && (
-									<span class={subtlePillClass}>{getVenueDisplayName(paper.data.venue)}</span>
-								)}
-								{paper.data.year && <span class={subtlePillClass}>{paper.data.year}</span>}
-								{getAcceptanceStatusDisplayName(paper.data.acceptanceStatus) && (
-									<span class={subtlePillClass}>{getAcceptanceStatusDisplayName(paper.data.acceptanceStatus)}</span>
-								)}
-								{paper.data.honors.map((honor) => (
-									<span class={subtlePillClass}>{getHonorDisplayName(honor)}</span>
-								))}
+			<div class="page-frame">
+				<section class="research-section" aria-labelledby="topic-papers-heading">
+					<div class="section-head">
+						<div class="column-heading">
+							<h2 id="topic-papers-heading">{t('research.topic.papers-heading')}</h2>
+						</div>
+					</div>
+					<ul class="atelier-rows">
+						{papers.map((paper) => <PaperRow paper={paper} lang={lang} {...getRowProps(paper)} />)}
+					</ul>
+				</section>
+
+				{linkedReviews.length > 0 && (
+					<section class="research-section" aria-labelledby="topic-reviews-heading">
+						<div class="section-head">
+							<div class="column-heading">
+								<h2 id="topic-reviews-heading">{t('research.topic.reviews-heading')}</h2>
 							</div>
-							<h3 class="mb-3 text-lg font-semibold text-slate-100">{paper.data.title}</h3>
-							<p class="mb-5 text-sm leading-relaxed text-slate-400">{getPaperTldr(paper, lang)}</p>
-							<a href={paper.data.url} target="_blank" rel="noopener noreferrer" class={externalActionClass}>
-								{t('research.view-source')}
-								<LibraryIcon name="external" />
-							</a>
-						</article>
-					))}
-				</div>
-			</section>
+						</div>
+						<ul class="atelier-rows">
+							{linkedReviews.map((review) => (
+								<li class="atelier-row">
+									<a href={getAcademicReviewUrlFromEntry(review)} class="atelier-row-link">
+										<div class="atelier-row-head">
+											<h3>{review.data.title}</h3>
+										</div>
+									</a>
+								</li>
+							))}
+						</ul>
+					</section>
+				)}
 
-			{linkedReviews.length > 0 && (
-				<section class="mb-10 space-y-4" aria-labelledby="topic-reviews-heading">
-					<h2 id="topic-reviews-heading" class="text-2xl font-bold text-slate-100">
-						{t('research.topic.reviews-heading')}
-					</h2>
-					<div class="grid gap-4 lg:grid-cols-3">
-						{linkedReviews.map((review) => (
-							<a href={getAcademicReviewUrlFromEntry(review)} class={`${panelClass} library-panel-link`}>
-								<h3 class="mb-3 text-lg font-semibold text-slate-100">{review.data.title}</h3>
-							</a>
-						))}
-					</div>
-				</section>
-			)}
-
-			{linkedPosts.length > 0 && (
-				<section class="mb-10 space-y-4" aria-labelledby="topic-posts-heading">
-					<h2 id="topic-posts-heading" class="text-2xl font-bold text-slate-100">
-						{t('research.topic.posts-heading')}
-					</h2>
-					<div class="grid gap-4 lg:grid-cols-3">
-						{linkedPosts.map((post) => (
-							<a href={getBlogUrlFromPost(post)} class={`${panelClass} library-panel-link`}>
-								<h3 class="mb-3 text-lg font-semibold text-slate-100">{post.data.title}</h3>
-								<p class="text-sm leading-relaxed text-slate-400">{post.data.description}</p>
-							</a>
-						))}
-					</div>
-				</section>
-			)}
+				{linkedPosts.length > 0 && (
+					<section class="research-section" aria-labelledby="topic-posts-heading">
+						<div class="section-head">
+							<div class="column-heading">
+								<h2 id="topic-posts-heading">{t('research.topic.posts-heading')}</h2>
+							</div>
+						</div>
+						<ul class="atelier-rows">
+							{linkedPosts.map((post) => (
+								<li class="atelier-row">
+									<a href={getBlogUrlFromPost(post)} class="atelier-row-link">
+										<div class="atelier-row-head">
+											<h3>{post.data.title}</h3>
+										</div>
+										<p class="atelier-row-note">{post.data.description}</p>
+									</a>
+								</li>
+							))}
+						</ul>
+					</section>
+				)}
+			</div>
 		</main>
-		<Footer />
 	</body>
 </html>

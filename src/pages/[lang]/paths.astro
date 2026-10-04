@@ -1,7 +1,6 @@
 ---
 import BaseHead from '../../components/BaseHead.astro';
 import Header from '../../components/Header.astro';
-import Footer from '../../components/Footer.astro';
 import FloatingLanguagePicker from '../../components/FloatingLanguagePicker.astro';
 import LibraryIcon from '../../components/library/LibraryIcon.astro';
 import LibraryPageStyles from '../../components/library/LibraryPageStyles.astro';
@@ -47,52 +46,44 @@ const visiblePaths = getVisibleLearningPaths(learningPaths, allPosts, lang).map(
 	<body>
 		<Header />
 		<FloatingLanguagePicker />
-		<main id="main-content" class="library-page mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8" data-pagefind-body>
-			<section class="mb-12 max-w-5xl space-y-4">
-				<h1 class="text-4xl font-bold tracking-normal text-slate-100 sm:text-5xl">{t('paths.title')}</h1>
-				<p class="text-xl leading-relaxed text-slate-300">{t('paths.subtitle')}</p>
-				<p class="leading-relaxed text-slate-400">{description}</p>
+		<main id="main-content" class="atelier-page" data-pagefind-body>
+			<section class="subpage-intro">
+				<h1 class="eyebrow">{t('paths.title')}</h1>
 			</section>
 
-			<section class="grid gap-4 md:grid-cols-2" aria-label={t('paths.title')}>
-				{visiblePaths.map(({ path, steps }) => (
-					<a
-						href={getLearningPathUrl(lang, path.id)}
-						class="library-panel library-panel-link"
-						aria-label={`${getLocalizedPathText(path.title, lang)}: ${t('paths.open-path')}`}
-					>
-						<div class="mb-4 flex flex-wrap items-start justify-between gap-3">
-							<h2 class="text-xl font-semibold text-slate-100">{getLocalizedPathText(path.title, lang)}</h2>
-							<span class="library-badge library-badge--available">{t('paths.available')}</span>
-						</div>
-						<p class="text-sm leading-relaxed text-slate-400">{getLocalizedPathText(path.description, lang)}</p>
-						<div class="mt-5 flex flex-wrap gap-2" aria-label={t('paths.supporting-label')}>
-							{path.topicIds.map((topicId) => <span class="library-pill">{topicId}</span>)}
-							{path.resourceIds.length > 0 && (
-								<span class="library-pill">{t('paths.resources-count').replace('{count}', String(path.resourceIds.length))}</span>
-							)}
-							{path.deckIds.length > 0 && (
-								<span class="library-pill">{t('paths.decks-count').replace('{count}', String(path.deckIds.length))}</span>
-							)}
-						</div>
-						<div class="library-panel-footer">
-							<span class="font-medium library-muted-label">
-								{t('paths.step-count').replace('{count}', String(steps.length))}
-							</span>
-							<span class="library-section-button">
-								{t('paths.open-path')}
-								<LibraryIcon name="arrow-right" />
-							</span>
-						</div>
-					</a>
-				))}
-				{visiblePaths.length === 0 && (
-					<article class="library-panel">
-						<p class="text-sm leading-relaxed text-slate-400">{t('paths.empty')}</p>
-					</article>
-				)}
-			</section>
+			<div class="page-frame">
+				<section class="research-section" aria-label={t('paths.title')}>
+					<ul class="atelier-rows">
+						{visiblePaths.map(({ path, steps }) => (
+							<li class="atelier-row">
+								<a
+									href={getLearningPathUrl(lang, path.id)}
+									class="atelier-row-link"
+									aria-label={`${getLocalizedPathText(path.title, lang)}: ${t('paths.open-path')}`}
+								>
+									<div class="atelier-row-head">
+										<h2>{getLocalizedPathText(path.title, lang)}</h2>
+									</div>
+									<div class="atelier-row-meta">
+										<span>{t('paths.step-count').replace('{count}', String(steps.length))}</span>
+										<div class="chip-list" aria-label={t('paths.supporting-label')}>
+											{path.topicIds.map((topicId) => <span class="chip">{topicId}</span>)}
+											{path.resourceIds.length > 0 && (
+												<span class="chip">{t('paths.resources-count').replace('{count}', String(path.resourceIds.length))}</span>
+											)}
+											{path.deckIds.length > 0 && (
+												<span class="chip">{t('paths.decks-count').replace('{count}', String(path.deckIds.length))}</span>
+											)}
+										</div>
+									</div>
+									<p class="atelier-row-note">{getLocalizedPathText(path.description, lang)}</p>
+								</a>
+							</li>
+						))}
+					</ul>
+					{visiblePaths.length === 0 && <p class="empty-line">{t('paths.empty')}</p>}
+				</section>
+			</div>
 		</main>
-		<Footer />
 	</body>
 </html>

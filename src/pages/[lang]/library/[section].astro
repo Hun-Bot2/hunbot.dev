@@ -1,7 +1,6 @@
 ---
 import BaseHead from '../../../components/BaseHead.astro';
 import Header from '../../../components/Header.astro';
-import Footer from '../../../components/Footer.astro';
 import FloatingLanguagePicker from '../../../components/FloatingLanguagePicker.astro';
 import LibraryIcon from '../../../components/library/LibraryIcon.astro';
 import LibraryPageStyles from '../../../components/library/LibraryPageStyles.astro';
@@ -29,9 +28,6 @@ if (!isLibrarySectionSlug(sectionParam)) {
 }
 
 const libraryUrl = `/${lang}/library/`;
-
-const actionLinkClass = 'library-action';
-const backActionClass = `${actionLinkClass} library-action--back`;
 
 // ---------------------------------------------------------------------------
 // Pick section branch — the 외부 링크 tab content, filtered to this
@@ -83,21 +79,18 @@ const chipAllLabel = t('library.chip.all').replace('{count}', String(totalPickCo
 	<body>
 		<Header />
 		<FloatingLanguagePicker />
-		<main id="main-content" class="library-page mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8" data-pagefind-body>
-			<section class="mb-8 max-w-5xl space-y-3">
-				<a href={libraryUrl} class={backActionClass}>
-					<LibraryIcon name="arrow-left" />
+		<main id="main-content" class="atelier-page" data-pagefind-body>
+			<section class="subpage-intro">
+				<a href={libraryUrl} class="intro-back">
+					<LibraryIcon name="arrow-left" class="library-action-icon library-action-icon--back" />
 					{t('library.back-to-library')}
 				</a>
-				<div class="space-y-2">
-					<h1 class="text-4xl font-bold tracking-normal text-slate-100 sm:text-5xl">{sectionTitle}</h1>
-					<p class="text-xl leading-relaxed text-slate-300">{sectionDescription}</p>
-				</div>
+				<h1 class="eyebrow">{sectionTitle}</h1>
 				<LibraryTabs lang={lang} active="external-links" />
 			</section>
 
-			<section class="mb-8 space-y-3" aria-label={chipAllLabel}>
-				<div class="flex flex-wrap gap-2">
+			<div class="page-frame">
+				<section class="library-chips" aria-label={chipAllLabel}>
 					<a href={libraryUrl} class="library-chip">
 						{chipAllLabel}
 					</a>
@@ -110,29 +103,26 @@ const chipAllLabel = t('library.chip.all').replace('{count}', String(totalPickCo
 							{section.label[lang]} {section.count}
 						</a>
 					))}
-				</div>
-			</section>
-
-			{tierGroups.length === 0 ? (
-				<section class="library-panel mb-10">
-					<p class="text-slate-400">{t('library.section.pick-empty')}</p>
 				</section>
-			) : (
-				tierGroups.map((group) => (
-					<section class="mb-10 space-y-4" aria-labelledby={`library-tier-${group.tier.id}-heading`}>
-						<div>
-							<h2 id={`library-tier-${group.tier.id}-heading`} class="text-2xl font-bold text-slate-100">
-								{group.tier.label[lang]}
-							</h2>
-							<p class="mt-1 text-slate-400">{group.tier.description[lang]}</p>
-						</div>
-						<div class="grid gap-4 lg:grid-cols-3">
-							{group.picks.map((pick) => <PickCard pick={pick} lang={lang} now={now} showSection={false} />)}
-						</div>
-					</section>
-				))
-			)}
+
+				{tierGroups.length === 0 ? (
+					<p class="empty-line">{t('library.section.pick-empty')}</p>
+				) : (
+					tierGroups.map((group) => (
+						<section class="research-section" aria-labelledby={`library-tier-${group.tier.id}-heading`}>
+							<div class="section-head">
+								<div class="column-heading">
+									<h2 id={`library-tier-${group.tier.id}-heading`}>{group.tier.label[lang]}</h2>
+								</div>
+								<p class="section-note">{group.tier.description[lang]}</p>
+							</div>
+							<div class="knowledge-grid">
+								{group.picks.map((pick) => <PickCard pick={pick} lang={lang} now={now} showSection={false} />)}
+							</div>
+						</section>
+					))
+				)}
+			</div>
 		</main>
-		<Footer />
 	</body>
 </html>

@@ -88,8 +88,7 @@ Risk: math and localized-link plugins are configured in both MDX and top-level m
 These are not removal instructions. Audit usage and run a build before deleting anything.
 
 - `@fontsource/noto-sans-jp` and `@fontsource/noto-sans-kr`: source currently uses Google Fonts and CSS font-family names, but no direct package import was found.
-- Unused UI components such as `BlogCard.astro`, `LanguagePicker.astro`, `HeaderLink.astro`, or `Bio.astro` may be legacy. Confirm with full route and content usage before removing.
-- `src/styles/controls.css` may be unused. Confirm import paths before removal.
+- `BlogCard.astro`, `PostMeta.astro`, `HeaderLink.astro`, `Bio.astro`, and `src/styles/controls.css` were removed in the Atelier cleanup (no importers). The review MDX components under `components/reviews/` have no importers in current content but are an authoring API for review posts, so they are kept.
 - Public 3D scripts may be legacy or dormant. Verify whether any route loads them before changing.
 
 ## Possible Upgrade Risks

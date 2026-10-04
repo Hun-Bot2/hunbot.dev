@@ -8,7 +8,6 @@
 // redirects here (vercel.json).
 import BaseHead from '../../../components/BaseHead.astro';
 import Header from '../../../components/Header.astro';
-import Footer from '../../../components/Footer.astro';
 import FloatingLanguagePicker from '../../../components/FloatingLanguagePicker.astro';
 import LibraryIcon from '../../../components/library/LibraryIcon.astro';
 import LibraryPageStyles from '../../../components/library/LibraryPageStyles.astro';
@@ -61,13 +60,6 @@ const highlightedDeckLanguageLabel = highlightedDeck
 const title = `${t('library.section.decks.title')} - ${t('research.title')} - Hun-Bot Blog`;
 const description = t('library.section.decks.description');
 
-const panelClass = 'library-panel';
-const subtlePillClass = 'library-pill';
-const actionLinkClass = 'library-action';
-const backActionClass = `${actionLinkClass} library-action--back`;
-const externalActionClass = `${actionLinkClass} library-action--external`;
-const deckActionClass = `${actionLinkClass} library-action--deck`;
-const downloadActionClass = `${actionLinkClass} library-action--download`;
 const formatCount = (count: number) => t('library.item-count').replace('{count}', String(count));
 const formatSlideCount = (count: number) => t('library.deck.slides-count').replace('{count}', String(count));
 
@@ -102,8 +94,10 @@ function renderDeckCard(deck: DeckMeta) {
 	return { deck, primaryDeckUrl, showSource, availability, relatedPost };
 }
 
-const paperDeckCards = paperDecks.map(renderDeckCard);
-const projectDeckCards = projectDecks.map(renderDeckCard);
+const deckGroups = [
+	{ id: 'paper', heading: t('research.decks.group.paper'), cards: paperDecks.map(renderDeckCard) },
+	{ id: 'project', heading: t('research.decks.group.project'), cards: projectDecks.map(renderDeckCard) },
+].filter((group) => group.cards.length > 0);
 ---
 
 <!doctype html>
@@ -119,181 +113,118 @@ const projectDeckCards = projectDecks.map(renderDeckCard);
 	<body>
 		<Header />
 		<FloatingLanguagePicker />
-		<main id="main-content" class="library-page mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8" data-pagefind-body>
-			<section class="mb-8 max-w-5xl space-y-3">
-				<a href={researchUrl} class={backActionClass}>
-					<LibraryIcon name="arrow-left" />
+		<main id="main-content" class="atelier-page" data-pagefind-body>
+			<section class="subpage-intro">
+				<a href={researchUrl} class="intro-back">
+					<LibraryIcon name="arrow-left" class="library-action-icon library-action-icon--back" />
 					{t('research.back-to-research')}
 				</a>
-				<div class="space-y-2">
-					<h1 class="text-4xl font-bold tracking-normal text-slate-100 sm:text-5xl">{t('library.section.decks.title')}</h1>
-					<p class="text-xl leading-relaxed text-slate-300">{description}</p>
-					<p class="leading-relaxed text-slate-400">{formatCount(listedDeckCount)}</p>
-				</div>
+				<h1 class="eyebrow">{t('library.section.decks.title')} · {formatCount(listedDeckCount)}</h1>
 			</section>
 
-			{paperDeckCards.length > 0 && (
-				<section class="mb-10 space-y-4" aria-labelledby="research-decks-paper-heading">
-					<h2 id="research-decks-paper-heading" class="text-2xl font-bold text-slate-100">
-						{t('research.decks.group.paper')}
-					</h2>
-					<div class="grid gap-4 lg:grid-cols-3">
-						{paperDeckCards.map(({ deck, primaryDeckUrl, showSource, availability, relatedPost }) => (
-							<article class={panelClass}>
-								<div class="mb-3 flex flex-wrap gap-2">
-									<span class={subtlePillClass}>
-										{t('library.deck-type')}: {deck.type}
-									</span>
-									<span class={subtlePillClass}>{deck.aspectRatio}</span>
-								</div>
-								<h3 class="mb-3 text-lg font-semibold text-slate-100">{deck.title}</h3>
-								<p class="mb-5 text-sm leading-relaxed text-slate-400">{deck.description}</p>
-								{availability.length > 0 && (
-									<div class="mb-5 flex flex-wrap gap-2">
-										{availability.map((item) => <span class={subtlePillClass}>{item}</span>)}
-									</div>
-								)}
-								<div class="flex flex-wrap gap-2">
-									{primaryDeckUrl && (
-										<a
-											href={primaryDeckUrl}
-											target="_blank"
-											rel="noopener noreferrer"
-											class={deck.htmlUrl ? deckActionClass : externalActionClass}
-										>
-											{deck.htmlUrl ? t('library.view-deck') : t('library.open-pdf')}
-											<LibraryIcon name={deck.htmlUrl ? 'arrow-right' : 'external'} />
-										</a>
-									)}
-									{showSource && (
-										<a href={deck.pptxUrl} target="_blank" rel="noopener noreferrer" class={downloadActionClass}>
-											{t('library.download-source')}
-											<LibraryIcon name="download" />
-										</a>
-									)}
-									{relatedPost && (
-										<a href={getBlogUrlFromPost(relatedPost)} class={actionLinkClass}>
-											{t('research.view-post')}
-											<LibraryIcon name="arrow-right" />
-										</a>
-									)}
-								</div>
-							</article>
-						))}
-					</div>
-				</section>
-			)}
-
-			{projectDeckCards.length > 0 && (
-				<section class="mb-10 space-y-4" aria-labelledby="research-decks-project-heading">
-					<h2 id="research-decks-project-heading" class="text-2xl font-bold text-slate-100">
-						{t('research.decks.group.project')}
-					</h2>
-					{highlightedDeck && (
-						<article
-							class={`${panelClass} library-latest-deck-card`}
-							style={`--library-latest-deck-ratio: ${highlightedDeckAspectRatio};`}
-							data-slide-deck-root
-						>
-							<div class="library-latest-deck-header">
-								<div>
-									<div class="mb-3 flex flex-wrap gap-2">
-										<span class={subtlePillClass}>{t('library.latest-deck')}</span>
-										<span class={subtlePillClass}>{highlightedDeck.type.toUpperCase()}</span>
-										{highlightedDeckLanguageLabel && (
-											<span class={subtlePillClass}>{highlightedDeckLanguageLabel}</span>
-										)}
-									</div>
-									<h3 class="text-xl font-semibold text-slate-100">{t('library.latest-deck.item.title')}</h3>
-								</div>
-								{highlightedDeckUrl && (
-									<a href={highlightedDeckUrl} target="_blank" rel="noopener noreferrer" class={externalActionClass}>
-										{highlightedDeckActionLabel}
-										<LibraryIcon name={highlightedDeck.htmlUrl ? 'arrow-right' : 'external'} />
-									</a>
-								)}
+			<div class="page-frame">
+				{deckGroups.map((group) => (
+					<section class="research-section" aria-labelledby={`research-decks-${group.id}-heading`}>
+						<div class="section-head">
+							<div class="column-heading">
+								<h2 id={`research-decks-${group.id}-heading`}>{group.heading}</h2>
 							</div>
-							{highlightedDeckPreviewUrl && (
-								<div class="library-deck-preview" data-slide-deck-viewer data-slide-list={highlightedDeckSlidesJson}>
-									<img
-										src={highlightedDeckPreviewUrl}
-										alt={t('library.latest-deck.preview-title')}
-										loading="lazy"
-										decoding="async"
-										data-slide-deck-image
-									/>
+						</div>
+						{group.id === 'project' && highlightedDeck && (
+							<article
+								class="deck-frame"
+								style={`--library-latest-deck-ratio: ${highlightedDeckAspectRatio};`}
+								data-slide-deck-root
+							>
+								<div class="deck-frame-head">
+									<div>
+										<div class="chip-list">
+											<span class="chip">{t('library.latest-deck')}</span>
+											<span class="chip">{highlightedDeck.type.toUpperCase()}</span>
+											{highlightedDeckLanguageLabel && <span class="chip">{highlightedDeckLanguageLabel}</span>}
+										</div>
+										<h3>{t('library.latest-deck.item.title')}</h3>
+									</div>
+									{highlightedDeckUrl && (
+										<a href={highlightedDeckUrl} target="_blank" rel="noopener noreferrer" class="action-link">
+											{highlightedDeckActionLabel}
+											<LibraryIcon name={highlightedDeck.htmlUrl ? 'arrow-right' : 'external'} />
+										</a>
+									)}
 								</div>
-							)}
-							{showHighlightedDeckControls && (
-								<div class="library-deck-controls" aria-label={t('library.deck.controls-label')}>
-									<button
-										type="button"
-										class="library-deck-control"
-										aria-label={t('library.deck.previous-slide')}
-										data-slide-deck-prev
-										disabled
-									>
-										<LibraryIcon name="arrow-left" />
-									</button>
-									<span class="library-deck-counter" data-slide-deck-counter aria-live="polite">
-										1 / {highlightedDeckSlideCount}
-									</span>
-									<button type="button" class="library-deck-control" aria-label={t('library.deck.next-slide')} data-slide-deck-next>
-										<LibraryIcon name="arrow-right" />
-									</button>
-								</div>
-							)}
-							<div class="library-latest-deck-actions">
-								<p class="max-w-3xl text-sm leading-relaxed text-slate-400">{t('library.latest-deck.item.description')}</p>
-							</div>
-						</article>
-					)}
-					<div class="grid gap-4 lg:grid-cols-3">
-						{projectDeckCards.map(({ deck, primaryDeckUrl, showSource, availability, relatedPost }) => (
-							<article class={panelClass}>
-								<div class="mb-3 flex flex-wrap gap-2">
-									<span class={subtlePillClass}>
-										{t('library.deck-type')}: {deck.type}
-									</span>
-									<span class={subtlePillClass}>{deck.aspectRatio}</span>
-								</div>
-								<h3 class="mb-3 text-lg font-semibold text-slate-100">{deck.title}</h3>
-								<p class="mb-5 text-sm leading-relaxed text-slate-400">{deck.description}</p>
-								{availability.length > 0 && (
-									<div class="mb-5 flex flex-wrap gap-2">
-										{availability.map((item) => <span class={subtlePillClass}>{item}</span>)}
+								{highlightedDeckPreviewUrl && (
+									<div class="deck-preview" data-slide-deck-viewer data-slide-list={highlightedDeckSlidesJson}>
+										<img
+											src={highlightedDeckPreviewUrl}
+											alt={t('library.latest-deck.preview-title')}
+											loading="lazy"
+											decoding="async"
+											data-slide-deck-image
+										/>
 									</div>
 								)}
-								<div class="flex flex-wrap gap-2">
-									{primaryDeckUrl && (
-										<a
-											href={primaryDeckUrl}
-											target="_blank"
-											rel="noopener noreferrer"
-											class={deck.htmlUrl ? deckActionClass : externalActionClass}
+								{showHighlightedDeckControls && (
+									<div class="deck-controls" aria-label={t('library.deck.controls-label')}>
+										<button
+											type="button"
+											class="deck-control"
+											aria-label={t('library.deck.previous-slide')}
+											data-slide-deck-prev
+											disabled
 										>
-											{deck.htmlUrl ? t('library.view-deck') : t('library.open-pdf')}
-											<LibraryIcon name={deck.htmlUrl ? 'arrow-right' : 'external'} />
-										</a>
-									)}
-									{showSource && (
-										<a href={deck.pptxUrl} target="_blank" rel="noopener noreferrer" class={downloadActionClass}>
-											{t('library.download-source')}
-											<LibraryIcon name="download" />
-										</a>
-									)}
-									{relatedPost && (
-										<a href={getBlogUrlFromPost(relatedPost)} class={actionLinkClass}>
-											{t('research.view-post')}
+											<LibraryIcon name="arrow-left" />
+										</button>
+										<span class="deck-counter" data-slide-deck-counter aria-live="polite">
+											1 / {highlightedDeckSlideCount}
+										</span>
+										<button type="button" class="deck-control" aria-label={t('library.deck.next-slide')} data-slide-deck-next>
 											<LibraryIcon name="arrow-right" />
-										</a>
-									)}
-								</div>
+										</button>
+									</div>
+								)}
+								<p class="deck-frame-note">{t('library.latest-deck.item.description')}</p>
 							</article>
-						))}
-					</div>
-				</section>
-			)}
+						)}
+						<ul class="atelier-rows">
+							{group.cards.map(({ deck, primaryDeckUrl, showSource, availability, relatedPost }) => (
+								<li class="atelier-row">
+									<div class="atelier-row-head">
+										<h3>{deck.title}</h3>
+										<div class="atelier-row-actions">
+											{primaryDeckUrl && (
+												<a href={primaryDeckUrl} target="_blank" rel="noopener noreferrer" class="action-link">
+													{deck.htmlUrl ? t('library.view-deck') : t('library.open-pdf')}
+													<LibraryIcon name={deck.htmlUrl ? 'arrow-right' : 'external'} />
+												</a>
+											)}
+											{showSource && (
+												<a href={deck.pptxUrl} target="_blank" rel="noopener noreferrer" class="action-link">
+													{t('library.download-source')}
+													<LibraryIcon name="download" />
+												</a>
+											)}
+											{relatedPost && (
+												<a href={getBlogUrlFromPost(relatedPost)} class="action-link">
+													{t('research.view-post')}
+													<LibraryIcon name="arrow-right" />
+												</a>
+											)}
+										</div>
+									</div>
+									<div class="atelier-row-meta">
+										<div class="chip-list">
+											<span class="chip">{t('library.deck-type')}: {deck.type}</span>
+											<span class="chip">{deck.aspectRatio}</span>
+											{availability.map((item) => <span class="chip">{item}</span>)}
+										</div>
+									</div>
+									<p class="atelier-row-note">{deck.description}</p>
+								</li>
+							))}
+						</ul>
+					</section>
+				))}
+			</div>
 		</main>
 		<script is:inline>
 			for (const viewer of document.querySelectorAll('[data-slide-deck-viewer]')) {
@@ -348,6 +279,5 @@ const projectDeckCards = projectDecks.map(renderDeckCard);
 				updateDeckSlide(0);
 			}
 		</script>
-		<Footer />
 	</body>
 </html>

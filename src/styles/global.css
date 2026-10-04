@@ -12,167 +12,38 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Design System Tokens - Gatsby Starter Blog Inspired */
+/* Layout and rhythm scale read by the base element rules below. Colours, the
+   type stacks and the content width live in tokens.css. */
 :root {
-  /* Max Widths */
   --maxWidth-wrapper: 42rem;
-  
-  /* Spacing */
+
   --spacing-0: 0;
   --spacing-1: 0.25rem;
   --spacing-2: 0.5rem;
-  --spacing-3: 0.75rem;
-  --spacing-4: 1rem;
   --spacing-5: 1.25rem;
   --spacing-6: 1.5rem;
   --spacing-8: 2rem;
   --spacing-10: 2.5rem;
   --spacing-12: 3rem;
-  --spacing-16: 4rem;
   --spacing-20: 5rem;
-  
-	/* Typography - System Fonts */
-	/* Use Montserrat (Latin) and Gowun Dodum (Korean) as primary sans; keep system fallbacks */
-	--fontFamily-sans: "Montserrat", "Gowun Dodum", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-	/* Serif stack without Noto Serif (not imported) */
-	--fontFamily-serif: "Georgia", "Times New Roman", Times, serif;
-  --font-body: var(--fontFamily-serif);
-  --font-heading: var(--fontFamily-sans);
-  
-  /* Font Weights */
-  --fontWeight-normal: 400;
+
   --fontWeight-bold: 700;
-  --fontWeight-black: 900;
-  
-  /* Font Sizes - Minor Third Scale (1.200) */
+
   --fontSize-root: 16px;
-  --fontSize-0: 0.833rem;
   --fontSize-1: 1rem;
   --fontSize-2: 1.2rem;
-  --fontSize-3: 1.44rem;
-  --fontSize-4: 1.728rem;
-  --fontSize-5: 2.074rem;
-  --fontSize-6: 2.488rem;
-  --fontSize-7: 2.986rem;
-  
-  /* Line Heights */
-  --lineHeight-none: 1;
+
   --lineHeight-tight: 1.1;
   --lineHeight-normal: 1.5;
   --lineHeight-relaxed: 1.625;
-  
-  /* Colors - Dark Theme */
-  --color-primary: #f97316;
-  --color-text: rgb(248, 249, 250);
-  --color-text-light: rgba(248, 249, 250, 0.7);
-  --color-heading: rgb(248, 249, 250);
-  --color-heading-black: rgb(248, 249, 250);
-  --color-accent: rgba(248, 249, 250, 0.2);
-  --color-white: rgb(248, 249, 250);
-  --color-black: rgb(40, 40, 40);
-  
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-  
-  /* Transitions */
-  --transition-fast: 150ms ease-in-out;
-  --transition-normal: 200ms ease-in-out;
-  --transition-slow: 300ms ease-in-out;
 }
 
-/* Blog Components */
-@layer components {
-	/* Button System */
-	.btn-primary {
-		@apply inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-orange-600 hover:bg-orange-700 rounded-lg transition-all duration-200 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2;
-	}
-	
-	.btn-secondary {
-		@apply inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg transition-all duration-200 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2;
-	}
-	
-	.btn-small {
-		@apply px-4 py-2 text-xs;
-	}
-	
-	/* Navigation Link Styles */
-	.nav-link {
-		@apply px-3 py-2 text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 rounded-md transition-all duration-200;
-	}
-	
-	.nav-link.active {
-		@apply text-orange-400 bg-orange-900/20;
-	}
-	
-	/* Card Base Styles */
-	.card-base {
-		@apply block bg-slate-800/50 border border-slate-700 rounded-2xl shadow-sm transition-all duration-200 overflow-hidden;
-	}
-	
-	.card-hover {
-		@apply hover:bg-slate-800/80 hover:border-orange-600 hover:shadow-lg hover:shadow-slate-900/50;
-	}
-	
-	.card-dark {
-		@apply bg-slate-800/50 border-slate-700 hover:bg-slate-800/80 hover:border-orange-600 hover:shadow-slate-900/50;
-	}
-	
-	/* Line Clamp Utilities */
-	.line-clamp-2 {
-		display: -webkit-box;
-		line-clamp: 2;
-		-webkit-line-clamp: 2;
-		-webkit-box-orient: vertical;
-		overflow: hidden;
-	}
-	
-	.line-clamp-3 {
-		display: -webkit-box;
-		line-clamp: 3;
-		-webkit-line-clamp: 3;
-		-webkit-box-orient: vertical;
-		overflow: hidden;
-	}
-	
-	.line-clamp-4 {
-		display: -webkit-box;
-		line-clamp: 4;
-		-webkit-line-clamp: 4;
-		-webkit-box-orient: vertical;
-		overflow: hidden;
-	}
-}
-
-
-:root {
-	--accent: #f97316;
-	--accent-dark: #ea580c;
-	--accent-light: #fb923c;
-	--neural-cyan: #06b6d4;
-	--neural-pink: #ec4899;
-	--black: 40, 40, 40;
-	--gray: 248, 249, 250;
-	--gray-light: 248, 249, 250;
-	--gray-dark: 40, 40, 40;
-	--gray-gradient: rgba(40, 40, 40, 60%), rgb(40, 40, 40);
-	--box-shadow:
-		0 4px 16px rgba(249, 115, 22, 0.10), 0 12px 32px rgba(249, 115, 22, 0.10),
-		0 24px 48px rgba(249, 115, 22, 0.10);
-	--homepage-wide: 80rem;
-	--surface-panel: rgba(255, 255, 255, 0.055);
-	--surface-panel-strong: rgba(255, 255, 255, 0.08);
-	--surface-border: rgba(248, 249, 250, 0.13);
-	--surface-muted-text: rgba(203, 213, 225, 0.78);
-}
-
-/* 전역 폰트 설정 */
+/* 전역 기본 요소 (토큰: tokens.css) */
 html {
   font-size: var(--fontSize-root);
-  font-family: var(--font-body);
+  font-family: var(--font-sans);
   line-height: var(--lineHeight-normal);
+  background: var(--paper);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -180,14 +51,20 @@ html {
 body {
 	margin: 0;
 	padding: 0;
-	font-family: var(--font-body);
+	min-width: 320px;
+	font-family: var(--font-sans);
 	font-size: var(--fontSize-1);
-	color: rgb(248, 249, 250);
-	background-color: rgb(40, 40, 40);
+	font-weight: 400;
+	color: var(--ink);
+	background-color: var(--paper);
 	text-align: left;
 	word-wrap: break-word;
 	overflow-wrap: break-word;
 	line-height: var(--lineHeight-relaxed);
+}
+
+::selection {
+	background: color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
 .skip-link {
@@ -196,16 +73,15 @@ body {
 	left: 0.75rem;
 	z-index: 1000;
 	transform: translateY(-160%);
-	border: 1px solid rgba(251, 146, 60, 0.5);
-	border-radius: 0.5rem;
-	background: rgb(15, 23, 42);
-	color: rgb(255, 237, 213);
+	border: 1px solid var(--rule-strong);
+	background: var(--paper);
+	color: var(--ink);
 	padding: 0.65rem 0.9rem;
-	font-family: var(--font-heading);
-	font-size: 0.875rem;
-	font-weight: 700;
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
 	text-decoration: none;
-	box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
 	pointer-events: none;
 	transition: transform 160ms ease;
 }
@@ -217,342 +93,182 @@ body {
 
 .skip-link:focus-visible {
 	transform: translateY(0);
-	outline: 2px solid rgba(251, 146, 60, 0.8);
-	outline-offset: 3px;
 	pointer-events: auto;
 }
 
-
-:where(a, button, input, textarea, select, summary):focus-visible {
-	outline: 2px solid rgba(251, 146, 60, 0.78);
-	outline-offset: 3px;
+:where(a, button, input, textarea, select, summary, [role="button"]):focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 4px;
 }
 
-/* Korean typography (Gowun Dodum) */
-/* 전체 문서가 한국어일 때 기본 본문 폰트로 Gowun Dodum 사용 */
-html[lang^="ko"] body { 
-	font-family: "Gowun Dodum", "Noto Sans KR", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
-	font-weight: 400;
+/* Layout wrapper (docs/plans/2026-10-03-atelier-redesign.md §3.4) */
+.page-frame {
+	width: min(calc(100% - 32px), var(--content-max));
+	margin-inline: auto;
 }
 
-/* 요소 또는 상위에 lang="ko"가 지정된 경우에도 적용 */
-:lang(ko) { 
-	font-family: "Gowun Dodum", "Noto Sans KR", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
-	font-weight: 400;
-}
-
-	/* English typography (Montserrat) */
-	html[lang^="en"] body {
-		font-family: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-		font-weight: 400;
+@media (min-width: 640px) {
+	.page-frame {
+		width: min(calc(100% - 64px), var(--content-max));
 	}
+}
 
-	:lang(en) {
-		font-family: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-		font-weight: 400;
+/* Shared Atelier vocabulary: labels, section heads, rows, chips. */
+.eyebrow {
+	margin: 0 0 0.9rem;
+	font: 400 0.6875rem/1.45 var(--font-mono);
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	color: var(--secondary);
+}
+
+.column-heading {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 1rem;
+	margin-bottom: 1.4rem;
+	padding-bottom: 0.8rem;
+	border-bottom: 1px solid var(--rule-strong);
+}
+
+.column-heading :where(h1, h2) {
+	margin: 0;
+	font: 400 1.75rem/1.2 var(--font-serif);
+	letter-spacing: -0.02em;
+}
+
+.column-heading > a {
+	font: 400 0.6875rem/1.45 var(--font-mono);
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	color: var(--secondary);
+}
+
+.subpage-intro {
+	width: min(calc(100% - 32px), var(--content-max));
+	margin-inline: auto;
+	padding: 2rem 0 0.875rem;
+	border-bottom: 1px solid var(--rule-strong);
+}
+
+@media (min-width: 640px) {
+	.subpage-intro {
+		width: min(calc(100% - 64px), var(--content-max));
 	}
-
-	/* Japanese typography (M PLUS 1p) */
-	html[lang^="jp"] body {
-		font-family: "M PLUS 1p", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-		font-weight: 500;
-	}
-
-	:lang(jp) {
-		font-family: "M PLUS 1p", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-		font-weight: 500;
-	}
-
-/* Dark mode */
-body.dark-theme {
-	background: rgb(40, 40, 40);
-	color: rgb(248, 249, 250);
 }
 
-body.dark-theme h1,
-body.dark-theme h2,
-body.dark-theme h3,
-body.dark-theme h4,
-body.dark-theme h5,
-body.dark-theme h6 {
-	color: rgb(248, 249, 250) !important;
+/* Subpage intro extras: back link. */
+
+.subpage-intro .eyebrow {
+	margin-bottom: 0.4rem;
+	font-size: 0.9375rem;
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	color: var(--ink);
 }
 
-body.dark-theme {
-	color-scheme: dark;
+.intro-back {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+	min-height: 2.5rem;
+	margin-bottom: 0.2rem;
+	font: 400 0.6875rem/1.4 var(--font-mono);
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	color: var(--secondary);
+	transition: color 160ms ease;
 }
 
-body.dark-theme pre.astro-code {
-  background-color: var(--shiki-dark-bg) !important;
-  color: var(--shiki-dark) !important;
+.intro-back:hover {
+	color: var(--accent);
 }
 
-body.dark-theme pre.astro-code span {
-  color: var(--shiki-dark) !important;
+
+
+.rule-list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
 }
 
-body.dark-theme .prose :not(pre) > code {
-	background: rgba(68, 40, 20, 0.16);
-	color: #ffe7cf;
-	border: 1px solid rgba(251, 146, 60, 0.35);
-	border-radius: 0.35rem;
-	padding: 0.05em 0.35em;
+/* Lines sit between rows only; the heading rule above and the next block's own
+   spacing are the outer edges. */
+.rule-list > * + * {
+	border-top: 1px solid var(--rule);
 }
 
-/* light theme */
-body.light-theme {
-	background: #f8fafc;
-	color: #0f172a;
-	color-scheme: light;
+.chip {
+	display: inline-flex;
+	align-items: center;
+	width: max-content;
+	padding: 0.15rem 0.55rem;
+	border: 1px solid var(--rule-strong);
+	border-radius: 999px;
+	font: 400 0.6875rem/1.4 var(--font-mono);
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--secondary);
 }
 
-body.light-theme pre.astro-code {
-  background-color: #d0bc9e !important; 
+.state-chip--reviewed,
+.state-chip--reading,
+.state-chip--recommended {
+	--chip-color: var(--accent);
+	color: var(--chip-color);
+	border-color: color-mix(in srgb, var(--chip-color) 55%, var(--rule));
+	background: color-mix(in srgb, var(--chip-color) 9%, transparent);
 }
 
-body.light-theme .header-wrapper {
-	background: rgba(255, 255, 255, 0.92);
-	border-color: rgba(15, 23, 42, 0.08);
+.state-chip--reviewed {
+	--chip-color: var(--state-reviewed);
 }
 
-body.light-theme .site-title a {
-	color: #0f172a;
+.state-chip--reading {
+	--chip-color: var(--state-reading);
 }
 
-body.light-theme .desktop-nav-link {
-	color: #334155;
+.state-chip--queue {
+	background: color-mix(in srgb, var(--secondary) 7%, transparent);
 }
 
-body.light-theme .desktop-nav-link:hover {
-	color: #ea580c;
+/* Buttons are unstyled by default (Tailwind preflight); opt in explicitly. */
+.text-link {
+	font: 400 0.6875rem/1.4 var(--font-mono);
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	color: var(--secondary);
 }
 
-body.light-theme .icon-button {
-	background: rgba(15, 23, 42, 0.06);
-	color: #1f2937;
-	border-color: rgba(15, 23, 42, 0.12);
+.text-link:hover {
+	color: var(--accent);
 }
 
-body.light-theme .icon-button:hover {
-	background: rgba(249, 115, 22, 0.15);
-	color: #9a3412;
-	border-color: rgba(249, 115, 22, 0.4);
+.btn-text {
+	padding: 0.3rem 0;
+	border: 0;
+	border-bottom: 1px solid var(--rule-strong);
+	background: none;
+	font: 400 0.6875rem/1.4 var(--font-mono);
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	color: inherit;
 }
 
-body.light-theme .mobile-menu {
-	background: rgba(255, 255, 255, 0.98);
-	border-bottom-color: rgba(15, 23, 42, 0.08);
+.btn-pill {
+	padding: 0.4rem 0.9rem;
+	border: 1px solid var(--rule-strong);
+	border-radius: 999px;
+	background: transparent;
+	font: 400 0.6875rem/1.4 var(--font-mono);
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	color: inherit;
 }
 
-body.light-theme .mobile-nav-item {
-	color: #0f172a;
-}
-
-body.light-theme .mobile-nav-item:hover {
-	background: rgba(249, 115, 22, 0.1);
-	color: #9a3412;
-}
-
-body.light-theme .mobile-nav-divider {
-	background: rgba(15, 23, 42, 0.08);
-}
-
-body.light-theme :where(
-  h1, h2, h3, h4, h5, h6,
-  p, li, small, strong, label, blockquote, figcaption
-) {
-  color: #0f172a;
-}
-
-body.light-theme :where(a) {
-	color: #0f172a !important;
-}
-
-body.light-theme :where(a):hover {
-	color: #c2410c !important;
-}
-
-body.light-theme .border-slate-700,
-body.light-theme .border-slate-800 {
-	border-color: rgba(15, 23, 42, 0.2) !important;
-}
-
-body.light-theme .bg-slate-900\/40,
-body.light-theme .bg-slate-900\/50,
-body.light-theme .bg-slate-800\/50 {
-	background-color: rgba(15, 23, 42, 0.08) !important;
-}
-
-body.light-theme .prose {
-	color: #0f172a;
-}
-
-body.light-theme .prose a {
-	color: #1d4ed8;
-}
-
-body.light-theme .prose :not(pre) > code {
-	background: rgba(251, 146, 60, 0.14);
-	color: #7c2d12;
-	border: 1px solid rgba(194, 65, 12, 0.28);
-	border-radius: 0.35rem;
-	padding: 0.05em 0.35em;
-}
-
-body.light-theme .prose pre code {
-	background: transparent !important;
-	border-color: transparent !important;
-	padding: 0 !important;
-}
-
-body.light-theme .prose :where(h1,h2,h3,h4,h5,h6,li,blockquote,p,strong) {
-	color: #0f172a !important;
-}
-
-body.light-theme .prose blockquote {
-	border-color: #fb923c !important;
-	color: #475569 !important;
-}
-
-/* ── Language picker dropdown — light theme ── */
-body.light-theme .language-menu {
-	background: #ffffff;
-	border-color: rgba(15, 23, 42, 0.12);
-	box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12), 0 2px 6px rgba(15, 23, 42, 0.06);
-}
-
-body.light-theme .lang-option {
-	color: rgba(30, 41, 59, 0.88);
-}
-
-body.light-theme .lang-option:hover {
-	background: rgba(15, 23, 42, 0.06);
-	color: #0f172a;
-}
-
-body.light-theme .lang-option.active {
-	background: rgba(249, 115, 22, 0.1);
-	color: #9a3412;
-}
-
-/* ── Skip link — light theme ── */
-body.light-theme .skip-link {
-	background: #ffffff;
-	border-color: rgba(194, 65, 12, 0.45);
-	color: #9a3412;
-	box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14);
-}
-
-body.light-theme .skip-link:focus-visible {
-	outline-color: rgba(194, 65, 12, 0.7);
-}
-
-/* ════════════════════════════════════════
-   Blog filter panel — light theme
-   (index.astro + BlogFilterBar.astro)
-════════════════════════════════════════ */
-
-/* h1 headings in blog index */
-body.light-theme .blog-index-header h1,
-body.light-theme .blog-no-posts h1 {
-	color: rgb(15, 23, 42);
-}
-
-/* empty-state box */
-body.light-theme .blog-empty {
-	border-color: rgba(15, 23, 42, 0.12);
-	background: rgba(255, 255, 255, 0.78);
-	color: rgba(51, 65, 85, 0.86);
-}
-
-/* mobile filter toggle button */
-body.light-theme .filter-toggle {
-	border-color: rgba(100, 116, 139, 0.4);
-	background: rgb(255, 255, 255);
-	color: rgb(51, 65, 85);
-}
-body.light-theme .filter-toggle:hover {
-	border-color: rgba(194, 65, 12, 0.3);
-	background: rgba(249, 115, 22, 0.09);
-	color: rgb(154, 52, 18);
-}
-
-/* panel shell — only matters for mobile drawer (desktop has no box) */
-body.light-theme .filter-panel {
-	background: rgb(248, 250, 252);
-	border-right-color: rgba(15, 23, 42, 0.12);
-}
-
-/* panel header */
-body.light-theme .filter-panel-head {
-	border-bottom-color: rgba(15, 23, 42, 0.1);
-}
-body.light-theme .filter-panel-title {
-	color: rgb(15, 23, 42);
-}
-
-/* close button */
-body.light-theme .filter-panel-close {
-	border-color: rgba(100, 116, 139, 0.3);
-	color: rgba(51, 65, 85, 0.8);
-}
-body.light-theme .filter-panel-close:hover {
-	border-color: rgba(194, 65, 12, 0.3);
-	color: rgb(154, 52, 18);
-}
-
-/* ── BlogFilterBar — light theme ── */
-body.light-theme .filter-group-label {
-	color: rgba(51, 65, 85, 0.6);
-}
-
-body.light-theme .filter-group-chevron {
-	color: rgba(51, 65, 85, 0.35);
-}
-
-body.light-theme .filter-group.has-divider,
-body.light-theme .filter-status.has-divider {
-	border-color: rgba(15, 23, 42, 0.1);
-}
-
-body.light-theme .filter-option {
-	color: rgba(30, 41, 59, 0.65);
-}
-
-body.light-theme .filter-option:hover {
-	color: rgba(15, 23, 42, 0.95);
-}
-
-body.light-theme .filter-option.is-active {
-	color: rgb(154, 52, 18);
-}
-
-body.light-theme .filter-option.is-active .filter-option-dot {
-	background: rgb(194, 65, 12);
-}
-
-body.light-theme .filter-option-count {
-	color: rgba(51, 65, 85, 0.4);
-}
-
-body.light-theme .filter-option.is-active .filter-option-count {
-	color: rgba(154, 52, 18, 0.65);
-}
-
-body.light-theme .filter-status p {
-	color: rgba(51, 65, 85, 0.55);
-}
-
-body.light-theme .filter-reset {
-	color: rgba(194, 65, 12, 0.8);
-}
-
-body.light-theme .filter-reset:hover {
-	color: rgb(194, 65, 12);
-}
-
-.prose strong, .prose b {
-	font-weight: 700 !important;
+.btn-pill:hover {
+	border-color: var(--ink);
 }
 
 h1,
@@ -561,46 +277,13 @@ h3,
 h4,
 h5,
 h6 {
-	font-family: var(--font-heading);
+	font-family: var(--font-serif);
 	margin-top: var(--spacing-0);
 	margin-bottom: var(--spacing-8);
 	line-height: var(--lineHeight-tight);
-	letter-spacing: -0.025em;
-	font-weight: var(--fontWeight-bold);
-	scroll-margin-top: 5rem;
-}
-
-/* 한국어 헤딩에 Yeon Sung 적용 */
-h1:lang(ko),
-h2:lang(ko),
-h3:lang(ko),
-h4:lang(ko),
-h5:lang(ko),
-h6:lang(ko) {
-	font-family: "Gowun Dodum", "Noto Sans KR", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+	letter-spacing: -0.02em;
 	font-weight: 400;
-}
-
-/* English headings */
-h1:lang(en),
-h2:lang(en),
-h3:lang(en),
-h4:lang(en),
-h5:lang(en),
-h6:lang(en) {
-  font-family: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  font-weight: 600;
-}
-
-/* Japanese headings */
-h1:lang(jp),
-h2:lang(jp),
-h3:lang(jp),
-h4:lang(jp),
-h5:lang(jp),
-h6:lang(jp) {
-  font-family: "M PLUS 1p", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  font-weight: 500;
+	scroll-margin-top: 5rem;
 }
 
 strong, b {
@@ -612,14 +295,8 @@ em, i {
 }
 
 a {
-	color: rgb(248, 249, 250);
+	color: inherit;
 	text-decoration: none;
-}
-
-a:hover,
-a:focus {
-	color: rgba(248, 249, 250, 0.8);
-	text-decoration: underline;
 }
 
 p {
@@ -631,56 +308,18 @@ p {
 /* Removed aggressive global list reset. Lists are targeted with `.prose` rules instead. */
 
 blockquote {
-	color: rgba(248, 249, 250, 0.7);
+	color: var(--secondary);
 	margin-left: calc(-1 * var(--spacing-6));
 	margin-right: var(--spacing-8);
 	padding: var(--spacing-0) var(--spacing-0) var(--spacing-0) var(--spacing-6);
-	border-left: var(--spacing-1) solid #f97316;
+	border-left: var(--spacing-1) solid var(--accent);
 	font-size: var(--fontSize-2);
 	font-style: italic;
 	margin-bottom: var(--spacing-8);
 }
 
-.prose blockquote blockquote {
-	font-size: var(--fontSize-1);
-}
-
-
-button, .button, input[type="submit"] {
-	font-family: inherit;
-	font-size: 1em;
-	padding: 0.55em 1.1em;
-	border-radius: 8px;
-	border: 1px solid rgba(248, 249, 250, 0.2);
-	background: rgba(255, 255, 255, 0.05);
-	color: rgb(248, 249, 250);
-	font-weight: 600;
-	cursor: pointer;
-	transition: background 0.15s, border-color 0.15s, color 0.15s;
-}
-
-button:hover, .button:hover, input[type="submit"]:hover,
-button:focus, .button:focus, input[type="submit"]:focus {
-	background: rgba(255, 255, 255, 0.1);
-	border-color: rgba(248, 249, 250, 0.3);
-	outline: none;
-}
-
 p {
 	margin-bottom: 1.2em;
-}
-
-.prose p {
-	margin-bottom: 0.5em;
-}
-
-/* Keep list-item paragraphs compact and remove extra trailing gap. */
-.prose li > p {
-	margin-bottom: 0em;
-}
-
-.prose li > p:last-child {
-	margin-bottom: 0 !important;
 }
 
 .prose-none * {
@@ -706,17 +345,6 @@ img {
 	border-radius: 8px;
 }
 
-/* Prose code blocks: align with Shiki themes while keeping consistent layout */
-
-.prose pre.astro-code {
-  margin: var(--spacing-8) 0;
-  padding: var(--spacing-4);
-  border-radius: 0.75rem;
-  overflow-x: auto;
-  border: 1px solid #e5e7eb;
-}
-
-
 /* Tables */
 table {
 	width: 100%;
@@ -726,14 +354,14 @@ table {
 }
 
 table thead tr th {
-	border-bottom: 2px solid var(--color-accent);
+	border-bottom: 2px solid var(--rule-strong);
 	font-weight: var(--fontWeight-bold);
 	text-align: left;
 	padding: var(--spacing-2);
 }
 
 table td {
-	border-bottom: 1px solid var(--color-accent);
+	border-bottom: 1px solid var(--rule);
 	padding: var(--spacing-2);
 }
 
@@ -750,24 +378,11 @@ table td {
 	padding: 0;
 }
 
-.global-wrapper[data-is-root-path="true"] .bio {
-	margin-bottom: var(--spacing-20);
-}
-
-.global-header {
-	margin-bottom: var(--spacing-12);
-}
-
-.main-heading {
-	font-size: var(--fontSize-7);
-	margin: 0;
-}
-
 /* Duplicate blockquote styles (commented out to avoid redundancy) */
 hr {
 	height: 1px;
 	border: 0;
-	background: rgba(248, 249, 250, 0.2);
+	background: var(--rule);
 	margin-bottom: var(--spacing-8);
 }
 
@@ -776,137 +391,68 @@ hr {
 }
 
 ::-webkit-scrollbar-track {
-	background: rgba(248, 249, 250, 0.05);
+	background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-	background: #f97316;
+	background: var(--rule-strong);
 	border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-	background: #ea580c;
-}
-
-@media (max-width: 900px) {
-	main {
-		padding: 2em 1em;
-		width: calc(100% - 2em);
-	}
-	h1 { font-size: 2.1em; }
-	h2 { font-size: 1.5em; }
+	background: var(--accent);
 }
 
 @media (max-width: 720px) {
 	html { font-size: 18px; }
 	body { font-size: 0.98rem; }
-	main { padding: 1em 0.2em; }
 }
 
-.sr-only {
-	border: 0;
-	padding: 0;
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		transition: none !important;
+		animation: none !important;
+	}
+}
+
+/* Theme toggle reveal, hybrid version.
+   The ripple is a real child of #themeToggleBtn (top-layer popover), centred on
+   it by CSS anchor positioning and grown with `scale`; the View Transition clip follows its rendered circle. */
+#themeToggleBtn {
+	anchor-name: --theme-btn;
+}
+.theme-ripple {
+	position: fixed;
+	position-anchor: --theme-btn;
+	inset: auto;
+	left: anchor(center);
+	top: anchor(center);
+	translate: -50% -50%;
+	width: var(--theme-ripple-d, 0px);
+	height: var(--theme-ripple-d, 0px);
 	margin: 0;
-	position: absolute !important;
-	height: 1px;
-	width: 1px;
-	overflow: hidden;
-	clip: rect(1px 1px 1px 1px);
-	clip: rect(1px, 1px, 1px, 1px);
-	clip-path: inset(50%);
-	white-space: nowrap;
+	padding: 0;
+	overflow: visible;
+	background: transparent;
+	scale: 0;
+	border-radius: 50%;
+	border: 2px solid var(--accent);
+	box-sizing: border-box;
+	pointer-events: none;
 }
 
-.line-clamp-3 {
-	display: -webkit-box;
-	line-clamp: 3;
-	-webkit-line-clamp: 3;
-	-webkit-box-orient: vertical;
-	overflow: hidden;
+::view-transition-old(root) {
+	animation: none;
 }
-
-/* Gowun Dodum utility classes */
-.gowun-dodum-regular {
-	font-family: "Gowun Dodum", system-ui;
-	font-weight: 400;
-	font-style: normal;
+/* The clip is driven by JS (following the ripple); this animation changes
+   nothing visible, it only keeps the transition alive for the ripple's duration. */
+::view-transition-new(root) {
+	animation: theme-hold var(--theme-dur, 0ms) linear both;
+	clip-path: circle(var(--theme-r, 0px) at var(--theme-x, 50%) var(--theme-y, 0px));
 }
-
-/* Backward-compat: map previous class to Gowun Dodum as well */
-.yeon-sung-regular {
-	font-family: "Gowun Dodum", system-ui;
-	font-weight: 400;
-	font-style: normal;
-}
-
-/* Montserrat & M PLUS 1p utility classes */
-.montserrat-regular {
-  font-family: "Montserrat", system-ui;
-  font-weight: 400;
-  font-style: normal;
-}
-
-.mplus1p-regular {
-  font-family: "M PLUS 1p", system-ui;
-  font-weight: 500;
-  font-style: normal;
-}
-
-/* ============================================================
-   Semantic Design Tokens (Stage 0)
-   ------------------------------------------------------------
-   See docs/architecture/design-tokens-and-images.md (Part 1).
-
-   This is the ONLY tier of tokens that is theme-aware. The
-   :root block below holds the dark (default) values; the
-   body.light-theme block redefines the SAME token names with
-   light-theme values -- no selector overrides, just new values
-   for the same custom properties.
-
-   Components should consume these tokens (e.g.
-   `color: var(--text-primary)`) instead of writing their own
-   hardcoded colors plus a parallel `body.light-theme .foo { ... }`
-   override block. That per-component override pattern is exactly
-   what this tier replaces.
-
-   Note: --text-muted, --text-subtle, and --text-faint intentionally
-   collapse to the same value (rgba(51, 65, 85, 0.86)) in the light
-   theme. That mirrors the existing hand-written light-theme rules
-   it replaces -- it is not an error or an oversight.
-
-   Nothing in the codebase consumes these tokens yet (Stage 0 only
-   adds the layer); they are wired up to components in later stages.
-   ============================================================ */
-:root {
-	--surface-panel: rgba(255, 255, 255, 0.045);
-	--surface-border: rgba(248, 249, 250, 0.12);
-	--text-primary: rgb(248, 249, 250);
-	--text-muted: rgba(203, 213, 225, 0.78);
-	--text-subtle: rgba(203, 213, 225, 0.72);
-	--text-faint: rgba(148, 163, 184, 0.86);
-	--field-surface: rgba(15, 23, 42, 0.55);
-	--field-text: rgb(226, 232, 240);
-	--field-border: rgba(148, 163, 184, 0.35);
-	--accent-surface: rgba(249, 115, 22, 0.14);
-	--accent-border: rgba(249, 115, 22, 0.58);
-	--accent-text: rgb(255, 237, 213);
-	--state-success: rgb(134, 239, 172);
-	--state-error: rgb(252, 165, 165);
-}
-
-body.light-theme {
-	--surface-panel: rgba(255, 255, 255, 0.78);
-	--surface-border: rgba(15, 23, 42, 0.12);
-	--text-primary: rgb(15, 23, 42);
-	--text-muted: rgba(51, 65, 85, 0.86);
-	--text-subtle: rgba(51, 65, 85, 0.86);
-	--text-faint: rgba(51, 65, 85, 0.86);
-	--field-surface: rgb(255, 255, 255);
-	--field-text: rgb(15, 23, 42);
-	--field-border: rgb(203, 213, 225);
-	--accent-surface: rgba(249, 115, 22, 0.1);
-	--accent-border: rgba(194, 65, 12, 0.28);
-	--accent-text: rgb(154, 52, 18);
-	--state-success: rgb(21, 128, 61);
-	--state-error: rgb(153, 27, 27);
+@keyframes theme-hold {
+	from { opacity: 1; }
+	to { opacity: 1; }
 }

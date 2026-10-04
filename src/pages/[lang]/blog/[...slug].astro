@@ -4,7 +4,7 @@ import BlogPost from '../../../layouts/BlogPost.astro';
 import { render } from 'astro:content';
 import type { UILanguage } from '../../../i18n/ui';
 import { getBlogLanguageFromId, getBlogSlugFromId, getBlogUrlFromId } from '../../../utils/blog-routing';
-import { getAllPosts, getSeriesPosts } from '../../../utils/blog';
+import { estimateReadTime, estimateWordCount, getAllPosts, getSeriesPosts } from '../../../utils/blog';
 
 export async function getStaticPaths() {
 	const langs: UILanguage[] = ['ko', 'jp', 'en'];
@@ -57,6 +57,8 @@ type Props = {
 
 const { post, lang, availableLangs } = Astro.props as Props;
 const { Content } = await render(post);
+// estimateWordCount splits on whitespace and drops kana/kanji, so it is only meaningful for ko/en.
+const readMinutes = lang === 'jp' ? undefined : estimateReadTime(estimateWordCount(post.body ?? ''));
 
 const seriesName = post.data.series;
 let seriesIndex: number | undefined;
@@ -88,6 +90,7 @@ if (seriesName) {
 	lang={lang}
 	availableLangs={availableLangs}
 	postId={post.id}
+	readMinutes={readMinutes}
 	seriesName={seriesName}
 	seriesIndex={seriesIndex}
 	seriesTotal={seriesTotal}

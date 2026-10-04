@@ -8,7 +8,6 @@
 // standalone tab, so no redirect is needed.
 import BaseHead from '../../../components/BaseHead.astro';
 import Header from '../../../components/Header.astro';
-import Footer from '../../../components/Footer.astro';
 import FloatingLanguagePicker from '../../../components/FloatingLanguagePicker.astro';
 import LibraryIcon from '../../../components/library/LibraryIcon.astro';
 import LibraryPageStyles from '../../../components/library/LibraryPageStyles.astro';
@@ -47,36 +46,36 @@ const items = getUsefulFeedItems(allResources, lang);
 	<body>
 		<Header />
 		<FloatingLanguagePicker />
-		<main id="main-content" class="library-page mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8" data-pagefind-body>
-			<section class="mb-8 max-w-5xl space-y-3">
-				<div class="space-y-2">
-					<h1 class="text-4xl font-bold tracking-normal text-slate-100 sm:text-5xl">{t('library.useful-feeds.title')}</h1>
-					<p class="leading-relaxed text-slate-400">{t('library.useful-feeds.intro')}</p>
-				</div>
+		<main id="main-content" class="atelier-page" data-pagefind-body>
+			<section class="subpage-intro">
+				<h1 class="eyebrow">{t('library.useful-feeds.title')}</h1>
 				<LibraryTabs lang={lang} active="useful-feeds" />
 			</section>
 
-			{items.length === 0 ? (
-				<section class="library-panel mb-10">
-					<p class="text-slate-400">{t('library.useful-feeds.empty')}</p>
-				</section>
-			) : (
-				<section class="space-y-4" aria-label={t('library.tab.useful-feeds')}>
-					{items.map((item) => (
-						<article class="library-panel library-feed-row">
-							<h3 class="mb-1 text-lg font-semibold text-slate-100">
-								<a href={item.url} target="_blank" rel="noopener noreferrer" class="library-inherit-link">
-									{item.title}
-									<LibraryIcon name="external" />
-								</a>
-							</h3>
-							<p class="text-xs text-slate-500">{item.source} · {item.date}</p>
-							{item.summary && <p class="mt-2 text-sm leading-relaxed text-slate-400">{item.summary}</p>}
-						</article>
-					))}
-				</section>
-			)}
+			<div class="page-frame">
+				{items.length === 0 ? (
+					<p class="empty-line">{t('library.useful-feeds.empty')}</p>
+				) : (
+					<section class="research-section" aria-label={t('library.tab.useful-feeds')}>
+						<ul class="atelier-rows">
+							{items.map((item) => (
+								<li class="atelier-row feed-row">
+									<div class="atelier-row-head">
+										<h3>
+											<a href={item.url} target="_blank" rel="noopener noreferrer">
+												{item.title}
+												<LibraryIcon name="external" />
+											</a>
+										</h3>
+										<span class="feed-source">{item.source} · {item.date}</span>
+									</div>
+									{item.summary && <p class="atelier-row-note">{item.summary}</p>}
+								</li>
+							))}
+						</ul>
+					</section>
+				)}
+			</div>
 		</main>
-		<Footer />
 	</body>
 </html>

@@ -9,6 +9,7 @@ if (filterBar && postList) {
 	const posts = Array.from(postList.querySelectorAll('[data-post-card]'));
 	const resultsEl = filterBar.querySelector('[data-filter-results]');
 	const resetBtn = filterBar.querySelector('[data-filter-reset]');
+	const countEl = document.querySelector('[data-filter-count]');
 	const emptyEl = document.querySelector('[data-blog-empty]');
 	const resultsTemplate = resultsEl?.getAttribute('data-results-template') ?? '{count}';
 
@@ -82,8 +83,16 @@ if (filterBar && postList) {
 			emptyEl.hidden = visible !== 0;
 		}
 
+		const activeCount = FACETS.filter((facet) => state[facet] !== 'all').length;
+
 		if (resetBtn) {
-			resetBtn.hidden = FACETS.every((facet) => state[facet] === 'all');
+			resetBtn.hidden = activeCount === 0;
+		}
+
+		// Badge on the floating filter button.
+		if (countEl) {
+			countEl.textContent = String(activeCount);
+			countEl.hidden = activeCount === 0;
 		}
 	}
 

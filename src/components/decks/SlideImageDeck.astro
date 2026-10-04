@@ -87,11 +87,7 @@ if (slideCount === 0) {
 	.presentation-embed {
 		margin: 2rem auto;
 		width: min(100%, 1120px);
-		color: rgb(15 23 42);
-	}
-
-	:global(.dark) .presentation-embed {
-		color: rgb(241 245 249);
+		color: var(--ink);
 	}
 
 	.presentation-header {
@@ -107,7 +103,7 @@ if (slideCount === 0) {
 
 	.presentation-kicker {
 		margin: 0 0 0.35rem;
-		color: rgb(234 88 12);
+		color: var(--accent);
 		font-size: 0.78rem;
 		font-weight: 700;
 		text-transform: uppercase;
@@ -121,12 +117,8 @@ if (slideCount === 0) {
 
 	.presentation-header p {
 		margin: 0.45rem 0 0;
-		color: rgb(71 85 105);
+		color: var(--secondary);
 		line-height: 1.55;
-	}
-
-	:global(.dark) .presentation-header p {
-		color: rgb(203 213 225);
 	}
 
 	.presentation-actions {
@@ -140,7 +132,7 @@ if (slideCount === 0) {
 	.presentation-action,
 	.presentation-control {
 		align-items: center;
-		border-radius: 0.5rem;
+		border-radius: 0;
 		display: inline-flex;
 		font-size: 0.85rem;
 		font-weight: 700;
@@ -154,19 +146,19 @@ if (slideCount === 0) {
 	}
 
 	.presentation-action-primary {
-		background: rgb(234 88 12);
-		color: white;
+		background: var(--accent);
+		color: var(--paper);
 	}
 
 	.presentation-action-primary:hover {
-		background: rgb(194 65 12);
+		background: color-mix(in srgb, var(--accent) 80%, var(--ink));
 	}
 
 	.presentation-action-source,
 	.presentation-control {
 		background: transparent;
-		border: 1px solid rgb(203 213 225);
-		color: rgb(51 65 85);
+		border: 1px solid var(--rule-strong);
+		color: var(--ink);
 		cursor: pointer;
 	}
 
@@ -176,8 +168,8 @@ if (slideCount === 0) {
 
 	.presentation-action-source:hover,
 	.presentation-control:hover {
-		border-color: rgb(148 163 184);
-		color: rgb(15 23 42);
+		border-color: var(--ink);
+		color: var(--ink);
 	}
 
 	.presentation-control:disabled {
@@ -185,24 +177,11 @@ if (slideCount === 0) {
 		opacity: 0.45;
 	}
 
-	:global(.dark) .presentation-action-source,
-	:global(.dark) .presentation-control {
-		border-color: rgb(71 85 105);
-		color: rgb(203 213 225);
-	}
-
-	:global(.dark) .presentation-action-source:hover,
-	:global(.dark) .presentation-control:hover {
-		border-color: rgb(148 163 184);
-		color: rgb(248 250 252);
-	}
-
 	.presentation-rotate-hint {
 		display: none;
-		border: 1px solid rgb(253 186 116);
-		border-radius: 0.5rem;
-		background: rgb(255 247 237);
-		color: rgb(124 45 18);
+		border: 1px solid var(--rule-strong);
+		background: var(--paper-deep);
+		color: var(--ink);
 		font-size: 0.92rem;
 		line-height: 1.5;
 		margin-bottom: 0.9rem;
@@ -210,20 +189,10 @@ if (slideCount === 0) {
 	}
 
 	.presentation-rotate-hint a {
-		color: rgb(154 52 18);
+		color: var(--accent);
 		display: inline-block;
 		font-weight: 700;
 		margin-left: 0.5rem;
-	}
-
-	:global(.dark) .presentation-rotate-hint {
-		background: rgba(124, 45, 18, 0.24);
-		border-color: rgb(154 52 18);
-		color: rgb(254 215 170);
-	}
-
-	:global(.dark) .presentation-rotate-hint a {
-		color: rgb(253 186 116);
 	}
 
 	.presentation-slide-deck {
@@ -231,25 +200,19 @@ if (slideCount === 0) {
 	}
 
 	.presentation-slide-deck:focus-visible {
-		border-radius: 0.5rem;
-		box-shadow: 0 0 0 3px rgb(251 146 60 / 0.45);
+		box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent);
 	}
 
 	.presentation-slide-viewport {
 		align-items: center;
 		aspect-ratio: var(--deck-aspect-ratio);
-		background: rgb(15 23 42);
-		border: 1px solid rgb(203 213 225);
-		border-radius: 0.5rem;
+		background: var(--stage);
+		border: 1px solid var(--rule-strong);
 		display: flex;
 		justify-content: center;
 		overflow: hidden;
 		touch-action: pan-y;
 		width: 100%;
-	}
-
-	:global(.dark) .presentation-slide-viewport {
-		border-color: rgb(51 65 85);
 	}
 
 	.presentation-slide-viewport img {
@@ -269,15 +232,11 @@ if (slideCount === 0) {
 	}
 
 	.presentation-counter {
-		color: rgb(71 85 105);
+		color: var(--secondary);
 		font-size: 0.9rem;
 		font-weight: 700;
 		min-width: 4.5rem;
 		text-align: center;
-	}
-
-	:global(.dark) .presentation-counter {
-		color: rgb(203 213 225);
 	}
 
 	@media (max-width: 720px) {

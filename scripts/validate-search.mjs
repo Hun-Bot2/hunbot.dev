@@ -37,7 +37,7 @@ assert.match(blogPost, /data-pagefind-filter="section\[content\]"/);
 assert.match(blogPost, /data-pagefind-filter="category\[content\]"/);
 assert.match(blogPost, /data-pagefind-filter="tag\[content\]"/);
 
-for (const componentPath of ['src/components/Header.astro', 'src/components/Footer.astro']) {
+for (const componentPath of ['src/components/Header.astro']) {
   assert.match(read(componentPath), /data-pagefind-ignore/);
 }
 

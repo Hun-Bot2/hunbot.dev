@@ -64,11 +64,7 @@ if (!deck.htmlUrl) {
 	.presentation-embed {
 		margin: 2rem auto;
 		width: min(100%, 1120px);
-		color: rgb(15 23 42);
-	}
-
-	:global(.dark) .presentation-embed {
-		color: rgb(241 245 249);
+		color: var(--ink);
 	}
 
 	.presentation-header {
@@ -84,7 +80,7 @@ if (!deck.htmlUrl) {
 
 	.presentation-kicker {
 		margin: 0 0 0.35rem;
-		color: rgb(234 88 12);
+		color: var(--accent);
 		font-size: 0.78rem;
 		font-weight: 700;
 		text-transform: uppercase;
@@ -98,12 +94,8 @@ if (!deck.htmlUrl) {
 
 	.presentation-header p {
 		margin: 0.45rem 0 0;
-		color: rgb(71 85 105);
+		color: var(--secondary);
 		line-height: 1.55;
-	}
-
-	:global(.dark) .presentation-header p {
-		color: rgb(203 213 225);
 	}
 
 	.presentation-actions {
@@ -116,7 +108,7 @@ if (!deck.htmlUrl) {
 
 	.presentation-action {
 		align-items: center;
-		border-radius: 0.5rem;
+		border-radius: 0;
 		display: inline-flex;
 		font-size: 0.85rem;
 		font-weight: 700;
@@ -130,18 +122,18 @@ if (!deck.htmlUrl) {
 	}
 
 	.presentation-action-primary {
-		background: rgb(234 88 12);
-		color: white;
+		background: var(--accent);
+		color: var(--paper);
 	}
 
 	.presentation-action-primary:hover {
-		background: rgb(194 65 12);
+		background: color-mix(in srgb, var(--accent) 80%, var(--ink));
 	}
 
 	.presentation-action-secondary,
 	.presentation-action-source {
-		border: 1px solid rgb(203 213 225);
-		color: rgb(51 65 85);
+		border: 1px solid var(--rule-strong);
+		color: var(--ink);
 	}
 
 	.presentation-action-source {
@@ -150,28 +142,15 @@ if (!deck.htmlUrl) {
 
 	.presentation-action-secondary:hover,
 	.presentation-action-source:hover {
-		border-color: rgb(148 163 184);
-		color: rgb(15 23 42);
-	}
-
-	:global(.dark) .presentation-action-secondary,
-	:global(.dark) .presentation-action-source {
-		border-color: rgb(71 85 105);
-		color: rgb(203 213 225);
-	}
-
-	:global(.dark) .presentation-action-secondary:hover,
-	:global(.dark) .presentation-action-source:hover {
-		border-color: rgb(148 163 184);
-		color: rgb(248 250 252);
+		border-color: var(--ink);
+		color: var(--ink);
 	}
 
 	.presentation-rotate-hint {
 		display: none;
-		border: 1px solid rgb(253 186 116);
-		border-radius: 0.5rem;
-		background: rgb(255 247 237);
-		color: rgb(124 45 18);
+		border: 1px solid var(--rule-strong);
+		background: var(--paper-deep);
+		color: var(--ink);
 		font-size: 0.92rem;
 		line-height: 1.5;
 		margin-bottom: 0.9rem;
@@ -179,33 +158,18 @@ if (!deck.htmlUrl) {
 	}
 
 	.presentation-rotate-hint a {
-		color: rgb(154 52 18);
+		color: var(--accent);
 		display: inline-block;
 		font-weight: 700;
 		margin-left: 0.5rem;
 	}
 
-	:global(.dark) .presentation-rotate-hint {
-		background: rgba(124, 45, 18, 0.24);
-		border-color: rgb(154 52 18);
-		color: rgb(254 215 170);
-	}
-
-	:global(.dark) .presentation-rotate-hint a {
-		color: rgb(253 186 116);
-	}
-
 	.presentation-frame-shell {
 		aspect-ratio: var(--deck-aspect-ratio);
-		background: rgb(15 23 42);
-		border: 1px solid rgb(203 213 225);
-		border-radius: 0.5rem;
+		background: var(--stage);
+		border: 1px solid var(--rule-strong);
 		overflow: hidden;
 		width: 100%;
-	}
-
-	:global(.dark) .presentation-frame-shell {
-		border-color: rgb(51 65 85);
 	}
 
 	iframe {

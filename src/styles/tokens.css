@@ -1,0 +1,68 @@
+/*
+  Atelier design tokens (docs/plans/2026-10-03-atelier-redesign.md §3.1).
+
+  Tokens switch on `html.dark`, which BaseHead sets before first paint. Do not
+  key them on `body.dark-theme` / `body.light-theme`: those classes are only
+  added on DOMContentLoaded, which would flash the wrong theme.
+
+  --faint is ~3:1 on the light paper. Use it for decoration only; informative
+  text uses --secondary.
+*/
+:root {
+	--paper: #f2f0e9;
+	--paper-deep: #e7e4db;
+	--paper-light: #f8f6f0;
+	--ink: #171916;
+	--secondary: #5f625c;
+	--faint: #8e9089;
+	--rule: #cbc9c0;
+	--rule-strong: #93958e;
+	--accent: #b83d1d; /* prototype #d84e2b darkened: 4.95:1 on --paper (WCAG AA for text) */
+	--stage: #171816;
+	--stage-ink: #eeede5;
+	--stage-muted: #9f9f98;
+	--state-reviewed: #2f6d57;
+	--state-reading: #3569a0;
+	--state-success: rgb(21, 128, 61);
+	--state-error: rgb(153, 27, 27);
+
+	--content-max: 980px;
+	--header-height: 72px;
+
+	--font-serif: "Newsreader", "Noto Serif KR", "Noto Serif JP", serif;
+	--font-sans: "Noto Sans KR", "Noto Sans JP", system-ui, sans-serif;
+	--font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+	color-scheme: light;
+}
+
+html.dark {
+	--paper: #282828;
+	--paper-deep: #353534;
+	--paper-light: #2f2f2e;
+	--ink: #e6e4de;
+	--secondary: #b4b2ab;
+	--faint: #8a8983;
+	--rule: #3d3d3c;
+	--rule-strong: #5a5a57;
+	--accent: #ee6841;
+	--stage: #1f1f1e;
+	--stage-ink: #e6e4de;
+	--stage-muted: #9f9f98;
+	--state-reviewed: #6fbf9f;
+	--state-reading: #7fb0e0;
+	--state-success: rgb(134, 239, 172);
+	--state-error: rgb(252, 165, 165);
+
+	color-scheme: dark;
+}
+
+/* The blog uses the non-standard code `jp` as its Japanese lang value. */
+html:lang(jp) {
+	--font-serif: "Newsreader", "Noto Serif JP", "Noto Serif KR", serif;
+	--font-sans: "Noto Sans JP", "Noto Sans KR", system-ui, sans-serif;
+}
+
+html:lang(en) {
+	--font-sans: "Noto Sans", "Noto Sans KR", system-ui, sans-serif;
+}

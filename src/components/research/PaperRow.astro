@@ -1,0 +1,89 @@
+---
+// One paper card as a reading-list row (docs/plans/2026-10-03-atelier-redesign.md
+// §5.5): title and actions on the first line, a mono meta line with topic chips
+// on the second. Shared by the Research hub and the topic pages. Venue,
+// acceptance status and honors always go through the registry display helpers —
+// a stored id is never rendered directly.
+import LibraryIcon from '../library/LibraryIcon.astro';
+import { useTranslations, type UILanguage } from '../../i18n/ui';
+import { getAcceptanceStatusDisplayName, getHonorDisplayName } from '../../data/paperVocabularies';
+import { getVenueDisplayName } from '../../data/venues';
+import { getPaperAnchorId, getPaperTldr, type PaperEntry } from '../../utils/library';
+
+interface Props {
+	paper: PaperEntry;
+	lang: UILanguage;
+	/** `studied` = studiedAt set, `reviewed` = studied with a published review, `queue` = selected but not yet studied. */
+	state: 'studied' | 'reviewed' | 'queue';
+	reviewUrl?: string | null;
+	postUrls?: string[];
+	topicLabels?: string[];
+	showAcceptance?: boolean;
+}
+
+const { paper, lang, state, reviewUrl = null, postUrls = [], topicLabels = [], showAcceptance = true } = Astro.props;
+const t = useTranslations(lang);
+
+const stateLabel = {
+	studied: t('research.state.studied'),
+	reviewed: t('home.reviews.state'),
+	queue: t('research.section.selected.badge'),
+}[state];
+const stateClass = {
+	studied: 'state-chip--recommended',
+	reviewed: 'state-chip--reviewed',
+	queue: 'state-chip--queue',
+}[state];
+
+const meta = [
+	getVenueDisplayName(paper.data.venue),
+	paper.data.year ? String(paper.data.year) : null,
+	showAcceptance ? getAcceptanceStatusDisplayName(paper.data.acceptanceStatus) : null,
+	...(showAcceptance ? paper.data.honors.map((honor) => getHonorDisplayName(honor)) : []),
+].filter(Boolean);
+const studiedAt = paper.data.studiedAt;
+---
+
+<li class="atelier-row paper-row" id={getPaperAnchorId(paper.data.id)}>
+	<div class="atelier-row-head">
+		<h3>{paper.data.title}</h3>
+		<div class="atelier-row-actions">
+			<span class:list={['chip', stateClass]}>{stateLabel}</span>
+			{reviewUrl && (
+				<a href={reviewUrl} class="action-link">
+					{t('research.view-review')}
+					<LibraryIcon name="arrow-right" />
+				</a>
+			)}
+			{postUrls.map((url) => (
+				<a href={url} class="action-link">
+					{t('research.view-post')}
+					<LibraryIcon name="arrow-right" />
+				</a>
+			))}
+			<a href={paper.data.url} target="_blank" rel="noopener noreferrer" class="action-link">
+				{t('research.view-source')}
+				<LibraryIcon name="external" />
+			</a>
+		</div>
+	</div>
+	{(meta.length > 0 || studiedAt || topicLabels.length > 0) && (
+		<div class="atelier-row-meta">
+			{meta.length > 0 && <span>{meta.join(' · ')}</span>}
+			{studiedAt && <span>{t('research.studied-at').replace('{date}', studiedAt)}</span>}
+			{topicLabels.length > 0 && (
+				<div class="chip-list">
+					{topicLabels.map((label) => <span class="chip">{label}</span>)}
+				</div>
+			)}
+		</div>
+	)}
+	<p class="atelier-row-note">{getPaperTldr(paper, lang)}</p>
+</li>
+
+<style>
+	/* Keep an anchored row (#paper-<id>) clear of the sticky header. No visual change. */
+	.paper-row {
+		scroll-margin-top: calc(var(--header-height) + 1.5rem);
+	}
+</style>

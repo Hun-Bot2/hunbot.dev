@@ -4,6 +4,8 @@ Written: 2026-09-10. Companion to [`health-audit.md`](./health-audit.md) (findin
 
 Two proposals. Both hold the same constraint: **zero client-side JavaScript is architectural** — neither adds a byte of runtime JS, and any future exception needs an explicit written justification.
 
+**Update (2026-10-03):** the Part 1 semantic-token tier proposed here (`--text-primary`, `--surface-*`, `--field-*`, ...) was never adopted by components and was removed in the Atelier redesign. Colours now live in `src/styles/tokens.css` keyed on `html.dark`; see `docs/ops/ui-conventions.md`. Part 1 is kept as historical context.
+
 **Status (2026-09-10):** token Stage 0 and Stage 1 are done, image Stage A and the unreferenced-asset triage are done. Measured outcomes are in [Results](#results-measured-2026-09-10) near the end. Later stages remain proposals.
 
 ---

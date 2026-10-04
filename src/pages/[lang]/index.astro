@@ -1,7 +1,6 @@
 ---
 import BaseHead from '../../components/BaseHead.astro';
 import Header from '../../components/Header.astro';
-import Footer from '../../components/Footer.astro';
 import FloatingLanguagePicker from '../../components/FloatingLanguagePicker.astro';
 import LibraryIcon from '../../components/library/LibraryIcon.astro';
 import { getCollection } from 'astro:content';
@@ -24,12 +23,12 @@ import {
 import { getLibrarySectionPath, getUsefulFeedItems } from '../../utils/library';
 import { librarySections } from '../../data/librarySections';
 import { recentPicksLimit } from '../../data/libraryPolicy';
-import { getPickFacts, getPickSectionCounts, getRecentPicks, formatStarCount, type PopularitySnapshot } from '../../utils/picks';
+import { getPickFacts, getPickSectionCounts, getPickSlug, getRecentPicks, formatStarCount, type PopularitySnapshot } from '../../utils/picks';
 import popularity from '../../data/popularity.json';
-import {
-	getResponsivePublicImage,
-	homepagePostImageSizes,
-} from '../../utils/responsive-public-images';
+import PostThumb from '../../components/blog/PostThumb.astro';
+import ResourceVisual from '../../components/art/ResourceVisual.astro';
+import { formatPostDate } from '../../utils/display';
+import '../../styles/lists.css';
 
 export function getStaticPaths() {
   return [
@@ -95,6 +94,13 @@ function getPickStarLine(pick: (typeof allPicks)[number]) {
 	return t('library.pick.stars-as-of').replace('{stars}', formatStarCount(facts.stars)).replace('{date}', facts.starsAsOf);
 }
 
+function getPickKindLabel(pick: (typeof allPicks)[number]) {
+	return t(`library.pick.kind.${pick.data.kind}` as Parameters<typeof t>[0]);
+}
+
+const featuredPost = latestPosts[0];
+const otherPosts = latestPosts.slice(1);
+
 const formatCount = (count: number) => t('library.item-count').replace('{count}', String(count));
 ---
 
@@ -111,958 +117,523 @@ const formatCount = (count: number) => t('library.item-count').replace('{count}'
 		<Header />
 		<FloatingLanguagePicker />
 		<div class="global-wrapper" data-is-root-path="true">
-			<main id="main-content" class="home-page" data-pagefind-body>
-				<section class="home-section home-latest" aria-labelledby="home-latest-title">
-					<div class="home-section-heading">
-						<div>
+			<main id="main-content" class="atelier-page home-page" data-pagefind-body>
+				<div class="home-primary page-frame">
+					<section class="home-section home-latest" aria-labelledby="home-latest-title">
+						<div class="column-heading">
 							<h2 id="home-latest-title">{t('home.latest.title')}</h2>
+							<a href={blogUrl} class="home-link">{t('home.latest.view-all')}</a>
 						</div>
-						<a href={blogUrl} class="home-text-link home-text-link-blog">
-							<LibraryIcon name="article" class="home-action-icon" />
-							<span>{t('home.latest.view-all')}</span>
-							<LibraryIcon name="arrow-right" class="home-action-icon" />
-						</a>
-					</div>
-					{latestPosts.length > 0 ? (
-						<div class="home-post-grid">
-							{latestPosts.map((post) => {
-								const hero = post.data.heroImage ?? '/images/blank.png';
-								const responsiveHero = getResponsivePublicImage(hero);
-								return (
-									<a href={getBlogUrlFromId(post.id)} class="home-post-card">
-										<picture class="home-post-media">
-											{responsiveHero.webpSrcSet && (
-												<source
-													type="image/webp"
-													srcset={responsiveHero.webpSrcSet}
-													sizes={homepagePostImageSizes}
-												/>
-											)}
-											<img
-												src={responsiveHero.src}
-												alt={post.data.title}
-												loading="lazy"
-												decoding="async"
-												width={responsiveHero.width}
-												height={responsiveHero.height}
-												sizes={homepagePostImageSizes}
-											/>
-										</picture>
-										<div>
-											<p class="home-post-meta"><FormattedDate date={post.data.pubDate} /></p>
-											<h3>{post.data.title}</h3>
-											<p>{post.data.description}</p>
-										</div>
-									</a>
-								);
-							})}
-						</div>
-					) : (
-						<div class="home-empty">{t('blog.no-posts')}</div>
-					)}
-				</section>
-
-				<section class="home-feature-row" aria-label={t('home.feature-row-label')}>
-					<section class="home-feature-panel home-feeds" aria-labelledby="home-feeds-title">
-						<div class="home-section-heading">
-							<div>
-								<h2 id="home-feeds-title">{t('home.feeds.title')}</h2>
-							</div>
-							<a href={usefulFeedsUrl} class="home-text-link">
-								<LibraryIcon name="book-open" class="home-action-icon" />
-								<span>{t('home.feeds.view-all')}</span>
-								<LibraryIcon name="arrow-right" class="home-action-icon" />
-							</a>
-						</div>
-						{usefulFeedItems.length > 0 ? (
-							<div class="home-pick-grid">
-								{usefulFeedItems.map((item) => (
-									<a href={item.url} target="_blank" rel="noopener noreferrer" class="home-pick-card">
-										<span class="home-pick-label">{item.source}</span>
-										<div class="home-pick-body">
-											<h3>{item.title}</h3>
-											<p>{item.date}</p>
-										</div>
-										<span class="home-card-icon-button" aria-hidden="true">
-											<LibraryIcon name="external" class="home-action-icon" />
-										</span>
-									</a>
-								))}
-							</div>
+						{featuredPost ? (
+							<Fragment>
+								<a href={getBlogUrlFromId(featuredPost.id)} class="home-featured">
+									<PostThumb post={featuredPost} sizes="(max-width: 539px) 100vw, 144px" />
+									<div class="home-featured-copy">
+										<p class="eyebrow">{t('home.featured.label')} · <FormattedDate date={featuredPost.data.pubDate} /></p>
+										<h3>{featuredPost.data.title}</h3>
+										<p class="home-featured-description">{featuredPost.data.description}</p>
+									</div>
+								</a>
+								{otherPosts.length > 0 && (
+									<ul class="rule-list home-post-list">
+										{otherPosts.map((post) => (
+											<li>
+												<a href={getBlogUrlFromId(post.id)} class="home-post-row">
+													<time datetime={post.data.pubDate.toISOString()}>{formatPostDate(post.data.pubDate)}</time>
+													<PostThumb post={post} sizes="64px" />
+													<h3>{post.data.title}</h3>
+												</a>
+											</li>
+										))}
+									</ul>
+								)}
+							</Fragment>
 						) : (
-							<div class="home-empty">{t('home.feeds.empty')}</div>
+							<div class="home-empty">{t('blog.no-posts')}</div>
 						)}
 					</section>
 
 					<section class="home-feature-panel home-reviews" aria-labelledby="home-reviews-title">
-						<div class="home-section-heading">
-							<div>
-								<h2 id="home-reviews-title">{t('home.reviews.title')}</h2>
-							</div>
-							<a href={researchUrl} class="home-text-link home-text-link-review">
-								<LibraryIcon name="article" class="home-action-icon" />
-								<span>{t('home.reviews.view-all')}</span>
-								<LibraryIcon name="arrow-right" class="home-action-icon" />
-							</a>
+						<div class="column-heading">
+							<h2 id="home-reviews-title">{t('home.reviews.title')}</h2>
+							<a href={researchUrl} class="home-link">{t('home.reviews.view-all')}</a>
 						</div>
 						{academicReviews.length > 0 ? (
-							<div class="home-review-list">
+							<ul class="rule-list home-review-list">
 								{academicReviews.map((review) => {
 									const paper = review.data.paper;
 									const source = [paper.venue, paper.year ? String(paper.year) : null].filter(Boolean).join(' · ');
 									return (
-										<a href={getAcademicReviewUrlFromEntry(review)} class="home-review-card">
-											<div class="home-review-topline">
-												<span>{source || t('home.reviews.paper')}</span>
-												<FormattedDate date={review.data.pubDate} />
-											</div>
-											<h3>{review.data.title}</h3>
-											<p>{paper.title}</p>
-											<div class="home-review-footer">
-												<span>{formatPaperAuthors(paper.authors)}</span>
-												<LibraryIcon name="arrow-right" class="home-action-icon" />
-											</div>
-										</a>
+										<li>
+											<a href={getAcademicReviewUrlFromEntry(review)} class="home-review-row">
+												<div class="home-review-topline">
+													<span class="chip state-chip--reviewed">{t('home.reviews.state')}</span>
+													<span class="home-review-source">{source || t('home.reviews.paper')}</span>
+												</div>
+												<h3>{review.data.title}</h3>
+												<p>{paper.title}</p>
+												<span class="home-review-authors">{formatPaperAuthors(paper.authors)}</span>
+											</a>
+										</li>
 									);
 								})}
-							</div>
+							</ul>
 						) : (
 							<div class="home-empty">{t('home.reviews.empty')}</div>
 						)}
 					</section>
-				</section>
+				</div>
 
-				<section class="home-section home-library" aria-labelledby="home-library-title">
-					<div class="home-section-heading">
-						<div>
-							<h2 id="home-library-title">{t('home.explore.title')}</h2>
-						</div>
-						<a href={libraryUrl} class="home-text-link home-text-link-primary">
-							<LibraryIcon name="book-open" class="home-action-icon" />
-							<span>{t('home.primary-cta')}</span>
-							<LibraryIcon name="arrow-right" class="home-action-icon" />
-						</a>
+				<div class="home-band">
+					<div class="page-frame">
+						<section class="home-section home-feeds" aria-labelledby="home-feeds-title">
+							<div class="column-heading">
+								<h2 id="home-feeds-title">{t('home.feeds.title')}</h2>
+								<a href={usefulFeedsUrl} class="home-link">{t('home.feeds.view-all')}</a>
+							</div>
+							{usefulFeedItems.length > 0 ? (
+								<ul class="rule-list home-feed-list">
+									{usefulFeedItems.map((item) => (
+										<li>
+											<a href={item.url} target="_blank" rel="noopener noreferrer" class="home-feed-row">
+												<span class="home-feed-source">{item.source}</span>
+												<h3>{item.title}</h3>
+												<span class="home-feed-date">{item.date}</span>
+											</a>
+										</li>
+									))}
+								</ul>
+							) : (
+								<div class="home-empty">{t('home.feeds.empty')}</div>
+							)}
+						</section>
+
+						<section class="home-section home-library" aria-labelledby="home-library-title">
+							<div class="column-heading">
+								<h2 id="home-library-title">{t('home.library.selected')}</h2>
+								<a href={libraryUrl} class="home-link">{t('home.primary-cta')}</a>
+							</div>
+							{hasEnoughRecentPicks ? (
+								<ul class="home-pick-grid">
+									{recentPicks.map((pick) => {
+										const starLine = getPickStarLine(pick);
+										return (
+											<li>
+												<a href={pick.data.url} target="_blank" rel="noopener noreferrer" class="home-pick">
+													<ResourceVisual kind={pick.data.kind} seed={getPickSlug(pick.id)} />
+													<p class="home-pick-label">{getPickKindLabel(pick)} · {getPickSectionLabel(pick)}</p>
+													<h3>{pick.data.title}</h3>
+													{starLine && <p class="home-pick-meta">{starLine}</p>}
+												</a>
+											</li>
+										);
+									})}
+								</ul>
+							) : (
+								<ul class="home-pick-grid home-section-grid">
+									{sectionsWithPicks.map((section) => (
+										<li>
+											<a href={getLibrarySectionPath(currentLang, section.slug)} class="home-section-card">
+												<p class="home-pick-label">{section.label[currentLang]}</p>
+												<p class="home-section-card-text">{section.description[currentLang]}</p>
+												<div class="home-section-card-footer">
+													<span class="chip">{formatCount(section.count)}</span>
+													<span class="home-section-card-open">{t('library.open-section')}</span>
+												</div>
+											</a>
+										</li>
+									))}
+									<li>
+										<a href={usefulFeedsUrl} class="home-section-card">
+											<p class="home-pick-label">{t('library.tab.useful-feeds')}</p>
+											<p class="home-section-card-text">{t('library.useful-feeds.intro')}</p>
+											<div class="home-section-card-footer">
+												<span class="home-section-card-open">{t('library.open-section')}</span>
+											</div>
+										</a>
+									</li>
+								</ul>
+							)}
+						</section>
 					</div>
-					{hasEnoughRecentPicks ? (
-						<div class="home-pick-grid">
-							{recentPicks.map((pick) => {
-								const starLine = getPickStarLine(pick);
-								return (
-									<a href={pick.data.url} target="_blank" rel="noopener noreferrer" class="home-pick-card">
-										<span class="home-pick-label">{getPickSectionLabel(pick)}</span>
-										<div class="home-pick-body">
-											<h3>{pick.data.title}</h3>
-											{starLine && <p>{starLine}</p>}
-										</div>
-										<span class="home-card-icon-button" aria-hidden="true">
-											<LibraryIcon name="external" class="home-action-icon" />
-										</span>
-									</a>
-								);
-							})}
-						</div>
-					) : (
-						<div class="home-section-grid">
-							{sectionsWithPicks.map((section) => (
-								<a href={getLibrarySectionPath(currentLang, section.slug)} class="home-section-card">
-									<div class="home-card-topline">
-										<span>{section.label[currentLang]}</span>
-									</div>
-									<p>{section.description[currentLang]}</p>
-									<div class="home-card-footer">
-										<strong class="home-count-badge">{formatCount(section.count)}</strong>
-										<span class="home-card-button">
-											{t('library.open-section')}
-											<LibraryIcon name="arrow-right" class="home-action-icon" />
-										</span>
-									</div>
-								</a>
-							))}
-							<a href={usefulFeedsUrl} class="home-section-card">
-								<div class="home-card-topline">
-									<span>{t('library.tab.useful-feeds')}</span>
-								</div>
-								<p>{t('library.useful-feeds.intro')}</p>
-								<div class="home-card-footer">
-									<span class="home-card-button">
-										{t('library.open-section')}
-										<LibraryIcon name="arrow-right" class="home-action-icon" />
-									</span>
-								</div>
-							</a>
-						</div>
-					)}
-				</section>
+				</div>
 
 				{latestBriefs.length > 0 && (
-					<section class="home-section home-briefs" aria-labelledby="home-briefs-title">
-						<div class="home-section-heading">
-							<div>
-								<h2 id="home-briefs-title">{t('home.briefs.title')}</h2>
-							</div>
+					<section class="home-section home-briefs page-frame" aria-labelledby="home-briefs-title">
+						<div class="column-heading">
+							<h2 id="home-briefs-title">{t('home.briefs.title')}</h2>
 						</div>
-						<div class="home-brief-list">
+						<ul class="rule-list home-brief-list">
 							{latestBriefs.map((post) => (
-								<a href={getBlogUrlFromId(post.id)} class="home-brief-card">
-									<FormattedDate date={post.data.pubDate} />
-									<h3>{post.data.title}</h3>
-									<p>{post.data.description}</p>
-								</a>
+								<li>
+									<a href={getBlogUrlFromId(post.id)} class="home-brief-row">
+										<time datetime={post.data.pubDate.toISOString()}>{formatPostDate(post.data.pubDate)}</time>
+										<h3>{post.data.title}</h3>
+										<p>{post.data.description}</p>
+									</a>
+								</li>
 							))}
-						</div>
+						</ul>
 					</section>
 				)}
 			</main>
 		</div>
-		<Footer />
 	</body>
 </html>
 
 <style>
-	.home-page {
-		--home-surface: linear-gradient(180deg, rgba(59, 55, 49, 0.94), rgba(47, 44, 40, 0.92));
-		--home-surface-strong: linear-gradient(180deg, rgba(67, 61, 53, 0.96), rgba(52, 47, 42, 0.94));
-		--home-border: rgba(251, 191, 36, 0.14);
-		--home-border-strong: rgba(251, 146, 60, 0.34);
-		--home-muted: rgba(226, 232, 240, 0.64);
-		--home-faint: rgba(255, 237, 213, 0.72);
-		--home-text: rgb(248, 249, 250);
-		--home-accent: #fed7aa;
-		--home-accent-soft: rgba(249, 115, 22, 0.11);
-		--home-panel-shadow: 0 18px 44px rgba(0, 0, 0, 0.2);
-		--home-blog-surface: rgba(255, 255, 255, 0.045);
-		--home-blog-surface-strong: rgba(255, 255, 255, 0.075);
-		--home-blog-border: rgba(248, 249, 250, 0.12);
-		--home-blog-border-strong: rgba(248, 249, 250, 0.2);
-		width: min(100%, var(--homepage-wide, 80rem));
-		margin: 0 auto;
-		padding: 1.25rem 1rem 4rem;
-		color: var(--home-text);
-	}
-
-	:global(body.light-theme) .home-page {
-		--home-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 247, 237, 0.86));
-		--home-surface-strong: linear-gradient(180deg, rgb(255, 255, 255), rgba(255, 247, 237, 0.96));
-		--home-border: rgba(194, 65, 12, 0.16);
-		--home-border-strong: rgba(194, 65, 12, 0.22);
-		--home-muted: #64748b;
-		--home-faint: #9a3412;
-		--home-text: rgb(15, 23, 42);
-		--home-accent: #9a3412;
-		--home-accent-soft: rgba(249, 115, 22, 0.1);
-		--home-panel-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
-		--home-blog-surface: rgba(255, 255, 255, 0.78);
-		--home-blog-surface-strong: rgb(255, 255, 255);
-		--home-blog-border: rgba(15, 23, 42, 0.12);
-		--home-blog-border-strong: rgba(15, 23, 42, 0.2);
-	}
-
-	.home-page a {
-		color: inherit !important;
-		text-decoration: none;
-	}
-
-	.home-page :where(h1, h2, h3, p) {
-		margin: 0;
-		letter-spacing: 0;
-	}
-
-	.home-page :where(h1, h2, h3) {
-		color: var(--home-text);
-		line-height: 1.08;
-	}
-
-	.home-page :where(p) {
-		color: var(--home-muted);
-		line-height: 1.7;
-	}
-
-	.home-page :where(a, button):focus-visible {
-		outline: 2px solid rgba(251, 146, 60, 0.82);
-		outline-offset: 4px;
-	}
-
-	.home-text-link {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.5rem;
-		flex: 0 0 auto;
-		min-height: 2.45rem;
-		min-width: max-content;
-		border-radius: 0.5rem;
-		border: 1px solid var(--home-blog-border);
-		padding: 0.58rem 0.85rem;
-		background: var(--home-blog-surface);
-		color: var(--home-text) !important;
-		font-family: var(--font-heading);
-		font-size: 0.88rem;
-		font-weight: 700;
-		line-height: 1.2;
-		white-space: nowrap;
-		box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-		transition:
-			transform 160ms ease,
-			border-color 160ms ease,
-			background 160ms ease,
-			box-shadow 160ms ease;
-	}
-
-	.home-text-link > span {
-		display: inline-flex;
-		align-items: center;
-		white-space: nowrap;
-	}
-
-	.home-text-link:hover {
-		transform: translateY(-1px);
-		border-color: var(--home-blog-border-strong);
-		background: var(--home-blog-surface-strong);
-		box-shadow: 0 12px 26px rgba(0, 0, 0, 0.16);
-		text-decoration: none;
-	}
-
-	.home-text-link-primary {
-		border-color: rgba(251, 146, 60, 0.46);
-		background: linear-gradient(180deg, rgba(249, 115, 22, 0.22), rgba(194, 65, 12, 0.18));
-		color: #ffedd5 !important;
-		box-shadow: 0 10px 26px rgba(249, 115, 22, 0.14);
-	}
-
-	.home-text-link-primary:hover,
-	.home-text-link-primary:focus-visible {
-		border-color: rgba(251, 146, 60, 0.68);
-		background: linear-gradient(180deg, rgba(249, 115, 22, 0.3), rgba(194, 65, 12, 0.24));
-		color: #fff7ed !important;
-		box-shadow: 0 14px 32px rgba(249, 115, 22, 0.18);
-	}
-
-	.home-text-link-blog {
-		border-color: rgba(52, 211, 153, 0.34);
-		background: linear-gradient(180deg, rgba(16, 185, 129, 0.16), rgba(5, 150, 105, 0.12));
-		color: #bbf7d0 !important;
-		box-shadow: 0 10px 26px rgba(16, 185, 129, 0.12);
-	}
-
-	.home-text-link-blog:hover,
-	.home-text-link-blog:focus-visible {
-		border-color: rgba(52, 211, 153, 0.56);
-		background: linear-gradient(180deg, rgba(16, 185, 129, 0.24), rgba(5, 150, 105, 0.18));
-		color: #dcfce7 !important;
-		box-shadow: 0 14px 32px rgba(16, 185, 129, 0.16);
-	}
-
-	.home-text-link-review {
-		border-color: rgba(125, 211, 252, 0.28);
-		background: linear-gradient(180deg, rgba(14, 165, 233, 0.14), rgba(2, 132, 199, 0.1));
-		color: #bae6fd !important;
-		box-shadow: 0 10px 26px rgba(14, 165, 233, 0.1);
-	}
-
-	.home-text-link-review:hover,
-	.home-text-link-review:focus-visible {
-		border-color: rgba(125, 211, 252, 0.48);
-		background: linear-gradient(180deg, rgba(14, 165, 233, 0.22), rgba(2, 132, 199, 0.16));
-		color: #e0f2fe !important;
-		box-shadow: 0 14px 32px rgba(14, 165, 233, 0.14);
-	}
-
-	:global(body.light-theme) .home-text-link-primary {
-		border-color: rgba(194, 65, 12, 0.28);
-		background: linear-gradient(180deg, rgba(249, 115, 22, 0.16), rgba(255, 247, 237, 0.96));
-		color: #9a3412 !important;
-		box-shadow: 0 12px 26px rgba(194, 65, 12, 0.1);
-	}
-
-	:global(body.light-theme) .home-text-link-primary:hover,
-	:global(body.light-theme) .home-text-link-primary:focus-visible {
-		border-color: rgba(194, 65, 12, 0.4);
-		background: linear-gradient(180deg, rgba(249, 115, 22, 0.22), rgba(255, 247, 237, 1));
-		color: #7c2d12 !important;
-	}
-
-	:global(body.light-theme) .home-text-link-blog {
-		border-color: rgba(4, 120, 87, 0.24);
-		background: linear-gradient(180deg, rgba(16, 185, 129, 0.12), rgba(236, 253, 245, 0.98));
-		color: #047857 !important;
-		box-shadow: 0 12px 26px rgba(4, 120, 87, 0.09);
-	}
-
-	:global(body.light-theme) .home-text-link-blog:hover,
-	:global(body.light-theme) .home-text-link-blog:focus-visible {
-		border-color: rgba(4, 120, 87, 0.36);
-		background: linear-gradient(180deg, rgba(16, 185, 129, 0.18), rgba(236, 253, 245, 1));
-		color: #065f46 !important;
-	}
-
-	:global(body.light-theme) .home-text-link-review {
-		border-color: rgba(3, 105, 161, 0.22);
-		background: linear-gradient(180deg, rgba(14, 165, 233, 0.12), rgba(240, 249, 255, 0.98));
-		color: #0369a1 !important;
-		box-shadow: 0 12px 26px rgba(3, 105, 161, 0.08);
-	}
-
-	:global(body.light-theme) .home-text-link-review:hover,
-	:global(body.light-theme) .home-text-link-review:focus-visible {
-		border-color: rgba(3, 105, 161, 0.34);
-		background: linear-gradient(180deg, rgba(14, 165, 233, 0.18), rgba(240, 249, 255, 1));
-		color: #075985 !important;
-	}
-
-	:global(.home-page .home-action-icon) {
-		width: 1rem;
-		height: 1rem;
-		flex: 0 0 auto;
-		stroke-width: 2.2;
-	}
-
-	.home-pick-card,
-	.home-review-card,
-	.home-section-card {
-		border: 1px solid var(--home-border);
-		border-radius: 0.5rem;
-		background: var(--home-surface);
-		box-shadow: var(--home-panel-shadow);
-	}
-
-	.home-brief-card,
-	.home-post-card,
-	.home-empty {
-		border: 1px solid var(--home-blog-border);
-		border-radius: 0.5rem;
-		background: var(--home-blog-surface);
-	}
-
-	.home-section {
-		margin-top: 2.65rem;
-	}
-
-	.home-feature-row {
+	/* ── Primary: latest writing | academic reviews ── */
+	.home-primary {
 		display: grid;
-		gap: 1.2rem;
-		margin-top: 2.65rem;
+		grid-template-columns: minmax(0, 1.6fr) minmax(0, 0.8fr);
+		gap: 0 2.5rem;
+		padding-top: 2rem;
+		padding-bottom: 2.5rem;
 	}
 
-	.home-feature-panel {
+	.home-latest,
+	.home-reviews {
 		min-width: 0;
 	}
 
-	.home-feature-panel .home-section-heading {
-		align-items: center;
-		min-height: 2.45rem;
-	}
-
-	.home-section-heading {
-		display: flex;
-		align-items: end;
-		justify-content: space-between;
-		gap: 1rem;
-		margin-bottom: 1rem;
-	}
-
-	.home-section-heading h2 {
-		color: var(--home-text);
-		font-size: 1.65rem;
-		font-weight: 800;
-	}
-
-	.home-pick-grid,
-	.home-section-grid,
-	.home-post-grid {
-		display: grid;
-		gap: 0.75rem;
-	}
-
-	.home-pick-grid {
-		max-width: 46rem;
-		gap: 0.35rem;
-	}
-
-	.home-pick-card,
-	.home-review-card,
-	.home-section-card,
-	.home-brief-card,
-	.home-post-card {
-		display: flex;
-		flex-direction: column;
-		gap: 0.6rem;
-		padding: 0.85rem;
-		transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
-	}
-
-	.home-pick-card {
-		display: grid;
-		grid-template-columns: minmax(4.5rem, auto) minmax(0, 1fr) auto;
-		align-items: center;
-		gap: 0.55rem;
-		padding: 0.42rem 0.58rem;
-	}
-
-	.home-pick-body {
-		display: flex;
-		min-width: 0;
-		flex-direction: column;
-		gap: 0.1rem;
-	}
-
-	.home-pick-body p {
+	h3 {
 		margin: 0;
+	}
+
+	.column-heading h2 {
+		word-break: keep-all;
+	}
+
+	/* Featured post */
+	.home-featured {
+		display: grid;
+		grid-template-columns: 9rem minmax(0, 1fr);
+		gap: 1.25rem;
+		align-items: stretch;
+		padding-bottom: 1.5rem;
+	}
+
+	.home-featured :global(.post-thumb) {
+		width: 100%;
+		height: 100%;
+		min-height: 9.5rem;
+	}
+
+	.home-featured-copy {
+		min-width: 0;
+	}
+
+	.home-featured-copy .eyebrow {
+		margin-bottom: 0.6rem;
+	}
+
+	.home-featured-copy h3 {
+		margin-bottom: 0.75rem;
+		font: 400 clamp(1.75rem, 2.7vw, 2.5rem) / 1.12 var(--font-serif);
+		letter-spacing: -0.03em;
+		overflow-wrap: anywhere;
+		transition: color 160ms ease;
+	}
+
+	.home-featured:hover h3 {
+		color: var(--accent);
+	}
+
+	.home-featured-description {
+		display: -webkit-box;
+		-webkit-line-clamp: 3;
+		line-clamp: 3;
+		-webkit-box-orient: vertical;
 		overflow: hidden;
-		color: var(--home-faint);
-		font-size: 0.7rem;
-		line-height: 1.2;
-		white-space: nowrap;
-		text-overflow: ellipsis;
+		max-width: 36rem;
+		margin: 0 0 1rem;
+		font-size: 0.875rem;
+		line-height: 1.65;
+		color: var(--secondary);
 	}
 
-	.home-card-icon-button {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 1.8rem;
-		height: 1.8rem;
-		border-radius: 999px;
-		border: 1px solid rgba(251, 146, 60, 0.26);
-		background: rgba(249, 115, 22, 0.1);
-		color: var(--home-accent);
-		transition:
-			background 160ms ease,
-			border-color 160ms ease,
-			transform 160ms ease;
-	}
-
-	.home-pick-card:hover,
-	.home-review-card:hover,
-	.home-section-card:hover {
-		transform: translateY(-2px);
-		border-color: var(--home-border-strong);
-		background: var(--home-surface-strong);
-		text-decoration: none;
-	}
-
-	.home-review-card {
-		border-color: rgba(125, 211, 252, 0.18);
-		background: linear-gradient(180deg, rgba(14, 165, 233, 0.095), rgba(255, 255, 255, 0.04));
-	}
-
-	.home-review-card:hover,
-	.home-review-card:focus-visible {
-		border-color: rgba(125, 211, 252, 0.34);
-		background: linear-gradient(180deg, rgba(14, 165, 233, 0.14), rgba(255, 255, 255, 0.06));
-	}
-
-	:global(body.light-theme) .home-review-card {
-		border-color: rgba(3, 105, 161, 0.16);
-		background: linear-gradient(180deg, rgba(240, 249, 255, 0.92), rgba(255, 255, 255, 0.96));
-	}
-
-	:global(body.light-theme) .home-review-card:hover,
-	:global(body.light-theme) .home-review-card:focus-visible {
-		border-color: rgba(3, 105, 161, 0.28);
-		background: linear-gradient(180deg, rgba(224, 242, 254, 0.96), rgba(255, 255, 255, 1));
-	}
-
-	.home-pick-card:hover .home-card-icon-button,
-	.home-pick-card:focus-visible .home-card-icon-button {
-		border-color: rgba(251, 146, 60, 0.5);
-		background: rgba(249, 115, 22, 0.18);
-		transform: translateX(2px);
-	}
-
-	.home-brief-card:hover,
-	.home-post-card:hover {
-		transform: translateY(-2px);
-		border-color: var(--home-blog-border-strong);
-		background: var(--home-blog-surface-strong);
-		text-decoration: none;
-	}
-
-	.home-card-topline {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 0.75rem;
-		color: var(--home-faint);
-		font-family: var(--font-heading);
-		font-size: 0.72rem;
-		font-weight: 700;
-		text-transform: uppercase;
-	}
-
-	.home-review-list {
+	/* Post rows */
+	.home-post-row {
 		display: grid;
-		gap: 0.55rem;
+		grid-template-columns: 5.5rem 64px minmax(0, 1fr);
+		gap: 0 0.9rem;
+		align-items: center;
+		padding: 0.7rem 0;
 	}
 
-	.home-review-topline,
-	.home-review-footer {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 0.75rem;
-		color: var(--home-faint);
-		font-size: 0.74rem;
-		line-height: 1.25;
+	.home-post-row time,
+	.home-brief-row time {
+		font: 400 0.6875rem/1.45 var(--font-mono);
+		letter-spacing: 0.06em;
+		color: var(--secondary);
+	}
+
+	.home-post-row :global(.post-thumb) {
+		width: 64px;
+		height: 43px;
+	}
+
+	.home-post-row h3 {
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+		font: 400 1.0625rem/1.25 var(--font-serif);
+		transition: color 160ms ease;
+	}
+
+	.home-post-row:hover h3,
+	.home-brief-row:hover h3,
+	.home-feed-row:hover h3,
+	.home-review-row:hover h3,
+	.home-pick:hover h3 {
+		color: var(--accent);
+	}
+
+	/* Reviews */
+	.home-review-row {
+		display: grid;
+		gap: 0.3rem;
+		padding: 0.85rem 0;
 	}
 
 	.home-review-topline {
-		font-family: var(--font-heading);
-		font-weight: 800;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.3rem 0.75rem;
+	}
+
+	.home-review-source,
+	.home-review-authors {
+		font: 400 0.6875rem/1.45 var(--font-mono);
+		letter-spacing: 0.06em;
 		text-transform: uppercase;
+		color: var(--secondary);
 	}
 
-	.home-review-topline span,
-	.home-review-footer span {
-		min-width: 0;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
+	.home-review-row h3 {
+		font: 400 1.1875rem/1.25 var(--font-serif);
+		transition: color 160ms ease;
 	}
 
-	.home-review-footer {
-		margin-top: auto;
-		border-top: 1px solid rgba(125, 211, 252, 0.16);
-		padding-top: 0.62rem;
-		color: var(--home-muted);
-	}
-
-	:global(.home-page .home-review-footer .home-action-icon) {
-		color: #bae6fd;
-		transition: transform 160ms ease;
-	}
-
-	:global(.home-page .home-review-card:hover .home-review-footer .home-action-icon),
-	:global(.home-page .home-review-card:focus-visible .home-review-footer .home-action-icon) {
-		transform: translateX(2px);
-	}
-
-	:global(body.light-theme) .home-review-footer {
-		border-top-color: rgba(3, 105, 161, 0.14);
-	}
-
-	:global(body.light-theme .home-page .home-review-footer .home-action-icon) {
-		color: #0369a1;
-	}
-
-	.home-pick-label {
-		min-width: 0;
-		max-width: 7.5rem;
-		overflow: hidden;
-		color: var(--home-faint);
-		font-family: var(--font-heading);
-		font-size: 0.68rem;
-		font-weight: 800;
-		line-height: 1.2;
-		text-overflow: ellipsis;
-		text-transform: uppercase;
-		white-space: nowrap;
-	}
-
-	.home-pick-card h3,
-	.home-review-card h3,
-	.home-section-card h3,
-	.home-brief-card h3,
-	.home-post-card h3 {
-		color: var(--home-text);
-		font-size: 1rem;
-		font-weight: 800;
-		line-height: 1.28;
+	.home-review-row p {
 		display: -webkit-box;
-		line-clamp: 2;
 		-webkit-line-clamp: 2;
+		line-clamp: 2;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
+		margin: 0;
+		font-size: 0.8125rem;
+		line-height: 1.55;
+		color: var(--secondary);
 	}
 
-	.home-pick-card h3 {
-		font-size: 0.84rem;
-		line-height: 1.22;
-		line-clamp: 1;
-		-webkit-line-clamp: 1;
-	}
-
-	.home-review-card h3 {
-		font-size: 1rem;
-		line-height: 1.28;
-	}
-
-	:global(.home-page .home-pick-card .home-action-icon) {
-		width: 0.88rem;
-		height: 0.88rem;
-	}
-
-	.home-pick-card > p,
-	.home-review-card > p,
-	.home-section-card > p,
-	.home-brief-card > p,
-	.home-post-card p:last-child {
-		color: var(--home-muted);
-		font-size: 0.86rem;
-		line-height: 1.5;
-		display: -webkit-box;
-		line-clamp: 2;
-		-webkit-line-clamp: 2;
-		-webkit-box-orient: vertical;
-		overflow: hidden;
-	}
-
-	.home-status {
-		border: 1px solid var(--home-border-strong);
-		border-radius: 0.5rem;
-		padding: 0.25rem 0.5rem;
-		background: var(--home-surface-strong);
-		color: var(--home-faint);
-		font-size: 0.72rem;
+	.home-review-authors {
 		text-transform: none;
+	}
+
+	.home-empty {
+		padding: 0.2rem 0 0.4rem;
+		font-size: 0.875rem;
+		color: var(--secondary);
+	}
+
+	/* ── Useful feeds + library picks (same paper as the page) ── */
+	.home-band > .page-frame {
+		padding-block: 0 2.5rem;
+	}
+
+	.home-band .home-library {
+		margin-top: 2.5rem;
+	}
+
+	.home-feed-row {
+		display: grid;
+		grid-template-columns: 9rem minmax(0, 1fr) auto;
+		gap: 0 1rem;
+		align-items: baseline;
+		padding: 0.8rem 0;
+	}
+
+	.home-feed-source,
+	.home-feed-date,
+	.home-pick-label {
+		font: 400 0.6875rem/1.45 var(--font-mono);
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--secondary);
+	}
+
+	.home-feed-source {
+		overflow: hidden;
+		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
 
-	.home-status-available {
-		border-color: rgba(251, 191, 36, 0.26);
-		background: rgba(251, 191, 36, 0.1);
-		color: #fde68a;
+	.home-feed-row h3 {
+		font: 400 1.1875rem/1.25 var(--font-serif);
+		transition: color 160ms ease;
 	}
 
-	:global(body.light-theme) .home-status-available {
-		color: #92400e;
+	.home-pick-grid {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 1.75rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
 	}
 
-	.home-card-footer {
+	.home-pick {
+		display: block;
+	}
+
+	.home-pick .home-pick-label {
+		margin: 0.9rem 0 0.4rem;
+	}
+
+	.home-pick h3 {
+		font: 400 1.375rem/1.15 var(--font-serif);
+		letter-spacing: -0.02em;
+		transition: color 160ms ease;
+	}
+
+	.home-pick-meta {
+		margin: 0.4rem 0 0;
+		font-size: 0.8125rem;
+		color: var(--secondary);
+	}
+
+	/* Fewer than three picks: section cards */
+	.home-section-card {
+		display: flex;
+		flex-direction: column;
+		gap: 0.6rem;
+		height: 100%;
+	}
+
+	.home-section-card:hover .home-section-card-open {
+		color: var(--accent);
+	}
+
+	.home-section-card .home-pick-label {
+		margin: 0;
+	}
+
+	.home-section-card-text {
+		margin: 0;
+		font-size: 0.875rem;
+		line-height: 1.6;
+		color: var(--secondary);
+	}
+
+	.home-section-card-footer {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		gap: 0.75rem;
 		margin-top: auto;
-		border-top: 1px solid var(--home-border);
-		padding-top: 0.65rem;
-		color: var(--home-faint);
-		font-size: 0.8rem;
+		padding-top: 0.6rem;
 	}
 
-	.home-card-footer strong {
-		color: var(--home-text);
-		font-weight: 800;
+	.home-section-card-open {
+		font: 400 0.6875rem/1.45 var(--font-mono);
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
 	}
 
-	.home-count-badge {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		min-height: 1.75rem;
-		border: 1px solid rgba(251, 191, 36, 0.3);
-		border-radius: 999px;
-		padding: 0.3rem 0.56rem;
-		background: rgba(251, 191, 36, 0.11);
-		color: #fde68a;
-		font-size: 0.78rem;
-		font-weight: 900;
-		line-height: 1;
-		white-space: nowrap;
+	/* ── Briefs ── */
+	.home-briefs {
+		padding-block: 2.5rem 4rem;
 	}
 
-	.home-count-badge-muted {
-		border-color: var(--home-border);
-		background: rgba(255, 255, 255, 0.035);
-		color: var(--home-muted);
-	}
-
-	:global(body.light-theme) .home-count-badge {
-		border-color: rgba(217, 119, 6, 0.22);
-		background: rgba(245, 158, 11, 0.11);
-		color: #92400e;
-	}
-
-	:global(body.light-theme) .home-count-badge-muted {
-		border-color: rgba(15, 23, 42, 0.1);
-		background: rgba(15, 23, 42, 0.035);
-		color: #64748b;
-	}
-
-	.home-card-button,
-	.home-card-note {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.35rem;
-		min-height: 2rem;
-		border-radius: 999px;
-		padding: 0.36rem 0.62rem;
-		font-size: 0.78rem;
-		font-weight: 800;
-		line-height: 1;
-		white-space: nowrap;
-	}
-
-	.home-card-button {
-		border: 1px solid rgba(251, 146, 60, 0.34);
-		background: rgba(249, 115, 22, 0.12);
-		color: var(--home-accent);
-		transition:
-			background 160ms ease,
-			border-color 160ms ease,
-			color 160ms ease,
-			transform 160ms ease;
-	}
-
-	.home-section-card:hover .home-card-button,
-	.home-section-card:focus-visible .home-card-button {
-		border-color: rgba(251, 146, 60, 0.56);
-		background: rgba(249, 115, 22, 0.2);
-		color: #ffedd5;
-		transform: translateX(2px);
-	}
-
-	:global(body.light-theme) .home-section-card:hover .home-card-button,
-	:global(body.light-theme) .home-section-card:focus-visible .home-card-button {
-		color: #7c2d12;
-	}
-
-	.home-card-note {
-		border: 1px solid var(--home-border);
-		background: rgba(255, 255, 255, 0.035);
-		color: var(--home-muted);
-	}
-
-	.home-section-card-disabled {
-		opacity: 0.72;
-	}
-
-	.home-section-card-disabled:hover {
-		transform: none;
-		border-color: var(--home-border);
-		background: var(--home-surface);
-	}
-
-	.home-brief-list {
+	.home-brief-row {
 		display: grid;
-		gap: 0.75rem;
+		grid-template-columns: 5.5rem minmax(0, 1fr);
+		gap: 0.25rem 1rem;
+		padding: 0.85rem 0;
 	}
 
-	.home-brief-card time {
-		color: var(--home-faint);
-		font-size: 0.85rem;
+	.home-brief-row h3 {
+		font: 400 1.1875rem/1.25 var(--font-serif);
+		transition: color 160ms ease;
 	}
 
-	.home-post-card {
-		display: grid;
-		grid-template-columns: 6.5rem minmax(0, 1fr);
-		align-items: start;
-		padding: 0.65rem;
+	.home-brief-row p {
+		grid-column: 2;
+		margin: 0;
+		font-size: 0.8125rem;
+		line-height: 1.55;
+		color: var(--secondary);
 	}
 
-	/* Fixed thumbnail — never stretches, always crops to fill */
-	.home-post-media {
-		display: block;
-		width: 6.5rem;
-		height: 7.5rem;
-		flex-shrink: 0;
-		align-self: center;   /* stay vertically centered when card row is tall */
-		overflow: hidden;
-		border-radius: 0.5rem;
-		background: rgba(15, 23, 42, 0.35);
-	}
+	/* ── Breakpoints (540 / 800 / 1100) ── */
+	@media (max-width: 799px) {
+		.home-primary {
+			grid-template-columns: minmax(0, 1fr);
+		}
 
-	.home-post-card img {
-		display: block;
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-	}
+		.home-reviews {
+			margin-top: 2.5rem;
+		}
 
-	.home-post-card > div {
-		display: flex;
-		flex-direction: column;
-		gap: 0.35rem;
-		padding: 0.2rem 0.25rem;
-	}
-
-	.home-post-meta {
-		color: var(--home-faint);
-		font-size: 0.78rem;
-	}
-
-	.home-empty {
-		padding: 1rem;
-		color: var(--home-muted);
-	}
-
-	@media (min-width: 760px) {
-		.home-section-grid {
+		.home-pick-grid {
 			grid-template-columns: repeat(2, minmax(0, 1fr));
 		}
-
-		.home-post-grid {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-		}
-
 	}
 
-	@media (min-width: 980px) {
-		.home-page {
-			padding-inline: 1.5rem;
+	@media (max-width: 539px) {
+		.home-featured {
+			grid-template-columns: minmax(0, 1fr);
 		}
 
-		.home-feature-row {
-			grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 0.85fr);
-			align-items: start;
-		}
-
-		.home-section-grid {
-			grid-template-columns: repeat(3, minmax(0, 1fr));
-		}
-	}
-
-	@media (min-width: 1180px) {
-		.home-post-grid {
-			grid-template-columns: repeat(3, minmax(0, 1fr));
-		}
-	}
-
-	@media (max-width: 640px) {
-		.home-page {
-			padding-block: 1.6rem 3rem;
-		}
-
-		.home-section {
-			margin-top: 2.25rem;
-		}
-
-		.home-feature-row {
-			margin-top: 2.25rem;
-		}
-
-		.home-section-heading {
-			display: grid;
-			align-items: start;
-			gap: 0.7rem;
-		}
-
-		.home-feature-panel .home-section-heading {
+		.home-featured :global(.post-thumb) {
+			height: 8rem;
 			min-height: 0;
 		}
 
-		.home-text-link {
-			min-height: 2.25rem;
-			padding: 0.5rem 0.7rem;
-			font-size: 0.82rem;
+		.home-post-row {
+			grid-template-columns: 64px minmax(0, 1fr);
+			gap: 0.15rem 0.9rem;
 		}
 
-		.home-post-card {
-			grid-template-columns: 1fr;
+		.home-post-row time {
+			grid-column: 2;
+			grid-row: 1;
 		}
 
-		.home-post-card:nth-child(n + 4) {
-			display: none;
+		.home-post-row :global(.post-thumb) {
+			grid-column: 1;
+			grid-row: 1 / span 2;
 		}
 
-		.home-post-media {
-			width: 100%;
-			height: 10rem;   /* fixed height on mobile full-width layout */
+		.home-post-row h3 {
+			grid-column: 2;
+			grid-row: 2;
 		}
 
-		.home-post-card img {
-			width: 100%;
-			height: 100%;
+		.home-feed-row {
+			grid-template-columns: minmax(0, 1fr);
+			gap: 0.2rem;
+		}
+
+		.home-feed-source {
+			order: -1;
+		}
+
+		.home-pick-grid {
+			grid-template-columns: minmax(0, 1fr);
+			--resource-art-height: 10rem;
+		}
+
+		.home-brief-row {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.home-brief-row p {
+			grid-column: 1;
 		}
 	}
 </style>

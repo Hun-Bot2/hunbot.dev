@@ -13,7 +13,7 @@
 | Framework | Astro 5 (SSG/hybrid, `output: "hybrid"`) |
 | Adapter | `@astrojs/vercel` (serverless) |
 | Content | MDX via `@astrojs/mdx`, Astro Content Collections |
-| Styling | Tailwind CSS + `global.css` tokens |
+| Styling | Tailwind CSS + Atelier tokens (`src/styles/tokens.css`) |
 | Search | Pagefind (static, runs after `astro build`) |
 | Math | `remark-math` + `rehype-katex` |
 | Comments | Giscus (client-side, GitHub Discussions) |
@@ -37,10 +37,10 @@ hun-bot-blog/
 │   ├── i18n/               # Translation strings
 │   ├── layouts/            # Page-level layout wrappers
 │   ├── pages/              # Astro routes
-│   ├── styles/             # Global CSS
+│   ├── styles/             # Tokens + shared CSS (tokens/global/prose/lists/art/academic-review)
 │   └── utils/              # Pure helper functions
 ├── public/                 # Static assets (images, scripts, fonts)
-├── contracts/              # Wire + storage contracts for the private Research OS (inert to the build)
+├── contracts/              # research-os/: Research OS wire+storage contract (inert); public-artifact/: Hun-Bot-owned public artifact contract
 ├── docs/                   # Project documentation
 │   ├── architecture/       # System architecture and deps
 │   ├── content/            # Content ops workflows
@@ -133,12 +133,12 @@ src/pages/
     ├── search.astro                     → /ko/search/ (Pagefind UI)
     ├── rss.xml.js                       → /ko/rss.xml per-language feed
     ├── library.astro                    → /ko/library/ (Library hub)
+    ├── explore.astro                    → /ko/explore/ (Living Atlas: public artifacts on a time × domain lane chart; reads only the public artifact contract)
     ├── paths.astro                      → /ko/paths/ (learning paths index)
     ├── research.astro                   → /ko/research/ (Research hub: study log, reviews, paths, decks card, featured topics)
     ├── blog/
-    │   ├── index.astro                  → /ko/blog/ (all posts, paginated)
+    │   ├── index.astro                  → /ko/blog/ (all posts, year-grouped, client-side filters)
     │   ├── [...slug].astro              → /ko/blog/{slug}/ (post detail)
-    │   ├── page/[page].astro            → /ko/blog/page/2/ (pagination)
     │   ├── categories.astro             → /ko/blog/categories/
     │   └── categories/[category].astro  → /ko/blog/categories/{cat}/
     ├── library/
@@ -162,7 +162,9 @@ src/pages/
 
 | File | Key exports | What it does |
 |---|---|---|
-| `blog.ts` | `getAllPosts()`, `filterPostsByLanguage()`, `getPostsByLanguage()`, `getPaginatedPosts()`, `normalizeCategory()`, `getCategoryCounts()`, `getSeriesPosts()`, `estimateWordCount()` | All blog query/filter/sort logic. **Start here for any blog listing change.** `getAllPosts()` filters `draft: true`. |
+| `blog.ts` | `getAllPosts()`, `filterPostsByLanguage()`, `getPostsByLanguage()`, `normalizeCategory()`, `getCategoryCounts()`, `getSeriesPosts()`, `estimateWordCount()` | All blog query/filter/sort logic. **Start here for any blog listing change.** `getAllPosts()` filters `draft: true`. |
+| `blog-publishing.ts` | `selectPublishedPosts()`, `getFrontmatterIssues()`, `isPublishable()`, `excludeDuplicates()` | The definition of a *published* post, with no `astro:content` import so Node scripts share it. `blog.ts` re-exports it and `getAllPosts()` uses it. |
+| `artifacts/` | `buildHunbotArtifactExport()`, `resolveArtifactDomain()` (`adapters.ts`); `validateArtifactExports()`, `checkSchemaMatchesVocabulary()` (`validate.ts`); types (`contract.ts`) | Public artifact contract (`contracts/public-artifact/`, design: `docs/plans/2026-10-03-explore-living-atlas.md` §2). Pure adapters map blog/reviews/papers/picks/resources to `<kind>:<id>` artifacts with an explicit resolved domain; declared links become `explains` relations; links to unpublished items are withheld. `relatedTo` and unverified bases are rejected by name. Checked by `npm run artifacts:validate` (part of `content:validate`); `npm run artifacts:print` dumps the normalized export. Not yet consumed by any page. |
 | `blog-routing.ts` | `getBlogUrlFromPost()`, `getBlogUrlFromId()`, `getBlogSlugFromId()`, `getBlogLanguageFromId()` | Converts content IDs → localized URLs. **Only source of truth for post URLs.** |
 | `academic-review-routing.ts` | `getAcademicReviewUrlFromId()`, `getPublishedAcademicReviews()` | Same as blog-routing but for `academicReviews`. `getPublishedAcademicReviews()` is the single "published" filter (`!data.draft`) — every route/listing/sitemap reads through it, never `!data.draft` inline. |
 | `homepage.ts` | `getHomepageData()` | Aggregates recent posts + library data for home page. |
@@ -173,7 +175,13 @@ src/pages/
 | `responsive-public-images.ts` | `getResponsiveImageSet()` | Public image srcset helpers. |
 | `remark-localized-blog-links.mjs` | Remark plugin | Rewrites relative MDX links to localized blog URLs at build time. |
 | `canonicalization.ts` | `canonicalizeUrl()`, `normalizeTitle()`, `computeContentHash()`, `normalizeExternalIdentifier()`, `deriveDedupKey()` | URL canonicalization, CJK-safe title normalization, versioned content hashing, and identifier-index dedup-key derivation for the private Research OS pipeline. Not imported anywhere in the public site. **Vendored byte-for-byte by the private Research OS repository**, together with `contracts/research-os/research-item.schema.json`. Editing either file here means the copy there is stale; that repository's `npm run contract:sync` compares them exactly, and `INV-12` guards `CONTENT_HASH_FIELDS` specifically — a change to it leaves both copies individually valid while silently invalidating every stored hash. |
+| `rehype-external-links.mjs` | Rehype plugin | Marks absolute `http(s)` links to hosts other than `hun-bot.dev` with `target="_blank"`, `rel="noopener noreferrer"`, and class `external-link` (CSS adds the ↗). Registered in `astro.config.mjs` `rehypePlugins` ahead of `rehypeKatex`. |
+| `floating.ts` | `makeDraggable()`, `placePopover()`, `clearPopoverPlacement()` | Shared pointer-drag (4px click threshold, viewport + header clamping, sessionStorage position) and popover placement for the floating controls (globe, TOC, filter). Imported by component scripts, so it is bundled, not inline. |
 | `picks.ts` | `computePickTier()`, `getPickFacts()`, `getFreshnessBadges()`, `formatStarCount()`, `normalizePickUrl()`, `getPickSlug()` | Pure helpers for the `picks` collection: tier derivation (manual override, else GitHub stars via `src/data/popularity.json`, else `discovery`), freshness badges, star-count formatting, and the URL comparison key `scripts/validate-picks.mjs` uses for duplicate detection against `resources`. Deliberately separate from `canonicalization.ts` above. |
+| `atlas/` | `getOfferedAxes()`/`resolveAxis()` + the y-axis registry (`dimensions.ts`: Activity, Series, Type hidden until >1 kind, Topic dormant until topics exist), `getLegendOptionals()` (`legend.ts`), `computeAtlasLayout()` (`layout.ts`), `decideEdgeVisibility()` (`edge-policy.ts`), `getLineage()` (`lineage.ts`), `resolveText()`/`resolveHref()` (`display.ts`) | Pure build-time layout for `/{lang}/explore/`: x = date, lanes from the chosen categorical axis (default Learn/Research/Build/Collect/Create), collision rows, relation arcs. Every offered axis is laid out at build time and rendered as its own view; the axis label is the selector (`?y=`). The edge visibility policy (draw links by default vs on hover/selection) is isolated, geometry-based, and tuned in `src/data/atlasPolicy.ts`. |
+| `artifacts/series.ts` | `buildSeriesIndex()`, `normalizeSeriesName()` | Language-independent series identity for blog posts from the existing `series` frontmatter: spellings on translations of one post, or that normalize alike, are one series; nothing is guessed beyond that. Feeds the optional `series` field of the public artifact contract. |
+| `artifacts/load.ts` | `getPublicArtifactSet()` | Astro-side public artifact set: same adapters as the validator, merged with a committed Research OS export if present, validated; an invalid set fails the build. Pages read artifacts only through this. |
+| `display.ts` | `hashString()`, `pickVariant()`, `formatPostDate()` | Pure list-page display helpers: a stable FNV-1a hash and `pickVariant(seed, variants)` so a post/pick keeps the same thumbnail variant on every page and deploy (never an index), and `formatPostDate()` (`YYYY.MM.DD`, UTC). Used by `art/ResourceVisual.astro` and the list pages. |
 
 ---
 
@@ -184,38 +192,48 @@ src/pages/
 | Component | Used in | What it does |
 |---|---|---|
 | `BaseHead.astro` | All layouts | `<head>`: canonical, hreflang, OG, fonts, analytics, theme bootstrap, JSON-LD |
-| `Header.astro` | All pages | Site header with nav and language picker |
-| `Footer.astro` | All pages | Site footer |
-| `HeaderLink.astro` | `Header.astro` | Styled nav link with active state |
+| `Header.astro` | All pages | 72px header: wordmark only (no logo mark), centred text nav (글 / 연구 / 라이브러리 / 탐색, active = accent + underline), Search link, theme toggle (`#themeToggleBtn`), GitHub and LinkedIn icon links (language switching is the floating globe). Below 1100px the nav collapses into the `#menuToggle` / `#mobileMenu` panel (also holds GitHub/LinkedIn/RSS). Owns the skip link. |
 | `LocalizedLink.astro` | Various | Link that preserves current language prefix |
-| `LanguagePicker.astro` | `Header.astro` | Dropdown for switching ko/jp/en |
-| `FloatingLanguagePicker.astro` | Blog posts | Floating language switcher on post pages |
+| `FloatingLanguagePicker.astro` | Every localized page | Globe button (24px `earth-9-svgrepo-com.svg`, tinted via CSS mask), `position: fixed` near the top right under the header; draggable (`src/utils/floating.ts`); menu opens on the side with room, lists the languages that have this page, current one checked. The only language control |
 | `Breadcrumb.astro` | Blog posts | `Blog > Category > Post` trail |
 
 ### Blog
 
 | Component | Used in | What it does |
 |---|---|---|
-| `BlogCard.astro` | Listing pages | Post card with title, date, category, tags |
-| `blog/PostListCard.astro` | Blog listing | Compact post row for paginated lists |
-| `blog/PaginationNav.astro` | Blog listing | Previous/next page navigation |
-| `PostMeta.astro` | Post detail | Date, read time, tags |
-| `TagList.astro` | Post detail, cards | Renders tag chips |
-| `CategoryBadge.astro` | Post cards | Normalized category pill (ai/devlog/review/misc) |
+| `blog/PostListCard.astro` | Blog listing, category pages | `.writing-entry` row: date · thumbnail · serif title / description / meta |
+| `blog/PostThumb.astro` | `PostListCard`, home | 126×84 thumbnail: the post's `heroImage`, else `/images/blank.png` (the original default), both via `getResponsivePublicImage()` |
+| `blog/BlogFilterBar.astro` | Blog listing | Floating draggable `필터` button (left side, active-count badge) opening a popover (bottom sheet below 640px) with category/year/series tabs + reset; the page column reserves no space for it. Behaviour in `public/scripts/blog-filters.js` (queries `[data-blog-filters]`, `[data-facet]`, `[data-filter-*]`) |
+| `TagList.astro` | `PostListCard`, post header | Renders tag chips |
+| `CategoryBadge.astro` | Post rows | Normalized category chip (ai/devlog/review/misc) |
 | `FormattedDate.astro` | Various | Locale-aware date display |
-| `TableOfContents.astro` | Post detail | Draggable floating TOC from heading anchors |
+| `TableOfContents.astro` | Post detail, reviews | Compact dropdown TOC: a small draggable paper pill (`#toc-trigger`) opens a popover under it (max-height, internal scroll; closes on outside click / Esc / link click); active heading in accent; hidden when there are no headings. Never a permanent column |
+| `ReadingControls.astro` | Post detail, reviews | Long-article navigation: 2px accent reading-progress line at the top and a small bottom-right back-to-top button with percentage; both appear after ~400px of scroll |
 | `ViewCounter.astro` | Post detail | Fetches + POSTs view count via `/api/views` |
 | `GiscusComments.astro` | Post detail | Embeds Giscus comment widget |
-| `Bio.astro` | Post detail | Author bio block |
 
 ### Library
 
 | Component | Used in | What it does |
 |---|---|---|
 | `library/LibraryIcon.astro` | Library pages, Research hub | Section icon display |
-| `library/LibraryPageStyles.astro` | Library pages, Research hub | Shared card/panel/pill/badge styles — `research.astro` and `research/topics/[topic].astro` reuse this rather than defining their own theme |
+| `library/LibraryPageStyles.astro` | Library pages, Research hub, Paths, Decks | One `is:global` stylesheet for the rule-separated row/grid vocabulary (`.research-section`, `.knowledge-item` grid, paper rows, tabs, empty lines) built purely on tokens; also imports `lists.css`. Research, Paths and Decks pages reuse it rather than defining their own theme |
 | `library/LibraryTabs.astro` | `library.astro`, `library/[section].astro`, `library/useful-feeds.astro` | Shared 외부 링크/Useful Feeds tab bar; the "research-os" label next to Useful Feeds is plain text, never a link |
-| `library/PickCard.astro` | Library hub, section pages | Renders one `picks` entry — tier, star count, freshness badges |
+| `library/PickCard.astro` | Library hub, section pages, home | One `picks` entry as a `.knowledge-item`: `art/ResourceVisual` → mono kind·section label → serif title → owner note → meta line (tier · ★ stars · freshness chips). Tier/stars/freshness still come from `picks.ts`. |
+
+### Art / Research
+
+| Component | Used in | What it does |
+|---|---|---|
+| `art/ResourceVisual.astro` | `library/PickCard.astro`, home | Generated illustration (plot / archive / mechanism / bars / blocks / sphere); each pick `kind` owns a variant family, the slug hash chooses within it. Pure CSS, `aria-hidden` |
+| `research/PaperRow.astro` | `research.astro`, `research/topics/[topic].astro` | One paper as a reading-list row (`<li id="paper-<id>">`, a stable anchor from `getPaperAnchorId()` that public artifact hrefs point at): serif title, state chip (studied / reviewed / queue), review/post/source links, mono venue·year meta + topic chips. Venue/acceptance/honors always go through the registry display helpers |
+
+### Explore
+
+| Component | Used in | What it does |
+|---|---|---|
+| `explore/Atlas.astro` | `explore.astro` | The Living Atlas: growth summary, axis, five lanes of marks (each a real link), SVG layer for grid/arcs, inspector, legend, mobile timeline list (<768px). Styles in `src/styles/atlas.css`. |
+| `explore/atlas-client.ts` | `Atlas.astro` | Axis selector (`?y=`), selection + inspector, `?focus=` URL state, lineage highlight, on-demand arcs, roving-tabindex arrow-key navigation. ~2.8 KB gzipped; the page works without it. |
 
 ### Decks / Presentations
 
@@ -241,11 +259,29 @@ Decks render on `/{lang}/research/decks/`, not under the Library (`/{lang}/libra
 
 ---
 
+## Styling (Atelier, 2026-10)
+
+The visual language is "a research notebook on paper": warm paper background, ink text, 1px rules, serif headings, small mono labels, one red-orange accent. Spec and rationale: `docs/plans/2026-10-03-atelier-redesign.md`; working rules: `docs/ops/ui-conventions.md`.
+
+| File | Role |
+|---|---|
+| `src/styles/tokens.css` | The only colour definitions: `--paper*`, `--ink`, `--secondary`, `--faint`, `--rule*`, `--accent`, `--state-*`, plus font stacks and `--content-max`. Light values on `:root`, dark values on **`html.dark`** (set by the `BaseHead` bootstrap before first paint). Never key colours on `body.dark-theme` / `body.light-theme` — those classes arrive after DOMContentLoaded and would flash the wrong theme. |
+| `src/styles/global.css` | Tailwind layers, base elements, `.skip-link`, `:focus-visible`, and the shared vocabulary: `.page-frame`, `.eyebrow`, `.column-heading`, `.subpage-intro`, `.rule-list`, `.chip`, `.state-chip--*`, `.btn-text`, `.btn-pill`. Imported by `BaseHead`. |
+| `src/styles/prose.css` | Article shell (`.article-page`, single centred column) and the `.prose` body, Shiki dual theme. Imported by `BlogPost` and `AcademicReviewPost`. |
+| `src/styles/lists.css` | Rule-separated list rows (`.writing-entry`, `.year-separator`, `.atelier-page`) for home, blog, categories, search, and the Library/Research pages (via `LibraryPageStyles`). |
+| `src/styles/art.css` | Decorative pick illustrations (`.resource-art--*`). |
+| `src/styles/academic-review.css` | Review MDX component styles. |
+| `tailwind.config.mjs` | Maps the tokens to utilities (`text-ink`, `text-secondary`, `border-rule`, `bg-paper-deep`, `text-accent`, `font-serif`, `font-sans`, `font-mono`). |
+
+Rules: use **tokens, not `dark:` variants** — a token already follows the theme. No hard-coded colours or Tailwind palette classes (`slate-*`, `orange-*`) in `.astro`/`.css` (the only literals are the `theme-color` meta tags in `BaseHead`, which cannot read CSS variables). Every `<main>` carries `atelier-page` (list/hub pages) or `article-page` (posts, reviews). Buttons are unstyled by default; opt in with `.btn-text` / `.btn-pill`.
+
+---
+
 ## Layouts (`src/layouts/`)
 
 | Layout | Route | What it wraps |
 |---|---|---|
-| `BlogPost.astro` | `[lang]/blog/[...slug].astro` | Full post page: `BaseHead` + `Header` + TOC + `ViewCounter` + `GiscusComments` + `Footer`. Also handles series navigation and hreflang. |
+| `BlogPost.astro` | `[lang]/blog/[...slug].astro` | Full post page: `BaseHead` + `Header` + TOC + `ViewCounter` + `GiscusComments` (no site footer). Also handles series navigation and hreflang. |
 | `AcademicReviewPost.astro` | `[lang]/reviews/[...slug].astro` | Review post page with structured review components. |
 
 ---
@@ -262,6 +298,8 @@ Decks render on `/{lang}/research/decks/`, not under the Library (`/{lang}/libra
 | `venues.ts` | `venues: VenueDefinition[]`, `venueIds`, `isValidVenueId()`, `resolveVenueId()`, `getVenueRegistryErrors()` | The venue registry for `papers.venue` and `topics.venues` (docs/decisions/research-discovery-system.md#Venue-Registry). Data, not an enum — cross-referenced (with alias resolution) by `scripts/validate-library.mjs`. Coverage is deliberately partial: only venues actually referenced by content, plus IEEE VIS. Every entry's `access` is `unverified` until a real licensing check is done. |
 | `librarySections.ts` | `librarySections: LibrarySection[]`, `librarySectionSlugs`, `isLibrarySectionSlug()` | The `picks.section` registry (slug + ko/en/jp label + description). Data, not an enum — cross-referenced by `scripts/validate-picks.mjs` and `src/content.config.ts`'s `picks` schema. |
 | `libraryPolicy.ts` | `pickTiers`, `pickTierIds`, `isPickTierId()`, `pickKinds`, `isPickKind()`, `freshnessPolicy`, `recentPicksLimit` | Policy data for `picks`: tier star-count thresholds (highest first), kind vocabulary, staleness windows, and the "recently added" strip size. |
+| `publicArtifactVocabulary.ts` | kinds, domains, `relationTypes`, bases, `pipelineStages` | Registry for the public artifact contract; must equal the schema enums (validator fails on drift). No `relatedTo`, no candidate basis. |
+| `artifactDomains.ts` | `blogCategoryDomains`, `artifactDomainOverrides` | The one place blog category → Explore domain is defined, plus per-artifact overrides. |
 | `popularity.json` | `Record<"owner/name", { stars, createdAt, pushedAt, fetchedAt }>` | GitHub star-count snapshot for repo-backed `picks`, refreshed by `npm run picks:refresh` (`scripts/refresh-popularity.mjs`) — the only script that touches the network. |
 
 ---
@@ -315,7 +353,6 @@ src/content.config.ts          ← Zod validation (schema check at build)
 src/utils/blog.ts               ← getAllPosts() — filters draft:true, sorts by date
         │
         ├── Listing pages       src/pages/[lang]/blog/index.astro
-        │                       src/pages/[lang]/blog/page/[page].astro
         │                       src/pages/[lang]/index.astro (recent posts)
         │
         ├── Taxonomy pages      categories.astro, categories/[category].astro
@@ -374,7 +411,7 @@ src/utils/research.ts
         └── Sitemap                src/pages/sitemap.xml.ts (same qualifying-topic gate)
 ```
 
-Retired: `/{lang}/reviews/` (index) and `/{lang}/library/ai-papers/` — both 301 to `/{lang}/research/` (`vercel.json`). `/{lang}/reviews/{slug}/` detail pages are unchanged.
+Retired: `/{lang}/reviews/` (index) and `/{lang}/library/ai-papers/` — both 301 to `/{lang}/research/` (`vercel.json`); `/{lang}/blog/page/{n}/` 302s to `/{lang}/blog/`. `/{lang}/reviews/{slug}/` detail pages are unchanged.
 
 ---
 

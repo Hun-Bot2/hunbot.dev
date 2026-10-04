@@ -24,6 +24,19 @@ const FALLBACK_LANGUAGE_ORDER: readonly UILanguage[] = ['ko', 'en', 'jp'];
 // reading src/data/librarySections.ts instead (docs/decisions/site-structure.md,
 // revision 2026-09-27).
 
+/**
+ * Stable in-page anchor for a paper row (`#paper-<id>`). PaperRow renders it
+ * and the public artifact adapter links to it, so the two cannot drift.
+ */
+export function getPaperAnchorId(paperId: string): string {
+	return `paper-${paperId}`;
+}
+
+/** A paper card's place on the Research hub. Paper cards have no page of their own. */
+export function getPaperUrl(lang: UILanguage, paperId: string): string {
+	return `/${lang}/research/#${getPaperAnchorId(paperId)}`;
+}
+
 export function getLibrarySectionPath(lang: UILanguage, slug: string): string {
 	return `/${lang}/library/${slug}/`;
 }

@@ -1,0 +1,30 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { getResponsivePublicImage } from '../../utils/responsive-public-images';
+
+interface Props {
+	post: CollectionEntry<'blog'>;
+	/** `sizes` hint for responsive heroes; the default suits the 126px list thumbnail. */
+	sizes?: string;
+	class?: string;
+}
+
+const { post, sizes = '126px', class: className } = Astro.props;
+// Same rule as the original site: the post's heroImage, else the shared default.
+const hero = getResponsivePublicImage(post.data.heroImage ?? '/images/blank.png');
+---
+
+<div class:list={['post-thumb', className]} aria-hidden="true">
+	<picture>
+		{hero.webpSrcSet && <source type="image/webp" srcset={hero.webpSrcSet} sizes={sizes} />}
+		<img
+			src={hero.src}
+			alt=""
+			loading="lazy"
+			decoding="async"
+			width={hero.width}
+			height={hero.height}
+			sizes={sizes}
+		/>
+	</picture>
+</div>

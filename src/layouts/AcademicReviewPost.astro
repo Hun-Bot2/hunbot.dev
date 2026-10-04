@@ -2,16 +2,18 @@
 import type { CollectionEntry } from 'astro:content';
 import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
-import Footer from '../components/Footer.astro';
 import FloatingLanguagePicker from '../components/FloatingLanguagePicker.astro';
+import ReadingControls from '../components/ReadingControls.astro';
+import TableOfContents from '../components/TableOfContents.astro';
 import Breadcrumb from '../components/Breadcrumb.astro';
 import FormattedDate from '../components/FormattedDate.astro';
 import GiscusComments from '../components/GiscusComments.astro';
 import ViewCounter from '../components/ViewCounter.astro';
 import { AUTHOR, AUTHOR_EMAIL, SITE_TITLE, SOCIAL_LINKS } from '../consts';
 import { getReviewTopicsForTags } from '../data/reviewTopics';
-import type { UILanguage } from '../i18n/ui';
+import { useTranslations, type UILanguage } from '../i18n/ui';
 import { formatPaperAuthors } from '../utils/academic-review-routing';
+import '../styles/prose.css';
 import '../styles/academic-review.css';
 
 type ReviewHeading = {
@@ -38,11 +40,11 @@ const {
 	headings = [],
 } = Astro.props as Props;
 
+const t = useTranslations(lang);
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 const descriptionParts = [paper.venue, paper.year ? String(paper.year) : null].filter(Boolean);
 const sourceLabel = descriptionParts.length > 0 ? ` (${descriptionParts.join(', ')})` : '';
 const description = `Academic review of "${paper.title}"${sourceLabel}.`;
-const visibleHeadings = headings.filter((heading) => heading.depth >= 2 && heading.depth <= 4);
 const headingId = 'review-title';
 const slug = reviewId ?? `${lang}/${Astro.url.pathname.split('/reviews/')[1]?.replace(/\/$/g, '') ?? ''}`;
 const authorNames = formatPaperAuthors(paper.authors);
@@ -106,31 +108,30 @@ const schema = {
 	<body>
 		<Header />
 		<FloatingLanguagePicker availableLangs={availableLangs} />
-		<main id="main-content" class="academic-review-page">
+		<ReadingControls lang={lang} />
+		<main id="main-content" class="article-page">
 			<article aria-labelledby={headingId}>
-				<Breadcrumb items={[
-					{ name: 'Home', href: `/${lang}/` },
-					{ name: 'Reviews', href: `/${lang}/reviews/` },
-					{ name: title },
-				]} />
-
-				<header class="review-header">
-					<p class="review-kicker">Academic Review</p>
-					<h1 id={headingId} data-pagefind-body data-pagefind-meta="title">{title}</h1>
-					<p class="review-paper-title">{paper.title}</p>
-					<div class="review-published-meta">
+				<header class="article-header page-frame">
+					<Breadcrumb items={[
+						{ name: t('nav.home'), href: `/${lang}/` },
+						{ name: t('nav.research'), href: `/${lang}/research/` },
+						{ name: title },
+					]} />
+					<p class="eyebrow">Academic Review</p>
+					<h1 id={headingId} class="article-title" data-pagefind-body data-pagefind-meta="title">{title}</h1>
+					<p class="article-lead">{paper.title}</p>
+					<div class="article-meta">
 						<span><FormattedDate date={pubDate} /></span>
-						<span aria-hidden="true">/</span>
 						<ViewCounter slug={slug} />
 					</div>
 					{reviewTopics.length > 0 && (
-						<ul class="review-tags" aria-label="Review topics">
-							{reviewTopics.map((topic) => <li>{topic.label}</li>)}
+						<ul class="article-tags" aria-label="Review topics">
+							{reviewTopics.map((topic) => <li class="chip">{topic.label}</li>)}
 						</ul>
 					)}
 				</header>
 
-				<section class="review-paper-meta" aria-labelledby="paper-metadata-title">
+				<section class="review-paper-meta page-frame" aria-labelledby="paper-metadata-title">
 					<h2 id="paper-metadata-title">Paper Metadata</h2>
 					<dl>
 						<div>
@@ -152,30 +153,16 @@ const schema = {
 					</dl>
 				</section>
 
-				<div class="review-reading-grid">
-					{visibleHeadings.length > 0 && (
-						<aside class="review-toc" aria-labelledby="review-toc-title">
-							<h2 id="review-toc-title">Contents</h2>
-							<nav aria-label="Review table of contents">
-								<ol>
-									{visibleHeadings.map((heading) => (
-										<li class={`review-toc-depth-${heading.depth}`}>
-											<a href={`#${heading.slug}`}>{heading.text}</a>
-										</li>
-									))}
-								</ol>
-							</nav>
-						</aside>
-					)}
-
-					<div class="review-prose" data-pagefind-body>
-						<slot />
+				<div class="article-canvas page-frame">
+					<TableOfContents lang={lang} />
+					<div class="article-main">
+						<div class="prose" data-pagefind-body>
+							<slot />
+						</div>
+						<GiscusComments lang={lang} />
 					</div>
 				</div>
-
-				<GiscusComments lang={lang} />
 			</article>
 		</main>
-		<Footer />
 	</body>
 </html>

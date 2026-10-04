@@ -1,5 +1,6 @@
 import type { CollectionEntry } from 'astro:content';
-import { getApprovedPapers, getFeaturedPapers, type PaperEntry, type TopicEntry } from './library.ts';
+import type { UILanguage } from '../i18n/ui.ts';
+import { getApprovedPapers, getFeaturedPapers, getTopicLabel, type PaperEntry, type TopicEntry } from './library.ts';
 import { sortStable } from './ordering.ts';
 import { buildTopicIndex, resolveToActiveTopicId } from '../../scripts/lib/topic-resolution.mjs';
 
@@ -104,4 +105,24 @@ export function getReviewsForPapers(reviews: AcademicReviewEntry[], paperIds: re
 export function getPostsForPapers(posts: BlogEntry[], paperIds: readonly string[]): BlogEntry[] {
 	const idSet = new Set(paperIds);
 	return posts.filter((post) => post.data.papers.some((paperId) => idSet.has(paperId)));
+}
+
+/**
+ * Display labels for the active topics a paper card belongs to, resolved the same
+ * way as getTopicsWithLinkedPapers (id, owned alias, or mergedInto chain) and
+ * de-duplicated. Stored topic references are never rendered directly.
+ */
+export function getTopicLabelsForPaper(paper: PaperEntry, topics: TopicEntry[], lang: UILanguage): string[] {
+	const topicIndex = buildTopicIndex(topics);
+	const topicById = new Map(topics.map((topic) => [topic.data.id, topic]));
+	const resolvedIds = new Set(
+		paper.data.topics
+			.map((topicRef) => resolveToActiveTopicId(topicRef, topicIndex))
+			.filter((id): id is string => id !== null),
+	);
+
+	return [...resolvedIds].flatMap((id) => {
+		const topic = topicById.get(id);
+		return topic ? [getTopicLabel(topic, lang)] : [];
+	});
 }

@@ -1,6 +1,7 @@
 ---
 // Import the global.css file here so that it is included on
 // all pages through the use of the <BaseHead /> component.
+import '../styles/tokens.css';
 import '../styles/global.css';
 import type { SupportedLanguage } from '../consts';
 import {
@@ -47,17 +48,27 @@ const openGraphLocales = {
 	jp: 'ja_JP',
 	en: 'en_US',
 } as const;
+const fontFamilies = {
+	newsreader: 'https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap',
+	plexMono: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap',
+};
 const fontCssConfig: Record<SupportedLanguage, string[]> = {
 	ko: [
-		'https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap',
-		'https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap',
+		fontFamilies.newsreader,
+		fontFamilies.plexMono,
+		'https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500&display=swap',
+		'https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600&display=swap',
 	],
 	jp: [
-		'https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@500&display=swap',
-		'https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap',
+		fontFamilies.newsreader,
+		fontFamilies.plexMono,
+		'https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500&display=swap',
+		'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600&display=swap',
 	],
 	en: [
-		'https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap',
+		fontFamilies.newsreader,
+		fontFamilies.plexMono,
+		'https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600&display=swap',
 	],
 };
 const currentLang = (explicitLang || getLangFromUrl(Astro.url)) as SupportedLanguage;
@@ -186,8 +197,9 @@ const xDefaultHref = alternateLinks.find((link) => link.code === defaultLang)?.h
 <!-- 추가 SEO 최적화 -->
 <meta name="robots" content="index, follow" />
 <meta name="googlebot" content="index, follow" />
-<meta name="theme-color" content="#f97316" />
-<meta name="msapplication-TileColor" content="#f97316" />
+<meta name="theme-color" content="#f2f0e9" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#282828" media="(prefers-color-scheme: dark)" />
+<meta name="msapplication-TileColor" content="#d84e2b" />
 
 <!-- Performance optimizations -->
 <link rel="dns-prefetch" href="//fonts.googleapis.com" />
@@ -323,11 +335,93 @@ const xDefaultHref = alternateLinks.find((link) => link.code === defaultLang)?.h
 
 			if (themeBtn && !themeBtn.hasAttribute('data-listener-added')) {
 				themeBtn.setAttribute('data-listener-added', 'true');
+				// Latest requested theme: the view-transition callback runs async, so
+				// rapid clicks must not read the (possibly stale) DOM state.
+				let desiredTheme = themeBtn.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+				let activeTransition = null;
+				let runId = 0;
+
 				themeBtn.addEventListener('click', () => {
-					const current = themeBtn?.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
-					const next = current === 'dark' ? 'light' : 'dark';
-					applyTheme(next);
-					localStorage.setItem(THEME_STORAGE_KEY, next);
+					desiredTheme = desiredTheme === 'dark' ? 'light' : 'dark';
+					const commit = () => {
+						applyTheme(desiredTheme);
+						try { localStorage.setItem(THEME_STORAGE_KEY, desiredTheme); } catch (e) {}
+					};
+
+					// Progressive enhancement: circular reveal from the button.
+					// Missing support, reduced motion, or any failure falls back to a plain switch.
+					const canAnimate =
+						typeof document.startViewTransition === 'function' &&
+						typeof HTMLElement.prototype.showPopover === 'function' &&
+						CSS.supports('anchor-name', '--a') &&
+						!window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+					if (!canAnimate) {
+						commit();
+						return;
+					}
+
+					try {
+						if (activeTransition) activeTransition.skipTransition();
+						const token = ++runId;
+						const DURATION = 1100;
+						const EASING = 'cubic-bezier(0.4, 0, 0.2, 1)';
+
+						// ORIGIN: the ripple is a child of the button, centred on it by layout
+						// (CSS anchor positioning to the button's center). No viewport x/y positions it.
+						let ripple = themeBtn.querySelector('.theme-ripple');
+						if (!ripple) {
+							ripple = document.createElement('span');
+							ripple.className = 'theme-ripple';
+							ripple.setAttribute('aria-hidden', 'true');
+							ripple.setAttribute('popover', 'manual');
+							themeBtn.appendChild(ripple);
+						}
+						// Top layer: a huge box there adds nothing to the page's scrollable overflow
+						// (inside the sticky header it would add scrollbars during the reveal).
+						if (!ripple.matches(':popover-open')) ripple.showPopover();
+						// EXPANSION: only the size depends on the viewport. The diagonal reaches
+						// every corner from any point inside it.
+						const vv = window.visualViewport;
+						const vw = Math.max(vv?.width || 0, window.innerWidth);
+						const vh = Math.max(vv?.height || 0, window.innerHeight);
+						ripple.style.setProperty('--theme-ripple-d', `${Math.hypot(vw, vh) * 2}px`);
+						ripple.getAnimations().forEach((a) => a.cancel());
+						ripple.animate(
+							[{ scale: '0' }, { scale: '1' }],
+							{ duration: DURATION, easing: EASING, fill: 'both' }
+						);
+
+						// The View Transition clip simply follows the ripple's own rendered
+						// circle (centre + radius), so the ripple stays the single authority.
+						const rootStyle = document.documentElement.style;
+						const follow = () => {
+							const r = ripple.getBoundingClientRect();
+							rootStyle.setProperty('--theme-x', `${r.left + r.width / 2}px`);
+							rootStyle.setProperty('--theme-y', `${r.top + r.height / 2}px`);
+							rootStyle.setProperty('--theme-r', `${r.width / 2}px`);
+						};
+						follow(); // radius 0 at the button, before the first transition frame
+						rootStyle.setProperty('--theme-dur', `${DURATION}ms`);
+
+						const transition = document.startViewTransition(commit);
+						activeTransition = transition;
+						const tick = () => {
+							if (token !== runId) return;
+							follow();
+							requestAnimationFrame(tick);
+						};
+						requestAnimationFrame(tick);
+						transition.finished.finally(() => {
+							if (token !== runId) return; // a newer click owns the state now
+							runId++; // stops the follow loop
+							activeTransition = null;
+							ripple.getAnimations().forEach((a) => a.cancel());
+							try { ripple.hidePopover(); } catch (e) {}
+							['x', 'y', 'r', 'dur'].forEach((k) => rootStyle.removeProperty('--theme-' + k));
+						});
+					} catch (err) {
+						commit();
+					}
 				});
 			}
 

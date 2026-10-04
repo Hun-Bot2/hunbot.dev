@@ -1,0 +1,159 @@
+/*
+  Atelier list pages: home, blog index, category pages
+  (docs/plans/2026-10-03-atelier-redesign.md §5.1, §5.4).
+
+  Colours and fonts come from tokens.css; nothing here needs a dark variant.
+*/
+
+/* The page-frame gutters are the only horizontal spacing. The bottom padding
+   keeps the last row clear of the floating language chip. */
+.atelier-page {
+	padding: 0 0 5rem;
+}
+
+/* ── Year-grouped archive ───────────────────────────────────── */
+
+.writing-archive {
+	padding: 0.5rem 0 1rem;
+}
+
+/* A year whose posts are all filtered out disappears with them. */
+.year-group:not(:has(.writing-list > li:not([hidden]))) {
+	display: none;
+}
+
+.year-separator {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	margin-top: 12px;
+	padding: 0.75rem 0 0.6rem;
+	border-bottom: 1px solid var(--rule-strong);
+}
+
+.year-separator > span {
+	font: 400 1.5rem/1.2 var(--font-serif);
+	letter-spacing: -0.02em;
+}
+
+.writing-list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.writing-list > li[hidden] {
+	display: none;
+}
+
+/* ── Row: date | thumbnail | title, description, meta ───────── */
+
+.writing-entry {
+	display: grid;
+	grid-template-columns: 5.5rem 126px minmax(0, 1fr);
+	gap: 0.4rem 1rem;
+	align-items: start;
+	padding: 0.9rem 0;
+}
+
+/* Lines sit between visible rows only; the year rule is the top edge. */
+.writing-list > li:not([hidden]) ~ li:not([hidden]) .writing-entry {
+	border-top: 1px solid var(--rule);
+}
+
+.writing-entry > time {
+	padding-top: 0.2rem;
+	font: 400 0.6875rem/1.45 var(--font-mono);
+	letter-spacing: 0.06em;
+	color: var(--secondary);
+}
+
+.post-thumb {
+	width: 126px;
+	height: 84px;
+	overflow: hidden;
+	background: var(--paper-deep);
+}
+
+.post-thumb picture,
+.post-thumb img {
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
+.post-thumb img {
+	object-fit: cover;
+	border-radius: 0;
+}
+
+.writing-entry-copy {
+	display: flex;
+	flex-direction: column;
+	gap: 0.4rem;
+	min-width: 0;
+	min-height: 84px;
+}
+
+.writing-entry-copy h2 {
+	margin: 0;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+	font: 400 1.25rem/1.25 var(--font-serif);
+	letter-spacing: -0.01em;
+	transition: color 160ms ease;
+}
+
+.writing-entry-copy > p {
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+	margin: 0;
+	font-size: 0.8125rem;
+	line-height: 1.55;
+	color: var(--secondary);
+}
+
+.writing-entry-meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.35rem 0.75rem;
+	margin-top: auto;
+}
+
+.writing-entry:hover h2,
+.writing-entry:focus-visible h2 {
+	color: var(--accent);
+}
+
+@media (max-width: 639px) {
+	.writing-entry {
+		grid-template-columns: 72px minmax(0, 1fr);
+		gap: 0.15rem 0.9rem;
+	}
+
+	.writing-entry > time {
+		grid-column: 2;
+		grid-row: 1;
+		padding-top: 0;
+	}
+
+	.writing-entry .post-thumb {
+		grid-column: 1;
+		grid-row: 1 / span 2;
+		width: 72px;
+		height: 48px;
+	}
+
+	.writing-entry-copy {
+		grid-column: 2;
+		grid-row: 2;
+		min-height: 0;
+	}
+}

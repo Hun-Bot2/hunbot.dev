@@ -1,0 +1,54 @@
+---
+// Explore / Living Atlas (docs/plans/2026-10-03-explore-living-atlas.md).
+// Reads only the public artifact contract (src/utils/artifacts/load.ts),
+// never content collections directly. The layout is computed at build time.
+import { getCollection } from 'astro:content';
+import BaseHead from '../../components/BaseHead.astro';
+import Header from '../../components/Header.astro';
+import FloatingLanguagePicker from '../../components/FloatingLanguagePicker.astro';
+import Atlas from '../../components/explore/Atlas.astro';
+import { useTranslations, type UILanguage } from '../../i18n/ui';
+import { getPublicArtifactSet } from '../../utils/artifacts/load';
+import { getOfferedAxes } from '../../utils/atlas/dimensions';
+import { computeAtlasLayout } from '../../utils/atlas/layout';
+import { getTopicLabel } from '../../utils/library';
+
+export function getStaticPaths() {
+	return [{ params: { lang: 'ko' } }, { params: { lang: 'jp' } }, { params: { lang: 'en' } }];
+}
+
+const lang = (Astro.params.lang ?? 'ko') as UILanguage;
+const t = useTranslations(lang);
+const title = `${t('nav.explore')} - Hun-Bot Blog`;
+const description = t('explore.meta.description');
+
+const { artifacts, relations } = await getPublicArtifactSet();
+// "Now" is the build date: the atlas is regenerated on every deploy. One
+// layout per offered lane axis (the default, Activity, first); the visitor
+// switches between them from the axis label, with no layout work in the browser.
+const now = new Date();
+const views = getOfferedAxes(artifacts).map((axis) => computeAtlasLayout(artifacts, relations, { now, axis }));
+const topicLabels = Object.fromEntries(
+	(await getCollection('topics')).map((topic) => [topic.data.id, getTopicLabel(topic, lang)]),
+);
+---
+
+<!doctype html>
+<html lang={lang}>
+	<head>
+		<BaseHead title={title} description={description} lang={lang} />
+	</head>
+	<body>
+		<Header />
+		<FloatingLanguagePicker />
+		<main id="main-content" class="atelier-page">
+			<section class="subpage-intro">
+				<h1 class="eyebrow">{t('nav.explore')}</h1>
+			</section>
+
+			<div class="page-frame">
+				<Atlas lang={lang} artifacts={artifacts} relations={relations} views={views} topicLabels={topicLabels} />
+			</div>
+		</main>
+	</body>
+</html>

@@ -20,17 +20,6 @@ const CATEGORY_LABEL_KEYS = {
 const labelKey = CATEGORY_LABEL_KEYS[category as keyof typeof CATEGORY_LABEL_KEYS];
 // Unknown keys fall back to the raw value rather than silently reading as "misc".
 const label = labelKey ? t(labelKey) : category;
-
-const categoryColors: Record<string, string> = {
-  ai: 'text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800',
-  devlog: 'text-green-700 dark:text-green-300 bg-green-100 dark:bg-green-900/30 border-green-200 dark:border-green-800',
-  review: 'text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/30 border-purple-200 dark:border-purple-800',
-  misc: 'text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-900/30 border-gray-200 dark:border-gray-800'
-};
-
-const colorClass = categoryColors[category] || categoryColors.misc;
 ---
 
-<span class={`px-2.5 py-1 text-xs font-medium rounded-full border ${colorClass}`}>
-  {label}
-</span>
+<span class="chip">{label}</span>

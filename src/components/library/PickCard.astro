@@ -6,9 +6,18 @@
 // this component never generates, paraphrases, or summarizes it.
 import { render, type CollectionEntry } from 'astro:content';
 import LibraryIcon from './LibraryIcon.astro';
+import ResourceVisual from '../art/ResourceVisual.astro';
 import { useTranslations, type UILanguage } from '../../i18n/ui';
 import { librarySections } from '../../data/librarySections';
-import { formatStarCount, getFreshnessBadges, getPickFacts, type PopularitySnapshot } from '../../utils/picks';
+import { pickTiers } from '../../data/libraryPolicy';
+import {
+	computePickTier,
+	formatStarCount,
+	getFreshnessBadges,
+	getPickFacts,
+	getPickSlug,
+	type PopularitySnapshot,
+} from '../../utils/picks';
 import popularity from '../../data/popularity.json';
 
 interface Props {
@@ -18,9 +27,11 @@ interface Props {
 	now: Date;
 	/** Only the hub shows a pick's section pill; section pages already filter to one. */
 	showSection?: boolean;
+	/** The tier is already the group heading on the hub's tier groups and on section pages. */
+	showTier?: boolean;
 }
 
-const { pick, lang, now, showSection = false } = Astro.props;
+const { pick, lang, now, showSection = false, showTier = false } = Astro.props;
 const t = useTranslations(lang);
 
 const { Content } = await render(pick);
@@ -31,6 +42,10 @@ const kindLabel = t(kindKey);
 
 const sectionMeta = librarySections.find((section) => section.slug === pick.data.section);
 const sectionLabel = sectionMeta?.label[lang] ?? pick.data.section;
+const labelLine = [kindLabel, showSection ? sectionLabel : null].filter(Boolean).join(' · ');
+
+const tierId = computePickTier(pick.data, popularity as PopularitySnapshot, pickTiers).tier;
+const tierLabel = pickTiers.find((tier) => tier.id === tierId)?.label[lang] ?? null;
 
 const facts = getPickFacts(pick.data, popularity as PopularitySnapshot);
 const badges = getFreshnessBadges({ checkedAt: pick.data.checkedAt, lastActivityAt: facts.lastActivityAt }, now);
@@ -45,24 +60,25 @@ const starLine =
 const addedLine = t('library.pick.added-on').replace('{date}', pick.data.addedAt);
 ---
 
-<article class="library-panel library-pick-card">
-	<div class="mb-3 flex flex-wrap gap-2">
-		<span class="library-pill">{kindLabel}</span>
-		{showSection && <span class="library-pill">{sectionLabel}</span>}
-		{badges.needsCheck && <span class="library-badge library-badge--warning">{t('library.pick.needs-check')}</span>}
-		{badges.stale && <span class="library-badge library-badge--warning">{t('library.pick.stale')}</span>}
-	</div>
-	<h3 class="mb-3 text-lg font-semibold text-slate-100">
-		<a href={pick.data.url} target="_blank" rel="noopener noreferrer" class="library-inherit-link">
+<article class="knowledge-item">
+	<ResourceVisual kind={pick.data.kind} seed={getPickSlug(pick.id)} />
+	<p class="knowledge-label">{labelLine}</p>
+	<h3>
+		<a href={pick.data.url} target="_blank" rel="noopener noreferrer">
 			{pick.data.title}
 			<LibraryIcon name="external" />
 		</a>
 	</h3>
 	{hasNote && (
-		<div class="library-pick-note mb-4 text-sm leading-relaxed text-slate-400">
+		<div class="library-pick-note">
 			<Content />
 		</div>
 	)}
-	{starLine && <p class="mb-1 text-xs leading-relaxed text-slate-400">{starLine}</p>}
-	<p class="text-xs leading-relaxed text-slate-500">{addedLine}</p>
+	<div class="knowledge-meta">
+		{showTier && tierLabel && <span class="chip">{tierLabel}</span>}
+		{badges.needsCheck && <span class="chip state-chip--recommended">{t('library.pick.needs-check')}</span>}
+		{badges.stale && <span class="chip state-chip--recommended">{t('library.pick.stale')}</span>}
+		{starLine && <span>{starLine}</span>}
+		<span>{addedLine}</span>
+	</div>
 </article>

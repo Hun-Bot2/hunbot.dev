@@ -14,12 +14,13 @@ Third-party service reference: [`docs/third-party-services.md`](./third-party-se
 | `src/components/BaseHead.astro` | Google Analytics bootstrap | All pages | No | Inline third-party bootstrap still requires `unsafe-inline` |
 | `src/components/BaseHead.astro` | Theme bootstrap and toggle binding | All pages | Yes | Keep inline until a hash/nonce or pre-paint alternative is designed |
 | `src/components/Header.astro` + `public/scripts/header-menu.js` | Mobile menu toggle and outside-click close | All pages with header | No | Migrated to public module script |
-| `src/components/FloatingLanguagePicker.astro` | Floating language menu toggle | Localized pages | No | Candidate for next extraction |
-| `src/components/LanguagePicker.astro` | Inline language menu toggle | Pages using this component | No | Candidate for next extraction |
-| `src/components/TableOfContents.astro` | Draggable table of contents and heading links | Blog posts | No | Larger extraction; test drag, resize, and localStorage behavior |
+| `src/components/Header.astro` | Skip-link click handler (moves focus to `#main-content`) | All pages with header | No | Small inline script; candidate for extraction alongside `header-menu.js` |
+| `src/components/FloatingLanguagePicker.astro` | Floating language globe toggle, drag, popover placement | Localized pages | No | Bundled by Astro (imports `src/utils/floating.ts`); small enough that Astro may inline it, so it counts as inline until extracted |
+| `src/components/ReadingControls.astro` | Reading-progress line and back-to-top button | Blog posts, reviews | No | New (2026-10-03); bundled Astro script, no third-party domains |
+| `src/components/blog/BlogFilterBar.astro` | Floating filter button: popover open/close and drag | Blog listing | No | New (2026-10-03); filter logic itself stays in `public/scripts/blog-filters.js` |
+| `src/components/TableOfContents.astro` | Table of contents: heading collection, current-section highlight, dropdown open/close, drag | Blog posts, reviews | No | Larger extraction; test the scroll-based current-section highlight and the mobile panel |
 | `src/components/ViewCounter.astro` | Fetch and post page views | Blog posts | No | Could become a public module after slug data binding is designed |
 | `src/pages/[lang]/search.astro` | Pagefind UI initialization and language filter | Search pages | No | Candidate for extraction after Pagefind config is stabilized |
-| `src/pages/[lang]/index.astro` | Home page interaction script | Home page | No | Candidate for route-specific public module |
 | `src/pages/[lang]/research/decks.astro` | Slide-deck preview viewer (prev/next/counter) for the highlighted project deck | `/{lang}/research/decks/` | No | Moved from `library/[section].astro`'s decks branch (docs/decisions/site-structure.md#2); same script, new file |
 | `src/pages/index.astro` | Root redirect | Root fallback page | Yes | Keep until converted to static redirect config |
 | `src/components/GiscusComments.astro` | Inline loader that injects the Giscus client with the site's current theme and forwards theme toggles to the iframe | Blog posts | No | Third-party script; keep CSP domain explicit |
@@ -42,9 +43,11 @@ Current Vercel CSP removes:
 ## Next Extraction Candidates
 
 1. `FloatingLanguagePicker.astro`
-2. `LanguagePicker.astro`
-3. `src/pages/[lang]/search.astro`
-4. `ViewCounter.astro`
-5. `TableOfContents.astro`
+2. `src/pages/[lang]/search.astro`
+3. `ViewCounter.astro`
+4. `TableOfContents.astro`
+5. The skip-link handler in `Header.astro`
 
 Do not remove `unsafe-inline` until the theme bootstrap, analytics bootstrap, route scripts, and root redirect scripts have a replacement strategy.
+
+_Inventory re-checked after the Atelier redesign (2026-10-03): the home page and `LanguagePicker.astro` no longer ship inline scripts, and the redesign added no new inline scripts or third-party domains._
