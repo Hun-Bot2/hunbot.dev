@@ -44,7 +44,9 @@ assert.match(libraryPage, /getCollection\('picks'\)/);
 assert.match(libraryPage, /getCollection\('resources'\)/);
 assert.match(libraryPage, /getLibraryItems/);
 assert.match(libraryPage, /<BlogFilterBar\b/, 'Library should reuse the blog filter bar.');
-assert.match(libraryPage, /<LibraryCard\b/);
+// The page lists editorial rows (one external link each, with a small image).
+assert.match(libraryPage, /<LibraryRow\b/);
+assert.match(readFileSync('src/components/library/LibraryRow.astro', 'utf8'), /entry-thumb/);
 assert.match(libraryPage, /data-pagefind-body/);
 assert.match(libraryPage, /data-pagefind-filter="language\[content\]"/);
 assert.match(libraryPage, /data-pagefind-filter="section\[content\]"/);

@@ -28,10 +28,12 @@ interface Props {
 	storageKey?: string;
 	resultsTemplate?: string;
 	label?: string;
+	/** Facets that still filter but are shown elsewhere (the tab rows), not in this panel. */
+	hiddenFacets?: string[];
 	totalCount: number;
 }
 
-const { lang, categories = [], years = [], series = [], totalCount } = Astro.props;
+const { lang, categories = [], years = [], series = [], hiddenFacets = [], totalCount } = Astro.props;
 const t = useTranslations(lang);
 
 const groups = (
@@ -40,7 +42,7 @@ const groups = (
 		{ facet: 'year',     label: t('blog.filter-year'),     options: years      },
 		{ facet: 'series',   label: t('blog.filter-series'),   options: series     },
 	]
-).filter((group) => group.options.length > 0);
+).filter((group) => group.options.length > 0 && !hiddenFacets.includes(group.facet));
 
 const facets = (Astro.props.groups ?? [{ facet: 'category' }, { facet: 'year' }, { facet: 'series' }]).map((group) => group.facet).join(',');
 const storageKey = Astro.props.storageKey ?? 'neural-blog-filters';
@@ -64,6 +66,9 @@ const initialResults = resultsTemplate.replace('{count}', String(totalCount));
 	<span>{t('blog.filter-toggle')}</span>
 	<span class="blog-filter-badge" data-filter-count hidden>0</span>
 </button>
+<button type="button" class="blog-filter-clear" data-filter-clear hidden aria-label={t('blog.filter-reset')} title={t('blog.filter-reset')}>
+	<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+</button>
 
 <section
 	id="blog-filter-panel"
@@ -73,7 +78,9 @@ const initialResults = resultsTemplate.replace('{count}', String(totalCount));
 	data-facets={facets}
 	data-storage-key={storageKey}
 >
-	{groups.map((group) => (
+	{groups.map((group) => {
+		const maxCount = Math.max(1, ...group.options.map((option) => option.count));
+		return (
 		<div class="filter-group">
 			<span class="filter-group-label">{group.label}</span>
 			<div class="filter-options" role="group" aria-label={group.label}>
@@ -94,6 +101,7 @@ const initialResults = resultsTemplate.replace('{count}', String(totalCount));
 						data-value={option.value}
 						data-parent-facet={option.parent?.facet}
 						data-parent-value={option.parent?.value}
+						style={`--share: ${(option.count / maxCount).toFixed(3)}`}
 						aria-pressed="false"
 					>
 						{option.label}
@@ -102,7 +110,8 @@ const initialResults = resultsTemplate.replace('{count}', String(totalCount));
 				))}
 			</div>
 		</div>
-	))}
+		);
+	})}
 
 	<div class="filter-status">
 		<p data-filter-results data-results-template={resultsTemplate} aria-live="polite">{initialResults}</p>
@@ -119,8 +128,11 @@ const initialResults = resultsTemplate.replace('{count}', String(totalCount));
 	.blog-filter-float {
 		position: fixed;
 		top: calc(var(--header-height) + 12px);
-		left: 1rem;
+		left: var(--float-inset);
 		z-index: 90;
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
 	}
 
 	.blog-filter-trigger {
@@ -128,18 +140,73 @@ const initialResults = resultsTemplate.replace('{count}', String(totalCount));
 		align-items: center;
 		gap: 0.4rem;
 		min-height: 36px;
+		/* Accent outline + label so it stands out from the paper background. */
 		background: var(--paper);
-		cursor: grab;
+		border-color: var(--accent);
+		color: var(--accent);
+		box-shadow: 0 2px 10px rgb(0 0 0 / 0.12);
+		cursor: pointer;
 		user-select: none;
 		-webkit-user-select: none;
+		transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 	}
 
 	.blog-filter-float.is-dragging .blog-filter-trigger {
 		cursor: grabbing;
 	}
 
+	/* A filter is active while the panel is closed: a quiet accent tint. */
+	.blog-filter-trigger.is-filtered {
+		background: color-mix(in srgb, var(--accent) 12%, var(--paper));
+	}
+
+	.blog-filter-trigger:hover,
 	.blog-filter-trigger[aria-expanded='true'] {
-		border-color: var(--ink);
+		background: var(--accent);
+		border-color: var(--accent);
+		color: var(--paper);
+		box-shadow: 0 3px 12px rgb(0 0 0 / 0.18);
+	}
+
+	.blog-filter-trigger:focus-visible,
+	.blog-filter-clear:focus-visible,
+	.filter-option:focus-visible,
+	.filter-reset:focus-visible {
+		outline: 2px solid var(--ink);
+		outline-offset: 2px;
+	}
+
+	.blog-filter-trigger:hover .blog-filter-badge,
+	.blog-filter-trigger[aria-expanded='true'] .blog-filter-badge {
+		background: var(--paper);
+		color: var(--accent);
+	}
+
+	/* Clears every filter in one click, without opening the panel. */
+	.blog-filter-clear {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 36px;
+		height: 36px;
+		padding: 0;
+		border: 1px solid var(--rule-strong);
+		border-radius: 999px;
+		background: var(--paper);
+		color: var(--secondary);
+		box-shadow: 0 2px 10px rgb(0 0 0 / 0.12);
+		cursor: pointer;
+		transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
+	}
+
+	.blog-filter-clear[hidden] {
+		display: none;
+	}
+
+	.blog-filter-clear:hover {
+		background: var(--accent);
+		border-color: var(--accent);
+		color: var(--paper);
 	}
 
 	.blog-filter-badge {
@@ -157,20 +224,30 @@ const initialResults = resultsTemplate.replace('{count}', String(totalCount));
 
 	/* Placed beside the trigger by placePopover(); scrolls inside itself. */
 	.blog-filter-bar {
-		display: none;
+		display: block;
 		position: fixed;
 		z-index: 95;
-		width: min(22rem, calc(100vw - 1.5rem));
-		max-height: min(70vh, 32rem);
+		width: min(18rem, calc(100vw - 1.5rem));
+		max-height: min(80vh, 40rem);
 		overflow-y: auto;
 		overscroll-behavior: contain;
 		padding: 0.5rem 1rem 0.25rem;
 		border: 1px solid var(--rule-strong);
 		background: var(--paper);
+		/* Closed: out of sight and out of the tab order; open: 200ms fade + slide. */
+		visibility: hidden;
+		opacity: 0;
+		transform: translateY(-6px);
+		pointer-events: none;
+		transition: opacity 200ms ease, transform 200ms ease, visibility 0s linear 200ms;
 	}
 
 	.blog-filter-bar.is-open {
-		display: block;
+		visibility: visible;
+		opacity: 1;
+		transform: none;
+		pointer-events: auto;
+		transition-delay: 0s;
 	}
 
 	.filter-group {
@@ -184,10 +261,10 @@ const initialResults = resultsTemplate.replace('{count}', String(totalCount));
 	.filter-group-label,
 	.filter-status p {
 		margin: 0;
-		font: 400 0.6875rem/1.45 var(--font-mono);
+		font: 500 0.75rem/1.45 var(--font-mono);
 		letter-spacing: 0.09em;
 		text-transform: uppercase;
-		color: var(--secondary);
+		color: var(--ink);
 	}
 
 	.filter-options {
@@ -206,17 +283,17 @@ const initialResults = resultsTemplate.replace('{count}', String(totalCount));
 		padding: 0;
 		border: 0;
 		background: none;
-		font: 400 0.6875rem/1.4 var(--font-mono);
+		font: 500 0.75rem/1.4 var(--font-mono);
 		letter-spacing: 0.09em;
 		text-transform: uppercase;
 		white-space: nowrap;
-		color: var(--secondary);
+		color: var(--ink);
 		cursor: pointer;
-		transition: color 160ms ease;
+		transition: color 120ms ease, background-color 120ms ease;
 	}
 
 	.filter-option:hover {
-		color: var(--ink);
+		color: var(--accent);
 	}
 
 	/* The underline sits under the text, not at the foot of the touch target. */
@@ -243,7 +320,7 @@ const initialResults = resultsTemplate.replace('{count}', String(totalCount));
 	}
 
 	.filter-option-count {
-		opacity: 0.8;
+		opacity: 1;
 	}
 
 	.filter-status {
@@ -255,11 +332,81 @@ const initialResults = resultsTemplate.replace('{count}', String(totalCount));
 		border-top: 1px solid var(--rule);
 	}
 
+	/* The reset is a real button: bordered, accent, fills on hover. */
 	.filter-reset {
-		min-height: 2.5rem;
+		min-height: 2rem;
+		padding: 0.25rem 0.75rem;
+		border: 1px solid var(--accent);
+		border-radius: 999px;
+		background: transparent;
 		color: var(--accent);
-		border-bottom-color: transparent;
 		cursor: pointer;
+		transition: background-color 160ms ease, color 160ms ease;
+	}
+
+	.filter-reset:hover {
+		background: var(--accent);
+		color: var(--paper);
+	}
+
+	/* Desktop: a tall panel, one option per line. Labels are sentence-case sans
+	   (uppercase mono is ~25% wider) and wrap instead of clipping; counts sit in
+	   a right-aligned, tabular column; a thin bar under each row shows its share
+	   of the group's largest count; group labels stay pinned while scrolling;
+	   the active option is marked by a bar in the left margin. */
+	@media (min-width: 640px) {
+		.filter-group-label {
+			position: sticky;
+			top: 0;
+			z-index: 1;
+			display: block;
+			padding: 0.4rem 0 0.25rem;
+			background: var(--paper);
+		}
+
+		.filter-options {
+			flex-direction: column;
+			flex-wrap: nowrap;
+			gap: 0;
+		}
+
+		.filter-option {
+			justify-content: space-between;
+			align-items: flex-start;
+			gap: 0.75rem;
+			width: calc(100% + 1rem);
+			margin-inline: -0.5rem;
+			padding-inline: 0.5rem;
+			min-height: 2rem;
+			padding-block: 0.4rem 0.5rem;
+			font: 500 0.8125rem/1.35 var(--font-sans);
+			letter-spacing: 0;
+			text-transform: none;
+			text-align: left;
+			white-space: normal;
+			overflow-wrap: anywhere;
+			background: linear-gradient(to right, var(--rule-strong) calc(var(--share, 0) * 100%), transparent 0) no-repeat 0 100% / 100% 2px;
+		}
+
+		.filter-option-count {
+			flex: none;
+			font-family: var(--font-mono);
+			font-variant-numeric: tabular-nums;
+			color: var(--secondary);
+		}
+
+		.filter-option:hover {
+			background-color: var(--paper-deep);
+		}
+
+		.filter-option::after {
+			left: 0;
+			right: auto;
+			top: 0.4rem;
+			bottom: 0.5rem;
+			width: 2px;
+			height: auto;
+		}
 	}
 
 	/* Phones: a small button at the bottom-left; the panel becomes a bottom sheet. */
@@ -279,6 +426,22 @@ const initialResults = resultsTemplate.replace('{count}', String(totalCount));
 			max-height: 70vh;
 			border-width: 1px 0 0;
 			padding-bottom: env(safe-area-inset-bottom, 0);
+			transform: translateY(1.5rem);
+		}
+
+		.blog-filter-bar.is-open {
+			transform: none;
+		}
+	}
+
+	/* Reduced motion: state changes apply at once. */
+	@media (prefers-reduced-motion: reduce) {
+		.blog-filter-bar,
+		.blog-filter-trigger,
+		.blog-filter-clear,
+		.filter-option,
+		.filter-reset {
+			transition: none;
 		}
 	}
 </style>
@@ -305,8 +468,14 @@ const initialResults = resultsTemplate.replace('{count}', String(totalCount));
 		const setOpen = (open: boolean) => {
 			panel.classList.toggle('is-open', open);
 			trigger.setAttribute('aria-expanded', String(open));
-			if (open) place();
-			else clearPopoverPlacement(panel);
+			if (open) {
+				place();
+			} else {
+				// Keep it where it is while it fades out, then release the placement.
+				window.setTimeout(() => {
+					if (!isOpen()) clearPopoverPlacement(panel);
+				}, 220);
+			}
 		};
 
 		trigger.addEventListener('click', (event) => {

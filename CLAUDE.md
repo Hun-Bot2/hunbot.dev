@@ -201,8 +201,9 @@ src/pages/
 | Component | Used in | What it does |
 |---|---|---|
 | `blog/PostListCard.astro` | Blog listing, category pages | `.writing-entry` row: date · thumbnail · serif title / description / meta |
+| `blog/PostRow.astro` | `blog/index.astro` | One post in the Writing archive (`.entry--post`): thumbnail → month.day → serif title → description (2 lines) → mono category · multi-post series; the whole row is the link. Styles: `src/styles/entry-list.css`. |
 | `blog/PostThumb.astro` | `PostListCard`, home | 126×84 thumbnail: the post's `heroImage`, else `/images/blank.png` (the original default), both via `getResponsivePublicImage()` |
-| `blog/BlogFilterBar.astro` | Blog listing, Library | Floating draggable `필터` button (left side, active-count badge) opening a popover (bottom sheet below 640px) with category/year/series tabs + reset; the page column reserves no space for it. Behaviour in `public/scripts/blog-filters.js` (queries `[data-blog-filters]`, `[data-facet]`, `[data-filter-*]`) |
+| `blog/BlogFilterBar.astro` | Blog listing, Library | Floating draggable `필터` button (left of the content column via `--float-inset`; active-count badge, accent tint while filtered, and a one-click `×` clear beside it) opening a popover (bottom sheet below 640px) with every facet of the page. Applies on selection; opens/closes with a 200ms fade. Behaviour in `public/scripts/blog-filters.js` (queries `[data-blog-filters]`, `[data-facet]`, `[data-filter-*]`): removed items fade out in place (120ms) then the new list fades in where it sits (160ms), no travel; interrupted changes land on the last state; `prefers-reduced-motion` applies at once. Sections marked `[data-filter-section]` hide when empty. |
 | `TagList.astro` | `PostListCard`, post header | Renders tag chips |
 | `CategoryBadge.astro` | Post rows | Normalized category chip (ai/devlog/review/misc) |
 | `FormattedDate.astro` | Various | Locale-aware date display |
@@ -217,7 +218,8 @@ src/pages/
 |---|---|---|
 | `library/LibraryIcon.astro` | Library pages, Research hub | Section icon display |
 | `library/LibraryPageStyles.astro` | Library pages, Research hub, Paths, Decks | One `is:global` stylesheet for the rule-separated row/grid vocabulary (`.research-section`, `.knowledge-item` grid, paper rows, tabs, empty lines) built purely on tokens; also imports `lists.css`. Research, Paths and Decks pages reuse it rather than defining their own theme |
-| `library/LibraryCard.astro` | `library.astro`, home | One Library item (`getLibraryItems()`): preview image (or typographic card) → mono kind · topic → serif title, all one external link |
+| `library/LibraryCard.astro` | home | One Library item (`getLibraryItems()`): preview image (or typographic card) → mono kind · topic → serif title, all one external link |
+| `library/LibraryRow.astro` | `library.astro` | One Library item in the editorial archive (`.entry--item`): thumbnail → title → resource `summary` (via `getLibraryItems(…, lang)`) → mono kind · topic ↗; the whole row is one external link. |
 | `library/PickCard.astro` | Library hub, section pages, home | One `picks` entry as a `.knowledge-item`: `art/ResourceVisual` → mono kind·section label → serif title → owner note → meta line (tier · ★ stars · freshness chips). Tier/stars/freshness still come from `picks.ts`. |
 
 ### Art / Research
@@ -268,6 +270,7 @@ The visual language is "a research notebook on paper": warm paper background, in
 | `src/styles/global.css` | Tailwind layers, base elements, `.skip-link`, `:focus-visible`, and the shared vocabulary: `.page-frame`, `.eyebrow`, `.column-heading`, `.subpage-intro`, `.rule-list`, `.chip`, `.state-chip--*`, `.btn-text`, `.btn-pill`. Imported by `BaseHead`. |
 | `src/styles/prose.css` | Article shell (`.article-page`, single centred column) and the `.prose` body, Shiki dual theme. Imported by `BlogPost` and `AcademicReviewPost`. |
 | `src/styles/lists.css` | Rule-separated list rows (`.writing-entry`, `.year-separator`, `.atelier-page`) for home, blog, categories, search, and the Library/Research pages (via `LibraryPageStyles`). |
+| `src/styles/entry-list.css` | Editorial archive rows shared by Writing and Library: single column, thin rules, borderless thumbnails, quiet mono metadata (`.entry`, `.entry--post`, `.entry--item`, `.entry-thumb`, `.entry-desc`). |
 | `src/styles/art.css` | Decorative pick illustrations (`.resource-art--*`). |
 | `src/styles/academic-review.css` | Review MDX component styles. |
 | `tailwind.config.mjs` | Maps the tokens to utilities (`text-ink`, `text-secondary`, `border-rule`, `bg-paper-deep`, `text-accent`, `font-serif`, `font-sans`, `font-mono`). |

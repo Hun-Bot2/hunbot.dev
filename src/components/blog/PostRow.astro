@@ -1,0 +1,49 @@
+---
+// One post in the Writing archive: thumbnail, date, title, its description, and
+// quiet metadata (category, and the series when there is one).
+// The whole row is the link; the post's filter data attributes sit on the <li>.
+// Row styles: src/styles/entry-list.css.
+import type { CollectionEntry } from 'astro:content';
+import { getBlogUrlFromId } from '../../utils/blog-routing';
+import { normalizeCategory } from '../../utils/blog';
+import { formatPostDate } from '../../utils/display';
+import { getResponsivePublicImage } from '../../utils/responsive-public-images';
+
+interface Props {
+	post: CollectionEntry<'blog'>;
+	/** Display label per normalized category value (ai / devlog / review / misc). */
+	categoryLabels: Record<string, string>;
+	/** Series names shown in the metadata: those with more than one post. */
+	seriesNames: Set<string>;
+}
+
+const { post, categoryLabels, seriesNames } = Astro.props;
+const category = normalizeCategory(post.data.category);
+const series = post.data.series?.trim() ?? '';
+const shownSeries = seriesNames.has(series) ? series : '';
+// Same rule as the rest of the site: the post's heroImage, else the shared default.
+const hero = getResponsivePublicImage(post.data.heroImage ?? '/images/blank.png');
+---
+
+<li
+	data-post-card
+	data-post-category={category}
+	data-post-year={String(post.data.pubDate.getFullYear())}
+	data-post-series={series}
+>
+	<a class="entry entry--post" href={getBlogUrlFromId(post.id)}>
+		<span class="entry-thumb" aria-hidden="true">
+			<picture>
+				{hero.webpSrcSet && <source type="image/webp" srcset={hero.webpSrcSet} sizes="84px" />}
+				<img src={hero.src} alt="" loading="lazy" decoding="async" width={hero.width} height={hero.height} sizes="84px" />
+			</picture>
+		</span>
+		{/* The year is the section heading above, so the row carries month.day only. */}
+		<time class="entry-lead" datetime={post.data.pubDate.toISOString()}>{formatPostDate(post.data.pubDate).slice(5)}</time>
+		<span class="entry-body">
+			<span class="entry-title">{post.data.title}</span>
+			{post.data.description && <span class="entry-desc">{post.data.description}</span>}
+			<span class="entry-meta">{categoryLabels[category] ?? category}{shownSeries && <Fragment> · {shownSeries}</Fragment>}</span>
+		</span>
+	</a>
+</li>

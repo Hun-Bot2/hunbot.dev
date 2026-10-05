@@ -18,7 +18,7 @@
 }
 
 /* A year whose posts are all filtered out disappears with them. */
-.year-group:not(:has(.writing-list > li:not([hidden]))) {
+.year-group:not(:has(:is(.writing-list, .entry-list) > li:not([hidden]))) {
 	display: none;
 }
 

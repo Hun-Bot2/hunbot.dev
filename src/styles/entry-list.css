@@ -1,0 +1,182 @@
+/*
+  Editorial archive rows, shared by the Writing archive and the Library: one
+  continuous single column, thin separators, and per row
+  lead (date / kind) -> title + quiet meta -> a small image. The whole row is
+  the link. Tokens only, so it follows the theme.
+*/
+
+.entry-list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.entry-list > li[hidden] {
+	display: none;
+}
+
+.entry {
+	display: grid;
+	grid-template-columns: 3.25rem minmax(0, 1fr) 5.25rem;
+	gap: 0 1rem;
+	align-items: center;
+	padding: 0.5rem 0;
+	border-bottom: 1px solid var(--rule);
+	color: var(--ink);
+	text-decoration: none;
+}
+
+.entry-lead {
+	font: 400 0.75rem/1.5 var(--font-mono);
+	font-variant-numeric: tabular-nums;
+	letter-spacing: 0.02em;
+	color: var(--secondary);
+}
+
+.entry-title {
+	font: 400 1rem/1.5 var(--font-serif);
+	overflow-wrap: anywhere;
+	transition: color 160ms ease;
+}
+
+/* Metadata is text that follows the title and wraps with it. */
+.entry-meta {
+	margin-left: 0.6rem;
+	font: 400 0.6875rem/1.5 var(--font-mono);
+	letter-spacing: 0.03em;
+	overflow-wrap: anywhere;
+	color: var(--secondary);
+}
+
+.entry:hover .entry-title,
+.entry:focus-visible .entry-title {
+	color: var(--accent);
+}
+
+.entry-thumb {
+	position: relative;
+	width: 5.25rem;
+	aspect-ratio: 3 / 2;
+	overflow: hidden;
+}
+
+.entry-thumb img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+/* Icons and small square og images look broken when cropped to the frame. */
+.entry-thumb.is-small img {
+	object-fit: contain;
+	padding: 12%;
+}
+
+/* No image: a ruled-paper frame with the host in mono behind an accent square. */
+.entry-thumb.is-typo {
+	background-color: var(--paper);
+	background-image: repeating-linear-gradient(0deg, transparent 0 9px, var(--rule) 9px 10px);
+}
+
+.entry-thumb-label {
+	position: absolute;
+	left: 0.35rem;
+	right: 0.35rem;
+	top: 50%;
+	transform: translateY(-50%);
+	overflow: hidden;
+	background: var(--paper);
+	font: 400 0.5625rem/1.3 var(--font-mono);
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	color: var(--secondary);
+}
+
+.entry-thumb-label::before {
+	content: '';
+	display: inline-block;
+	width: 5px;
+	height: 5px;
+	margin-right: 0.3rem;
+	vertical-align: 1px;
+	background: var(--accent);
+}
+
+@media (max-width: 639px) {
+	.entry {
+		grid-template-columns: 2.75rem minmax(0, 1fr) 4.5rem;
+		gap: 0 0.75rem;
+	}
+
+	.entry-thumb {
+		width: 4.5rem;
+	}
+}
+
+/* Writing archive and Library: thumbnail first, then (for posts) the date, then
+   title / description / meta stacked in the body column. */
+.entry--post,
+.entry--item {
+	grid-template-columns: 5.25rem 2.75rem minmax(0, 1fr);
+	align-items: start;
+	padding: 0.6rem 0;
+}
+
+.entry--item {
+	grid-template-columns: 5.25rem minmax(0, 1fr);
+}
+
+.entry--post .entry-lead {
+	padding-top: 0.1rem;
+}
+
+.entry--post .entry-title,
+.entry--item .entry-title {
+	display: block;
+}
+
+.entry-desc {
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+	margin-top: 0.1rem;
+	font: 400 0.8125rem/1.55 var(--font-sans);
+	overflow-wrap: anywhere;
+	color: var(--secondary);
+}
+
+.entry--post .entry-meta,
+.entry--item .entry-meta {
+	display: block;
+	margin: 0.3rem 0 0;
+}
+
+@media (max-width: 639px) {
+	.entry--item {
+		grid-template-columns: 4.5rem minmax(0, 1fr);
+		gap: 0 0.75rem;
+	}
+
+	.entry--post {
+		grid-template-columns: 4.5rem minmax(0, 1fr);
+		grid-template-areas:
+			'thumb date'
+			'thumb body';
+		gap: 0.1rem 0.75rem;
+	}
+
+	.entry--post .entry-thumb {
+		grid-area: thumb;
+	}
+
+	.entry--post .entry-lead {
+		grid-area: date;
+		padding-top: 0;
+	}
+
+	.entry--post .entry-body {
+		grid-area: body;
+	}
+}

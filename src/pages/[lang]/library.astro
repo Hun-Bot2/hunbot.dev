@@ -10,13 +10,14 @@ import BaseHead from '../../components/BaseHead.astro';
 import Header from '../../components/Header.astro';
 import FloatingLanguagePicker from '../../components/FloatingLanguagePicker.astro';
 import BlogFilterBar from '../../components/blog/BlogFilterBar.astro';
-import LibraryCard from '../../components/library/LibraryCard.astro';
+import LibraryRow from '../../components/library/LibraryRow.astro';
 import { getCollection } from 'astro:content';
 import { useTranslations, type UILanguage } from '../../i18n/ui';
 import { getLibraryItems } from '../../utils/library';
 import { getLibraryKindLabel, getLibraryTopicLabel } from '../../utils/library-labels';
 import { getLibraryArea, libraryAreas } from '../../data/libraryAreas';
 import '../../styles/lists.css';
+import '../../styles/entry-list.css';
 
 export function getStaticPaths() {
 	return [
@@ -31,7 +32,7 @@ const t = useTranslations(lang);
 const title = `${t('library.title')} - Hun-Bot Blog`;
 const description = t('library.description');
 
-const items = getLibraryItems(await getCollection('resources'), await getCollection('picks'));
+const items = getLibraryItems(await getCollection('resources'), await getCollection('picks'), lang);
 
 // Facet options with counts, most common first (ties by label).
 function facetOptions(values: string[], label: (value: string) => string) {
@@ -52,6 +53,11 @@ const areaOfTopic = new Map(items.map((item) => [item.topic, item.area]));
 const topicOptions = facetOptions(items.map((item) => item.topic), (topic) => getLibraryTopicLabel(topic, lang))
 	.map((option) => ({ ...option, parent: { facet: 'area', value: areaOfTopic.get(option.value)! } }))
 	.sort((a, b) => areaOrder.indexOf(a.parent.value) - areaOrder.indexOf(b.parent.value));
+
+// One section per area that has items, in registry order (기타 last).
+const sections = areaOrder
+	.map((id) => ({ id, label: getLibraryArea(id).label[lang], items: items.filter((item) => item.area === id) }))
+	.filter((section) => section.items.length > 0);
 
 const filterGroups = [
 	{ facet: 'area', label: t('library.filter-area'), options: areaOptions },
@@ -74,8 +80,7 @@ const filterGroups = [
 		<FloatingLanguagePicker />
 		<main id="main-content" class="atelier-page" data-pagefind-body>
 			<section class="subpage-intro">
-				<h1 class="eyebrow">{t('library.title')} · {items.length}</h1>
-				<p class="library-intro">{t('library.intro')}</p>
+				<h1 class="eyebrow">{t('library.title')}</h1>
 			</section>
 
 			{items.length === 0 ? (
@@ -91,17 +96,24 @@ const filterGroups = [
 						totalCount={items.length}
 					/>
 
-					<ul class="page-frame library-grid" data-blog-posts>
-						{items.map((item) => (
-							<li id={item.id} data-post-card data-post-area={item.area} data-post-kind={item.kind} data-post-topic={item.topic}>
-								<LibraryCard
-									item={item}
-									kindLabel={getLibraryKindLabel(item.kind, lang)}
-									topicLabel={getLibraryTopicLabel(item.topic, lang)}
-								/>
-							</li>
+					<div class="page-frame library-archive" data-blog-posts>
+						{sections.map((section) => (
+							<section class="library-section" id={`area-${section.id}`} aria-labelledby={`area-${section.id}-title`} data-filter-section>
+								<div class="library-section-head">
+									<h2 id={`area-${section.id}-title`}>{section.label}</h2>
+								</div>
+								<ul class="entry-list">
+									{section.items.map((item) => (
+										<LibraryRow
+											item={item}
+											kindLabel={getLibraryKindLabel(item.kind, lang)}
+											topicLabel={getLibraryTopicLabel(item.topic, lang)}
+										/>
+									))}
+								</ul>
+							</section>
 						))}
-					</ul>
+					</div>
 
 					<p class="page-frame library-empty" data-blog-empty hidden>{t('library.filter-no-results')}</p>
 				</Fragment>
@@ -112,25 +124,35 @@ const filterGroups = [
 </html>
 
 <style>
-	.library-intro {
-		max-width: 38rem;
-		margin: 0.75rem 0 0;
-		color: var(--secondary);
-		font-size: 0.9375rem;
-		line-height: 1.65;
+	/* The section heading carries the rule, so the title needs none of its own and
+	   the archive starts right under it. */
+	.subpage-intro {
+		padding-bottom: 0.25rem;
+		border-bottom: 0;
 	}
 
-	.library-grid {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr);
-		gap: 2.5rem 1.75rem;
-		margin-block: 0 4rem;
-		padding: 0;
-		list-style: none;
+	.library-archive {
+		padding: 0 0 1rem;
 	}
 
-	.library-grid > li[hidden] {
+	/* Same quiet section heading as the Writing archive's years. */
+	.library-section + .library-section {
+		margin-top: 1rem;
+	}
+
+	.library-section[hidden] {
 		display: none;
+	}
+
+	.library-section-head {
+		padding: 0.25rem 0 0.4rem;
+		border-bottom: 1px solid var(--rule-strong);
+	}
+
+	.library-section-head h2 {
+		margin: 0;
+		font: 400 1.25rem/1.3 var(--font-serif);
+		letter-spacing: -0.02em;
 	}
 
 	.library-empty {
@@ -138,15 +160,5 @@ const filterGroups = [
 		color: var(--secondary);
 	}
 
-	@media (min-width: 640px) {
-		.library-grid {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-		}
-	}
 
-	@media (min-width: 900px) {
-		.library-grid {
-			grid-template-columns: repeat(3, minmax(0, 1fr));
-		}
-	}
 </style>

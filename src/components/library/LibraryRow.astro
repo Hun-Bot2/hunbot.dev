@@ -1,0 +1,36 @@
+---
+// One Library item in the editorial archive: a small preview image, the title,
+// its one-line description, and quiet metadata (kind, topic, an external-link
+// mark), the whole row one external link. The item's filter data attributes sit
+// on the <li>. Row styles: src/styles/entry-list.css. The image is the site's
+// og image or a reviewed screenshot; without one it is a ruled-paper frame with
+// the host.
+import type { LibraryItem } from '../../utils/library';
+
+interface Props {
+	item: LibraryItem;
+	kindLabel: string;
+	topicLabel: string;
+}
+
+const { item, kindLabel, topicLabel } = Astro.props;
+const { image } = item;
+const isSmall = image.kind !== 'typographic' && image.width < 600;
+---
+
+<li id={item.id} data-post-card data-post-area={item.area} data-post-kind={item.kind} data-post-topic={item.topic}>
+	<a class="entry entry--item" href={item.url} target="_blank" rel="noopener noreferrer">
+		<span class:list={['entry-thumb', { 'is-small': isSmall, 'is-typo': image.kind === 'typographic' }]} aria-hidden="true">
+			{image.kind === 'typographic' ? (
+				<span class="entry-thumb-label">{image.label}</span>
+			) : (
+				<img src={image.src} width={image.width} height={image.height} alt="" loading="lazy" decoding="async" />
+			)}
+		</span>
+		<span class="entry-body">
+			<span class="entry-title">{item.title}</span>
+			{item.description && <span class="entry-desc">{item.description}</span>}
+			<span class="entry-meta">{kindLabel} · {topicLabel} ↗</span>
+		</span>
+	</a>
+</li>

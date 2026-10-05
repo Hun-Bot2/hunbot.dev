@@ -205,6 +205,8 @@ export interface LibraryItem {
 	topic: string;
 	date: string;
 	image: LibraryItemImage;
+	/** One-line summary in the requested language (resources only; '' when none). */
+	description: string;
 }
 
 function hostLabel(url: string): string {
@@ -219,7 +221,7 @@ function hostLabel(url: string): string {
  * distinction visitors need, so the page has no tabs. Newest first, then by
  * title. An item without a preview image gets the typographic card.
  */
-export function getLibraryItems(resources: ResourceEntry[], picks: PickEntry[]): LibraryItem[] {
+export function getLibraryItems(resources: ResourceEntry[], picks: PickEntry[], lang: UILanguage = 'ko'): LibraryItem[] {
 	const fromResources = getApprovedResources(resources).map((resource): LibraryItem => ({
 		id: resource.data.id,
 		title: resource.data.title,
@@ -229,6 +231,7 @@ export function getLibraryItems(resources: ResourceEntry[], picks: PickEntry[]):
 		topic: resource.data.category,
 		date: resource.data.publishedAt ?? resource.data.source.firstSeenAt,
 		image: resource.data.image ?? { kind: 'typographic', label: hostLabel(resource.data.url) },
+		description: getResourceSummary(resource, lang),
 	}));
 
 	const fromPicks = picks
@@ -242,6 +245,7 @@ export function getLibraryItems(resources: ResourceEntry[], picks: PickEntry[]):
 			topic: pick.data.section,
 			date: String(pick.data.addedAt).slice(0, 10),
 			image: { kind: 'typographic', label: hostLabel(pick.data.url) },
+			description: '',
 		}));
 
 	return sortStable([...fromResources, ...fromPicks], (a, b) => b.date.localeCompare(a.date) || a.title.localeCompare(b.title));

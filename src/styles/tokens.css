@@ -29,6 +29,12 @@
 	--content-max: 980px;
 	--header-height: 72px;
 
+	/* Default distance of the floating controls from the viewport edge: on wide
+	   screens they sit just outside the content column (clearing the widest one,
+	   the 72px filter / TOC pill) instead of hugging the window edge; below
+	   ~1100px they fall back to 1rem. Dragged positions are stored separately. */
+	--float-inset: max(1rem, calc((100vw - var(--content-max)) / 2 - 5.5rem));
+
 	--font-serif: "Newsreader", "Noto Serif KR", "Noto Serif JP", serif;
 	--font-sans: "Noto Sans KR", "Noto Sans JP", system-ui, sans-serif;
 	--font-mono: "IBM Plex Mono", ui-monospace, monospace;

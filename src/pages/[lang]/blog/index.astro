@@ -3,8 +3,9 @@ import BaseHead from '../../../components/BaseHead.astro';
 import Header from '../../../components/Header.astro';
 import FloatingLanguagePicker from '../../../components/FloatingLanguagePicker.astro';
 import BlogFilterBar from '../../../components/blog/BlogFilterBar.astro';
-import PostListCard from '../../../components/blog/PostListCard.astro';
+import PostRow from '../../../components/blog/PostRow.astro';
 import '../../../styles/lists.css';
+import '../../../styles/entry-list.css';
 import { useTranslations, type UILanguage } from '../../../i18n/ui';
 import {
 	getAllPosts,
@@ -43,6 +44,9 @@ const categories = (['ai', 'devlog', 'review', 'misc'] as const)
 		count: categoryCounts.get(key) ?? 0,
 	}));
 
+const seriesNames = new Set(getMultiPostSeries(posts).map((entry) => entry.name));
+const categoryLabels = Object.fromEntries(categories.map((category) => [category.value, category.label]));
+
 const years = getPostYears(posts).map((year) => ({
 	value: String(year),
 	label: String(year),
@@ -77,7 +81,7 @@ const postsByYear = posts.reduce((groups, post) => {
 			{posts.length > 0 ? (
 				<Fragment>
 					<section class="subpage-intro">
-						<h1 class="eyebrow">{t('blog.index.eyebrow').replace('{count}', String(posts.length))}</h1>
+						<h1 class="eyebrow">{t('nav.blog')}</h1>
 					</section>
 
 					<BlogFilterBar
@@ -90,18 +94,11 @@ const postsByYear = posts.reduce((groups, post) => {
 
 					<div class="writing-archive page-frame" data-blog-posts>
 						{postsByYear.map((group) => (
-							<section class="year-group" aria-label={String(group.year)}>
+							<section class="year-group" aria-label={String(group.year)} data-filter-section>
 								<div class="year-separator"><span>{group.year}</span></div>
-								<ul class="writing-list">
+								<ul class="entry-list">
 									{group.posts.map((post) => (
-										<li
-											data-post-card
-											data-post-category={normalizeCategory(post.data.category)}
-											data-post-year={String(post.data.pubDate.getFullYear())}
-											data-post-series={post.data.series?.trim() ?? ''}
-										>
-											<PostListCard post={post} />
-										</li>
+										<PostRow post={post} categoryLabels={categoryLabels} seriesNames={seriesNames} />
 									))}
 								</ul>
 							</section>
@@ -122,6 +119,31 @@ const postsByYear = posts.reduce((groups, post) => {
 </html>
 
 <style>
+	/* The year heading carries the rule, so the title needs none of its own and
+	   the archive starts right under it. */
+	.subpage-intro {
+		padding-bottom: 0.25rem;
+		border-bottom: 0;
+	}
+
+	.writing-archive {
+		padding-top: 0;
+	}
+
+	/* Quieter than the other archives: the year is a label, not a headline. */
+	.year-separator {
+		margin-top: 0;
+		padding: 0.25rem 0 0.4rem;
+	}
+
+	.year-separator > span {
+		font-size: 1.25rem;
+	}
+
+	.year-group + .year-group {
+		margin-top: 1rem;
+	}
+
 	.blog-empty {
 		margin-block: 0;
 		padding: 1.5rem 0;
