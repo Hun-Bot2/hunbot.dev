@@ -21,6 +21,7 @@ assert.match(packageJson.scripts?.['images:inventory'] ?? '', /inventory-public-
 
 const blogUtils = read('src/utils/blog.ts');
 const blogIndex = read('src/pages/[lang]/blog/index.astro');
+const postRow = read('src/components/blog/PostRow.astro');
 const filterBar = read('src/components/blog/BlogFilterBar.astro');
 const filterScript = read('public/scripts/blog-filters.js');
 const sitemap = read('src/pages/sitemap.xml.ts');
@@ -30,20 +31,23 @@ assert.match(blogUtils, /getNormalizedCategoryCounts/);
 assert.match(blogUtils, /getPostYears/);
 assert.match(blogUtils, /getMultiPostSeries/);
 assert.match(blogIndex, /BlogFilterBar/);
-assert.match(blogIndex, /PostListCard/);
+assert.match(blogIndex, /<PostRow\b/);
 assert.match(blogIndex, /data-blog-posts/);
-assert.match(blogIndex, /data-post-card/);
+assert.match(postRow, /data-post-card/);
 assert.match(blogIndex, /getPostsByLanguage/);
 assert.match(blogIndex, /\/scripts\/blog-filters\.js/);
 
 // Every facet the script reads must be emitted on the cards, or filtering
 // silently hides everything.
 for (const attribute of ['data-post-category', 'data-post-year', 'data-post-series']) {
-	assert.match(blogIndex, new RegExp(attribute), `${attribute} must be rendered on post cards.`);
+	assert.match(postRow, new RegExp(attribute), `${attribute} must be rendered on post cards.`);
 }
 
+// The script reads its facets from the bar's data-facets (the Library passes its
+// own); the blog relies on the default list, so it must name all three.
+assert.match(filterScript, /data-facets/);
 for (const facet of ['category', 'year', 'series']) {
-	assert.match(filterScript, new RegExp(`'${facet}'`), `blog-filters.js must handle the ${facet} facet.`);
+	assert.match(filterScript, new RegExp(`'[a-z,]*${facet}[a-z,]*'`), `blog-filters.js must default to the ${facet} facet.`);
 }
 
 assert.match(filterBar, /aria-pressed/, 'Filter chips need aria-pressed state.');
