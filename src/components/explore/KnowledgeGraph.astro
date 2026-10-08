@@ -1,0 +1,92 @@
+---
+import { useTranslations, type UILanguage } from '../../i18n/ui';
+import '../../styles/graph.css';
+
+interface Props {
+	lang: UILanguage;
+	// Serializable payload built in pages/[lang]/explore.astro.
+	graph: {
+		projects: { key: string; title: string; count: number }[];
+		nodes: { id: string; kind: string; kindLabel: string; project: string | null; title: string; href: string; external: boolean; date: string; ts: number }[];
+		relations: { from: string; to: string }[];
+	};
+}
+const { lang, graph } = Astro.props;
+const t = useTranslations(lang);
+const tt = (key: string) => t(key as never) as string;
+const groups = [
+	...graph.projects.map((project) => ({ title: `${project.title} · ${project.count}`, items: graph.nodes.filter((node) => node.project === project.key) })),
+	{ title: '—', items: graph.nodes.filter((node) => !node.project) },
+].map((group) => ({ ...group, items: [...group.items].sort((a, b) => a.ts - b.ts || a.id.localeCompare(b.id)) }));
+---
+
+<section class="kg" data-kg aria-label={tt('graph.label')}>
+	<!-- One workspace: the map (or the project list) fills it; mode switch, search and zoom sit inside, at its bottom. -->
+	<div class="kg-stage" data-kg-stage>
+		<div class="kg-viewport" data-kg-viewport tabindex="0" role="group" aria-label={tt('graph.label')}>
+			<div class="kg-world" data-kg-board></div>
+			<p class="kg-empty-map" data-kg-empty hidden>{tt('graph.map.empty')}</p>
+		</div>
+		<div class="kg-map" data-kg-map hidden>
+			<nav class="kg-crumbs" data-kg-crumbs aria-label={tt('graph.title')} hidden></nav>
+			<div data-kg-listbody></div>
+		</div>
+		<div class="kg-filters" data-kg-filters hidden></div>
+		<div class="kg-controls" data-kg-controls>
+			<div class="kg-modes" role="group" aria-label={tt('graph.title')}>
+				<button type="button" class="kg-mode" data-kg-mode="graph" aria-pressed="true">{tt('graph.mode.map')}</button>
+				<button type="button" class="kg-mode" data-kg-mode="list" aria-pressed="false">{tt('graph.mode.list')}</button>
+			</div>
+			<div class="kg-search">
+				<svg class="kg-search-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="4.5" /><path d="M10 10l4 4" /></svg>
+				<input
+					type="search"
+					data-kg-search
+					placeholder={tt('graph.search')}
+					aria-label={tt('graph.search')}
+					role="combobox"
+					aria-expanded="false"
+					aria-controls="kg-results"
+					aria-autocomplete="list"
+					autocomplete="off"
+				/>
+				<ul id="kg-results" class="kg-results" role="listbox" data-kg-results></ul>
+			</div>
+		</div>
+		<div class="kg-zoom" role="group" aria-label={tt('graph.zoom')}>
+			<button type="button" data-kg-zoom="in" aria-label={tt('graph.zoom.in')}>+</button>
+			<button type="button" data-kg-zoom="out" aria-label={tt('graph.zoom.out')}>−</button>
+			<button type="button" data-kg-zoom="fit" aria-label={tt('graph.zoom.fit')}>{tt('graph.zoom.fit')}</button>
+		</div>
+		<section class="kg-detail" data-kg-detail role="dialog" aria-modal="false" tabindex="-1" hidden></section>
+	</div>
+
+	<p class="kg-live" data-kg-live aria-live="polite"></p>
+
+	<noscript>
+	<details class="kg-list" open>
+		<summary>{tt('graph.list')}</summary>
+		{
+			groups.map(({ title, items }) => (
+				<section>
+					<h3>{title}</h3>
+					<ul>
+						{items.map((node) => (
+							<li>
+								<a href={node.href}>{node.title}</a>
+								<span class="kg-meta">{node.kindLabel} · {node.date}</span>
+							</li>
+						))}
+					</ul>
+				</section>
+			))
+		}
+	</details>
+	</noscript>
+
+	<script type="application/json" data-kg-data set:html={JSON.stringify(Astro.props.graph).replaceAll('<', '\\u003c')} />
+</section>
+
+<script>
+	import './graph-client';
+</script>
