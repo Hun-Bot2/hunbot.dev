@@ -49,6 +49,7 @@ export type BlogSource = Entry<{
 	series?: string;
 	draft?: boolean;
 	papers?: string[];
+	informedBy?: string[];
 }>;
 
 export type AcademicReviewSource = Entry<{
@@ -277,6 +278,10 @@ export function adaptBlogPosts(posts: BlogSource[], context: AdapterContext): Ad
 		}
 
 		const paperIds = new Set(translations.flatMap((post) => post.data.papers ?? []));
+		const informerSlugs = new Set(
+			translations.flatMap((post) => post.data.informedBy ?? []).map((ref) => ref.trim().toLowerCase()),
+		);
+		informerSlugs.delete(slug);
 
 		return {
 			artifact: {
@@ -297,7 +302,10 @@ export function adaptBlogPosts(posts: BlogSource[], context: AdapterContext): Ad
 				sourceRef: null,
 				series: context.series.get(slug) ?? null,
 			},
-			relations: [...paperIds].map((paperId) => ({ from: id, to: `paper:${paperId}`, rel: 'explains' as const })),
+			relations: [
+				...[...paperIds].map((paperId) => ({ from: id, to: `paper:${paperId}`, rel: 'explains' as const })),
+				...[...informerSlugs].map((informer) => ({ from: `writing:${informer}`, to: id, rel: 'informed' as const })),
+			],
 		};
 	});
 }

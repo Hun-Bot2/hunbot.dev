@@ -16,6 +16,10 @@ const files = existsSync(blogRoot)
 // entry ids. Declared here, on the later artifact — a paper card never lists
 // the posts about it.
 const paperIds = readPaperIds();
+// `informedBy` refs are blog slugs (path under the language folder, lowercased, no extension).
+const blogSlugs = new Set(
+	files.map((filePath) => relative(blogRoot, filePath).split(sep).slice(1).join('/').replace(/\.(md|mdx)$/i, '').toLowerCase()),
+);
 
 // Frontmatter records for the placeholder/duplicate report below, gathered
 // alongside the per-file checks so we don't re-read every file.
@@ -63,6 +67,15 @@ for (const filePath of files) {
 		for (const paperId of parseTagList(papersField)) {
 			if (!paperIds.has(paperId)) {
 				errors.push(`${label}.papers references unknown paper "${paperId}".`);
+			}
+		}
+	}
+
+	const informedByField = getField(frontmatter, 'informedBy');
+	if (informedByField) {
+		for (const ref of parseTagList(informedByField)) {
+			if (!blogSlugs.has(ref.trim().toLowerCase())) {
+				errors.push(`${label}.informedBy references unknown post "${ref}".`);
 			}
 		}
 	}
