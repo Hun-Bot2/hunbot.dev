@@ -1,0 +1,33 @@
+---
+title: 'Secure Boot와 NVIDIA 드라이버'
+description: 'Secure Boot의 신뢰 체인과, 서명 없는 드라이버를 MOK 등록으로 해결한 과정'
+pubDate: '2026-10-08'
+tags: ['secure boot', 'uefi', 'mok', 'nvidia', 'ubuntu']
+category: '공부'
+informedBy: ['devlog/local_llm/snl_llm_01']
+---
+
+import LocalizedLink from '@/components/LocalizedLink.astro';
+import SecureBootChain from '@/components/diagrams/SecureBootChain.astro';
+
+<LocalizedLink href="blog/devlog/local_llm/snl_llm_01/">Autocage AI Workstation 구축기 01</LocalizedLink>에서 Secure Boot가 켜진 상태로 NVIDIA 드라이버를 설치하면서 MOK 등록이 필요했습니다. 이 글은 그 과정이 왜 필요했는지를 정리합니다.
+
+## Secure Boot가 하는 일
+
+Secure Boot는 UEFI의 기능으로, 켜 두면 **신뢰된 키로 서명된 코드만 실행**합니다. 부팅 중에 악성 코드가 끼어들어 OS보다 먼저 실행되는 것을 막기 위한 장치입니다.
+
+<SecureBootChain />
+
+## 용어 정리
+
+- **부트로더:** 펌웨어(UEFI) 다음으로 실행되어 OS 커널을 메모리에 올리는 작은 프로그램입니다. Ubuntu에서는 shim이 먼저 실행되고 GRUB이 뒤를 잇습니다.
+- **커널 모듈:** 커널이 실행 중에 추가로 불러오는 코드입니다. NVIDIA 드라이버가 여기에 해당하고, 커널 안에서 최고 권한으로 동작합니다.
+- **서명:** 개발자가 비밀키로 파일의 해시에 서명하면, 검증하는 쪽이 공개키로 "위조되지 않았고 신뢰된 곳에서 왔는지"를 확인합니다.
+- **신뢰된 키:** 펌웨어에 미리 들어 있는 키 목록입니다(Microsoft, 제조사 등). shim이 Microsoft 서명을 받아서 이 체인에 들어갑니다.
+- **MOK(Machine Owner Key):** 사용자가 직접 신뢰 목록에 추가하는 키입니다.
+
+## 왜 NVIDIA 드라이버가 문제였나
+
+Ubuntu가 배포하는 부트로더와 커널은 이미 신뢰 체인 안에 있습니다. 하지만 드라이버를 설치하면서 만들어진 커널 모듈은 **내 서버에서 내가 서명한 것**이라 펌웨어가 알지 못하는 키로 서명됩니다. 이대로는 로드가 거부되어 `nvidia-smi`가 동작하지 않습니다.
+
+그래서 설치 중 만들어진 공개키를 MOK로 등록했습니다. 재부팅 때 MOK Manager 화면에서 등록을 승인하면, Secure Boot를 끄지 않고도 내 키로 서명한 NVIDIA 모듈이 신뢰됩니다. 설치 절차는 <LocalizedLink href="blog/devlog/local_llm/snl_llm_01/#32-secure-boot-및-mok-등록">구축기 01의 3.2절</LocalizedLink>에 있습니다.

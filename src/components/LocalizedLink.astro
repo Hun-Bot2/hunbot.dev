@@ -17,13 +17,17 @@ let localizedHref = href;
 
 if (!isExternal) {
   // Normalize internal paths so old hardcoded locale links also work.
-  const withoutLocalePrefix = href.replace(/^\/(ko|jp|en)(?=\/|$)/, '');
+  // Keep `#section` / `?query` out of the route: getRelativeLocaleUrl would append its trailing slash after them.
+  const suffixAt = href.search(/[?#]/);
+  const suffix = suffixAt === -1 ? '' : href.slice(suffixAt);
+  const path = suffixAt === -1 ? href : href.slice(0, suffixAt);
+  const withoutLocalePrefix = path.replace(/^\/(ko|jp|en)(?=\/|$)/, '');
   let route = withoutLocalePrefix.replace(/^\/+/, '');
   for (const [pattern, replacement] of legacyRouteAliases) {
     route = route.replace(pattern, replacement);
   }
   
-  localizedHref = getRelativeLocaleUrl(currentLocale, route);
+  localizedHref = getRelativeLocaleUrl(currentLocale, route) + suffix;
 }
 if (currentLocale === 'ko' && localizedHref.startsWith('/blog/') && !localizedHref.startsWith('/ko/')) {
   localizedHref = `/ko${localizedHref}`;

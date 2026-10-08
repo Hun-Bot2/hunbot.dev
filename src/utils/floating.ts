@@ -48,7 +48,7 @@ function writePoint(key: string, point: Point) {
  */
 export function makeDraggable(
 	el: HTMLElement,
-	options: { storageKey?: string; onMove?: () => void } = {},
+	options: { storageKey?: string; onMove?: () => void; handle?: HTMLElement } = {},
 ): Draggable {
 	let dragging = false;
 	let moved = false;
@@ -85,7 +85,8 @@ export function makeDraggable(
 		}
 	}
 
-	el.style.touchAction = 'none';
+	const handle = options.handle ?? el;
+	handle.style.touchAction = 'none';
 
 	// Move/up are tracked on the document, not the element and not via pointer
 	// capture: capturing on pointerdown retargets the click that follows to `el`
@@ -123,7 +124,7 @@ export function makeDraggable(
 		}
 	};
 
-	el.addEventListener('pointerdown', (event) => {
+	handle.addEventListener('pointerdown', (event) => {
 		if (event.button !== 0) return;
 		const rect = el.getBoundingClientRect();
 		dragging = true;

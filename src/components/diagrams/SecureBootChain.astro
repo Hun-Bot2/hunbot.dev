@@ -1,0 +1,182 @@
+---
+// Secure Boot chain of trust: static inline SVG so its colours follow the theme tokens.
+---
+
+<figure class="sb-chain">
+	<svg viewBox="0 0 800 420" role="img" aria-labelledby="sb-title sb-desc">
+		<title id="sb-title">Secure Boot 신뢰 체인</title>
+		<desc id="sb-desc">
+			UEFI 펌웨어, shim, GRUB, Linux 커널, 커널 모듈 순서로 앞 단계가 다음 단계의 서명을 검증한다.
+			NVIDIA 드라이버 모듈은 사용자가 등록한 MOK 키로 서명해야 로드되고, 등록하지 않으면 로드가 거부된다.
+		</desc>
+		<defs>
+			<marker id="sb-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
+				<path d="M0 0 L8 4 L0 8 z" class="arrow-head" />
+			</marker>
+		</defs>
+
+		<rect class="box" x="6" y="24" width="128" height="118" rx="6"/>
+		<text class="t-title" x="70" y="54" text-anchor="middle">UEFI 펌웨어</text>
+		<text class="t-sub" x="70" y="76" text-anchor="middle">신뢰된 키 DB 보유</text>
+		<rect class="badge" x="16" y="96" width="108" height="30" rx="4"/>
+		<text class="t-badge" x="70" y="115" text-anchor="middle">Microsoft·제조사 키</text>
+		<line class="arrow" x1="138" y1="83" x2="167" y2="83" marker-end="url(#sb-arrow)"/>
+		<text class="t-note" x="152.5" y="72" text-anchor="middle">검증</text>
+		<rect class="box" x="171" y="24" width="128" height="118" rx="6"/>
+		<text class="t-title" x="235" y="54" text-anchor="middle">shim</text>
+		<text class="t-sub" x="235" y="76" text-anchor="middle">첫 번째 부트로더</text>
+		<rect class="badge" x="181" y="96" width="108" height="30" rx="4"/>
+		<text class="t-badge" x="235" y="115" text-anchor="middle">Microsoft 서명</text>
+		<line class="arrow" x1="303" y1="83" x2="332" y2="83" marker-end="url(#sb-arrow)"/>
+		<text class="t-note" x="317.5" y="72" text-anchor="middle">검증</text>
+		<rect class="box" x="336" y="24" width="128" height="118" rx="6"/>
+		<text class="t-title" x="400" y="54" text-anchor="middle">GRUB</text>
+		<text class="t-sub" x="400" y="76" text-anchor="middle">부트로더</text>
+		<rect class="badge" x="346" y="96" width="108" height="30" rx="4"/>
+		<text class="t-badge" x="400" y="115" text-anchor="middle">Ubuntu 서명</text>
+		<line class="arrow" x1="468" y1="83" x2="497" y2="83" marker-end="url(#sb-arrow)"/>
+		<text class="t-note" x="482.5" y="72" text-anchor="middle">검증</text>
+		<rect class="box" x="501" y="24" width="128" height="118" rx="6"/>
+		<text class="t-title" x="565" y="54" text-anchor="middle">Linux 커널</text>
+		<text class="t-sub" x="565" y="76" text-anchor="middle">OS의 핵심</text>
+		<rect class="badge" x="511" y="96" width="108" height="30" rx="4"/>
+		<text class="t-badge" x="565" y="115" text-anchor="middle">Ubuntu 서명</text>
+		<line class="arrow" x1="633" y1="83" x2="662" y2="83" marker-end="url(#sb-arrow)"/>
+		<text class="t-note" x="647.5" y="72" text-anchor="middle">검증</text>
+		<rect class="box box--accent" x="666" y="24" width="128" height="118" rx="6"/>
+		<text class="t-title" x="730" y="54" text-anchor="middle">커널 모듈</text>
+		<text class="t-sub" x="730" y="76" text-anchor="middle">NVIDIA 드라이버</text>
+		<rect class="badge badge--accent" x="676" y="96" width="108" height="30" rx="4"/>
+		<text class="t-badge" x="730" y="115" text-anchor="middle">내 키(MOK)로 서명</text>
+
+		<text class="t-caption" x="400" y="170" text-anchor="middle">
+			각 단계는 앞 단계가 믿는 키로 서명을 확인한 뒤에만 다음 단계를 실행합니다.
+		</text>
+
+		<path class="arrow" d="M730 142 V186 H435 V214" fill="none" />
+		<path class="arrow" d="M730 186 H675 V214" fill="none" />
+
+		<rect class="box box--error" x="330" y="214" width="210" height="86" rx="6" />
+		<text class="t-title t-error" x="435" y="242" text-anchor="middle">✕ MOK 미등록</text>
+		<text class="t-sub" x="435" y="266" text-anchor="middle">서명을 믿을 수 없어 로드 거부</text>
+		<text class="t-sub" x="435" y="286" text-anchor="middle">→ nvidia-smi 실패</text>
+
+		<rect class="box box--ok" x="560" y="214" width="230" height="86" rx="6" />
+		<text class="t-title t-ok" x="675" y="242" text-anchor="middle">✓ MOK 등록</text>
+		<text class="t-sub" x="675" y="266" text-anchor="middle">신뢰된 키로 서명 확인</text>
+		<text class="t-sub" x="675" y="286" text-anchor="middle">→ 로드 성공, GPU 사용 가능</text>
+
+		<text class="t-mono" x="6" y="232">MOK (Machine Owner Key)</text>
+		<text class="t-sub" x="6" y="254">사용자가 직접 신뢰 목록에</text>
+		<text class="t-sub" x="6" y="274">추가하는 키. Secure Boot를</text>
+		<text class="t-sub" x="6" y="294">끄지 않고도 내 드라이버를 씁니다.</text>
+
+		<line class="rule" x1="6" y1="322" x2="794" y2="322" />
+		<text class="t-mono" x="6" y="346">서명의 원리</text>
+
+		<rect class="box" x="6" y="360" width="110" height="44" rx="4" />
+		<text class="t-sub t-ink" x="61" y="387" text-anchor="middle">파일</text>
+		<line class="arrow" x1="120" y1="382" x2="148" y2="382" marker-end="url(#sb-arrow)" />
+		<rect class="box" x="152" y="360" width="90" height="44" rx="4" />
+		<text class="t-sub t-ink" x="197" y="387" text-anchor="middle">해시</text>
+		<line class="arrow" x1="246" y1="382" x2="274" y2="382" marker-end="url(#sb-arrow)" />
+		<rect class="box" x="278" y="360" width="150" height="44" rx="4" />
+		<text class="t-sub t-ink" x="353" y="387" text-anchor="middle">비밀키로 서명</text>
+
+		<text class="t-sub" x="460" y="378">검증하는 쪽은 공개키로 서명을 확인합니다.</text>
+		<text class="t-sub" x="460" y="398">파일이 바뀌면 해시가 달라져 검증에 실패합니다.</text>
+	</svg>
+	<figcaption>Secure Boot의 신뢰 체인: 펌웨어가 믿는 키에서 시작해 한 단계씩 서명을 검증합니다.</figcaption>
+</figure>
+
+<style>
+	.sb-chain {
+		margin: 2em 0;
+	}
+	.sb-chain svg {
+		display: block;
+		width: 100%;
+		height: auto;
+		font-family: var(--font-sans);
+	}
+	.sb-chain figcaption {
+		margin-top: 0.6em;
+		font-size: 0.85em;
+		color: var(--secondary);
+		text-align: center;
+	}
+	.box {
+		fill: var(--paper-light);
+		stroke: var(--rule-strong);
+		stroke-width: 1;
+	}
+	.box--accent {
+		stroke: var(--accent);
+		stroke-width: 1.5;
+	}
+	.box--error {
+		stroke: var(--state-error);
+		stroke-width: 1.5;
+	}
+	.box--ok {
+		stroke: var(--state-success);
+		stroke-width: 1.5;
+	}
+	.badge {
+		fill: var(--paper-deep);
+		stroke: none;
+	}
+	.badge--accent {
+		fill: var(--accent);
+	}
+	.arrow {
+		stroke: var(--secondary);
+		stroke-width: 1.2;
+	}
+	.arrow-head {
+		fill: var(--secondary);
+	}
+	.rule {
+		stroke: var(--rule);
+		stroke-width: 1;
+	}
+	.t-title {
+		font-size: 15px;
+		font-weight: 600;
+		fill: var(--ink);
+	}
+	.t-sub {
+		font-size: 12.5px;
+		fill: var(--secondary);
+	}
+	.t-ink {
+		fill: var(--ink);
+		font-size: 13.5px;
+	}
+	.t-badge {
+		font-size: 11.5px;
+		fill: var(--ink);
+	}
+	.badge--accent + .t-badge {
+		fill: var(--paper);
+	}
+	.t-note {
+		font-size: 10.5px;
+		fill: var(--secondary);
+	}
+	.t-caption {
+		font-size: 13px;
+		fill: var(--ink);
+	}
+	.t-mono {
+		font-family: var(--font-mono);
+		font-size: 12px;
+		fill: var(--accent);
+	}
+	.t-error {
+		fill: var(--state-error);
+	}
+	.t-ok {
+		fill: var(--state-success);
+	}
+</style>
