@@ -109,6 +109,8 @@ category: string        # optional, normalized by normalizeCategory()
 series: string          # optional, groups posts into a series
 seriesOrder: number     # optional, ordering within series
 draft: boolean          # optional, default false — hides from site when true
+papers: string[]        # optional, `papers` entry ids this post is about (-> `explains`)
+informedBy: string[]    # optional, blog slugs (no lang prefix, e.g. devlog/local_llm/snl_llm_01) that informed this post (-> `informed`, an Explore lineage edge); declared on the later post, withheld while the other post is a draft; e.g. a study note lists the devlog it grew out of
 ---
 ```
 
@@ -133,7 +135,7 @@ src/pages/
     ├── search.astro                     → /ko/search/ (Pagefind UI)
     ├── rss.xml.js                       → /ko/rss.xml per-language feed
     ├── library.astro                    → /ko/library/ (one list of image cards + blog filter; resources + picks)
-    ├── explore.astro                    → /ko/explore/ (Living Atlas: public artifacts on a time × domain lane chart; reads only the public artifact contract)
+    ├── explore.astro                    → /ko/explore/ (relationship map: the records with a declared link on a pannable, zoomable, window-wide canvas with its mode switch and search (top right) and zoom inside it, no frame; no page title row, legend or help text; reads only the public artifact contract)
     ├── paths.astro                      → /ko/paths/ (learning paths index)
     ├── research.astro                   → /ko/research/ (Research hub: study log, reviews, paths, decks card, featured topics)
     ├── blog/
@@ -177,7 +179,7 @@ src/pages/
 | `rehype-external-links.mjs` | Rehype plugin | Marks absolute `http(s)` links to hosts other than `hun-bot.dev` with `target="_blank"`, `rel="noopener noreferrer"`, and class `external-link` (CSS adds the ↗). Registered in `astro.config.mjs` `rehypePlugins` ahead of `rehypeKatex`. |
 | `floating.ts` | `makeDraggable()`, `placePopover()`, `clearPopoverPlacement()` | Shared pointer-drag (4px click threshold, viewport + header clamping, sessionStorage position) and popover placement for the floating controls (globe, TOC, filter). Imported by component scripts, so it is bundled, not inline. |
 | `picks.ts` | `computePickTier()`, `getPickFacts()`, `getFreshnessBadges()`, `formatStarCount()`, `normalizePickUrl()`, `getPickSlug()` | Pure helpers for the `picks` collection: tier derivation (manual override, else GitHub stars via `src/data/popularity.json`, else `discovery`), freshness badges, star-count formatting, and the URL comparison key `scripts/validate-picks.mjs` uses for duplicate detection against `resources`. Deliberately separate from `canonicalization.ts` above. |
-| `atlas/` | `getOfferedAxes()`/`resolveAxis()` + the y-axis registry (`dimensions.ts`: Activity, Series, Type hidden until >1 kind, Topic dormant until topics exist), `getLegendOptionals()` (`legend.ts`), `computeAtlasLayout()` (`layout.ts`), `decideEdgeVisibility()` (`edge-policy.ts`), `getLineage()` (`lineage.ts`), `resolveText()`/`resolveHref()` (`display.ts`) | Pure build-time layout for `/{lang}/explore/`: x = date, lanes from the chosen categorical axis (default Learn/Research/Build/Collect/Create), collision rows, relation arcs. Every offered axis is laid out at build time and rendered as its own view; the axis label is the selector (`?y=`). The edge visibility policy (draw links by default vs on hover/selection) is isolated, geometry-based, and tuned in `src/data/atlasPolicy.ts`. |
+| `graph/` | `layoutBoard()`, `rankNodes()`, `CARD_W` (`board.ts`); `placeFloating()`, `placeAtCorner()` (`place.ts`); `resolveText()`, `resolveHref()`, `formatArtifactTime()` (`display.ts`) | Explore's pure modules. `layoutBoard()` takes card heights measured in the browser and returns every card position plus edge paths for the linked records only: layered DAG per connected group, arrows routed through reserved slots (never through a card), groups packed in rows. `placeFloating()` picks the spot beside a card for the inspector. Deterministic; tested without a browser in `test/graph-board.test.mjs`. |
 | `artifacts/series.ts` | `buildSeriesIndex()`, `normalizeSeriesName()` | Language-independent series identity for blog posts from the existing `series` frontmatter: spellings on translations of one post, or that normalize alike, are one series; nothing is guessed beyond that. Feeds the optional `series` field of the public artifact contract. |
 | `artifacts/load.ts` | `getPublicArtifactSet()` | Astro-side public artifact set: same adapters as the validator, merged with a committed Research OS export if present, validated; an invalid set fails the build. Pages read artifacts only through this. |
 | `display.ts` | `hashString()`, `pickVariant()`, `formatPostDate()` | Pure list-page display helpers: a stable FNV-1a hash and `pickVariant(seed, variants)` so a post/pick keeps the same thumbnail variant on every page and deploy (never an index), and `formatPostDate()` (`YYYY.MM.DD`, UTC). Used by `art/ResourceVisual.astro` and the list pages. |
@@ -210,6 +212,8 @@ src/pages/
 | `TableOfContents.astro` | Post detail, reviews | Compact dropdown TOC: a small draggable paper pill (`#toc-trigger`) opens a popover under it (max-height, internal scroll; closes on outside click / Esc / link click); active heading in accent; hidden when there are no headings. Never a permanent column |
 | `ReadingControls.astro` | Post detail, reviews | Long-article navigation: 2px accent reading-progress line at the top and a small bottom-right back-to-top button with percentage; both appear after ~400px of scroll |
 | `ViewCounter.astro` | Post detail | Fetches + POSTs view count via `/api/views` |
+| `Term.astro` | MDX posts | Inline glossary term: click opens a note in the right margin (draggable via its title bar, pinnable). With `href` it becomes a "go to this post?" confirmation (chain-link underline). `href` may carry `#section`. |
+| `diagrams/SecureBootChain.astro` | study/secure-boot post | Static inline-SVG diagram; colours come from tokens so it follows the theme |
 | `GiscusComments.astro` | Post detail | Embeds Giscus comment widget |
 
 ### Library
@@ -231,10 +235,12 @@ src/pages/
 
 ### Explore
 
+> **Explore (relationship map)** — plan, decisions and verification in `docs/plans/2026-10-08-explore-knowledge-graph.md`. It replaced the earlier Living Atlas timeline (the `atlas/` utilities, `Atlas.astro`, `atlas.css`, `atlasPolicy.ts` and their tests were removed). Nothing is inferred: projects are the declared series, links are the contract's relations (`informedBy`, `papers`), concepts do not exist in the contract yet.
+
 | Component | Used in | What it does |
 |---|---|---|
-| `explore/Atlas.astro` | `explore.astro` | The Living Atlas: growth summary, axis, five lanes of marks (each a real link), SVG layer for grid/arcs, inspector, legend, mobile timeline list (<768px). Styles in `src/styles/atlas.css`. |
-| `explore/atlas-client.ts` | `Atlas.astro` | Axis selector (`?y=`), selection + inspector, `?focus=` URL state, lineage highlight, on-demand arcs, roving-tabindex arrow-key navigation. ~2.8 KB gzipped; the page works without it. |
+| `explore/KnowledgeGraph.astro` | `explore.astro` | Markup of the Explore canvas (viewport, zoom buttons, floating inspector, list mode, no-JS list) and the JSON payload. Styles: `src/styles/graph.css` (the map and its title use the window width, not the 980 px frame). |
+| `explore/graph-client.ts` | `KnowledgeGraph.astro` | Camera (fit the connected graph, pan, wheel/pinch zoom, reset), cards and edges (built once per change of the drawn set), selection highlight, floating inspector (Esc / outside click closes), search over every record, URL state (`?focus=`, `?view=list&project=`), card-list mode. Dev only, in `graph-bench.ts` (separate chunk, loaded with `?bench`): test hook and `?bench&synthetic=N` invented graphs. Shared types: `graph-types.ts`. |
 
 ### Decks / Presentations
 

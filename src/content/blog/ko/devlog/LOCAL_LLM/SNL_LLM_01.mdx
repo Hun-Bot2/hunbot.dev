@@ -1,0 +1,774 @@
+---
+title: 'Autocage Workstation 구축기 01'
+description: '듀얼 부팅과 vLLM'
+pubDate: '2026-10-08'
+tags: ['local llm', 'vllm', 'ubuntu', 'docker', 'workstation']
+category: 'local_llm_devlog'
+series: 'Autocage AI Workstation'
+seriesOrder: 1
+---
+
+import Term from '@/components/Term.astro';
+
+## 개요
+Local LLM을 구축하고자 하는 목표는 다음과 같습니다.
+1. 연구실 onboarding
+2. data・experiment・protocol・notes를 local LLM으로 RAG
+
+우리 LLM이 코딩을 잘하는 능력은 전혀 필요 없으므로, 문서 검색과 reasoning, structured output, provenance, RAG grounding, tool calling 최적화를 목표로 하려고 합니다.
+
+궁극적으로는 실험을 진행하면서 발생하는 데이터들을 자동으로 정리하고, 실험 프로토콜과 노트, 논문, 관련 문서들을 검색하고, 질문에 대한 답변을 structured output으로 제공하는 것을 목표로 하려고 합니다.
+
+#### [Local LLM 규칙]
+- 실험 수치와 통계는 Python/SQL 같은 LLM이 아닌 <Term term="deterministic tool">동일한 입력값을 넣었을 때 항상 같은 형태와 결과를 반환하는 도구를 의미합니다. <br/>LLM은 probabilistic model이라 같은 질문에도 출력이 달라질 수 있으므로, 실험 수치
+나 통계는 따로 처리해야 합니다.</Term>로 처리하고, LLM은 질문 이해, tool 선택, 결과 종합과 설명을 맡습니다.
+- RAG는 protocol, paper, metadata, notes 등 문서 검색에 쓴다.
+- LLM은 질문 이해, tool 선택, 결과 종합과 설명을 맡는다.
+- source/session/QC/provenance를 결과에 남긴다.
+
+
+```text
+Research documents / protocol / notes ──> RAG ───────┐
+                                                      │
+Experiment data ──> Python / SQL deterministic tools ├─> Local LLM
+                                                      │      │
+User question ────────────────────────────────────────┘      ▼
+                                               explanation + provenance + plots
+```
+
+## 사양
+
+| 항목 | 상태 |
+| --- | --- |
+| OS | Ubuntu Server 24.04 (GUI 없는 24/7 headless) |
+| Dual Boot | Windows 유지 + Ubuntu |
+| GPU | NVIDIA RTX 5000 Ada Generation |
+| VRAM | 32 GB GDDR6 ECC (`32760 MiB`) |
+| NVIDIA Driver | `595.91.07` (`nvidia-driver-595-open`) |
+| Secure Boot | Enabled, MOK enrollment 완료 |
+| Docker | Docker CE + Compose plugin |
+| NVIDIA Container Toolkit | `1.20.1-1` |
+| Inference | Docker 기반 vLLM |
+| Smoke model | `Qwen/Qwen3-0.6B` |
+
+vLLM 확인을 위해서 Qwen3-0.6B를 올려서 smoke test를 진행했고, RTX 5000 Ada + Docker + NVIDIA Container Toolkit + vLLM + Qwen3-0.6B 경로가 정상적으로 작동하는 것을 확인했습니다.
+
+## 1. Windows + Ubuntu Dual Boot
+
+기존 Windows 환경을 유지하면서 연구용 Linux 서버를 운영하기 위해 **Ubuntu Server 24.04 LTS를 듀얼 부팅 방식으로 설치**했습니다. 부팅 방식은 UEFI를 사용하며, 기존 EFI System Partition(ESP)을 공유하고 GRUB 부트로더를 통해 Windows와 Ubuntu를 선택할 수 있도록 구성했습니다.
+
+### 1.1. Ubuntu 설치 USB 제작
+처음에는 Ubuntu ISO 파일을 USB에 넣어둔 뒤 Rufus를 사용하여 설치 USB를 제작했습니다.
+
+- 운영체제: Ubuntu Server 24.04 LTS
+- USB 제작 도구: Rufus
+- Partition scheme: <Term term="GPT" title="GPT vs MBR">디스크의 파티션 정보를 기록하는 방식입니다.<br /><strong>GPT</strong>: 2TB를 넘는 디스크를 쓸 수 있고, 파티션 정보를 디스크 앞뒤에 백업해 두며, UEFI와 함께 씁니다.<br /><strong>MBR</strong>: 오래된 방식으로, 2TB 한계와 주 파티션 4개 제한이 있고 BIOS(Legacy)와 함께 씁니다.</Term>
+- Target system: <Term term="UEFI" title="UEFI vs BIOS">컴퓨터가 켜질 때 가장 먼저 실행되는 펌웨어의 종류입니다.<br /><strong>UEFI</strong>: EFI 시스템 파티션(ESP)에서 부트로더를 읽고, Secure Boot를 지원하며, GPT 디스크로 부팅합니다.<br /><strong>Secure Boot</strong>: 켜 두면 신뢰된 키로 서명된 부트로더와 커널 모듈만 실행됩니다. 서명되지 않은 드라이버(예: NVIDIA)는 로드되지 않으므로, 이 서버에서는 키를 직접 등록(MOK)해서 해결했습니다(3.2절).<br /><strong>BIOS(Legacy)</strong>: 디스크 첫 섹터(MBR)에서 부팅하는 예전 방식으로 Secure Boot를 쓸 수 없습니다.</Term>
+
+USB 제작을 완료한 후 Dell Workstation을 재부팅하고, 부팅 과정에서 `F12`를 눌러 One-Time Boot Menu에 진입했습니다.
+
+이후 UEFI USB 장치를 선택하여 Ubuntu Server 설치 프로그램을 실행했습니다.
+
+### 1.2. Windows 파티션 유지 및 Ubuntu 설치
+
+기존 Windows 운영체제와 데이터 파티션을 보존하는 것이 중요했기 때문에 Ubuntu 설치 시 디스크를 전체 초기화하지 않고, 확보한 약 600GB 영역에 Ubuntu를 설치했습니다.
+
+최종 디스크 구성은 다음과 같습니다.
+
+| 파티션 | 용량 | 파일 시스템 | 용도 |
+|---|---:|---|---|
+| `nvme0n1p1` | 434MB | FAT32 | 기존 EFI System Partition |
+| `nvme0n1p2` | 128MB | MSR | Windows 예약 파티션 |
+| `nvme0n1p3` | 약 1.3TB | NTFS | Windows OS |
+| `nvme0n1p4` | 990MB | NTFS | Windows Recovery |
+| `nvme0n1p5` | 1.5GB | NTFS | Dell Support |
+| `nvme0n1p6` | 600GB | ext4 | Ubuntu Server `/` |
+
+기존 EFI 파티션인 `nvme0n1p1`을 `/boot/efi`로 사용하되, **포맷하지 않고 재사용**했습니다.
+
+별도로 연결된 약 4TB 용량의 NTFS 데이터 디스크 2개는 기존 데이터를 보호하기 위해 수정하거나 포맷하지 않았습니다.
+
+### 1.3. 디스크 및 파티션 확인
+
+설치 이후 Ubuntu에서 디스크와 파일 시스템을 확인했습니다.
+
+```bash
+lsblk -o NAME,SIZE,FSTYPE,MOUNTPOINTS,MODEL
+```
+
+파티션의 UUID와 파일 시스템 정보를 확인할 때는 다음 명령어를 사용했습니다.
+
+```bash
+sudo blkid
+```
+
+추가로 Ubuntu 루트 파일 시스템의 용량과 사용량을 확인했습니다.
+
+```bash
+df -hT
+```
+
+확인 결과 Ubuntu 루트 파티션은 약 590GB로 표시되었으며, 설치 직후 약 547GB의 사용 가능한 공간이 있었습니다.
+
+### 1.4. 부트로더 및 재부팅
+
+설치 완료 후 재부팅하여 UEFI/GRUB 환경에서 Ubuntu와 Windows를 선택할 수 있도록 구성했습니다.
+
+```bash
+sudo reboot
+```
+
+최종적으로 Windows 환경을 보존하면서 Ubuntu Server 24.04를 독립적인 연구 서버 운영체제로 사용할 수 있게 되었습니다.
+
+**설치 결과**
+
+- Windows 기존 운영체제 유지
+- Ubuntu Server 24.04 LTS 설치 완료
+- UEFI/GRUB 듀얼 부팅 구성
+- Ubuntu 전용 600GB ext4 파티션 확보
+- 기존 EFI 파티션 재사용
+- 별도 데이터 디스크 보존
+
+## 2. Ubuntu Server 네트워크 및 원격 접속 환경 구축
+
+Ubuntu Server 24.04 설치 이후 연구실 내부 네트워크에 서버를 연결하고, 외부에서도 안전하게 관리할 수 있도록 네트워크 및 SSH 환경을 구성했습니다.
+
+서버는 GUI가 없는 Headless 환경으로 운영하며, 외부 접속에는 성균관대학교에서 제공하는 공식 VPN을 사용합니다.
+
+### 2.1. 연구실 네트워크 설정 (Netplan)
+
+기존 Windows 환경에서 사용하던 고정 IPv4 주소와 서브넷, 게이트웨이, DNS 설정을 Ubuntu로 이전했습니다.
+
+먼저 네트워크 인터페이스를 확인했습니다.
+
+```bash
+ip -br addr
+ip route
+```
+
+확인 결과 실제 연구실 유선 네트워크 인터페이스는 `enp0s31f6`이었습니다.
+
+Ubuntu Server 24.04는 Netplan을 통해 네트워크를 설정하므로 다음과 같이 설정 파일을 수정했습니다.
+
+```bash
+sudo nano /etc/netplan/<설정파일명>.yaml
+```
+
+설정 구조는 다음과 같습니다.
+
+```yaml
+network:
+  version: 2
+  ethernets:
+    enp0s31f6:
+      dhcp4: false
+      dhcp6: false
+      addresses:
+        - <STATIC_IP>/<PREFIX>
+      routes:
+        - to: 0.0.0.0/0
+          via: <DEFAULT_GATEWAY>
+      nameservers:
+        addresses:
+          - <DNS_SERVER_1>
+          - <DNS_SERVER_2>
+```
+
+실제 IP, 게이트웨이 및 DNS 주소는 네트워크 보안을 고려하여 문서에 기재하지 않았습니다.
+
+초기 설정 과정에서 다음 오류가 발생했습니다.
+
+```text
+global unicast route must include both a to and via
+```
+
+기본 경로 설정에 목적지(`to`)와 게이트웨이(`via`)를 명시하여 해결했습니다.
+
+이후 설정의 유효성을 확인하고 적용했습니다.
+
+```bash
+sudo netplan generate
+sudo netplan try
+```
+
+최종적으로 연구실 유선 네트워크에서 고정 IP가 정상적으로 적용되고 인터넷 연결이 가능한 것을 확인했습니다.
+
+### 2.2. SSH 원격 접속 환경
+
+Ubuntu Server는 Headless 환경으로 운영하기 때문에 SSH를 사용하여 원격 관리하도록 구성했습니다.
+
+SSH 서비스 상태를 확인했습니다.
+
+```bash
+sudo systemctl status ssh
+```
+
+서버에 접속할 때는 Ubuntu 사용자 계정과 연구실 내부 IP를 사용합니다.
+
+```bash
+ssh <USERNAME>@<SERVER_INTERNAL_IP>
+```
+
+관리자 계정으로 원격 로그인에 성공했으며, 다음 명령어로 접속한 사용자와 서버를 확인할 수 있습니다.
+
+```bash
+whoami
+hostname
+pwd
+```
+
+서버의 hostname은 `OOO`입니다.
+
+### 2.3. 사용자 계정 및 권한 분리
+
+여러 연구원이 동일한 워크스테이션을 사용할 수 있도록 Linux 사용자 계정을 분리했습니다.
+
+- `OOO` (관리자): 초기 설치 및 비상 관리 계정
+- `OOO` (개발): 서버 관리 및 개발 계정
+- `OOO` (연구원): 일반 연구원 계정
+
+개발 계정을 생성하고 `sudo` 그룹에 추가했으며, 관리자 권한이 필요한 작업을 수행할 수 있도록 구성했습니다.
+
+연구원별 작업 영역과 권한을 구분하기 위해 `autocage` 그룹도 구성했습니다.
+
+사용자와 그룹 정보는 다음 명령어로 확인할 수 있습니다.
+
+```bash
+id OOO
+getent group autocage
+```
+
+운영 원칙은 다음과 같습니다.
+
+1. 연구원은 각자의 Linux 계정으로 로그인합니다.
+2. 일반 연구원에게 불필요한 관리자 권한을 부여하지 않습니다.
+3. 관리자 계정 및 비밀번호를 공동으로 사용하지 않습니다.
+4. 연구 데이터와 시스템 설정의 접근 권한을 구분합니다.
+
+### 2.4. 성균관대학교 VPN을 통한 외부 접속
+
+연구실 외부에서도 서버에 접근할 수 있도록 성균관대학교에서 공식 제공하는 AXGATE VPN을 이용했습니다.
+
+VPN은 외부 사용자에게 교내 네트워크 접근 경로를 제공하며, 별도의 외부 공개 SSH 포트를 구성하지 않고 연구실 서버의 교내 IP로 접근할 수 있습니다.
+
+설정 과정은 다음과 같습니다.
+
+1. 성균관대학교 ASIS/GLS의 네트워크 서비스에서 VPN 사용을 신청합니다.
+2. 신청 승인 후 외부 접속 장치에 AXGATE VPN 클라이언트를 설치합니다.
+3. 개인 KINGO 계정 및 OTP를 이용하여 인증합니다.
+4. VPN 연결 이후 연구실 서버의 교내 IP를 대상으로 SSH 접속합니다.
+
+공식 VPN 접속 주소: https://vpn.skku.edu:9000
+
+노트북에서 VPN 연결을 완료한 뒤 다음 명령어로 서버에 접속했습니다.
+
+```bash
+ssh OOO@<SERVER_INTERNAL_IP>
+```
+
+외부 네트워크에서 VPN을 통한 SSH 로그인에 성공하여 연구실 서버의 원격 관리 경로가 정상 작동하는 것을 확인했습니다.
+
+팀원 역시 개별 VPN 접근 권한과 Ubuntu 사용자 계정을 부여받으면 같은 방식으로 접속할 수 있습니다.
+
+### 2.5. 최종 네트워크 구성
+
+```text
+Researcher's Laptop
+        |
+        | SKKU AXGATE VPN
+        v
+SKKU Campus Network
+        |
+        | Internal Network
+        v
+Autocage Workstation
+Ubuntu Server 24.04
+        |
+        +-- SSH (Port 22)
+        |
+        +-- OOO
+        +-- OOO
+        +-- Other Researchers
+```
+
+**구축 결과**
+
+- Ubuntu Server 고정 IPv4 설정 완료
+- Netplan 네트워크 구성 및 검증 완료
+- OpenSSH 원격 접속 확인
+- 연구원별 Linux 사용자 계정 분리
+- `autocage` 그룹 구성
+- SKKU 공식 VPN을 통한 외부 SSH 접속 성공
+
+이로써 연구실 외부에서도 서버를 관리하고 개발 작업을 진행할 수 있는 기본 네트워크 환경을 구축했습니다.
+
+### 2.6. 24/7 Headless 운영 설정
+
+서버가 절전 상태로 들어가지 않도록 sleep 계열 target을 막았습니다.
+
+```bash
+sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
+```
+
+reboot 후 원격 재접속까지 검증했습니다. 물리적으로 접근할 때 BIOS의 `Restore on AC Power Loss → Power On`을 확인하고, 전원 장애 복구가 중요해지면 UPS도 검토할 예정입니다.
+
+## 3. NVIDIA Driver 및 GPU 환경 구축
+
+Ubuntu Server 24.04 설치와 네트워크 구성을 완료한 후, 연구용 GPU를 활용하기 위해 NVIDIA 드라이버를 설치했습니다.
+
+워크스테이션의 GPU 사양은 다음과 같습니다.
+
+| 항목 | 사양 |
+|---|---|
+| GPU | NVIDIA RTX 5000 Ada Generation |
+| Architecture | Ada Lovelace |
+| GPU Memory | 32GB (32760 MiB) |
+| Operating System | Ubuntu Server 24.04 LTS |
+| NVIDIA Driver | 595.91.07 |
+| Driver Package | `nvidia-driver-595-open` |
+| CUDA Version (Driver API) | 13.2 |
+
+GPU를 사용하는 PyTorch, vLLM 및 기타 연구 환경은 향후 Docker Container 내부에서 독립적으로 관리하기로 했습니다.
+
+### 3.1. NVIDIA 드라이버 탐색
+
+먼저 Ubuntu에서 GPU를 인식하고 있는지 확인하고, 해당 GPU에 적합한 드라이버를 탐색했습니다.
+
+```bash
+ubuntu-drivers devices
+```
+
+실행 결과 Ubuntu에서 다음 드라이버를 권장했습니다.
+
+```text
+nvidia-driver-595-open (recommended)
+```
+
+이에 따라 NVIDIA Open GPU Kernel Module을 사용하는 드라이버를 설치했습니다.
+
+```bash
+sudo apt update
+sudo apt install nvidia-driver-595-open
+```
+
+설치 과정에서 Secure Boot가 활성화되어 있었기 때문에 MOK(Machine Owner Key) 등록 과정이 필요했습니다.
+
+### 3.2. Secure Boot 및 MOK 등록
+
+워크스테이션은 UEFI Secure Boot가 활성화된 상태였습니다.
+
+Secure Boot 환경에서는 커널 모듈의 서명이 신뢰되지 않으면 NVIDIA 드라이버 모듈이 로드되지 않을 수 있습니다.
+
+따라서 NVIDIA 드라이버 설치 과정에서 생성된 MOK 등록 요청을 완료했습니다.
+
+이 과정이 왜 필요한지, Secure Boot의 신뢰 체인은 <Term term="공부 노트에 따로 정리했습니다" title="Secure Boot와 NVIDIA 드라이버" href="blog/study/linux/secure-boot/">부트로더부터 커널 모듈까지 서명을 어떻게 검증하는지 그림과 함께 정리한 글입니다.</Term>.
+
+드라이버 설치 이후 시스템을 재부팅했습니다.
+
+```bash
+sudo reboot
+```
+
+재부팅 과정에서 MOK Manager 화면으로 진입했습니다.
+
+MOK Manager에서 등록할 키를 확인하고, 등록 절차를 진행했습니다.
+
+실제 화면에서는 `View Key 0`, `Continue` 등의 메뉴가 표시되었으며, 키 등록을 승인한 뒤 재부팅했습니다.
+
+이 과정을 통해 Secure Boot를 비활성화하지 않고도 NVIDIA 커널 모듈을 사용할 수 있도록 구성했습니다.
+
+### 3.3. NVIDIA 드라이버 동작 확인
+
+재부팅 후 NVIDIA 드라이버가 정상적으로 로드되었는지 확인했습니다.
+
+```bash
+nvidia-smi
+```
+
+확인 결과는 다음과 같습니다.
+
+```text
+NVIDIA-SMI 595.91.07
+Driver Version: 595.91.07
+CUDA Version: 13.2
+
+GPU: NVIDIA RTX 5000 Ada Generation
+Memory: 32760 MiB
+```
+
+GPU가 정상적으로 인식되었으며, 초기 유휴 상태에서 GPU 온도는 약 35°C로 확인되었습니다.
+
+따라서 NVIDIA 드라이버 설치와 Secure Boot 환경에서의 커널 모듈 로딩이 정상적으로 완료되었다고 판단했습니다.
+
+### 3.4. CUDA Toolkit 설치 정책
+
+일반적인 CUDA 개발 환경에서는 Host OS에 CUDA Toolkit을 직접 설치할 수 있지만, 이번 워크스테이션에서는 이를 설치하지 않았습니다.
+
+그 이유는 다음과 같습니다.
+
+1. 연구 프로젝트마다 서로 다른 CUDA, PyTorch, Triton 및 기타 라이브러리 버전이 필요할 수 있습니다.
+2. Host 환경에 여러 CUDA 라이브러리를 설치하면 버전 충돌이나 의존성 관리 문제가 발생할 수 있습니다.
+3. Docker 기반으로 환경을 분리하면 실험 환경을 재현하고 이전하기 쉽습니다.
+4. CUDA/PyTorch/vLLM 환경을 개별 Container Image로 관리할 수 있습니다.
+
+따라서 Host에는 NVIDIA Driver만 설치하고, CUDA Runtime과 연구용 라이브러리는 Container 내부에서 관리하는 구조를 채택했습니다.
+
+```text
+Ubuntu Server 24.04 (Host)
+        |
+        +-- NVIDIA Driver 595.91.07
+        |
+        +-- Docker Engine
+                |
+                +-- NVIDIA Container Toolkit
+                        |
+                        +-- CUDA Container
+                        +-- PyTorch Container
+                        +-- vLLM Container
+```
+
+여기서 `nvidia-smi`에 표시되는 `CUDA Version: 13.2`는 설치된 CUDA Toolkit의 버전이 아니라 **드라이버가 지원하는 CUDA 버전의 상한을 나타냅니다.**
+
+실제 Container 내부의 CUDA Runtime 버전은 사용하는 Container Image에 따라 달라질 수 있으며, NVIDIA 드라이버와의 호환성을 고려해야 합니다.
+
+### 3.5. 구축 결과
+
+최종적으로 다음 사항을 확인했습니다.
+
+- NVIDIA RTX 5000 Ada Generation GPU 인식
+- NVIDIA Driver 595.91.07 설치 완료
+- Secure Boot 유지 및 MOK 등록 완료
+- `nvidia-smi` 정상 작동
+- 32GB GPU 메모리 인식
+- Host CUDA Toolkit 미설치
+- Docker 기반 CUDA 연구 환경 운영 방침 확립
+
+이를 통해 Ubuntu Server에서 GPU를 사용할 수 있는 기본 환경을 구축했습니다.
+
+다음 단계에서는 **Docker Engine 및 NVIDIA Container Toolkit을 설치하고, Container 내부에서 실제 GPU 연산이 가능한지 검증**했습니다.
+
+## 4. Docker CE와 NVIDIA Container Toolkit
+
+Docker 공식 APT repository로 `docker-ce`, `docker-ce-cli`, `containerd.io`, `docker-buildx-plugin`, `docker-compose-plugin`을 설치하고 `hello-world`로 확인했다. APT source가 중복 등록되어 warning이 났는데, 중복된 `docker.list`를 지우자 `apt update`가 깨끗해졌다.
+
+이어서 NVIDIA Container Toolkit `1.20.1-1`을 설치하고 Docker runtime을 설정했다.
+
+```bash
+sudo nvidia-ctk runtime configure --runtime=docker
+sudo systemctl restart docker
+sudo docker run --rm --runtime=nvidia --gpus all ubuntu nvidia-smi
+```
+
+container 안에서 RTX 5000 Ada가 보이는 것까지 확인했다. 지금까지 검증된 경로는 다음과 같다.
+
+```text
+Ubuntu → NVIDIA Driver → Docker → NVIDIA Container Toolkit → Container → RTX 5000 Ada
+```
+
+## 5. vLLM Smoke Test
+
+### 5.1. 실험 목적
+
+Docker 기반 GPU 실행 환경 구축을 완료한 후, 실제 Large Language Model(LLM)을 실행하여 추론 서버가 정상적으로 작동하는지 검증했습니다.
+
+이번 실험의 목적은 모델의 성능을 평가하는 것이 아니라, 다음 구성요소가 정상적으로 연결되는지 확인하는 것이었습니다.
+
+1. NVIDIA GPU 인식
+2. Docker Container 실행
+3. vLLM 추론 엔진 초기화
+4. Hugging Face 모델 다운로드 및 로딩
+5. OpenAI-compatible API 서버 기동
+
+초기 검증 단계에서는 GPU 메모리 사용량이 작은 모델을 선택하여 환경 문제와 모델 규모에 따른 메모리 문제를 분리했습니다.
+
+### 5.2. vLLM 선택
+
+vLLM은 LLM 추론 및 서빙을 위한 오픈소스 엔진입니다.
+
+PagedAttention, Continuous Batching, KV Cache 관리 등의 기능을 통해 GPU 메모리와 추론 처리량을 효율적으로 활용하도록 설계되어 있습니다.
+
+향후 Autocage 연구 환경에서는 자연어 질의응답, 연구 문서 검색, 실험 데이터 분석을 위한 LLM 추론 서버로 활용할 예정입니다.
+
+이번 단계에서는 공식 Docker Image를 사용했습니다.
+
+```text
+vllm/vllm-openai:latest
+```
+
+### 5.3. 테스트 모델 선정
+
+초기 환경 검증에는 다음 모델을 사용했습니다.
+
+| 항목 | 내용 |
+|---|---|
+| Model | Qwen3-0.6B |
+| Hugging Face ID | `Qwen/Qwen3-0.6B` |
+| Parameter Scale | 약 0.6B |
+| Inference Engine | vLLM |
+| Execution | Docker + NVIDIA GPU |
+| Purpose | Smoke Test |
+
+0.6B 모델은 실제 Autocage Chat의 최종 모델이 아니라, 추론 환경의 정상 동작을 확인하기 위한 테스트 모델입니다.
+
+실사용 모델은 추후 GPU 메모리, 정확도, 응답 지연, 처리량 및 동시 요청 처리 성능을 비교한 뒤 선정할 예정입니다.
+
+### 5.4. Hugging Face Cache 준비
+
+모델 다운로드 파일을 Container가 종료된 후에도 재사용할 수 있도록 Host에 Hugging Face Cache 디렉터리를 생성했습니다.
+
+```bash
+mkdir -p ~/.cache/huggingface
+```
+
+이 디렉터리는 Docker Volume Mount를 통해 Container 내부의 `/root/.cache/huggingface`와 연결했습니다.
+
+### 5.5. vLLM Docker Container 실행
+
+다음 명령어로 vLLM 추론 서버를 실행했습니다.
+
+```bash
+sudo docker run --rm \
+  --runtime nvidia \
+  --gpus all \
+  -v ~/.cache/huggingface:/root/.cache/huggingface \
+  -p 8000:8000 \
+  --ipc=host \
+  vllm/vllm-openai:latest \
+  --model Qwen/Qwen3-0.6B
+```
+
+각 옵션의 역할은 다음과 같습니다.
+
+| 옵션 | 역할 |
+|---|---|
+| `--rm` | Container 종료 후 자동 삭제 |
+| `--runtime nvidia` | NVIDIA Runtime 사용 |
+| `--gpus all` | GPU 접근 허용 |
+| `-v` | Hugging Face 모델 캐시 공유 |
+| `-p 8000:8000` | Host와 Container의 API 포트 연결 |
+| `--ipc=host` | Host IPC Namespace 사용 |
+| `--model` | 추론할 모델 지정 |
+
+최초 실행 시 Docker Image와 Hugging Face 모델 파일이 다운로드되었습니다.
+
+모델 로딩 이후 vLLM이 API 서버를 초기화했습니다.
+
+### 5.6. 실행 결과
+
+vLLM 실행 로그에서 다음 메시지를 확인했습니다.
+
+```text
+Application startup complete.
+```
+
+이는 vLLM의 API 서버 초기화가 완료되었음을 의미합니다.
+
+따라서 이번 Smoke Test에서는 다음 사항을 확인했습니다.
+
+- NVIDIA GPU를 사용하는 vLLM Container 실행 성공
+- Qwen3-0.6B 모델 로딩 성공
+- vLLM 추론 엔진 초기화 성공
+- OpenAI-compatible API 서버 기동 성공
+
+다만 이번 단계에서는 API를 통한 실제 응답 생성 결과나 정량적인 추론 성능까지 측정하지 않았습니다.
+
+따라서 이번 결과는 **LLM 추론 서버의 기동 성공**으로 기록하며, 실제 응답 정확도와 성능 검증은 후속 실험으로 구분합니다.
+
+### 5.7. 후속 API 검증 방법
+
+서버가 실행 중인 상태에서 OpenAI-compatible API가 정상적으로 응답하는지 확인할 수 있습니다.
+
+먼저 모델 목록을 조회합니다.
+
+```bash
+curl http://127.0.0.1:8000/v1/models
+```
+
+이후 Chat Completions API를 통해 실제 추론을 검증할 수 있습니다.
+
+```bash
+curl http://127.0.0.1:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "Qwen/Qwen3-0.6B",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Hello. Introduce yourself briefly."
+      }
+    ],
+    "max_tokens": 128
+  }'
+```
+
+이 명령어는 후속 검증용 예시이며, 최초 Smoke Test에서 실제 실행한 명령어로 기록하지 않습니다.
+
+또한 실제 서비스 운영 시에는 API 포트를 불필요하게 외부 네트워크에 노출하지 않도록 Docker 포트 바인딩과 접근 제어를 별도로 구성해야 합니다.
+
+### 5.8. 향후 연구 방향
+
+기본 추론 환경이 정상적으로 기동되는 것을 확인했으므로, 다음 단계에서는 RTX 5000 Ada 32GB에 적합한 실사용 모델과 추론 설정을 선정할 예정입니다.
+
+후속 실험에서는 다음 항목을 비교합니다.
+
+| 평가 항목 | 설명 |
+|---|---|
+| Model Loading Time | 모델 로딩에 필요한 시간 |
+| GPU Memory Usage | 모델 및 KV Cache의 GPU 메모리 사용량 |
+| TTFT | 첫 번째 출력 토큰까지의 지연 |
+| ITL | 출력 토큰 사이의 지연 |
+| Output Throughput | 초당 생성 토큰 수 |
+| Total Throughput | 전체 요청 처리량 |
+| Concurrency | 동시 요청 수에 따른 성능 |
+| Context Length | 입력 길이에 따른 성능 변화 |
+
+실험에서는 모델의 Parameter Scale, Precision, Quantization, Context Length 및 vLLM 설정을 독립 변수로 고려합니다.
+
+이를 통해 단순히 실행 가능한 모델을 찾는 것이 아니라, **Autocage 연구용 Chat 및 데이터 분석 시스템에 적합한 모델과 서빙 구성을 정량적으로 결정**하는 것을 목표로 합니다.
+
+### 5.9. 구축 결과
+
+최종적으로 다음 실행 경로를 검증했습니다.
+
+```text
+Ubuntu Server 24.04
+        |
+NVIDIA RTX 5000 Ada 32GB
+        |
+NVIDIA Driver 595.91.07
+        |
+Docker Engine
+        |
+NVIDIA Container Toolkit 1.20.1
+        |
+vLLM Container
+        |
+Qwen3-0.6B
+        |
+OpenAI-compatible API Server
+        |
+Application startup complete
+```
+
+이로써 Autocage Workstation의 기본 LLM 추론 서버 환경 구축을 완료했습니다.
+
+향후에는 연구실 GitHub Organization의 private Repository에서 Docker Compose 구성, 모델 설정, Benchmark 및 평가 코드를 관리하여 실험의 재현성을 확보할 예정입니다.
+
+## 현재 진행 상태
+
+```text
+Ubuntu Server 24.04 / Windows dual boot   DONE
+Static network / VPN / SSH               DONE
+24/7 headless baseline                    DONE
+NVIDIA Driver / Secure Boot / MOK         DONE
+Docker CE / NVIDIA Container Toolkit      DONE
+Container GPU passthrough                 DONE
+vLLM smoke server (Qwen3-0.6B)            DONE
+
+Production Compose                        NEXT
+Real model comparison                     NOT DONE
+Qwen3-14B FP8 benchmark                   NOT DONE
+Open WebUI / RAG evaluation               NOT DONE
+Autocage data tools / AI Agent            NOT DONE
+```
+
+## 모델 선정에서 조심할 것
+
+### 29.6 GB는 실측값이 아니다
+
+Qwen3-14B 이야기에서 나온 `29.6 GB`는 RTX 5000 Ada에서 잰 VRAM 사용량이 아니다.
+
+```text
+14.8B parameters × 2 bytes (BF16) ≈ 29.6 GB
+```
+
+이는 **weight-only 하한 계산**이다. 실제 serving에는 KV cache, activations, CUDA/runtime workspace, vLLM engine overhead가 더해지고, context length와 concurrency에 따라 더 늘어난다. 그래서 29.6 GB가 32 GB보다 작다는 이유만으로 BF16 serving이 가능하다고 결론 내릴 수 없다. FP8(≈14.8 GB), INT4(≈7.4 GB)도 이론적 하한일 뿐이고 peak VRAM은 반드시 측정해야 한다.
+
+**Qwen3-14B FP8은 현재 후보 중 하나일 뿐, 최종 선택이 아니다.**
+
+### 선택 기준
+
+"32 GB에서 돌아가는 가장 큰 모델"로 고르지 않는다.
+
+```text
+Autocage task capability
+  → Ada / vLLM compatibility
+  → theoretical VRAM feasibility
+  → identical hardware benchmark
+  → Autocage evaluation
+  → Pareto-optimal model/config
+```
+
+Research Agent 품질로는 scientific reasoning, 문서 이해, long-context, 한국어/영어, structured output, tool calling, RAG grounding, citation fidelity, unsupported-claim rate, abstention을 본다. Serving 지표로는 model load time, peak VRAM, TTFT, TPOT, decode tokens/s, aggregate throughput, concurrency, OOM, backend warning/fallback을 본다. Autocage assistant는 coding model이 아니므로 coding benchmark만으로 고르지 않는다.
+
+### Benchmark 기록 형식
+
+모델마다 환경을 아래처럼 남겨 재현 가능하게 한다.
+
+```yaml
+date:
+gpu / driver:
+container_image_digest:
+vllm_version:
+
+model / model_revision:
+dtype / quantization:
+max_model_len:
+gpu_memory_utilization:
+
+prompt_tokens / output_tokens:
+concurrency:   # 1 user, 5 users × short/long context
+
+load_time / ttft / tpot:
+decode_tokens_per_second / throughput:
+peak_vram:
+warnings / fallbacks / oom:
+```
+
+## 운영과 보안
+
+장기 운영은 수동 `docker run`이 아니라 Compose로 재현한다. pinned image version/digest, `restart: unless-stopped`, log rotation, explicit volumes, healthcheck, private network binding이 기본이다. 대형 모델과 연구 데이터는 Git 밖(`/data/...`)에 둔다.
+
+하지 않는 것:
+
+- vLLM `:8000`의 public exposure
+- 연구실 static IP, VPN 계정/인증 정보 공개
+- API key / AWS credential의 Git commit
+- raw research data의 무조건적인 cloud upload
+
+지향하는 것은 학교 VPN 기반 private connectivity, user별 authentication, Docker isolation, secret 분리, local-first 데이터, 명시적 provenance다.
+
+## 아직 증명하지 않은 것
+
+아래는 모두 앞으로 측정할 대상이며 아직 결과가 아니다.
+
+- Qwen3-14B FP8이 RTX 5000 Ada의 최적 모델이라는 주장
+- Qwen3-14B FP8의 실제 peak VRAM
+- 32 GB에서 long-context/concurrency가 충분하다는 주장
+- FP8 품질 손실이 무시할 만하다는 주장
+- Open WebUI production setup, 실제 연구자료 RAG 품질
+- Autocage structured analytics/tool calling 품질
+
+## 다음 단계
+
+1. vLLM image/version 고정
+2. Compose 재현 환경
+3. benchmark harness와 후보 모델 matrix
+4. 1-user / 5-user, short/long context에서 TTFT / TPOT / throughput / peak VRAM 측정
+5. Autocage research-agent 평가 (protocol 질문, 문서 검색, structured output, tool selection, source grounding, 한/영)
+6. quality, groundedness, tool reliability, latency, throughput, VRAM, context의 trade-off로 Pareto selection
+7. Open WebUI / RAG / tools
+
+## 정리
+
+```text
+Laptop → SKKU VPN / SSH → Ubuntu Server 24.04
+→ NVIDIA Driver 595.91.07 → Docker CE → NVIDIA Container Toolkit 1.20.1
+→ RTX 5000 Ada 32 GB → vLLM → Qwen3-0.6B → OpenAI-compatible serving
+```
+
+이제 질문은 "LLM이 실행되는가?"가 아니다.
+
+> Autocage Research Assistant라는 목적에 대해, RTX 5000 Ada 32 GB에서 어떤 모델, precision, context, concurrency 설정이 품질과 성능의 최적 trade-off를 만드는가?
+
+그래서 앞으로의 기록은 설치 작업보다 **가설 → 동일 조건 실험 → 측정 → 비교 → 결정** 중심으로 남기려 한다.

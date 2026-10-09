@@ -111,6 +111,15 @@ const blog = defineCollection({
 		// not Zod — the id, not itemId, because this is a public-site join
 		// between public records.
 		papers: z.array(slugSafeString).default([]),
+		// Posts this one was informed by (e.g. a study note that grew out of
+		// the devlog where the question came up), as blog slugs without the
+		// language prefix: `devlog/local_llm/snl_llm_01`. Declared on the later
+		// artifact; becomes a public `informed` relation (the Explore lineage).
+		// Existence is checked by scripts/validate-blog-content.mjs; a ref to an
+		// unpublished post is withheld from the contract, not an error.
+		informedBy: z
+			.array(z.string().regex(/^[a-z0-9][a-z0-9_\-/]*[a-z0-9]$/, 'Use a lowercase blog slug such as study/linux/secure-boot.'))
+			.default([]),
 	}),
 });
 

@@ -1,17 +1,14 @@
 ---
-// Explore / Living Atlas (docs/plans/2026-10-03-explore-living-atlas.md).
-// Reads only the public artifact contract (src/utils/artifacts/load.ts),
-// never content collections directly. The layout is computed at build time.
-import { getCollection } from 'astro:content';
+// Explore: a relationship map of everything published (docs/plans/2026-10-08-explore-knowledge-graph.md).
+// Reads only the public artifact contract. Nothing here is inferred: the
+// projects are the declared series, the links are the contract's relations.
 import BaseHead from '../../components/BaseHead.astro';
 import Header from '../../components/Header.astro';
 import FloatingLanguagePicker from '../../components/FloatingLanguagePicker.astro';
-import Atlas from '../../components/explore/Atlas.astro';
+import KnowledgeGraph from '../../components/explore/KnowledgeGraph.astro';
 import { useTranslations, type UILanguage } from '../../i18n/ui';
 import { getPublicArtifactSet } from '../../utils/artifacts/load';
-import { getOfferedAxes } from '../../utils/atlas/dimensions';
-import { computeAtlasLayout } from '../../utils/atlas/layout';
-import { getTopicLabel } from '../../utils/library';
+import { formatArtifactDate, resolveHref, resolveText } from '../../utils/graph/display';
 
 export function getStaticPaths() {
 	return [{ params: { lang: 'ko' } }, { params: { lang: 'jp' } }, { params: { lang: 'en' } }];
@@ -19,35 +16,82 @@ export function getStaticPaths() {
 
 const lang = (Astro.params.lang ?? 'ko') as UILanguage;
 const t = useTranslations(lang);
-const title = `${t('nav.explore')} - Hun-Bot Blog`;
-const description = t('explore.meta.description');
-
+const tt = (key: string) => t(key as never) as string;
 const { artifacts, relations } = await getPublicArtifactSet();
-// "Now" is the build date: the atlas is regenerated on every deploy. One
-// layout per offered lane axis (the default, Activity, first); the visitor
-// switches between them from the axis label, with no layout work in the browser.
-const now = new Date();
-const views = getOfferedAxes(artifacts).map((axis) => computeAtlasLayout(artifacts, relations, { now, axis }));
-const topicLabels = Object.fromEntries(
-	(await getCollection('topics')).map((topic) => [topic.data.id, getTopicLabel(topic, lang)]),
-);
+
+const nodes = artifacts.map((artifact) => {
+	const link = resolveHref(artifact, lang);
+	const title = resolveText(artifact.title, lang)?.text ?? artifact.id;
+	return {
+		id: artifact.id,
+		kind: artifact.kind,
+		kindLabel: tt(`explore.kind.${artifact.kind}`),
+		title,
+		summary: resolveText(artifact.summary, lang)?.text ?? null,
+		date: formatArtifactDate(artifact.time.start),
+		ts: Date.parse(artifact.time.start),
+		href: link.href,
+		external: artifact.externalUrl !== null,
+		host: artifact.externalUrl ? new URL(artifact.externalUrl).hostname.replace(/^www\./, '') : null,
+		hrefNote: link.lang !== lang ? tt('explore.inspector.only-in').replace('{lang}', link.lang.toUpperCase()) : null,
+		project: artifact.series?.id ?? null,
+		haystack: Object.values(artifact.title).join(' ').toLowerCase(),
+	};
+});
+
+// A project is a declared series, whatever its size. Ordered by most recent activity.
+const byProject = new Map<string, typeof nodes>();
+for (const node of nodes) if (node.project) byProject.set(node.project, [...(byProject.get(node.project) ?? []), node]);
+const titleOfProject = new Map(artifacts.filter((artifact) => artifact.series).map((artifact) => [artifact.series!.id, resolveText(artifact.series!.title, lang)?.text ?? artifact.series!.id]));
+const projects = [...byProject]
+	.map(([key, members]) => {
+		const dates = members.map((member) => member.ts);
+		return {
+			key,
+			title: titleOfProject.get(key) ?? key,
+			count: members.length,
+			first: formatArtifactDate(new Date(Math.min(...dates)).toISOString().slice(0, 7)),
+			last: formatArtifactDate(new Date(Math.max(...dates)).toISOString().slice(0, 7)),
+			lastTs: Math.max(...dates),
+		};
+	})
+	.sort((a, b) => b.lastTs - a.lastTs || a.key.localeCompare(b.key));
+
+const graph = {
+	nodes,
+	projects,
+	relations: relations.map((relation) => ({
+		from: relation.from,
+		to: relation.to,
+		rel: relation.rel,
+		out: tt(`explore.rel.${relation.rel}.out`),
+		in: tt(`explore.rel.${relation.rel}.in`),
+	})),
+	strings: Object.fromEntries(
+		[
+			'graph.articles.count', 'graph.expand-hint', 'graph.more', 'graph.less', 'graph.unlisted', 'graph.other-projects', 'graph.root',
+			'graph.links', 'graph.links.none', 'graph.concepts', 'graph.concepts.empty', 'graph.search.none',
+			'graph.open', 'graph.clear', 'graph.announce.overview', 'graph.announce.node', 'graph.source.project', 'graph.detail.links',
+			'graph.rel.filter',
+		].map((key) => [key, tt(key)]),
+	),
+};
+const title = `${tt('nav.explore')} - Hun-Bot Blog`;
 ---
 
 <!doctype html>
 <html lang={lang}>
 	<head>
-		<BaseHead title={title} description={description} lang={lang} />
+		<BaseHead title={title} description={tt('explore.meta.description')} lang={lang} />
 	</head>
 	<body>
 		<Header />
 		<FloatingLanguagePicker />
 		<main id="main-content" class="atelier-page">
-			<section class="subpage-intro">
-				<h1 class="eyebrow">{t('nav.explore')}</h1>
-			</section>
-
-			<div class="page-frame">
-				<Atlas lang={lang} artifacts={artifacts} relations={relations} views={views} topicLabels={topicLabels} />
+			<h1 class="sr-only kg-title">{tt('nav.explore')}</h1>
+			<!-- The map uses nearly the full window width; the header, the title above and every other page keep their own frame. -->
+			<div class="kg-wide">
+				<KnowledgeGraph lang={lang} graph={graph} />
 			</div>
 		</main>
 	</body>
