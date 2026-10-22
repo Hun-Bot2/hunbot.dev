@@ -207,6 +207,70 @@ const resources = defineCollection({
 		}),
 });
 
+// Explainers (docs/features/explainers.md, docs/decisions/site-structure.md
+// Revision 2026-10-22): long-form Korean commentary on ONE paper or ONE piece
+// of external writing, drafted by a bot and approved by the owner. Exported by
+// the private pipeline; every field below is an allowlist entry, nothing else
+// is accepted (scripts/validate-explainers.mjs rejects unknown and forbidden
+// fields by name). Frontmatter is JSON, like `resources` and `papers`; the
+// Markdown body is the explainer. It is never a translation or a close
+// paraphrase of the source, and it always names and links the source.
+// Published means `review.status === 'approved'` (a refine below ties that to
+// `humanReviewed: true`); anything else is unpublished and renders nowhere.
+const explainerSource = z.object({
+	name: z.string().min(1),
+	url: httpUrl,
+	// `ja`, not the site's `jp` route code: this is the source's ISO language,
+	// shown as "JA" on the card; it never selects a site language.
+	language: z.enum(['ko', 'en', 'ja']),
+	kind: z.enum(['paper', 'article']),
+});
+
+const explainers = defineCollection({
+	loader: glob({ base: './src/content/explainers', pattern: '**/*.{md,mdx}' }),
+	schema: z
+		.object({
+			id: slugSafeString,
+			title: z.string().min(1),
+			// One or two sentences, owner-approved text.
+			dek: z.string().min(1).max(400),
+			// `ko` only for now; widen the literal when a second language ships.
+			canonicalLanguage: z.literal('ko').default('ko'),
+			publishedAt: dateString,
+			updatedAt: dateString.optional(),
+			source: explainerSource,
+			// Used only to link a paper card (joined on identifier, never title).
+			ids: z
+				.object({
+					doi: z.string().min(1).optional(),
+					arxiv: z.string().min(1).optional(),
+				})
+				.optional(),
+			// An enum so 'owner' can be added without a schema reshuffle.
+			authorship: z.enum(['bot']),
+			review: reviewMeta,
+			tags: z.array(shortSlugString).default([]),
+			image: resourceImage.optional(),
+		})
+		.superRefine((explainer, context) => {
+			if (explainer.review.status === 'approved' && explainer.review.humanReviewed !== true) {
+				context.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ['review', 'humanReviewed'],
+					message: 'Approved explainers must be human reviewed.',
+				});
+			}
+
+			if (explainer.review.status === 'approved' && !explainer.review.reviewedAt) {
+				context.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ['review', 'reviewedAt'],
+					message: 'Approved explainers must carry the review date the badge shows.',
+				});
+			}
+		}),
+});
+
 const paperSummaryFields = z.object({
 	tldr: z.string().min(1).optional(),
 	problem: z.string().min(1).optional(),
@@ -472,4 +536,4 @@ const picks = defineCollection({
 	}),
 });
 
-export const collections = { blog, resources, papers, topics, academicReviews, picks };
+export const collections = { blog, resources, papers, topics, academicReviews, picks, explainers };

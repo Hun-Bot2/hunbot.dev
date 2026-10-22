@@ -1,0 +1,44 @@
+---
+// The explainer's identity line, shared by the Library row and the detail page
+// so they read as the same object: mono accent "해설", the source-language chip,
+// and the source kind (논문 / 글).
+import { useTranslations, type UILanguage } from '../../i18n/ui';
+import SourceLanguageChip from './SourceLanguageChip.astro';
+
+interface Props {
+	sourceLanguage: 'ko' | 'en' | 'ja';
+	sourceKind: 'paper' | 'article';
+	lang: UILanguage;
+}
+
+const { sourceLanguage, sourceKind, lang } = Astro.props;
+const t = useTranslations(lang);
+const kindLabel = t(`explainer.source.kind.${sourceKind}` as Parameters<typeof t>[0]);
+---
+
+<span class="explainer-eyebrow">
+	<span class="explainer-eyebrow-label">{t('explainer.label')}</span>
+	<SourceLanguageChip sourceLanguage={sourceLanguage} lang={lang} />
+	<span class="explainer-eyebrow-kind">{kindLabel}</span>
+</span>
+
+<style>
+	.explainer-eyebrow {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.15rem 0.6rem;
+		font: 400 0.6875rem/1.5 var(--font-mono);
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
+		color: var(--accent);
+	}
+
+	.explainer-eyebrow-label {
+		font-weight: 500;
+	}
+
+	.explainer-eyebrow-kind {
+		color: var(--secondary);
+	}
+</style>
