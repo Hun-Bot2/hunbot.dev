@@ -98,6 +98,7 @@ const activeSection = section === 'blog'
 					<a href={SOCIAL_LINKS.github} target="_blank" rel="noopener noreferrer">GitHub</a>
 					<a href={SOCIAL_LINKS.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a>
 					<a href="/rss.xml">RSS</a>
+					<button type="button" data-consent-open>{t('consent.settings')}</button>
 				</span>
 			</div>
 		</nav>
@@ -336,7 +337,8 @@ const activeSection = section === 'blog'
 		gap: 0 1.25rem;
 	}
 
-	.mobile-links a {
+	.mobile-links a,
+	.mobile-links button {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.3em;
@@ -344,7 +346,18 @@ const activeSection = section === 'blog'
 		color: var(--secondary);
 	}
 
-	.mobile-links a:hover {
+	.mobile-links button {
+		padding: 0;
+		border: 0;
+		background: none;
+		font: inherit;
+		letter-spacing: inherit;
+		text-transform: inherit;
+		cursor: pointer;
+	}
+
+	.mobile-links a:hover,
+	.mobile-links button:hover {
 		color: var(--accent);
 	}
 

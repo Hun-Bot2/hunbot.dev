@@ -271,6 +271,44 @@ body {
 	border-color: var(--ink);
 }
 
+/* Analytics consent banner (src/components/AnalyticsConsent.astro). Both choices
+   carry the same weight on purpose. */
+.consent-banner {
+	position: fixed;
+	z-index: 120;
+	left: 1rem;
+	right: 1rem;
+	bottom: 1rem;
+	max-width: 34rem;
+	margin-inline: auto;
+	padding: 1rem 1.1rem;
+	border: 1px solid var(--rule-strong);
+	background: var(--paper-light);
+	color: var(--ink);
+}
+
+.consent-banner__title {
+	font: 500 1rem/1.4 var(--font-serif);
+}
+
+.consent-banner__body {
+	margin-top: 0.35rem;
+	font: 400 0.8125rem/1.6 var(--font-sans);
+	color: var(--secondary);
+}
+
+.consent-banner__actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 0.5rem;
+	margin-top: 0.85rem;
+}
+
+.consent-banner__actions .btn-pill {
+	min-height: 40px;
+	cursor: pointer;
+}
+
 h1,
 h2,
 h3,

@@ -36,7 +36,7 @@ Explicitly rejected as direction, not merely deprioritized:
 
 - A site-wide ambient background layer behind prose.
 - A hero 3D object.
-- Scroll hijacking, smooth-scroll takeover, or entrance animations.
+- Scroll hijacking, smooth-scroll takeover, or entrance animations — except the home hero (see [The Exceptions](#the-exceptions)).
 - Cursor followers.
 - Cards that expand spatially instead of navigating.
 - Magnetism, deformation, or inertia applied as a global system.
@@ -111,17 +111,26 @@ Coherence comes from physics and initiative, not from a component inventory.
 
 - **One spring configuration, one easing family, one duration scale**, defined as tokens alongside the existing design tokens. If a character, a card, and a graph node all decelerate identically, they read as inhabitants of one universe even though they share no code. This is what makes variation legible as style rather than as inconsistency.
 
-- **The site never moves unless the reader moved first.** One exception, below.
+- **The site never moves unless the reader moved first.** Two exceptions, below.
 
 That single rule eliminates, without further argument: autoplaying backgrounds, scroll hijacking, entrance animations, cursor followers, and attention loops.
 
-### The Exception
+### The Exceptions
 
-One recurring character, footer-scoped, rare. A cat.
+Relaxed 2026-10-22 (owner decision) to admit the home hero; the rule stands everywhere else.
 
-It is the only autonomous agent on the site, and the scarcity is the point. A single character becomes an identity mark. A menagerie of birds and cats becomes a theme park, which is the aesthetic this record rejects. It is also the highest ratio of personality to bytes available, and it survives a decade without maintenance.
+**1. The home hero.** The top of `/{lang}/` may carry an auto-advancing slider of featured items, and its headline may reveal word by word on each slide change. Nothing else on the site gets autonomous motion, and the hero does not set a precedent for list pages, posts, or reviews. It must:
 
-It is the one module permitted under boundary 3.
+- show a visible pause control, and pause on hover, keyboard focus, and while the tab is hidden;
+- render the first slide complete and readable with no JavaScript;
+- under `prefers-reduced-motion: reduce`, not auto-advance and show the headline at once;
+- use the shared motion tokens (one easing family, one duration scale), not one-off curves.
+
+**2. The cat.** One recurring character, footer-scoped, rare.
+
+It is the only autonomous agent outside the home hero, and the scarcity is the point. A single character becomes an identity mark. A menagerie of birds and cats becomes a theme park, which is the aesthetic this record rejects. It is also the highest ratio of personality to bytes available, and it survives a decade without maintenance.
+
+It is the one module permitted under boundary 3 (the home hero is scoped to one route, so it does not count against it).
 
 ## Variation Policy
 
