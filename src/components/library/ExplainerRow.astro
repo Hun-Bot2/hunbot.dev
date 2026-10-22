@@ -7,7 +7,7 @@
 import { useTranslations, type UILanguage } from '../../i18n/ui';
 import type { LibraryItem } from '../../utils/library';
 import ProvenanceBadge from './ProvenanceBadge.astro';
-import SourceLanguageChip from './SourceLanguageChip.astro';
+import ExplainerEyebrow from './ExplainerEyebrow.astro';
 
 interface Props {
 	item: LibraryItem;
@@ -42,8 +42,7 @@ const reviewedAt = explainer.reviewedAt ? new Date(explainer.reviewedAt) : undef
 		</span>
 		<span class="entry-body">
 			<span class="entry-eyebrow">
-				<span class="entry-eyebrow-label">{t('explainer.label')}</span>
-				<SourceLanguageChip sourceLanguage={explainer.sourceLanguage} lang={lang} />
+				<ExplainerEyebrow sourceLanguage={explainer.sourceLanguage} sourceKind={explainer.sourceKind} lang={lang} />
 			</span>
 			<span class="entry-title" lang={contentLang}>{item.title}</span>
 			{item.description && <span class="entry-desc" lang={contentLang}>{item.description}</span>}
@@ -89,19 +88,8 @@ const reviewedAt = explainer.reviewedAt ? new Date(explainer.reviewedAt) : undef
 	}
 
 	.entry-eyebrow {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 0.15rem 0.6rem;
+		display: block;
 		margin-bottom: 0.15rem;
-		font: 400 0.6875rem/1.5 var(--font-mono);
-		letter-spacing: 0.09em;
-		text-transform: uppercase;
-		color: var(--accent);
-	}
-
-	.entry-eyebrow-label {
-		font-weight: 500;
 	}
 
 	.entry--explainer .entry-read {

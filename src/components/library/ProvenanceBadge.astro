@@ -63,7 +63,7 @@ const explanation = !humanReviewed
 				)}
 				<span class="prov-chevron" aria-hidden="true"></span>
 			</summary>
-			<p class="prov-panel">{explanation}</p>
+			<p class="prov-panel">{explanation}{dateLabel && ` ${t('explainer.reviewed-on')} ${dateLabel}`}</p>
 		</details>
 	)
 }
@@ -86,6 +86,7 @@ const explanation = !humanReviewed
 		font: 400 0.75rem/1.4 var(--font-mono);
 		letter-spacing: 0.04em;
 		color: var(--secondary);
+		white-space: nowrap;
 		cursor: pointer;
 		list-style: none;
 		user-select: none;
@@ -171,44 +172,19 @@ const explanation = !humanReviewed
 		word-break: keep-all;
 	}
 
-	/* Narrow screens: same pill, two rows. Author and review sit on the first
-	   row with the chevron; the review date drops to a second row. */
+	/* Narrow screens: the pill never wraps. The date segment leaves the pill
+	   (the page shows it in its meta row; the panel still has it). */
 	@media (max-width: 479px) {
-		.prov-pill {
-			display: grid;
-			grid-template-columns: auto minmax(0, 1fr) auto;
-			grid-template-areas:
-				'author review chevron'
-				'date date date';
-			border-radius: 1.25rem;
-			font-size: 0.6875rem;
-		}
-
 		.prov-seg {
-			padding: 0.45rem 0.7rem;
-		}
-
-		.prov-seg--author {
-			grid-area: author;
-			padding-right: 0.7rem;
-		}
-
-		.prov-seg--review {
-			grid-area: review;
-			padding-left: 0.7rem;
-			white-space: normal;
+			padding-inline: 0.65rem;
 		}
 
 		.prov-seg--date {
-			grid-area: date;
-			padding: 0.3rem 0.85rem 0.5rem;
-			border-left: 0;
-			border-top: 1px solid var(--rule);
+			display: none;
 		}
 
 		.prov-chevron {
-			grid-area: chevron;
-			margin: 0 0.8rem 0 0.2rem;
+			margin-right: 0.7rem;
 		}
 	}
 

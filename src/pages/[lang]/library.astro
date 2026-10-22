@@ -51,21 +51,35 @@ function facetOptions(values: string[], label: (value: string) => string) {
 		.sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
 }
 
+// Explainers lead the list as their own first section (id `explainers`), not as
+// a tab and not inside an area section: still one list, one filter. Their
+// area/topic values are not offered as 분야/주제 options (those facets describe
+// the external items), but every row keeps its data attributes, so 종류 and the
+// section hiding work for them like for any row.
+const explainerItems = items.filter((item) => item.explainer);
+const otherItems = items.filter((item) => !item.explainer);
+
 // 분야 keeps the registry order (src/data/libraryAreas.ts), 기타 last; each
 // 주제 chip belongs to its items' area, so picking an area narrows the topics.
 const areaOrder = [...libraryAreas.map((area) => area.id), 'other'];
-const areaOptions = facetOptions(items.map((item) => item.area), (area) => getLibraryArea(area).label[lang]).sort(
+const areaOptions = facetOptions(otherItems.map((item) => item.area), (area) => getLibraryArea(area).label[lang]).sort(
 	(a, b) => areaOrder.indexOf(a.value) - areaOrder.indexOf(b.value),
 );
-const areaOfTopic = new Map(items.map((item) => [item.topic, item.area]));
-const topicOptions = facetOptions(items.map((item) => item.topic), (topic) => getLibraryTopicLabel(topic, lang))
+const areaOfTopic = new Map(otherItems.map((item) => [item.topic, item.area]));
+const topicOptions = facetOptions(otherItems.map((item) => item.topic), (topic) => getLibraryTopicLabel(topic, lang))
 	.map((option) => ({ ...option, parent: { facet: 'area', value: areaOfTopic.get(option.value)! } }))
 	.sort((a, b) => areaOrder.indexOf(a.parent.value) - areaOrder.indexOf(b.parent.value));
 
 // One section per area that has items, in registry order (기타 last).
-const sections = areaOrder
-	.map((id) => ({ id, label: getLibraryArea(id).label[lang], items: items.filter((item) => item.area === id) }))
+const areaSections = areaOrder
+	.map((id) => ({ id: `area-${id}`, label: getLibraryArea(id).label[lang], description: '', items: otherItems.filter((item) => item.area === id) }))
 	.filter((section) => section.items.length > 0);
+const sections = [
+	...(explainerItems.length > 0
+		? [{ id: 'explainers', label: t('library.explainers.title'), description: t('library.explainers.description'), items: explainerItems }]
+		: []),
+	...areaSections,
+];
 
 const filterGroups = [
 	{ facet: 'area', label: t('library.filter-area'), options: areaOptions },
@@ -106,9 +120,10 @@ const filterGroups = [
 
 					<div class="page-frame library-archive" data-blog-posts>
 						{sections.map((section) => (
-							<section class="library-section" id={`area-${section.id}`} aria-labelledby={`area-${section.id}-title`} data-filter-section>
+							<section class="library-section" id={section.id} aria-labelledby={`${section.id}-title`} data-filter-section>
 								<div class="library-section-head">
-									<h2 id={`area-${section.id}-title`}>{section.label}</h2>
+									<h2 id={`${section.id}-title`}>{section.label}</h2>
+									{section.description && <p class="library-section-desc">{section.description}</p>}
 								</div>
 								<ul class="entry-list">
 									{section.items.map((item) =>
@@ -165,6 +180,12 @@ const filterGroups = [
 		margin: 0;
 		font: 400 1.25rem/1.3 var(--font-serif);
 		letter-spacing: -0.02em;
+	}
+
+	.library-section-desc {
+		margin: 0.15rem 0 0;
+		font: 400 0.8125rem/1.55 var(--font-sans);
+		color: var(--secondary);
 	}
 
 	.library-empty {

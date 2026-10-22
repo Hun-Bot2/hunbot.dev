@@ -50,6 +50,16 @@ assert.match(libraryPage, /<LibraryRow\b/);
 // same list as on-site rows: no tab, and only the published ones.
 assert.match(libraryPage, /getCollection\('explainers'\)/);
 assert.match(libraryPage, /<ExplainerRow\b/);
+// Explainers lead the list as their own first section (not a tab), hidden when
+// there are none, and the section keeps data-filter-section so the filter hides
+// it when empty.
+assert.match(libraryPage, /id: 'explainers'/, 'Explainers should be the first Library section, id "explainers".');
+assert.match(libraryPage, /explainerItems\.length > 0/, 'The explainers section must not render without published explainers.');
+assert.match(libraryPage, /data-filter-section/);
+assert.ok(
+	libraryPage.indexOf("id: 'explainers'") < libraryPage.indexOf('...areaSections'),
+	'The explainers section must come before the area sections.',
+);
 const explainerRow = readFileSync('src/components/library/ExplainerRow.astro', 'utf8');
 assert.doesNotMatch(explainerRow, /target="_blank"/, 'An explainer row is an on-site link.');
 assert.match(explainerRow, /data-post-kind/, 'An explainer row must carry the filter data attributes.');
