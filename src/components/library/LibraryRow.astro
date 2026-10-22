@@ -30,7 +30,7 @@ const isSmall = image.kind !== 'typographic' && image.width < 600;
 		<span class="entry-body">
 			<span class="entry-title">{item.title}</span>
 			{item.description && <span class="entry-desc">{item.description}</span>}
-			<span class="entry-meta">{kindLabel} · {topicLabel} ↗</span>
+			<span class="entry-meta">{kindLabel} · {topicLabel} <span class="entry-arrow" aria-hidden="true">↗</span></span>
 		</span>
 	</a>
 </li>

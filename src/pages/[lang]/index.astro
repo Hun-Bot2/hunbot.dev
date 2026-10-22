@@ -4,7 +4,8 @@ import Header from '../../components/Header.astro';
 import FloatingLanguagePicker from '../../components/FloatingLanguagePicker.astro';
 import { getCollection } from 'astro:content';
 import { getAllPosts } from '../../utils/blog';
-import FormattedDate from '../../components/FormattedDate.astro';
+import HomeHero from '../../components/home/HomeHero.astro';
+import { HERO_SLIDE_LIMIT, selectHeroSlides } from '../../utils/hero';
 import { useTranslations } from '../../i18n/ui';
 import type { UILanguage } from '../../i18n/ui';
 import {
@@ -49,18 +50,21 @@ const allPicks = await getCollection('picks');
 
 const posts = getPostsForLanguage(allPosts, currentLang);
 const latestBriefs = getLatestBriefPosts(posts, 3);
-const latestPosts = getLatestBlogPosts(posts, 6);
-const academicReviews = getAcademicReviewsByLanguage(
-	getPublishedAcademicReviews(allAcademicReviews),
-	currentLang,
-).slice(0, 3);
+const publishedReviews = getAcademicReviewsByLanguage(getPublishedAcademicReviews(allAcademicReviews), currentLang);
+const academicReviews = publishedReviews.slice(0, 3);
+
+// Hero: the newest posts (briefs have their own block below), the newest review
+// taking the last slot. 최근 글 then lists the posts after the ones the hero shows.
+const heroSlides = selectHeroSlides(getLatestBlogPosts(posts, HERO_SLIDE_LIMIT), publishedReviews);
+const heroPostIds = new Set(heroSlides.filter((slide) => slide.kind === 'post').map((slide) => slide.entry.id));
+const latestPosts = getLatestBlogPosts(posts, HERO_SLIDE_LIMIT + 5)
+	.filter((post) => !heroPostIds.has(post.id))
+	.slice(0, 5);
 
 // Library block: the three newest Library items, the same set and order
 // /{lang}/library/ shows (src/utils/library.ts's getLibraryItems).
 const libraryItems = getLibraryItems(allResources, allPicks).slice(0, 3);
 
-const featuredPost = latestPosts[0];
-const otherPosts = latestPosts.slice(1);
 ---
 
 <!doctype html>
@@ -77,36 +81,27 @@ const otherPosts = latestPosts.slice(1);
 		<FloatingLanguagePicker />
 		<div class="global-wrapper" data-is-root-path="true">
 			<main id="main-content" class="atelier-page home-page" data-pagefind-body>
+				<div class="home-hero page-frame">
+					<HomeHero slides={heroSlides} lang={currentLang} />
+				</div>
 				<div class="home-primary page-frame">
 					<section class="home-section home-latest" aria-labelledby="home-latest-title">
 						<div class="column-heading">
 							<h2 id="home-latest-title">{t('home.latest.title')}</h2>
 							<a href={blogUrl} class="home-link">{t('home.latest.view-all')}</a>
 						</div>
-						{featuredPost ? (
-							<Fragment>
-								<a href={getBlogUrlFromId(featuredPost.id)} class="home-featured">
-									<PostThumb post={featuredPost} sizes="(max-width: 539px) 100vw, 144px" />
-									<div class="home-featured-copy">
-										<p class="eyebrow">{t('home.featured.label')} · <FormattedDate date={featuredPost.data.pubDate} /></p>
-										<h3>{featuredPost.data.title}</h3>
-										<p class="home-featured-description">{featuredPost.data.description}</p>
-									</div>
-								</a>
-								{otherPosts.length > 0 && (
-									<ul class="rule-list home-post-list">
-										{otherPosts.map((post) => (
-											<li>
-												<a href={getBlogUrlFromId(post.id)} class="home-post-row">
-													<time datetime={post.data.pubDate.toISOString()}>{formatPostDate(post.data.pubDate)}</time>
-													<PostThumb post={post} sizes="64px" />
-													<h3>{post.data.title}</h3>
-												</a>
-											</li>
-										))}
-									</ul>
-								)}
-							</Fragment>
+						{latestPosts.length > 0 ? (
+							<ul class="rule-list home-post-list">
+								{latestPosts.map((post) => (
+									<li>
+										<a href={getBlogUrlFromId(post.id)} class="home-post-row">
+											<time datetime={post.data.pubDate.toISOString()}>{formatPostDate(post.data.pubDate)}</time>
+											<PostThumb post={post} sizes="64px" />
+											<h3>{post.data.title}</h3>
+										</a>
+									</li>
+								))}
+							</ul>
 						) : (
 							<div class="home-empty">{t('blog.no-posts')}</div>
 						)}
@@ -193,12 +188,17 @@ const otherPosts = latestPosts.slice(1);
 </html>
 
 <style>
+	/* ── Hero: the stage sits on the paper, above the lists ── */
+	.home-hero {
+		padding-top: 1.5rem;
+	}
+
 	/* ── Primary: latest writing | academic reviews ── */
 	.home-primary {
 		display: grid;
 		grid-template-columns: minmax(0, 1.6fr) minmax(0, 0.8fr);
 		gap: 0 2.5rem;
-		padding-top: 2rem;
+		padding-top: 0.5rem;
 		padding-bottom: 2.5rem;
 	}
 
@@ -213,54 +213,6 @@ const otherPosts = latestPosts.slice(1);
 
 	.column-heading h2 {
 		word-break: keep-all;
-	}
-
-	/* Featured post */
-	.home-featured {
-		display: grid;
-		grid-template-columns: 9rem minmax(0, 1fr);
-		gap: 1.25rem;
-		align-items: stretch;
-		padding-bottom: 1.5rem;
-	}
-
-	.home-featured :global(.post-thumb) {
-		width: 100%;
-		height: 100%;
-		min-height: 9.5rem;
-	}
-
-	.home-featured-copy {
-		min-width: 0;
-	}
-
-	.home-featured-copy .eyebrow {
-		margin-bottom: 0.6rem;
-	}
-
-	.home-featured-copy h3 {
-		margin-bottom: 0.75rem;
-		font: 400 clamp(1.75rem, 2.7vw, 2.5rem) / 1.12 var(--font-serif);
-		letter-spacing: -0.03em;
-		overflow-wrap: anywhere;
-		transition: color 160ms ease;
-	}
-
-	.home-featured:hover h3 {
-		color: var(--accent);
-	}
-
-	.home-featured-description {
-		display: -webkit-box;
-		-webkit-line-clamp: 3;
-		line-clamp: 3;
-		-webkit-box-orient: vertical;
-		overflow: hidden;
-		max-width: 36rem;
-		margin: 0 0 1rem;
-		font-size: 0.875rem;
-		line-height: 1.65;
-		color: var(--secondary);
 	}
 
 	/* Post rows */
@@ -291,7 +243,7 @@ const otherPosts = latestPosts.slice(1);
 		-webkit-box-orient: vertical;
 		overflow: hidden;
 		font: 400 1.0625rem/1.25 var(--font-serif);
-		transition: color 160ms ease;
+		transition: color var(--dur-2) var(--ease-standard);
 	}
 
 	.home-post-row:hover h3,
@@ -324,7 +276,7 @@ const otherPosts = latestPosts.slice(1);
 
 	.home-review-row h3 {
 		font: 400 1.1875rem/1.25 var(--font-serif);
-		transition: color 160ms ease;
+		transition: color var(--dur-2) var(--ease-standard);
 	}
 
 	.home-review-row p {
@@ -377,7 +329,7 @@ const otherPosts = latestPosts.slice(1);
 
 	.home-brief-row h3 {
 		font: 400 1.1875rem/1.25 var(--font-serif);
-		transition: color 160ms ease;
+		transition: color var(--dur-2) var(--ease-standard);
 	}
 
 	.home-brief-row p {
@@ -404,15 +356,6 @@ const otherPosts = latestPosts.slice(1);
 	}
 
 	@media (max-width: 539px) {
-		.home-featured {
-			grid-template-columns: minmax(0, 1fr);
-		}
-
-		.home-featured :global(.post-thumb) {
-			height: 8rem;
-			min-height: 0;
-		}
-
 		.home-post-row {
 			grid-template-columns: 64px minmax(0, 1fr);
 			gap: 0.15rem 0.9rem;

@@ -43,7 +43,7 @@ const hero = getResponsivePublicImage(post.data.heroImage ?? '/images/blank.png'
 		<span class="entry-body">
 			<span class="entry-title">{post.data.title}</span>
 			{post.data.description && <span class="entry-desc">{post.data.description}</span>}
-			<span class="entry-meta">{categoryLabels[category] ?? category}{shownSeries && <Fragment> · {shownSeries}</Fragment>}</span>
+			<span class="entry-meta">{categoryLabels[category] ?? category}{shownSeries && <Fragment> · {shownSeries}</Fragment>} <span class="entry-arrow" aria-hidden="true">→</span></span>
 		</span>
 	</a>
 </li>
