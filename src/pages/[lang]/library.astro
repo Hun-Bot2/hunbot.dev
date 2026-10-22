@@ -11,6 +11,7 @@ import Header from '../../components/Header.astro';
 import FloatingLanguagePicker from '../../components/FloatingLanguagePicker.astro';
 import BlogFilterBar from '../../components/blog/BlogFilterBar.astro';
 import LibraryRow from '../../components/library/LibraryRow.astro';
+import ExplainerRow from '../../components/library/ExplainerRow.astro';
 import { getCollection } from 'astro:content';
 import { useTranslations, type UILanguage } from '../../i18n/ui';
 import { getLibraryItems } from '../../utils/library';
@@ -32,7 +33,14 @@ const t = useTranslations(lang);
 const title = `${t('library.title')} - Hun-Bot Blog`;
 const description = t('library.description');
 
-const items = getLibraryItems(await getCollection('resources'), await getCollection('picks'), lang);
+// Explainers (docs/decisions/site-structure.md, Revision 2026-10-22) join the
+// same list: on-site rows among the external ones, filtered by the same 종류.
+const items = getLibraryItems(
+	await getCollection('resources'),
+	await getCollection('picks'),
+	lang,
+	await getCollection('explainers'),
+);
 
 // Facet options with counts, most common first (ties by label).
 function facetOptions(values: string[], label: (value: string) => string) {
@@ -103,13 +111,17 @@ const filterGroups = [
 									<h2 id={`area-${section.id}-title`}>{section.label}</h2>
 								</div>
 								<ul class="entry-list">
-									{section.items.map((item) => (
-										<LibraryRow
-											item={item}
-											kindLabel={getLibraryKindLabel(item.kind, lang)}
-											topicLabel={getLibraryTopicLabel(item.topic, lang)}
-										/>
-									))}
+									{section.items.map((item) =>
+										item.explainer ? (
+											<ExplainerRow item={item} lang={lang} />
+										) : (
+											<LibraryRow
+												item={item}
+												kindLabel={getLibraryKindLabel(item.kind, lang)}
+												topicLabel={getLibraryTopicLabel(item.topic, lang)}
+											/>
+										),
+									)}
 								</ul>
 							</section>
 						))}

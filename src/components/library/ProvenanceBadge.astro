@@ -1,0 +1,224 @@
+---
+// How a piece was written and checked, as one reusable badge. Two segments in
+// fixed positions so the pill never changes shape between states:
+//   author segment  — "AI 초안" (bot) or "직접 씀" (owner)
+//   review segment  — "✓ 사람이 검토함 · date", or "검토 전" when not reviewed
+// `full` is a native <details> disclosure (no JS, keyboard operable) whose
+// panel says in one sentence what the segments mean; `compact` is inline text
+// for the Library row. Colours are tokens only, so both themes follow.
+import { useTranslations, type UILanguage } from '../../i18n/ui';
+import { formatPostDate } from '../../utils/display';
+
+interface Props {
+	authorship: 'bot' | 'owner';
+	humanReviewed: boolean;
+	reviewedAt?: Date;
+	lang: UILanguage;
+	variant?: 'full' | 'compact';
+}
+
+const { authorship, humanReviewed, reviewedAt, lang, variant = 'full' } = Astro.props;
+const t = useTranslations(lang);
+
+const authorLabel = authorship === 'owner' ? t('explainer.badge.owner') : t('explainer.badge.ai-draft');
+const reviewLabel = humanReviewed ? t('explainer.badge.reviewed') : t('explainer.badge.unreviewed');
+const dateLabel = humanReviewed && reviewedAt ? formatPostDate(reviewedAt) : null;
+const explanation = !humanReviewed
+	? t('explainer.badge.explain-unreviewed')
+	: authorship === 'owner'
+		? t('explainer.badge.explain-owner')
+		: t('explainer.badge.explain-bot');
+---
+
+{
+	variant === 'compact' ? (
+		<span class="prov-compact" data-reviewed={humanReviewed ? 'true' : 'false'}>
+			<span class="prov-compact-author">{authorLabel}</span>
+			<span class="prov-compact-sep" aria-hidden="true"> · </span>
+			<span class="prov-compact-review">
+				{humanReviewed && <span class="prov-check" aria-hidden="true">✓ </span>}
+				{reviewLabel}
+			</span>
+		</span>
+	) : (
+		<details class="prov" data-reviewed={humanReviewed ? 'true' : 'false'} data-authorship={authorship}>
+			<summary class="prov-pill" aria-label={`${authorLabel}, ${reviewLabel}${dateLabel ? `, ${dateLabel}` : ''}. ${t('explainer.badge.toggle')}`}>
+				<span class="prov-seg prov-seg--author">{authorLabel}</span>
+				<span class="prov-seg prov-seg--review">
+					{humanReviewed ? (
+						<svg class="prov-check-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<path d="M5 12.5l4.5 4.5L19 7.5" />
+						</svg>
+					) : (
+						<svg class="prov-check-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+							<circle cx="12" cy="12" r="6.5" />
+						</svg>
+					)}
+					<span>{reviewLabel}</span>
+				</span>
+				{dateLabel && (
+					<span class="prov-seg prov-seg--date">
+						<time class="prov-date" datetime={reviewedAt!.toISOString().slice(0, 10)}>{dateLabel}</time>
+					</span>
+				)}
+				<span class="prov-chevron" aria-hidden="true"></span>
+			</summary>
+			<p class="prov-panel">{explanation}</p>
+		</details>
+	)
+}
+
+<style>
+	/* ── full ── */
+	.prov {
+		display: block;
+		max-width: 100%;
+	}
+
+	.prov-pill {
+		display: inline-flex;
+		align-items: stretch;
+		max-width: 100%;
+		min-height: 2.5rem;
+		border: 1px solid var(--rule-strong);
+		border-radius: 999px;
+		background: var(--paper-light);
+		font: 400 0.75rem/1.4 var(--font-mono);
+		letter-spacing: 0.04em;
+		color: var(--secondary);
+		cursor: pointer;
+		list-style: none;
+		user-select: none;
+		-webkit-user-select: none;
+		transition: border-color 160ms ease;
+	}
+
+	.prov-pill::-webkit-details-marker {
+		display: none;
+	}
+
+	.prov-pill:hover {
+		border-color: var(--ink);
+	}
+
+	.prov-seg {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		padding: 0.3rem 0.85rem;
+		text-transform: uppercase;
+		white-space: nowrap;
+	}
+
+	.prov-seg--author {
+		padding-right: 0.8rem;
+		border-right: 1px solid var(--rule);
+		color: var(--secondary);
+	}
+
+	/* Owner-written has no AI segment colour weight: plain ink instead. */
+	.prov[data-authorship='owner'] .prov-seg--author {
+		color: var(--ink);
+	}
+
+	.prov-seg--review {
+		padding-left: 0.8rem;
+		color: var(--state-reviewed);
+	}
+
+	.prov[data-reviewed='false'] .prov-seg--review {
+		color: var(--secondary);
+	}
+
+	.prov-check-icon {
+		flex: none;
+	}
+
+	.prov-seg--date {
+		padding-left: 0.8rem;
+		border-left: 1px solid var(--rule);
+		font-variant-numeric: tabular-nums;
+		letter-spacing: 0.02em;
+		color: var(--secondary);
+	}
+
+	/* Open/closed indicator: a small chevron, never the only affordance (the whole pill is the target). */
+	.prov-chevron {
+		align-self: center;
+		width: 0.45rem;
+		height: 0.45rem;
+		margin: 0 0.9rem 0 -0.15rem;
+		border-right: 1.5px solid var(--secondary);
+		border-bottom: 1.5px solid var(--secondary);
+		transform: translateY(-2px) rotate(45deg);
+		transition: transform 160ms ease;
+	}
+
+	.prov[open] .prov-chevron {
+		transform: translateY(1px) rotate(-135deg);
+	}
+
+	.prov-panel {
+		max-width: 36rem;
+		margin: 0.6rem 0 0;
+		padding: 0.1rem 0 0.1rem 0.85rem;
+		border-left: 2px solid var(--rule-strong);
+		font: 400 0.875rem/1.65 var(--font-sans);
+		color: var(--secondary);
+	}
+
+	html:lang(ko) .prov-panel {
+		word-break: keep-all;
+	}
+
+	/* Narrow screens: same pill, two rows. Author and review sit on the first
+	   row with the chevron; the review date drops to a second row. */
+	@media (max-width: 479px) {
+		.prov-pill {
+			display: grid;
+			grid-template-columns: auto minmax(0, 1fr) auto;
+			grid-template-areas:
+				'author review chevron'
+				'date date date';
+			border-radius: 1.25rem;
+			font-size: 0.6875rem;
+		}
+
+		.prov-seg {
+			padding: 0.45rem 0.7rem;
+		}
+
+		.prov-seg--author {
+			grid-area: author;
+			padding-right: 0.7rem;
+		}
+
+		.prov-seg--review {
+			grid-area: review;
+			padding-left: 0.7rem;
+			white-space: normal;
+		}
+
+		.prov-seg--date {
+			grid-area: date;
+			padding: 0.3rem 0.85rem 0.5rem;
+			border-left: 0;
+			border-top: 1px solid var(--rule);
+		}
+
+		.prov-chevron {
+			grid-area: chevron;
+			margin: 0 0.8rem 0 0.2rem;
+		}
+	}
+
+	/* ── compact ── */
+	.prov-compact {
+		font: inherit;
+		color: inherit;
+	}
+
+	.prov-compact[data-reviewed='true'] .prov-check {
+		color: var(--state-reviewed);
+	}
+</style>

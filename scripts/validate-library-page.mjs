@@ -46,6 +46,19 @@ assert.match(libraryPage, /getLibraryItems/);
 assert.match(libraryPage, /<BlogFilterBar\b/, 'Library should reuse the blog filter bar.');
 // The page lists editorial rows (one external link each, with a small image).
 assert.match(libraryPage, /<LibraryRow\b/);
+// Explainers (docs/decisions/site-structure.md, Revision 2026-10-22) join the
+// same list as on-site rows: no tab, and only the published ones.
+assert.match(libraryPage, /getCollection\('explainers'\)/);
+assert.match(libraryPage, /<ExplainerRow\b/);
+const explainerRow = readFileSync('src/components/library/ExplainerRow.astro', 'utf8');
+assert.doesNotMatch(explainerRow, /target="_blank"/, 'An explainer row is an on-site link.');
+assert.match(explainerRow, /data-post-kind/, 'An explainer row must carry the filter data attributes.');
+assert.match(readFileSync('src/utils/library.ts', 'utf8'), /getPublishedExplainers/);
+for (const lang of languages) {
+	for (const key of ['library.pick.kind.explainer', 'explainer.source-language.ja', 'explainer.badge.ai-draft', 'explainer.badge.reviewed', 'explainer.source.notice']) {
+		assert.ok(ui[lang]?.[key], `${lang} ${key} copy is required.`);
+	}
+}
 assert.match(readFileSync('src/components/library/LibraryRow.astro', 'utf8'), /entry-thumb/);
 assert.match(libraryPage, /data-pagefind-body/);
 assert.match(libraryPage, /data-pagefind-filter="language\[content\]"/);

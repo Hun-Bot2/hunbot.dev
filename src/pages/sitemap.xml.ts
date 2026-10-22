@@ -10,6 +10,7 @@ import { learningPaths } from '../data/learningPaths';
 import { getLearningPathUrl, getPublishedLearningPaths } from '../utils/learning-paths';
 import { decks } from '../data/decks';
 import { getTopicsWithLinkedPapers } from '../utils/research';
+import { getExplainerSlug, getExplainerUrl, getPublishedExplainers } from '../utils/explainers';
 
 export const GET: APIRoute = async ({ site }) => {
   const siteUrl = site ?? new URL(SITE_URL);
@@ -72,6 +73,13 @@ export const GET: APIRoute = async ({ site }) => {
     ...(listedDeckCount > 0 ? [`/${lang}/research/decks/`] : []),
     ...topicsWithPapers.map(({ topic }) => `/${lang}/research/topics/${topic.data.id}/`),
   ]);
+  // Explainers (docs/features/explainers.md): published ones only, and only the
+  // canonical-language (ko) URL. The jp/en routes carry the same Korean text
+  // with a canonical link to the ko page, so advertising them would submit
+  // duplicates.
+  const explainerPages = getPublishedExplainers(await getCollection('explainers')).map((explainer) =>
+    getExplainerUrl(explainer.data.canonicalLanguage, getExplainerSlug(explainer)),
+  );
   const staticPages = [
     '/',
     ...SUPPORTED_LANGUAGES.flatMap((lang) => [
@@ -86,6 +94,7 @@ export const GET: APIRoute = async ({ site }) => {
     ]),
     ...learningPathPages,
     ...researchPages,
+    ...explainerPages,
   ];
   
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>

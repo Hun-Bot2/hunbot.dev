@@ -52,6 +52,10 @@ Section resource pages group resources by `category`. Cards show type, tags, loc
 
 Paper cards are not read or rendered here. They surface on the Research hub instead — see `docs/decisions/site-structure.md` and, once written, a dedicated Research hub feature doc.
 
+## Explainer Selection
+
+`/{lang}/library/` also lists published `explainers` (approved and human reviewed): on-site rows in the same list, filterable as the `explainer` value of the 종류 facet, never a tab. See [`explainers.md`](./explainers.md).
+
 ## Topic Selection
 
 The page reads from `src/content/topics/` and displays only topics where:
