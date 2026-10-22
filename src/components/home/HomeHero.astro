@@ -20,9 +20,11 @@ import { useTranslations, type UILanguage } from '../../i18n/ui';
 interface Props {
 	slides: HeroSlide<CollectionEntry<'blog'>, CollectionEntry<'academicReviews'>>[];
 	lang: UILanguage;
+	/** Plate corner label per post id (series or category); reviews show their venue. */
+	plateLabels?: Record<string, string>;
 }
 
-const { slides, lang } = Astro.props;
+const { slides, lang, plateLabels = {} } = Astro.props;
 const t = useTranslations(lang);
 const total = slides.length;
 const interactive = total > 1;
@@ -38,6 +40,10 @@ const items = slides.map((slide, index) => {
 		href: slide.kind === 'post' ? getBlogUrlFromId(slide.entry.id) : getAcademicReviewUrlFromEntry(slide.entry),
 		kindLabel: t(slide.kind === 'post' ? 'home.hero.kind.post' : 'home.hero.kind.review'),
 		plate: plateWord(slide.title, lang),
+		plateLabel:
+			slide.kind === 'post'
+				? (plateLabels[slide.entry.id] ?? '')
+				: ([slide.entry.data.paper.venue, slide.entry.data.paper.year].filter(Boolean).join(' · ') || t('home.hero.kind.review')),
 		// Width of the plate word in em (CJK glyphs about twice a Latin one), so it can be sized to fit.
 		plateEm: Array.from(plateWord(slide.title, lang)).reduce((sum, ch) => sum + (ch.charCodeAt(0) < 0x250 ? 0.52 : 1.02), 0.1),
 		label: t('home.hero.slide').replace('{n}', String(index + 1)).replace('{total}', String(total)),
@@ -57,7 +63,7 @@ const items = slides.map((slide, index) => {
 		>
 			<div class="hero-stage">
 				<div class="hero-slides" data-hero-slides aria-live="off">
-					{items.map(({ slide, index, words, hero, href, kindLabel, plate, plateEm, label }) => (
+					{items.map(({ slide, index, words, hero, href, kindLabel, plate, plateLabel, plateEm, label }) => (
 						<div
 							class="hero-slide"
 							role="group"
@@ -108,7 +114,7 @@ const items = slides.map((slide, index) => {
 									</picture>
 								) : (
 									<div class="hero-plate" style={`--em:${plateEm.toFixed(2)}`}>
-										<span class="hero-plate-kind">{kindLabel}</span>
+										<span class="hero-plate-kind">{plateLabel}</span>
 										<span class="hero-plate-word">{plate}</span>
 									</div>
 								)}
@@ -168,6 +174,11 @@ const items = slides.map((slide, index) => {
 		border-radius: 2px;
 		background: var(--stage);
 		color: var(--stage-ink);
+	}
+
+	/* In dark mode the stage is close to the paper: a rule marks its edge. */
+	:global(html.dark) .hero-stage {
+		border: 1px solid var(--rule-strong);
 	}
 
 	.hero-slides {
@@ -402,32 +413,34 @@ const items = slides.map((slide, index) => {
 		}
 	}
 
-	.hero-slide[data-active] .hero-word {
+	/* Reveal only while the script has confirmed the timeline is running
+	   (.hero[data-motion]); without it every element rests visible. */
+	.hero[data-motion] .hero-slide[data-active] .hero-word {
 		animation: hero-word var(--dur-5) var(--ease-out) both;
 		animation-delay: calc(min(var(--i), 14) * 60ms + 120ms);
 	}
 
-	.hero-slide[data-active] .hero-eyebrow {
+	.hero[data-motion] .hero-slide[data-active] .hero-eyebrow {
 		animation: hero-rise var(--dur-5) var(--ease-out) both;
 		animation-delay: 40ms;
 	}
 
-	.hero-slide[data-active] .hero-desc {
+	.hero[data-motion] .hero-slide[data-active] .hero-desc {
 		animation: hero-rise var(--dur-5) var(--ease-out) both;
 		animation-delay: calc(min(var(--n), 14) * 60ms + 260ms);
 	}
 
-	.hero-slide[data-active] .hero-cta {
+	.hero[data-motion] .hero-slide[data-active] .hero-cta {
 		animation: hero-rise var(--dur-5) var(--ease-out) both;
 		animation-delay: calc(min(var(--n), 14) * 60ms + 380ms);
 	}
 
-	.hero-slide[data-active] .hero-media {
+	.hero[data-motion] .hero-slide[data-active] .hero-media {
 		animation: hero-media var(--dur-5) var(--ease-out) both;
 		animation-delay: 80ms;
 	}
 
-	.hero-slide[data-active] .hero-glow {
+	.hero[data-motion] .hero-slide[data-active] .hero-glow {
 		animation: hero-glow var(--dur-5) var(--ease-standard) both;
 	}
 

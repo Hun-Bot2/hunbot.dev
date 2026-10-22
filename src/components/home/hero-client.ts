@@ -26,8 +26,16 @@ export function initHero(root: HTMLElement): void {
 	root.style.setProperty('--hero-interval', `${interval}ms`);
 	root.dataset.ready = '';
 
+	// The intro/rise animations apply only under data-motion, which is set once a
+	// frame has actually been produced (so a stalled timeline never leaves the copy
+	// hidden) and the document is visible and motion is allowed.
+	function enableMotion(): void {
+		if (!motion.matches && !document.hidden) root.dataset.motion = '';
+	}
+
 	function syncState(): void {
 		const reduced = motion.matches;
+		if (reduced) delete root.dataset.motion;
 		const paused = hold.manual || hold.hover || hold.focus || hold.hidden;
 		if (reduced) root.dataset.reduced = '';
 		else delete root.dataset.reduced;
@@ -53,7 +61,10 @@ export function initHero(root: HTMLElement): void {
 		dots.forEach((dot) => dot.removeAttribute('aria-current'));
 		void root.offsetWidth;
 		dots[next]?.setAttribute('aria-current', 'true');
+		const changed = next !== current;
 		current = next;
+		// A hidden-at-load document skips the first slide's intro; later changes animate.
+		if (changed && !('motion' in root.dataset)) enableMotion();
 	}
 
 	dots.forEach((dot, i) => dot.addEventListener('click', () => show(i)));
@@ -128,4 +139,6 @@ export function initHero(root: HTMLElement): void {
 
 	show(current);
 	syncState();
+	// Hidden at load: no intro for the first slide (the rAF would fire on first view).
+	if (!document.hidden) requestAnimationFrame(enableMotion);
 }

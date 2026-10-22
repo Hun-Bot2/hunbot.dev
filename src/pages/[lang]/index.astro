@@ -3,7 +3,7 @@ import BaseHead from '../../components/BaseHead.astro';
 import Header from '../../components/Header.astro';
 import FloatingLanguagePicker from '../../components/FloatingLanguagePicker.astro';
 import { getCollection } from 'astro:content';
-import { getAllPosts } from '../../utils/blog';
+import { getAllPosts, getMultiPostSeries, normalizeCategory } from '../../utils/blog';
 import HomeHero from '../../components/home/HomeHero.astro';
 import { HERO_SLIDE_LIMIT, selectHeroSlides } from '../../utils/hero';
 import { useTranslations } from '../../i18n/ui';
@@ -56,6 +56,26 @@ const academicReviews = publishedReviews.slice(0, 3);
 // Hero: the newest posts (briefs have their own block below), the newest review
 // taking the last slot. 최근 글 then lists the posts after the ones the hero shows.
 const heroSlides = selectHeroSlides(getLatestBlogPosts(posts, HERO_SLIDE_LIMIT), publishedReviews);
+// Plate corner label: the post's series when it is in a multi-post series, else its
+// category name (never the eyebrow's "최신 글" again).
+const categoryLabelKeys = {
+	ai: 'blog.category-ai',
+	devlog: 'blog.category-devlog',
+	review: 'blog.category-review',
+	misc: 'blog.category-misc',
+} as const;
+const multiPostSeries = new Set(getMultiPostSeries(posts).map((entry) => entry.name));
+const heroPlateLabels = Object.fromEntries(
+	heroSlides
+		.filter((slide) => slide.kind === 'post')
+		.map((slide) => {
+			const series = slide.entry.data.series?.trim() ?? '';
+			const label = multiPostSeries.has(series)
+				? series
+				: t(categoryLabelKeys[normalizeCategory(slide.entry.data.category) as keyof typeof categoryLabelKeys]);
+			return [slide.entry.id, label];
+		}),
+);
 const heroPostIds = new Set(heroSlides.filter((slide) => slide.kind === 'post').map((slide) => slide.entry.id));
 const latestPosts = getLatestBlogPosts(posts, HERO_SLIDE_LIMIT + 5)
 	.filter((post) => !heroPostIds.has(post.id))
@@ -82,7 +102,7 @@ const libraryItems = getLibraryItems(allResources, allPicks).slice(0, 3);
 		<div class="global-wrapper" data-is-root-path="true">
 			<main id="main-content" class="atelier-page home-page" data-pagefind-body>
 				<div class="home-hero page-frame">
-					<HomeHero slides={heroSlides} lang={currentLang} />
+					<HomeHero slides={heroSlides} lang={currentLang} plateLabels={heroPlateLabels} />
 				</div>
 				<div class="home-primary page-frame">
 					<section class="home-section home-latest" aria-labelledby="home-latest-title">
