@@ -7,7 +7,6 @@
 import BaseHead from '../../../../components/BaseHead.astro';
 import Header from '../../../../components/Header.astro';
 import FloatingLanguagePicker from '../../../../components/FloatingLanguagePicker.astro';
-import LibraryMasthead from '../../../../components/library/LibraryMasthead.astro';
 import LibraryTabs from '../../../../components/library/LibraryTabs.astro';
 import ExplainerRow from '../../../../components/library/ExplainerRow.astro';
 import { getCollection } from 'astro:content';
@@ -49,7 +48,9 @@ const items = getLibraryItems([], [], lang, view.explainers);
 		<Header />
 		<FloatingLanguagePicker belowTabs />
 		<main id="main-content" class="atelier-page" data-pagefind-body={isCanonical ? true : undefined}>
-			<LibraryMasthead lang={lang} description={description} />
+			<section class="subpage-intro">
+				<h1 class="eyebrow">{t('library.title')}</h1>
+			</section>
 			<LibraryTabs lang={lang} tabs={view.tabs} current="explainers" />
 
 			<div class="page-frame library-archive">

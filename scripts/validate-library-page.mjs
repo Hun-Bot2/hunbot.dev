@@ -39,7 +39,7 @@ for (const lang of languages) {
 // The 자료 view (docs/decisions/site-structure.md, revisions 2026-10-04 and
 // 2026-10-23): approved resources and published picks together as editorial
 // rows, filtered by the blog's floating filter. Explainers no longer lead this
-// list: they have their own view (the 해설 tab). The page carries the masthead
+// list: they have their own view (the 해설 tab). The page carries the page label
 // and the tab bar.
 assert.match(libraryPage, /getLibraryViewData/);
 assert.match(libraryPage, /<BlogFilterBar\b/, 'Library should reuse the blog filter bar.');
@@ -47,11 +47,12 @@ assert.match(libraryPage, /<LibraryRow\b/);
 assert.match(libraryPage, /data-filter-section/);
 assert.doesNotMatch(libraryPage, /Hero/, 'The Library hero was removed (2026-10-23, owner decision).');
 assert.match(libraryPage, /<LibraryTabs\b[^>]*current="resources"/, 'The 자료 view carries the tab bar.');
-assert.match(libraryPage, /<LibraryMasthead\b/, 'Every Library view leads with the masthead.');
+assert.match(libraryPage, /<h1 class="eyebrow">/, 'Every Library view leads with the Research-style page label.');
 assert.ok(
-	libraryPage.indexOf('<LibraryMasthead') < libraryPage.indexOf('<LibraryTabs'),
-	'Order on the 자료 view: masthead, then the tab bar.',
+	libraryPage.indexOf('subpage-intro') > -1 && libraryPage.indexOf('subpage-intro') < libraryPage.indexOf('<LibraryTabs'),
+	'Order on the 자료 view: page label, then the tab bar.',
 );
+assert.ok(!existsSync('src/components/library/LibraryMasthead.astro'), 'The Library masthead was removed (Content First).');
 assert.doesNotMatch(libraryPage, /<ExplainerRow\b/, 'Explainers moved to their own view; they must not lead the 자료 list.');
 assert.doesNotMatch(libraryPage, /id: 'explainers'/);
 const viewsUtil = readFileSync('src/utils/library-views.ts', 'utf8');
@@ -67,7 +68,7 @@ for (const [view, current] of [
 ]) {
 	const source = read(view);
 	assert.match(source, new RegExp(`<LibraryTabs\\b[^>]*current="${current}"`), `${view} must carry the tab bar.`);
-	assert.ok(source.indexOf('<LibraryMasthead') > -1 && source.indexOf('<LibraryMasthead') < source.indexOf('<LibraryTabs'), `${view}: the masthead comes before the tab bar.`);
+	assert.ok(source.indexOf('subpage-intro') > -1 && source.indexOf('subpage-intro') < source.indexOf('<LibraryTabs') && /<h1 class="eyebrow">/.test(source), `${view}: the page label comes before the tab bar.`);
 	assert.match(source, /published\.length > 0 \? .* : \[\]/, `${view} must generate no route while nothing is published.`);
 	assert.match(source, /canonicalURL=\{canonicalURL\.href\}/, `${view} must canonicalize to the ko page.`);
 	assert.match(source, /noindex, follow/, `${view} must be noindex outside ko.`);

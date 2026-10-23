@@ -8,7 +8,6 @@
 import BaseHead from '../../../../components/BaseHead.astro';
 import Header from '../../../../components/Header.astro';
 import FloatingLanguagePicker from '../../../../components/FloatingLanguagePicker.astro';
-import LibraryMasthead from '../../../../components/library/LibraryMasthead.astro';
 import LibraryTabs from '../../../../components/library/LibraryTabs.astro';
 import { getCollection } from 'astro:content';
 import { useTranslations, type UILanguage } from '../../../../i18n/ui';
@@ -54,9 +53,10 @@ const issues = view.weeklyNotes.map((note) => ({
 		<Header />
 		<FloatingLanguagePicker belowTabs />
 		<main id="main-content" class="atelier-page" data-pagefind-body={isCanonical ? true : undefined}>
-			<LibraryMasthead lang={lang} description={description}>
+			<section class="subpage-intro weekly-intro">
+				<h1 class="eyebrow">{t('library.title')}</h1>
 				<a class="weekly-rss" href={getWeeklyRssUrl('ko')}>{t('weekly.rss')} <span aria-hidden="true">↗</span></a>
-			</LibraryMasthead>
+			</section>
 			<LibraryTabs lang={lang} tabs={view.tabs} current="weekly" />
 
 			<ol class="page-frame weekly-issues">
@@ -96,9 +96,17 @@ const issues = view.weeklyNotes.map((note) => ({
 
 
 
+	/* The page label and the feed link share the subpage-intro row. */
+	.weekly-intro {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 0 1rem;
+	}
+
 	.weekly-rss {
 		display: inline-block;
-		margin-top: 0.6rem;
 		font: 400 0.6875rem/1.4 var(--font-mono);
 		letter-spacing: 0.09em;
 		text-transform: uppercase;
@@ -117,11 +125,11 @@ const issues = view.weeklyNotes.map((note) => ({
 		list-style: none;
 	}
 
-	/* An issue: a large serif numeral hung in the margin, then the issue. */
+	/* An issue: its number in the margin (small mono, chrome-sized), then the issue. */
 	.weekly-issue {
 		position: relative;
 		display: grid;
-		grid-template-columns: 7.5rem minmax(0, 1fr);
+		grid-template-columns: 4rem minmax(0, 1fr);
 		gap: 0 1.5rem;
 		padding: 1.6rem 0 1.5rem;
 		border-top: 1px solid var(--rule-strong);
@@ -144,9 +152,9 @@ const issues = view.weeklyNotes.map((note) => ({
 	}
 
 	.weekly-issue-no-num {
-		font: 400 clamp(3rem, 2rem + 4vw, 4.75rem) / 0.9 var(--font-serif);
-		font-variant-numeric: lining-nums;
-		letter-spacing: -0.04em;
+		font: 400 0.75rem/1 var(--font-mono);
+		font-variant-numeric: tabular-nums;
+		letter-spacing: 0.04em;
 		transition: color var(--dur-3) var(--ease-standard);
 	}
 

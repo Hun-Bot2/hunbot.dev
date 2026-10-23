@@ -10,6 +10,17 @@ The site should feel like a research notebook on paper: quiet, technical, readab
 - Do not use UI copy for internal policy language. Every UI string lives in `src/i18n/ui.ts` (ko/jp/en).
 - Never render a stored id (venue, acceptance status, honor, topic) straight into the page; go through the display helpers.
 
+## Content First
+
+Adopted 2026-10-23 (owner decision), after a hero slider and a poster masthead were both built and removed. Design starts from the content a page actually has, and every page leads with it.
+
+1. **Content comes first.** On list and hub pages the order under the site header is: the page label (`.subpage-intro` with the `<h1>` as `.eyebrow`, as on `/research/`), the page's own navigation if it has any (tabs, filter), then content. No hero, masthead, poster, banner or intro section sits above the content.
+2. **Every visible element carries content**: an item, a fact about it (date, kind, source, state, count), or a way to reach it. Purely decorative layers are not added to list, hub or reading pages. Generated visuals are allowed only where they stand in for missing content (a thumbnail without an image).
+3. **The largest type is the thing being read**: an item title, a post title. Never a section name, a page label or chrome.
+4. **A view explains itself through its content.** Labels on items (a verdict stamp, a source-language chip) say what they mean. If a view needs a paragraph to be understood, redesign the view instead of adding the paragraph.
+5. **Empty is shown as empty**: one quiet line, never placeholder or sample content (see *Placeholder Content Is Unpublished* in `docs/decisions/site-structure.md`).
+6. **Chrome is small and the same everywhere.** Page labels, tabs and filters look and sit the same in every section, so moving between 글, 연구, 라이브러리 and 탐색 changes the content, not the frame.
+
 ## Tokens
 
 All colours come from `src/styles/tokens.css`; fonts and `--content-max` live there too.

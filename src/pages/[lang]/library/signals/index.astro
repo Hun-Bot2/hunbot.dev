@@ -12,7 +12,6 @@ import BaseHead from '../../../../components/BaseHead.astro';
 import Header from '../../../../components/Header.astro';
 import FloatingLanguagePicker from '../../../../components/FloatingLanguagePicker.astro';
 import BlogFilterBar from '../../../../components/blog/BlogFilterBar.astro';
-import LibraryMasthead from '../../../../components/library/LibraryMasthead.astro';
 import LibraryTabs from '../../../../components/library/LibraryTabs.astro';
 import SignalRow from '../../../../components/library/SignalRow.astro';
 import { getCollection } from 'astro:content';
@@ -63,7 +62,9 @@ const dayLabel = (day: string) => day.replaceAll('-', '.');
 		<Header />
 		<FloatingLanguagePicker belowTabs />
 		<main id="main-content" class="atelier-page" data-pagefind-body={isCanonical ? true : undefined}>
-			<LibraryMasthead lang={lang} description={description} />
+			<section class="subpage-intro">
+				<h1 class="eyebrow">{t('library.title')}</h1>
+			</section>
 			<LibraryTabs lang={lang} tabs={view.tabs} current="signals" reserveFilter />
 
 			<BlogFilterBar
