@@ -19,7 +19,7 @@ The repository owner decided on 2026-10-23 that a 자료 item gets an on-site pa
    - the site is non-commercial: no affiliate links (`docs/decisions/monetization.md` stands).
 3. **Backlinks are actual links.** An item or page lists "이 페이지를 언급한 글" from links that exist in the bodies of published posts, explainers, weekly notes, signals and item notes, never from inferred similarity. A link to a tool's own website counts for that tool's item page.
 4. **Link previews are reader-initiated.** An internal link inside article text shows a preview card on hover or keyboard focus on pointer devices; nothing loads or moves on its own. External links are untouched.
-5. **Filter.** On 자료 and 신호 the floating filter is replaced by an inline bar under the tab bar (the blog keeps its floating filter). It scrolls with the page rather than staying sticky: a sticky bar with the full topic row would cover a third of the screen.
+5. **Filter.** On 자료 and 신호 the floating filter is replaced by an inline bar under the tab bar (the blog keeps its floating filter). It scrolls with the page rather than staying sticky: a sticky bar with the topic line would cover part of the screen.
 6. **Routes.** `/{lang}/library/item/{id}/` for items with a note; `item` joins the reserved Library slugs. Language rule as for explainers: Korean content, localized chrome, `jp`/`en` pages noindex and canonical to `ko`.
 
 ## Revision 2026-10-23: the Library gets four views

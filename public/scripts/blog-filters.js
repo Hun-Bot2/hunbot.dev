@@ -6,7 +6,7 @@ if (filterBar && postList) {
 	const FILTER_STORAGE_KEY = filterBar.getAttribute('data-storage-key') || 'neural-blog-filters';
 	const FACETS = (filterBar.getAttribute('data-facets') || 'category,year,series').split(',');
 	const chips = Array.from(filterBar.querySelectorAll('[data-facet][data-value]'));
-	const groups = Array.from(filterBar.querySelectorAll('[data-parent-group]'));
+	const parentLines = Array.from(filterBar.querySelectorAll('[data-parent-line]'));
 	// The Library bar's "필터 · n" toggle (phones): opens and closes the chip rows.
 	const toggleBtn = filterBar.querySelector('[data-filter-toggle]');
 	const posts = Array.from(postList.querySelectorAll('[data-post-card]'));
@@ -48,25 +48,20 @@ if (filterBar && postList) {
 		return chips.some((chip) => chip.dataset.facet === facet && chip.dataset.value === value);
 	}
 
-	// A chip with a parent (a topic under an area) is offered only while its
-	// parent facet is 'all' or that value; picking another parent clears it.
+	// A chip with a parent (a 주제 under its 분야) is offered only while that parent
+	// value is chosen; clearing or changing the parent clears the child. The
+	// Library bar puts those chips on a second line that is hidden while the
+	// parent facet is 'all'.
 	function applyParents() {
 		chips.forEach((chip) => {
 			const parentFacet = chip.dataset.parentFacet;
 			if (!parentFacet) return;
-			const parent = state[parentFacet];
-			const offered = parent === 'all' || parent === chip.dataset.parentValue;
+			const offered = state[parentFacet] === chip.dataset.parentValue;
 			chip.hidden = !offered;
 			if (!offered && state[chip.dataset.facet] === chip.dataset.value) state[chip.dataset.facet] = 'all';
 		});
-		// The Library bar groups those chips under their parent (a 주제 under its
-		// 분야): a group is shown with its parent, and names itself only while the
-		// parent facet is 'all' (once an area is chosen the row says whose they are).
-		groups.forEach((group) => {
-			const parent = state[group.dataset.parentFacet];
-			group.hidden = !(parent === 'all' || parent === group.dataset.parentValue);
-			const groupLabel = group.querySelector('[data-group-label]');
-			if (groupLabel) groupLabel.hidden = parent !== 'all';
+		parentLines.forEach((line) => {
+			line.hidden = state[line.dataset.parentFacet] === 'all';
 		});
 	}
 

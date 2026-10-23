@@ -2,12 +2,13 @@
 // The Library's visible filter (docs/decisions/site-structure.md, Revision
 // 2026-10-23b): an inline bar directly under the tab bar on 자료 and 신호, in
 // place of the floating button the blog keeps. Rows of facet chips with counts;
-// a chip with a `parent` (a 주제 under its 분야) is shown grouped under that
-// parent and only while the parent facet is 전체 or that value; a `toggle` facet
-// (노트 있음) is a single chip. Behaviour is public/scripts/blog-filters.js (the
+// a chip with a `parent` (a 주제 under its 분야) sits on a second line that
+// appears only once that parent is chosen; a `toggle` facet (노트 있음) is a
+// single chip. One line by default, so the list stays above the fold; no chip is
+// "전체": pressing the active chip clears it. Behaviour is public/scripts/blog-filters.js (the
 // same selection logic, URL params and localStorage the blog uses): it reads
 // `data-blog-filters`, `data-facets`, `data-storage-key`, `[data-facet]
-// [data-value]` chips, `[data-parent-group]` wrappers, `[data-filter-results]`,
+// [data-value]` chips, `[data-parent-line]` wrappers, `[data-filter-results]`,
 // `[data-filter-reset]`, `[data-filter-toggle]` and `[data-filter-count]`.
 // Below 640px the bar scrolls with the page and collapses behind "필터 · n".
 import { useTranslations, type UILanguage } from '../../i18n/ui';
@@ -44,17 +45,10 @@ const visibleGroups = groups.filter((group) => group.options.length > 0);
 const facets = visibleGroups.map((group) => group.facet).join(',');
 const fill = (template: string) => template.replace('{count}', String(totalCount)).replace('{total}', String(totalCount));
 
-// Options of a grouped facet, bucketed by parent in the order they arrive.
-function byParent(options: FacetOption[]) {
-	const buckets: { parent: NonNullable<FacetOption['parent']>; options: FacetOption[] }[] = [];
-	for (const option of options) {
-		const parent = option.parent!;
-		const bucket = buckets.find((item) => item.parent.value === parent.value);
-		if (bucket) bucket.options.push(option);
-		else buckets.push({ parent, options: [option] });
-	}
-	return buckets;
-}
+// One line of chips for the plain facets; a facet whose options have a parent (a
+// 주제 under its 분야) is a second line, shown only while its parent is chosen.
+const flatGroups = visibleGroups.filter((group) => !group.options.some((option) => option.parent));
+const subGroups = visibleGroups.filter((group) => group.options.some((option) => option.parent));
 ---
 
 <section class="library-filter page-frame" aria-label={label} data-blog-filters data-facets={facets} data-storage-key={storageKey}>
@@ -69,44 +63,41 @@ function byParent(options: FacetOption[]) {
 	</div>
 
 	<div class="lf-body" id="library-filter-body">
-		{
-			visibleGroups.map((group) => (
-				<div class="lf-row" role="group" aria-label={group.label}>
-					<span class="lf-label" aria-hidden="true">{group.label}</span>
-					<div class="lf-chips">
-						{!group.toggle && (
-							<button type="button" class="lf-chip is-active" data-facet={group.facet} data-value="all" aria-pressed="true">
-								{t('blog.filter-all')}
-							</button>
-						)}
-						{group.options.some((option) => option.parent) ? (
-							<Fragment>
-								{byParent(group.options).map(({ parent, options }) => (
-									<span class="lf-subgroup" data-parent-group data-parent-facet={parent.facet} data-parent-value={parent.value}>
-										<span class="lf-sublabel" data-group-label>{parent.label}</span>
-										{options.map((option) => (
-											<button
-												type="button"
-												class="lf-chip"
-												data-facet={group.facet}
-												data-value={option.value}
-												data-parent-facet={parent.facet}
-												data-parent-value={parent.value}
-												aria-pressed="false"
-											>
-												{option.label}<span class="lf-count">{option.count}</span>
-											</button>
-										))}
-									</span>
-								))}
-							</Fragment>
-						) : (
-							group.options.map((option) => (
+		<div class="lf-line">
+			{
+				flatGroups.map((group, index) => (
+					<Fragment>
+						{index > 0 && <span class="lf-divider" aria-hidden="true" />}
+						<div class="lf-chips" role="group" aria-label={group.label}>
+							{group.options.map((option) => (
 								<button type="button" class="lf-chip" data-facet={group.facet} data-value={option.value} aria-pressed="false">
-									{option.label}<span class="lf-count">{option.count}</span>
+									{option.label}
+									{!group.toggle && <span class="lf-count">{option.count}</span>}
 								</button>
-							))
-						)}
+							))}
+						</div>
+					</Fragment>
+				))
+			}
+		</div>
+		{
+			subGroups.map((group) => (
+				<div class="lf-line lf-line--sub" data-parent-line data-parent-facet={group.options[0].parent!.facet} hidden>
+					<div class="lf-chips" role="group" aria-label={group.label}>
+						{group.options.map((option) => (
+							<button
+								type="button"
+								class="lf-chip"
+								data-facet={group.facet}
+								data-value={option.value}
+								data-parent-facet={option.parent!.facet}
+								data-parent-value={option.parent!.value}
+								aria-pressed="false"
+							>
+								{option.label}
+								<span class="lf-count">{option.count}</span>
+							</button>
+						))}
 					</div>
 				</div>
 			))
@@ -116,7 +107,9 @@ function byParent(options: FacetOption[]) {
 
 <style>
 	.library-filter {
-		padding: 0.75rem 0 0.25rem;
+		display: flex;
+		flex-direction: column;
+		padding: 0.5rem 0 0.25rem;
 	}
 
 	.lf-head {
@@ -159,7 +152,6 @@ function byParent(options: FacetOption[]) {
 		display: none;
 	}
 
-	/* Result count sits at the bar's right on desktop; the toggle is for phones only. */
 	.lf-status {
 		margin: 0 0 0 auto;
 		font: 400 0.8125rem/1.4 var(--font-mono);
@@ -176,59 +168,41 @@ function byParent(options: FacetOption[]) {
 		display: block;
 	}
 
-	.lf-row {
-		display: grid;
-		grid-template-columns: 4.5rem minmax(0, 1fr);
-		gap: 0 0.75rem;
-		align-items: start;
-		padding: 0.35rem 0;
+	.lf-line {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.75rem 0.5rem;
+		padding: 0.25rem 0;
 	}
 
-	.lf-label {
-		padding-top: 0.45rem;
-		font: 400 0.6875rem/1.5 var(--font-mono);
-		letter-spacing: 0.09em;
-		text-transform: uppercase;
-		color: var(--secondary);
+	.lf-line--sub {
+		padding-top: 0.5rem;
+	}
+
+	.lf-line[hidden] {
+		display: none;
 	}
 
 	.lf-chips {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.5rem 0.5rem;
-		align-items: center;
-	}
-
-	.lf-subgroup {
 		display: contents;
 	}
 
-	.lf-subgroup[hidden] {
-		display: none;
+	.lf-divider {
+		width: 1px;
+		height: 1rem;
+		margin: 0 0.4rem;
+		background: var(--rule-strong);
 	}
 
-	/* The area's name leads its topics when no area is chosen. */
-	.lf-sublabel {
-		flex-basis: 100%;
-		margin-top: 0.25rem;
-		font: 400 0.6875rem/1.4 var(--font-mono);
-		letter-spacing: 0.09em;
-		text-transform: uppercase;
-		color: var(--secondary);
-	}
-
-	.lf-sublabel[hidden] {
-		display: none;
-	}
-
-	/* A 32px chip; the ::after widens the touch target to 40px without overlapping its neighbours. */
+	/* A 28px chip; the ::after widens the touch target to 40px without overlapping its neighbours. */
 	.lf-chip {
 		position: relative;
 		display: inline-flex;
 		align-items: center;
 		gap: 0.4rem;
-		min-height: 2rem;
-		padding: 0 0.7rem;
+		min-height: 1.75rem;
+		padding: 0 0.6rem;
 		border: 1px solid var(--rule-strong);
 		background: none;
 		font: 400 0.8125rem/1.3 var(--font-mono);
@@ -242,7 +216,7 @@ function byParent(options: FacetOption[]) {
 	.lf-chip::after {
 		content: '';
 		position: absolute;
-		inset: -4px 0;
+		inset: -6px 0;
 	}
 
 	.lf-chip:hover {
@@ -275,23 +249,33 @@ function byParent(options: FacetOption[]) {
 		color: var(--secondary);
 	}
 
+	/* Desktop: the chips lead and the result count sits at the right end of the first line. */
 	@media (min-width: 640px) {
+		.library-filter {
+			flex-direction: row;
+			align-items: flex-start;
+			gap: 0 1rem;
+		}
+
 		.lf-toggle {
 			display: none;
 		}
 
 		.lf-body {
 			display: block;
-		}
-	}
-
-	@media (max-width: 639px) {
-		.lf-row {
-			grid-template-columns: minmax(0, 1fr);
+			flex: 1 1 auto;
+			min-width: 0;
+			order: 1;
 		}
 
-		.lf-label {
-			padding-top: 0.25rem;
+		.lf-head {
+			order: 2;
+			flex: 0 0 auto;
+			min-height: 2.25rem;
+		}
+
+		.lf-status {
+			white-space: nowrap;
 		}
 	}
 </style>

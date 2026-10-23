@@ -84,7 +84,7 @@ The week's signals are **derived**: the published signals whose `keptAt` falls i
 
 ## Filter and floating controls
 
-신호 and 자료 use the visible `LibraryFilterBar` directly under the tab bar (the blog keeps its floating filter). 신호 filters by 판단, 출처 언어 and 출처 종류; the bar is not sticky (a sticky bar with every chip row would cover the screen), and below 640px it collapses behind `필터 · n`. The language globe (`FloatingLanguagePicker belowTabs`) rests just below the tab row. Each signal row has an anchor (`#signal-<id>`) so a backlink can point at it.
+신호 and 자료 use the visible `LibraryFilterBar` directly under the tab bar (the blog keeps its floating filter). 신호 filters by 판단, 출처 언어 and 출처 종류; the bar is not sticky (a sticky bar would take screen height from the list), and below 640px it collapses behind `필터 · n`. The language globe (`FloatingLanguagePicker belowTabs`) rests just below the tab row. Each signal row has an anchor (`#signal-<id>`) so a backlink can point at it.
 
 ## Fixtures
 
