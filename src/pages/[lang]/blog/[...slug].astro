@@ -4,6 +4,7 @@ import BlogPost from '../../../layouts/BlogPost.astro';
 import { render } from 'astro:content';
 import type { UILanguage } from '../../../i18n/ui';
 import { getBlogLanguageFromId, getBlogSlugFromId, getBlogUrlFromId } from '../../../utils/blog-routing';
+import { getBacklinksFor } from '../../../utils/backlinks-sources';
 import { estimateReadTime, estimateWordCount, getAllPosts, getSeriesPosts } from '../../../utils/blog';
 
 export async function getStaticPaths() {
@@ -60,6 +61,8 @@ const { Content } = await render(post);
 // estimateWordCount splits on whitespace and drops kana/kanji, so it is only meaningful for ko/en.
 const readMinutes = lang === 'jp' ? undefined : estimateReadTime(estimateWordCount(post.body ?? ''));
 
+const backlinks = await getBacklinksFor({ selfKey: `post:${post.id}`, paths: [getBlogUrlFromId(post.id)] }, lang);
+
 const seriesName = post.data.series;
 let seriesIndex: number | undefined;
 let seriesTotal: number | undefined;
@@ -96,6 +99,7 @@ if (seriesName) {
 	seriesTotal={seriesTotal}
 	seriesPrev={seriesPrev}
 	seriesNext={seriesNext}
+	backlinks={backlinks}
 >
 	<Content />
 </BlogPost>

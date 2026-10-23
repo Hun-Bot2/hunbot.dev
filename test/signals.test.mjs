@@ -182,7 +182,7 @@ test('library tabs: a view with nothing published is omitted, 자료 always stay
 });
 
 test('the tab route slugs are reserved against pick sections', async () => {
-	assert.deepEqual([...reservedLibrarySlugs].sort(), ['explainers', 'signals', 'weekly']);
+	assert.deepEqual([...reservedLibrarySlugs].sort(), ['explainers', 'item', 'signals', 'weekly']);
 	const { librarySections } = await import('../src/data/librarySections.ts');
 	for (const section of librarySections) assert.ok(!reservedLibrarySlugs.includes(section.slug), `${section.slug} collides with a tab route`);
 });

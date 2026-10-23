@@ -8,7 +8,9 @@
 import { getCollection, render, type CollectionEntry } from 'astro:content';
 import ExplainerPost from '../../../../layouts/ExplainerPost.astro';
 import type { UILanguage } from '../../../../i18n/ui';
+import { getBacklinksFor } from '../../../../utils/backlinks-sources';
 import { findPaperForExplainer, getExplainerSlug, getPublishedExplainers } from '../../../../utils/explainers';
+import { getExplainerUrl } from '../../../../utils/explainers';
 import { getApprovedPapers, getPaperUrl } from '../../../../utils/library';
 
 export async function getStaticPaths() {
@@ -32,8 +34,12 @@ const { Content } = await render(entry);
 // the explainer only links to it, joined on DOI / arXiv id, never on title.
 const paper = findPaperForExplainer(entry, getApprovedPapers(await getCollection('papers')));
 const relatedPaper = paper ? { title: paper.data.title, href: getPaperUrl(lang, paper.data.id) } : null;
+const backlinks = await getBacklinksFor(
+	{ selfKey: `explainer:${getExplainerSlug(entry)}`, paths: [getExplainerUrl('ko', getExplainerSlug(entry))] },
+	lang,
+);
 ---
 
-<ExplainerPost explainer={entry.data} lang={lang} relatedPaper={relatedPaper}>
+<ExplainerPost explainer={entry.data} lang={lang} relatedPaper={relatedPaper} backlinks={backlinks}>
 	<Content />
 </ExplainerPost>

@@ -31,11 +31,9 @@ interface Props {
 	/** Facets that still filter but are shown elsewhere (the tab rows), not in this panel. */
 	hiddenFacets?: string[];
 	totalCount: number;
-	/** `tabs`: rest at the right end of the Library's sticky tab row instead of the left edge (never over the masthead or the tabs). Dragging is unchanged. */
-	anchor?: 'tabs';
 }
 
-const { lang, categories = [], years = [], series = [], hiddenFacets = [], totalCount, anchor } = Astro.props;
+const { lang, categories = [], years = [], series = [], hiddenFacets = [], totalCount } = Astro.props;
 const t = useTranslations(lang);
 
 const groups = (
@@ -53,7 +51,7 @@ const label = Astro.props.label ?? t('blog.filter-label');
 const initialResults = resultsTemplate.replace('{count}', String(totalCount));
 ---
 
-<div class:list={['blog-filter-float', { 'blog-filter-float--tabs': anchor === 'tabs' }]} id="blog-filter-float" data-filter-float>
+<div class="blog-filter-float" id="blog-filter-float" data-filter-float>
 <button
 	type="button"
 	id="blog-filter-trigger"
@@ -135,35 +133,6 @@ const initialResults = resultsTemplate.replace('{count}', String(totalCount));
 		display: flex;
 		align-items: center;
 		gap: 0.4rem;
-	}
-
-	/* On the Library views the tab bar is sticky just under the header, 44px tall: the
-	   button rests in that row at the content column's right end (36px tall, 4px
-	   down), so it is never over the masthead or the tabs. The tab row
-	   reserves the room (LibraryTabs reserveFilter). On phones the tab row has no
-	   room to spare (four tabs scroll sideways), so it rests at the bottom right,
-	   above the safe area, and the masthead and tabs are never covered. The first drag converts these
-	   right/top anchors to left/top as before. */
-	.blog-filter-float.blog-filter-float--tabs {
-		top: calc(var(--header-height) + 4px);
-		bottom: auto;
-		left: auto;
-		right: max(1rem, calc((100vw - var(--content-max)) / 2));
-	}
-
-	@media (min-width: 640px) {
-		.blog-filter-float.blog-filter-float--tabs {
-			right: max(2rem, calc((100vw - var(--content-max)) / 2));
-		}
-	}
-
-	@media (max-width: 639px) {
-		.blog-filter-float.blog-filter-float--tabs {
-			top: auto;
-			bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
-			left: auto;
-			right: 0.75rem;
-		}
 	}
 
 	.blog-filter-trigger {

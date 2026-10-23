@@ -6,6 +6,9 @@ if (filterBar && postList) {
 	const FILTER_STORAGE_KEY = filterBar.getAttribute('data-storage-key') || 'neural-blog-filters';
 	const FACETS = (filterBar.getAttribute('data-facets') || 'category,year,series').split(',');
 	const chips = Array.from(filterBar.querySelectorAll('[data-facet][data-value]'));
+	const groups = Array.from(filterBar.querySelectorAll('[data-parent-group]'));
+	// The Library bar's "필터 · n" toggle (phones): opens and closes the chip rows.
+	const toggleBtn = filterBar.querySelector('[data-filter-toggle]');
 	const posts = Array.from(postList.querySelectorAll('[data-post-card]'));
 	const resultsEl = filterBar.querySelector('[data-filter-results]');
 	const resetBtn = filterBar.querySelector('[data-filter-reset]');
@@ -15,6 +18,7 @@ if (filterBar && postList) {
 	const triggerEl = document.getElementById('blog-filter-trigger');
 	const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 	const countEl = document.querySelector('[data-filter-count]');
+	const totalPosts = postList.querySelectorAll('[data-post-card]').length;
 	const emptyEl = document.querySelector('[data-blog-empty]');
 	const resultsTemplate = resultsEl?.getAttribute('data-results-template') ?? '{count}';
 
@@ -54,6 +58,15 @@ if (filterBar && postList) {
 			const offered = parent === 'all' || parent === chip.dataset.parentValue;
 			chip.hidden = !offered;
 			if (!offered && state[chip.dataset.facet] === chip.dataset.value) state[chip.dataset.facet] = 'all';
+		});
+		// The Library bar groups those chips under their parent (a 주제 under its
+		// 분야): a group is shown with its parent, and names itself only while the
+		// parent facet is 'all' (once an area is chosen the row says whose they are).
+		groups.forEach((group) => {
+			const parent = state[group.dataset.parentFacet];
+			group.hidden = !(parent === 'all' || parent === group.dataset.parentValue);
+			const groupLabel = group.querySelector('[data-group-label]');
+			if (groupLabel) groupLabel.hidden = parent !== 'all';
 		});
 	}
 
@@ -191,7 +204,7 @@ if (filterBar && postList) {
 		transitionTo(next);
 
 		if (resultsEl) {
-			resultsEl.textContent = resultsTemplate.replace('{count}', String(visible));
+			resultsEl.textContent = resultsTemplate.replace('{count}', String(visible)).replace('{total}', String(totalPosts));
 		}
 
 		const activeCount = FACETS.filter((facet) => state[facet] !== 'all').length;
@@ -235,6 +248,11 @@ if (filterBar && postList) {
 		writeStored();
 		render();
 	}
+
+	toggleBtn?.addEventListener('click', () => {
+		const open = filterBar.classList.toggle('is-open');
+		toggleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+	});
 
 	resetBtn?.addEventListener('click', resetAll);
 	clearBtn?.addEventListener('click', resetAll);

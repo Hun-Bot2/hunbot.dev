@@ -1,26 +1,34 @@
 ---
 // One Library item in the editorial archive: a small preview image, the title,
 // its one-line description, and quiet metadata (kind, topic, an external-link
-// mark), the whole row one external link. The item's filter data attributes sit
+// mark), the whole row one link (to the item page when the owner wrote a note, else the original). The item's filter data attributes sit
 // on the <li>. Row styles: src/styles/entry-list.css. The image is the site's
 // og image or a reviewed screenshot; without one the row has no thumbnail column.
+import type { UILanguage } from '../../i18n/ui';
+import { useTranslations } from '../../i18n/ui';
+import { getItemUrl } from '../../utils/item-notes';
 import type { LibraryItem } from '../../utils/library';
 
 interface Props {
 	item: LibraryItem;
 	kindLabel: string;
 	topicLabel: string;
+	lang: UILanguage;
 }
 
-const { item, kindLabel, topicLabel } = Astro.props;
+const { item, kindLabel, topicLabel, lang } = Astro.props;
+const t = useTranslations(lang);
+// An item with an owner note opens its own page; the rest open the original.
+const href = item.note ? getItemUrl(lang, item.note.pageId) : item.url;
+const external = !item.note;
 const { image } = item;
 // No image, no thumbnail column (Content First rule 2): the row starts at the left edge.
 const hasImage = image.kind !== 'typographic';
 const isSmall = image.kind !== 'typographic' && image.width < 600;
 ---
 
-<li id={item.id} data-post-card data-post-area={item.area} data-post-kind={item.kind} data-post-topic={item.topic}>
-	<a class:list={['entry', 'entry--item', { 'entry--bare': !hasImage }]} href={item.url} target="_blank" rel="noopener noreferrer">
+<li id={item.id} data-post-card data-post-area={item.area} data-post-kind={item.kind} data-post-topic={item.topic} data-post-note={item.note ? '1' : undefined}>
+	<a class:list={['entry', 'entry--item', { 'entry--bare': !hasImage }]} href={href} target={external ? '_blank' : undefined} rel={external ? 'noopener noreferrer' : undefined}>
 		{image.kind !== 'typographic' && (
 			<span class:list={['entry-thumb', { 'is-small': isSmall }]} aria-hidden="true">
 				<img src={image.src} width={image.width} height={image.height} alt="" loading="lazy" decoding="async" />
@@ -29,7 +37,7 @@ const isSmall = image.kind !== 'typographic' && image.width < 600;
 		<span class="entry-body">
 			<span class="entry-title">{item.title}</span>
 			{item.description && <span class="entry-desc">{item.description}</span>}
-			<span class="entry-meta">{kindLabel} · {topicLabel} <span class="entry-arrow" aria-hidden="true">↗</span></span>
+			<span class="entry-meta">{kindLabel} · {topicLabel}{item.note && <Fragment> · <span class="entry-note">{t('item.note-marker')}</span></Fragment>}{external && <Fragment> <span class="entry-arrow" aria-hidden="true">↗</span></Fragment>}</span>
 		</span>
 	</a>
 </li>

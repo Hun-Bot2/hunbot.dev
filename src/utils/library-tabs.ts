@@ -7,11 +7,11 @@ export const libraryTabIds = ['signals', 'explainers', 'weekly', 'resources'] as
 export type LibraryTabId = (typeof libraryTabIds)[number];
 
 /**
- * Slugs under /{lang}/library/ that belong to a tab. A pick section may never
+ * Slugs under /{lang}/library/ that belong to a tab (and `item`, the item pages). A pick section may never
  * use one (src/pages/[lang]/library/[section].astro would collide);
  * scripts/validate-picks.mjs enforces it.
  */
-export const reservedLibrarySlugs = ['signals', 'explainers', 'weekly'] as const;
+export const reservedLibrarySlugs = ['signals', 'explainers', 'weekly', 'item'] as const;
 
 export function getLibraryTabUrl(lang: UILanguage, tab: LibraryTabId): string {
 	return tab === 'resources' ? `/${lang}/library/` : `/${lang}/library/${tab}/`;

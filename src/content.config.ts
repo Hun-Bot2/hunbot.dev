@@ -621,4 +621,21 @@ const weeklyNotes = defineCollection({
 		}),
 });
 
-export const collections = { blog, resources, papers, topics, academicReviews, picks, explainers, signals, weeklyNotes };
+// Item notes (docs/content/item-notes.md, docs/decisions/site-structure.md
+// Revision 2026-10-23b): the owner's own commentary on one 자료 item, kept apart
+// from the pipeline's `resources` files. A note is what gives an item an on-site
+// page. Plain YAML frontmatter like `picks`; the Markdown body is the note and
+// must not be empty. `about` resolving to a published item, one note per item,
+// and the copying guardrails are checked by scripts/validate-item-notes.mjs.
+const itemNotes = defineCollection({
+	loader: glob({ base: './src/content/item-notes', pattern: '**/*.md' }),
+	schema: z.object({
+		about: z.string().regex(/^(resource|pick):[a-z0-9][a-z0-9-]*$/, 'Use "resource:<id>" or "pick:<slug>".'),
+		writtenAt: yamlDateString,
+		updatedAt: yamlDateString.optional(),
+		draft: z.boolean().default(false),
+		tags: z.array(shortSlugString).default([]),
+	}),
+});
+
+export const collections = { blog, resources, papers, topics, academicReviews, picks, explainers, signals, weeklyNotes, itemNotes };

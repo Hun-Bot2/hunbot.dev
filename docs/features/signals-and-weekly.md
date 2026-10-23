@@ -82,9 +82,9 @@ The week's signals are **derived**: the published signals whose `keptAt` falls i
 - **Detail**: above, a "지난 질문" strip (each `resolved` item, question then outcome). Then a **two-page notebook spread**: the left page 들어온 것 is the week's signals (compact stamps and titles), the right page 결론 is the body; a hairline gutter with a soft shade; one column below 900px (left page first). Below the spread, "다음 주로" lists `openQuestions`. Previous and next issue links close the page.
 - **RSS**: `/{lang}/library/weekly/rss.xml`, one item per published note (issue, title, dek, `publishedAt`).
 
-## Floating controls on the Library views
+## Filter and floating controls
 
-The filter (`BlogFilterBar anchor="tabs"`) rests at the right end of the tab row on desktop (the row reserves room) and at the bottom right above the safe area on phones, where the row has no room; the language globe (`FloatingLanguagePicker belowTabs`) rests just below the tab row. Dragging is unchanged.
+신호 and 자료 use the visible `LibraryFilterBar` directly under the tab bar (the blog keeps its floating filter). 신호 filters by 판단, 출처 언어 and 출처 종류; the bar is not sticky (a sticky bar with every chip row would cover the screen), and below 640px it collapses behind `필터 · n`. The language globe (`FloatingLanguagePicker belowTabs`) rests just below the tab row. Each signal row has an anchor (`#signal-<id>`) so a backlink can point at it.
 
 ## Fixtures
 

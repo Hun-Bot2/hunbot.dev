@@ -5,11 +5,12 @@ import { SITE_URL, SUPPORTED_LANGUAGES } from '../consts';
 import { getBlogUrlFromId } from '../utils/blog-routing';
 import { getAcademicReviewUrlFromId, getPublishedAcademicReviews } from '../utils/academic-review-routing';
 import { librarySections as pickLibrarySections } from '../data/librarySections';
-import { getPickSectionCounts } from '../utils/picks';
+import { getPickSectionCounts, getPickSlug } from '../utils/picks';
 import { learningPaths } from '../data/learningPaths';
 import { getLearningPathUrl, getPublishedLearningPaths } from '../utils/learning-paths';
 import { decks } from '../data/decks';
 import { getTopicsWithLinkedPapers } from '../utils/research';
+import { buildItemNoteIndex, getItemUrl } from '../utils/item-notes';
 import { getExplainerSlug, getExplainerUrl, getExplainersIndexUrl, getPublishedExplainers } from '../utils/explainers';
 import { getPublishedSignals, getSignalsUrl } from '../utils/signals';
 import { getPublishedWeeklyNotes, getWeeklyIndexUrl, getWeeklyUrl } from '../utils/weekly';
@@ -89,6 +90,15 @@ export const GET: APIRoute = async ({ site }) => {
   // published item, the same gate its route's getStaticPaths uses.
   const publishedSignals = getPublishedSignals(await getCollection('signals'));
   const publishedWeekly = getPublishedWeeklyNotes(await getCollection('weeklyNotes'));
+  // Item pages (Revision 2026-10-23b): an item has a page iff it has a published
+  // note; ko URLs only, like the other Library pages.
+  const itemNoteIndex = buildItemNoteIndex({
+    notes: await getCollection('itemNotes'),
+    picks: await getCollection('picks'),
+    resources: await getCollection('resources'),
+    pickSlug: getPickSlug,
+  });
+  const itemPages = [...itemNoteIndex.keys()].sort().map((pageId) => getItemUrl('ko', pageId));
   const libraryViewPages = [
     ...(publishedSignals.length > 0 ? [getSignalsUrl('ko')] : []),
     ...(publishedExplainers.length > 0 ? [getExplainersIndexUrl('ko')] : []),
@@ -110,6 +120,7 @@ export const GET: APIRoute = async ({ site }) => {
     ...researchPages,
     ...explainerPages,
     ...libraryViewPages,
+    ...itemPages,
   ];
   
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>

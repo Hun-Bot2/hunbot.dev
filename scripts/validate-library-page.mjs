@@ -38,11 +38,14 @@ for (const lang of languages) {
 
 // The 자료 view (docs/decisions/site-structure.md, revisions 2026-10-04 and
 // 2026-10-23): approved resources and published picks together as editorial
-// rows, filtered by the blog's floating filter. Explainers no longer lead this
+// rows, filtered by the Library's visible filter bar (LibraryFilterBar; the blog keeps its floating filter). Explainers no longer lead this
 // list: they have their own view (the 해설 tab). The page carries the page label
 // and the tab bar.
 assert.match(libraryPage, /getLibraryViewData/);
-assert.match(libraryPage, /<BlogFilterBar\b/, 'Library should reuse the blog filter bar.');
+assert.match(libraryPage, /<LibraryFilterBar\b/, 'The 자료 view uses the visible Library filter bar.');
+assert.doesNotMatch(libraryPage, /<BlogFilterBar\b/, 'The Library no longer uses the floating blog filter.');
+assert.match(libraryPage, /toggle: true/, 'The 노트 있음 filter is a single toggle chip.');
+assert.match(libraryPage, /parent: \{ facet: 'area'/, '주제 chips are grouped under their 분야.');
 assert.match(libraryPage, /<LibraryRow\b/);
 assert.match(libraryPage, /data-filter-section/);
 assert.doesNotMatch(libraryPage, /Hero/, 'The Library hero was removed (2026-10-23, owner decision).');
@@ -73,6 +76,31 @@ for (const [view, current] of [
 	assert.match(source, /canonicalURL=\{canonicalURL\.href\}/, `${view} must canonicalize to the ko page.`);
 	assert.match(source, /noindex, follow/, `${view} must be noindex outside ko.`);
 }
+// Item pages (Revision 2026-10-23b): an item has a page iff it has a note.
+const itemRoute = read('src/pages/[lang]/library/item/[id].astro');
+assert.match(itemRoute, /buildItemNoteIndex/, 'Item pages are generated from the note index only.');
+assert.match(itemRoute, /getBacklinksFor/, 'An item page lists its backlinks.');
+const itemLayout = read('src/layouts/LibraryItemPost.astro');
+assert.match(itemLayout, /noindex, follow/, 'Item pages are noindex outside ko.');
+assert.match(itemLayout, /canonicalURL=\{canonicalURL\.href\}/, 'Item pages canonicalize to the ko page.');
+assert.match(itemLayout, /rel="noopener noreferrer"/, 'The original box is the one external link, opened safely.');
+const libraryRow = read('src/components/library/LibraryRow.astro');
+assert.match(libraryRow, /item\.note \? getItemUrl/, 'A row with a note links to the item page.');
+for (const page of [
+	'src/layouts/BlogPost.astro',
+	'src/layouts/ExplainerPost.astro',
+	'src/layouts/LibraryItemPost.astro',
+	'src/pages/[lang]/library/weekly/[issue].astro',
+]) {
+	assert.match(read(page), /<Backlinks\b/, `${page} must render the backlinks section.`);
+	assert.match(read(page), /<LinkPreview\b/, `${page} must load the link previews.`);
+}
+const filterBar = read('src/components/library/LibraryFilterBar.astro');
+assert.match(filterBar, /data-blog-filters/, 'The Library filter bar drives public/scripts/blog-filters.js.');
+assert.doesNotMatch(filterBar, /<script/i, 'The Library filter bar adds no script of its own.');
+const previewScript = read('src/scripts/link-preview.ts');
+assert.match(previewScript, /\(hover: hover\)/, 'Link previews run only where hovering exists.');
+assert.match(previewScript, /placePopover/, 'The preview card is placed with placePopover().');
 const tabsComponent = read('src/components/library/LibraryTabs.astro');
 assert.match(tabsComponent, /aria-current=/, 'The active tab must carry aria-current="page".');
 assert.doesNotMatch(tabsComponent, /<script/i, 'Tabs are real links, not script.');
@@ -97,6 +125,14 @@ for (const lang of languages) {
 		'weekly.page.in',
 		'weekly.page.out',
 		'explainer.claims.title',
+		'backlinks.title',
+		'item.original.open',
+		'library.filter-note',
+		'library.filter-clear',
+		'library.filter-total',
+		'signal.filter-source-language',
+		'signal.filter-source-kind',
+		'linkcard.read',
 	]) {
 		assert.ok(ui[lang]?.[key], `${lang} ${key} copy is required.`);
 	}
