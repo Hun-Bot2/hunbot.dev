@@ -1,0 +1,60 @@
+---
+// A verdict stamp: a small bordered mono label, set at -2 degrees like a rubber
+// stamp pressed on the page. Used for a signal's verdict (confirmed / doubt /
+// try) and for an explainer claim's judgement (agree / doubt / unverified), so
+// the owner's judgement looks the same wherever it appears. Colour comes from
+// the tokens (`--stamp-color`), so it follows the theme; meaning is carried by
+// the label, never by colour alone. The stage (Library hero) overrides
+// `--stamp-color` for its dark ground.
+interface Props {
+	tone: 'confirmed' | 'doubt' | 'try' | 'unverified';
+	label: string;
+	/** Smaller stamp for dense lists (the weekly spread, the hero). */
+	size?: 'md' | 'sm';
+}
+
+const { tone, label, size = 'md' } = Astro.props;
+---
+
+<span class:list={['stamp', `stamp--${tone}`, `stamp--${size}`]}>{label}</span>
+
+<style is:global>
+	.stamp {
+		--stamp-color: var(--secondary);
+		display: inline-block;
+		width: max-content;
+		padding: 0.1rem 0.55rem 0.05rem;
+		border: 1.5px solid var(--stamp-color);
+		border-radius: 2px;
+		box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--stamp-color) 22%, transparent);
+		font: 500 0.6875rem/1.5 var(--font-mono);
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
+		white-space: nowrap;
+		color: var(--stamp-color);
+		transform: rotate(-2deg);
+		transform-origin: left center;
+	}
+
+	.stamp--sm {
+		padding: 0 0.4rem;
+		font-size: 0.625rem;
+		border-width: 1px;
+	}
+
+	.stamp--confirmed {
+		--stamp-color: var(--state-reviewed);
+	}
+
+	.stamp--doubt {
+		--stamp-color: var(--accent);
+	}
+
+	.stamp--try {
+		--stamp-color: var(--state-reading);
+	}
+
+	.stamp--unverified {
+		border-style: dashed;
+	}
+</style>

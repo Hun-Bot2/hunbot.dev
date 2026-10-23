@@ -54,7 +54,7 @@ Paper cards are not read or rendered here. They surface on the Research hub inst
 
 ## Explainer Selection
 
-`/{lang}/library/` also lists published `explainers` (approved and human reviewed): on-site rows in the same list, filterable as the `explainer` value of the 종류 facet, never a tab. See [`explainers.md`](./explainers.md).
+`/{lang}/library/` is the **자료** view: the Library hero, the tab bar (신호 / 해설 / 주간 노트 / 자료; a tab with nothing published is omitted) and the one curated list of resources and picks. Explainers are no longer in this list: they have their own view, `/{lang}/library/explainers/`. See [`signals-and-weekly.md`](./signals-and-weekly.md), [`explainers.md`](./explainers.md) and [Revision 2026-10-23](../decisions/site-structure.md#revision-2026-10-23-the-library-gets-four-views).
 
 ## Topic Selection
 

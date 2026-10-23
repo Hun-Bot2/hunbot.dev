@@ -10,7 +10,9 @@ import { learningPaths } from '../data/learningPaths';
 import { getLearningPathUrl, getPublishedLearningPaths } from '../utils/learning-paths';
 import { decks } from '../data/decks';
 import { getTopicsWithLinkedPapers } from '../utils/research';
-import { getExplainerSlug, getExplainerUrl, getPublishedExplainers } from '../utils/explainers';
+import { getExplainerSlug, getExplainerUrl, getExplainersIndexUrl, getPublishedExplainers } from '../utils/explainers';
+import { getPublishedSignals, getSignalsUrl } from '../utils/signals';
+import { getPublishedWeeklyNotes, getWeeklyIndexUrl, getWeeklyUrl } from '../utils/weekly';
 
 export const GET: APIRoute = async ({ site }) => {
   const siteUrl = site ?? new URL(SITE_URL);
@@ -77,9 +79,21 @@ export const GET: APIRoute = async ({ site }) => {
   // canonical-language (ko) URL. The jp/en routes carry the same Korean text
   // with a canonical link to the ko page, so advertising them would submit
   // duplicates.
-  const explainerPages = getPublishedExplainers(await getCollection('explainers')).map((explainer) =>
+  const publishedExplainers = getPublishedExplainers(await getCollection('explainers'));
+  const explainerPages = publishedExplainers.map((explainer) =>
     getExplainerUrl(explainer.data.canonicalLanguage, getExplainerSlug(explainer)),
   );
+  // The Library's other views (docs/decisions/site-structure.md, Revision
+  // 2026-10-23): ko URLs only (the jp/en pages are the same Korean text,
+  // noindex, canonical to ko), and a view is listed only while it has a
+  // published item, the same gate its route's getStaticPaths uses.
+  const publishedSignals = getPublishedSignals(await getCollection('signals'));
+  const publishedWeekly = getPublishedWeeklyNotes(await getCollection('weeklyNotes'));
+  const libraryViewPages = [
+    ...(publishedSignals.length > 0 ? [getSignalsUrl('ko')] : []),
+    ...(publishedExplainers.length > 0 ? [getExplainersIndexUrl('ko')] : []),
+    ...(publishedWeekly.length > 0 ? [getWeeklyIndexUrl('ko'), ...publishedWeekly.map((note) => getWeeklyUrl('ko', note.data.issue))] : []),
+  ];
   const staticPages = [
     '/',
     ...SUPPORTED_LANGUAGES.flatMap((lang) => [
@@ -95,6 +109,7 @@ export const GET: APIRoute = async ({ site }) => {
     ...learningPathPages,
     ...researchPages,
     ...explainerPages,
+    ...libraryViewPages,
   ];
   
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>

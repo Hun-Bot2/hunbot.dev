@@ -2,14 +2,14 @@
 
 An **explainer** is a long-form Korean article that comments on one paper or one piece of external writing. A bot drafts it and the site owner reviews and approves it; nothing unreviewed is ever exported. It is commentary in its own words: never a translation or a close paraphrase of the source, and it always names and links the source.
 
-Decision record: [`docs/decisions/site-structure.md`](../decisions/site-structure.md#revision-2026-10-22-explainers-join-the-library). This file is the schema and the behaviour; the record is the reasoning.
+Decision records: [`docs/decisions/site-structure.md`](../decisions/site-structure.md#revision-2026-10-22-explainers-join-the-library) (explainers join the Library) and [Revision 2026-10-23](../decisions/site-structure.md#revision-2026-10-23-the-library-gets-four-views) (they get their own view, and `claims` and `signals` are added). This file is the schema and the behaviour; the record is the reasoning.
 
 ## Where explainers live
 
 | | |
 |---|---|
 | Collection | `explainers`, `src/content/explainers/<id>.md` (Markdown body, JSON frontmatter like `resources` and `papers`) |
-| Listing | a row in the one Library list, `/{lang}/library/` (`ExplainerRow`), filterable under the existing 종류 facet as `explainer` |
+| Listing | the 해설 view, `/{lang}/library/explainers/` (a row per explainer, `ExplainerRow`); one of the Library's four tabs |
 | Detail page | `/{lang}/library/explainers/{id}/` (`ExplainerPost` layout) |
 | Review badge | `src/components/library/ProvenanceBadge.astro` (`full` on the page, `compact` on the row) |
 | Source language chip | `src/components/library/SourceLanguageChip.astro` |
@@ -41,6 +41,8 @@ The schema is an **allowlist**: every field a record may carry is below, and any
 | `review.reviewer` | string \| `null` | no | |
 | `tags` | array of short slugs | no (default `[]`) | The existing tag taxonomy. The first tag is the 주제 facet value; tags map to a 분야 through `src/data/libraryAreas.ts` |
 | `image` | `{ kind: og \| screenshot, src: /images/resources/<name>.webp, width, height }` or `{ kind: typographic, label }` | no | Same rules as `resources`. Without an image, the row shows a typographic plate (a large serif 해설 and the source language code) |
+| `claims` | array of at most 8 `{ claim, judgement, check }` | no | The source's claims in the owner's words (never a quote, at most 300 characters), the owner's `judgement` (`agree` \| `doubt` \| `unverified`), and `check`, how a reader can check it (at most 300 characters). Rendered after the body as the claims ledger |
+| `signals` | array of signal ids (slugs) | no (default `[]`) | Library signals this explainer grew out of: the lineage, declared here on the later artifact. Each id must be a file in `src/content/signals/`; a reference to an unpublished signal is withheld from the signal row, not an error |
 
 The body is Markdown. Use `##` and `###` headings: the table of contents is built from them.
 
@@ -51,7 +53,7 @@ These never appear in an explainer, and the validator rejects each by name with 
 - quotes from the source (`quote`, `quotes`, `excerpt`, `passage`, ...)
 - model names, costs, token counts (`model`, `cost`, `tokens`, `usage`, `prompt`, ...)
 - verification-check results (`verification`, `checks`, `factCheck`, ...)
-- private signals and scores (`signals`, `score`, `rank`, `pipeline`, `rights`, ...)
+- private signals and scores (`score`, `rank`, `pipeline`, `rights`, ...). A top-level `signals` **array of ids** is the lineage declaration above and is allowed; an object-valued `signals` (the private scores) is still rejected by name
 
 The forbidden-name lists in `contracts/research-os/research-item.schema.json` (`x-contract`: corpus-only, personal-state and removed-score names) apply as well; the validator reads them from that file. They are not edited for explainers: the file is vendored byte-for-byte by the private repository.
 
@@ -63,6 +65,8 @@ The forbidden-name lists in `contracts/research-os/research-item.schema.json` (`
 - any field outside the allowlist, and any forbidden field (above)
 - an `authorship`, `canonicalLanguage`, `review.status`, `source.kind` or `source.language` outside its enum
 - a malformed DOI or arXiv id, a malformed tag, a malformed image
+- more than 8 `claims`, a claim without `claim`/`check`, a `judgement` outside its enum, any unlisted or forbidden field inside a claim
+- a `signals` id that is not slug-safe or names no file in `src/content/signals/`
 - an `id` that is not slug-safe, differs from the file name, or is duplicated
 
 Tests: `test/explainers.test.mjs`.
@@ -75,13 +79,13 @@ Two draft fixtures (`src/content/explainers/fixture-jp-article.md`, a Japanese-s
 
 ## Behaviour
 
-- **Library section**: published explainers are the first section of the Library list (`id="explainers"`, heading 해설, one-line description, newest first) and are not repeated in an area section. It is a section of the one list, not a tab, and is not rendered when there are none. Their area and topic values are not offered as 분야 / 주제 filter options; 종류 includes `explainer`.
+- **Library view**: published explainers are the 해설 tab, `/{lang}/library/explainers/` (one-line description, newest first, one `ExplainerRow` each). The route and the tab exist only while at least one explainer is published. They are not part of the 자료 list (that was the 2026-10-22 arrangement, superseded by Revision 2026-10-23).
 - **Row** (`ExplainerRow`): same `.entry` grid as the external rows, an on-site link (no new tab, no ↗), a 2px accent rule on its left edge, a mono 해설 eyebrow with the source-language chip (accent for `ja`, quiet for `en` / `ko`), the title, the `dek` (two lines), then compact badge, source name and a read link. It carries the same filter data attributes as every Library row.
-- **Detail page**: breadcrumb (라이브러리 / 해설, the latter linking to `/{lang}/library/#explainers`), the same eyebrow as the row (해설, source-language chip, 논문/글), title (own scale, always larger than prose headings), dek, a rule, the full badge, the body, the source box (original, language chip, kind, an external "view original" link, and the notice that this is commentary, not a translation), the related paper card slot, tags. It reuses the blog shell and has no comments, view counter or feedback box.
+- **Detail page**: breadcrumb (라이브러리 / 해설, the latter linking to `/{lang}/library/explainers/`), the same eyebrow as the row (해설, source-language chip, 논문/글), title (own scale, always larger than prose headings), dek, a rule, the full badge, the body, the **claims ledger** (when `claims` is present: a ruled three-column table 원문의 주장 / 내 판단 / 확인하는 방법, stacked cards below 640px, the judgement shown with the same stamp as a signal's verdict), the source box (original, language chip, kind, an external "view original" link, and the notice that this is commentary, not a translation), the related paper card slot, tags. It reuses the blog shell and has no comments, view counter or feedback box.
 - **Badge** (`ProvenanceBadge`): `full` is a `<details>` disclosure (no JavaScript, keyboard operable, 40px target, never wraps) with two fixed segments plus the review date, so the pill keeps its shape across states (below 480px the date leaves the pill and shows in the page's meta row as 검토일; the panel still has it): author ("AI 초안", or "직접 씀" for `owner`) and review ("사람이 검토함" with a check, or "검토 전"). `compact` is inline text for the row.
 - **Related paper**: shown only when an approved `papers` entry carries an identical DOI or arXiv id in `source.externalIds` (`findPaperForExplainer()`; versions and resolver prefixes are normalized). Never matched on title. The link goes to that card's anchor on `/{lang}/research/`.
 - **Languages**: written in Korean only. The `ko`, `jp` and `en` pages all list and serve the same Korean text under their own page chrome (the `resources` fallback rule); the `jp` and `en` detail pages show a "Korean only" notice, are `noindex` and canonical to the `ko` page, and the sitemap lists the `ko` URL only.
-- Not shown on the home page's Library block (external items only).
+- Not shown on the home page's Library block (external items only). The Library hero shows the latest explainer as its first slide.
 
 ## Public-repository rules
 

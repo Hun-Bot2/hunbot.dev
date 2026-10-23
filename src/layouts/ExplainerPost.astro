@@ -19,7 +19,8 @@ import SourceLanguageChip from '../components/library/SourceLanguageChip.astro';
 import ExplainerEyebrow from '../components/library/ExplainerEyebrow.astro';
 import { useTranslations, type UILanguage } from '../i18n/ui';
 import { formatPostDate } from '../utils/display';
-import { getExplainerUrl } from '../utils/explainers';
+import Stamp from '../components/library/Stamp.astro';
+import { getExplainerUrl, getExplainersIndexUrl } from '../utils/explainers';
 import '../styles/prose.css';
 
 type Props = {
@@ -31,6 +32,8 @@ type Props = {
 
 const { explainer, lang, relatedPaper = null } = Astro.props as Props;
 const t = useTranslations(lang);
+// A dynamic UI key; kept out of the template, where `as` casts do not parse.
+const tk = (key: string) => t(key as Parameters<typeof t>[0]);
 
 const contentLang = explainer.canonicalLanguage;
 // The explainer exists in its canonical language only; the other languages'
@@ -41,9 +44,11 @@ const canonicalURL = new URL(getExplainerUrl(contentLang, explainer.id), Astro.s
 const contentLangAttr = isCanonicalLanguage ? undefined : contentLang;
 const headingId = 'explainer-title';
 const reviewedAt = explainer.review.reviewedAt ? new Date(explainer.review.reviewedAt) : undefined;
-const sourceKindLabel = t(`explainer.source.kind.${explainer.source.kind}` as Parameters<typeof t>[0]);
+const sourceKindLabel = tk(`explainer.source.kind.${explainer.source.kind}`);
 const imageSrc = explainer.image && explainer.image.kind !== 'typographic' ? explainer.image.src : undefined;
 const libraryUrl = `/${lang}/library/`;
+const claims = explainer.claims ?? [];
+const judgementTone = { agree: 'confirmed', doubt: 'doubt', unverified: 'unverified' } as const;
 ---
 
 <html lang={lang}>
@@ -76,7 +81,7 @@ const libraryUrl = `/${lang}/library/`;
 					<Breadcrumb
 						items={[
 							{ name: t('library.title'), href: libraryUrl },
-							{ name: t('explainer.breadcrumb'), href: `${libraryUrl}#explainers` },
+							{ name: t('explainer.breadcrumb'), href: getExplainersIndexUrl(lang) },
 						]}
 					/>
 					<p class="explainer-eyebrow-line">
@@ -120,6 +125,36 @@ const libraryUrl = `/${lang}/library/`;
 						<div class="prose" lang={contentLangAttr} data-pagefind-body={isCanonicalLanguage ? true : undefined}>
 							<slot />
 						</div>
+
+						{claims.length > 0 && (
+							<section class="claims" aria-labelledby="claims-title">
+								<h2 id="claims-title" class="claims-title">{t('explainer.claims.title')}</h2>
+								<table class="claims-table" lang={contentLangAttr}>
+									<thead>
+										<tr>
+											<th scope="col">{t('explainer.claims.claim')}</th>
+											<th scope="col">{t('explainer.claims.judgement')}</th>
+											<th scope="col">{t('explainer.claims.check')}</th>
+										</tr>
+									</thead>
+									<tbody>
+										{claims.map((claim) => (
+											<tr>
+												<th scope="row" class="claims-claim" data-label={t('explainer.claims.claim')}>{claim.claim}</th>
+												<td class="claims-judgement" data-label={t('explainer.claims.judgement')}>
+													<Stamp
+														tone={judgementTone[claim.judgement]}
+														label={tk(`explainer.judgement.${claim.judgement}`)}
+														size="sm"
+													/>
+												</td>
+												<td class="claims-check" data-label={t('explainer.claims.check')}>{claim.check}</td>
+											</tr>
+										))}
+									</tbody>
+								</table>
+							</section>
+						)}
 
 						<aside class="source-box" aria-labelledby="source-box-label">
 							<p id="source-box-label" class="source-box-label">{t('explainer.source.label')}</p>
@@ -246,6 +281,128 @@ const libraryUrl = `/${lang}/library/`;
 		font: 400 0.75rem/1.6 var(--font-mono);
 		letter-spacing: 0.06em;
 		color: var(--secondary);
+	}
+
+	/* ── Claims ledger: the source's claims, my judgement, how to check ── */
+	.claims {
+		margin-top: 3rem;
+	}
+
+	.claims-title {
+		margin: 0 0 0.9rem;
+		padding-bottom: 0.45rem;
+		border-bottom: 1px solid var(--rule-strong);
+		font: 400 1.5rem/1.3 var(--font-serif);
+		letter-spacing: -0.015em;
+	}
+
+	html:lang(ko) .claims-title {
+		word-break: keep-all;
+	}
+
+	.claims-table {
+		width: 100%;
+		border-collapse: collapse;
+		table-layout: fixed;
+	}
+
+	.claims-table thead th {
+		padding: 0 1rem 0.5rem 0;
+		border-bottom: 1px solid var(--rule);
+		font: 400 0.6875rem/1.45 var(--font-mono);
+		letter-spacing: 0.09em;
+		text-align: left;
+		text-transform: uppercase;
+		color: var(--secondary);
+	}
+
+	.claims-table thead th:nth-child(1) {
+		width: 40%;
+	}
+
+	.claims-table thead th:nth-child(2) {
+		width: 8.5rem;
+	}
+
+	.claims-table tbody tr + tr > * {
+		border-top: 1px solid var(--rule);
+	}
+
+	.claims-table tbody th,
+	.claims-table tbody td {
+		padding: 0.95rem 1rem 0.95rem 0;
+		vertical-align: top;
+		text-align: left;
+		font: 400 0.9375rem/1.65 var(--font-sans);
+		overflow-wrap: anywhere;
+	}
+
+	.claims-table tbody th {
+		font-family: var(--font-serif);
+		font-size: 1.0625rem;
+		line-height: 1.55;
+	}
+
+	.claims-table:lang(ko) tbody th,
+	.claims-table:lang(ko) tbody td {
+		word-break: keep-all;
+	}
+
+	.claims-judgement {
+		padding-top: 1.1rem;
+	}
+
+	.claims-check {
+		color: var(--secondary);
+	}
+
+	/* Below 640px each claim is a stacked card with its column labels. */
+	@media (max-width: 639px) {
+		.claims-table,
+		.claims-table tbody,
+		.claims-table tr,
+		.claims-table tbody th,
+		.claims-table tbody td {
+			display: block;
+			width: 100%;
+		}
+
+		.claims-table thead {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			overflow: hidden;
+			clip-path: inset(50%);
+		}
+
+		.claims-table tbody tr {
+			padding: 0.9rem 0;
+			border-top: 1px solid var(--rule);
+		}
+
+		.claims-table tbody tr + tr > * {
+			border-top: 0;
+		}
+
+		.claims-table tbody th,
+		.claims-table tbody td {
+			padding: 0.15rem 0;
+			border: 0;
+		}
+
+		.claims-table tbody td::before {
+			content: attr(data-label);
+			display: block;
+			margin-bottom: 0.1rem;
+			font: 400 0.6875rem/1.45 var(--font-mono);
+			letter-spacing: 0.09em;
+			text-transform: uppercase;
+			color: var(--secondary);
+		}
+
+		.claims-judgement {
+			padding: 0.4rem 0;
+		}
 	}
 
 	/* ── Source box ── */

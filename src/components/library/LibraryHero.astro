@@ -9,43 +9,72 @@
 //   - use only the motion tokens (src/styles/tokens.css).
 // Slide selection and word splitting: src/utils/hero.ts. Behaviour:
 // ./library-hero-client.ts. Copy: `library.hero.*` in src/i18n/ui.ts.
-import type { CollectionEntry } from 'astro:content';
-import { getAcademicReviewUrlFromEntry } from '../../utils/academic-review-routing';
-import { getBlogUrlFromId } from '../../utils/blog-routing';
 import { formatPostDate } from '../../utils/display';
+import { getExplainerUrl } from '../../utils/explainers';
 import { plateWord, splitHeadline, type HeroSlide } from '../../utils/hero';
+import { getLibraryKindLabel } from '../../utils/library-labels';
 import { getResponsivePublicImage } from '../../utils/responsive-public-images';
+import { getSignalsUrl } from '../../utils/signals';
+import { formatWeekRange, getWeeklyUrl } from '../../utils/weekly';
 import { useTranslations, type UILanguage } from '../../i18n/ui';
+import Stamp from './Stamp.astro';
 
 interface Props {
-	slides: HeroSlide<CollectionEntry<'blog'>, CollectionEntry<'academicReviews'>>[];
+	/** From selectHeroSlides() (src/utils/hero.ts): explainer, weekly note, today's signals, then 자료 items. */
+	slides: HeroSlide[];
 	lang: UILanguage;
-	/** Plate corner label per post id (series or category); reviews show their venue. */
-	plateLabels?: Record<string, string>;
 }
 
-const { slides, lang, plateLabels = {} } = Astro.props;
+const { slides, lang } = Astro.props;
 const t = useTranslations(lang);
+// A dynamic UI key; kept out of the template, where `as` casts do not parse.
+const tk = (key: string) => t(key as Parameters<typeof t>[0]);
 const total = slides.length;
 const interactive = total > 1;
 
 const items = slides.map((slide, index) => {
 	const words = splitHeadline(slide.title, lang);
-	const hero = slide.heroImage ? getResponsivePublicImage(slide.heroImage) : null;
+	const responsive = slide.image ? getResponsivePublicImage(slide.image.src) : null;
+	const image = responsive && slide.image ? { ...responsive, width: responsive.width ?? slide.image.width, height: responsive.height ?? slide.image.height } : null;
+	let href = '';
+	let eyebrow: string[] = [];
+	let plate = '';
+	let plateLabel = '';
+	let external = false;
+	if (slide.kind === 'explainer') {
+		href = getExplainerUrl(lang, slide.slug);
+		eyebrow = [t('library.hero.kind.explainer'), tk(`explainer.source-language.${slide.sourceLanguage}`)];
+		plate = plateWord(slide.title, lang);
+		plateLabel = tk(`explainer.source.kind.${slide.sourceKind}`);
+	} else if (slide.kind === 'weekly') {
+		href = getWeeklyUrl(lang, slide.issue);
+		eyebrow = [`${t('library.hero.kind.weekly')} ${t('weekly.issue').replace('{n}', String(slide.issue))}`];
+		plate = String(slide.issue);
+		plateLabel = formatWeekRange(slide.date);
+	} else if (slide.kind === 'signals') {
+		href = getSignalsUrl(lang);
+		eyebrow = [t('library.hero.kind.signals'), formatPostDate(new Date(slide.day))];
+		plate = String(slide.count);
+		plateLabel = t('signal.count').replace('{n}', String(slide.count));
+	} else {
+		href = slide.url;
+		external = true;
+		eyebrow = [t('library.tab.resources'), getLibraryKindLabel(slide.itemKind, lang)];
+		plate = plateWord(slide.title, lang);
+		plateLabel = getLibraryKindLabel(slide.itemKind, lang);
+	}
 	return {
 		slide,
 		index,
 		words,
-		hero,
-		href: slide.kind === 'post' ? getBlogUrlFromId(slide.entry.id) : getAcademicReviewUrlFromEntry(slide.entry),
-		kindLabel: t(slide.kind === 'post' ? 'library.hero.kind.post' : 'library.hero.kind.review'),
-		plate: plateWord(slide.title, lang),
-		plateLabel:
-			slide.kind === 'post'
-				? (plateLabels[slide.entry.id] ?? '')
-				: ([slide.entry.data.paper.venue, slide.entry.data.paper.year].filter(Boolean).join(' · ') || t('library.hero.kind.review')),
+		image,
+		href,
+		external,
+		eyebrow: eyebrow.join(' · '),
+		plate,
+		plateLabel,
 		// Width of the plate word in em (CJK glyphs about twice a Latin one), so it can be sized to fit.
-		plateEm: Array.from(plateWord(slide.title, lang)).reduce((sum, ch) => sum + (ch.charCodeAt(0) < 0x250 ? 0.52 : 1.02), 0.1),
+		plateEm: Array.from(plate).reduce((sum, ch) => sum + (ch.charCodeAt(0) < 0x250 ? 0.52 : 1.02), 0.1),
 		label: t('library.hero.slide').replace('{n}', String(index + 1)).replace('{total}', String(total)),
 	};
 });
@@ -63,7 +92,7 @@ const items = slides.map((slide, index) => {
 		>
 			<div class="hero-stage">
 				<div class="hero-slides" data-hero-slides aria-live="off">
-					{items.map(({ slide, index, words, hero, href, kindLabel, plate, plateLabel, plateEm, label }) => (
+					{items.map(({ slide, index, words, image, href, external, eyebrow, plate, plateLabel, plateEm, label }) => (
 						<div
 							class="hero-slide"
 							role="group"
@@ -76,10 +105,8 @@ const items = slides.map((slide, index) => {
 						>
 							<span class="hero-glow" aria-hidden="true" />
 							<div class="hero-copy">
-								<a class="hero-link" href={href}>
-									<p class="hero-eyebrow">
-										{kindLabel} · <time datetime={slide.date.toISOString()}>{formatPostDate(slide.date)}</time>
-									</p>
+								<a class="hero-link" href={href} target={external ? '_blank' : undefined} rel={external ? 'noopener noreferrer' : undefined}>
+									<p class="hero-eyebrow">{eyebrow}</p>
 									<h2 class="hero-title">
 										{words.map((word, i) => (
 											<Fragment>
@@ -90,23 +117,34 @@ const items = slides.map((slide, index) => {
 											</Fragment>
 										))}
 									</h2>
-									{slide.description && <p class="hero-desc">{slide.description}</p>}
+									{slide.kind === 'signals' ? (
+										<ul class="hero-signals">
+											{slide.items.map((item) => (
+												<li>
+													<Stamp tone={item.verdict as 'confirmed' | 'doubt' | 'try'} label={tk(`signal.verdict.${item.verdict}`)} size="sm" />
+													<span class="hero-signal-title" lang={lang !== 'ko' ? 'ko' : undefined}>{item.title}</span>
+												</li>
+											))}
+										</ul>
+									) : (
+										slide.description && <p class="hero-desc">{slide.description}</p>
+									)}
 									<span class="btn-pill hero-cta">
-										{t('library.hero.read')} <span aria-hidden="true">→</span>
+										{t('library.hero.read')} <span aria-hidden="true">{external ? '↗' : '→'}</span>
 									</span>
 								</a>
 							</div>
 							<div class="hero-media" aria-hidden="true">
-								{hero ? (
+								{image ? (
 									<picture>
-										{hero.webpSrcSet && (
-											<source type="image/webp" srcset={hero.webpSrcSet} sizes="(max-width: 799px) 100vw, 520px" />
+										{image.webpSrcSet && (
+											<source type="image/webp" srcset={image.webpSrcSet} sizes="(max-width: 799px) 100vw, 520px" />
 										)}
 										<img
-											src={hero.src}
+											src={image.src}
 											alt=""
-											width={hero.width}
-											height={hero.height}
+											width={image.width}
+											height={image.height}
 											sizes="(max-width: 799px) 100vw, 520px"
 											loading={index === 0 ? 'eager' : 'lazy'}
 											decoding="async"
@@ -294,6 +332,50 @@ const items = slides.map((slide, index) => {
 		margin: 0 0 1.5rem;
 		font: 400 0.9375rem/1.65 var(--font-sans);
 		color: var(--stage-muted);
+	}
+
+	/* Today's signals: up to three verdicts with their headlines. */
+	.hero-signals {
+		display: grid;
+		gap: 0.7rem;
+		max-width: 34rem;
+		margin: 0 0 1.5rem;
+		padding: 0;
+		list-style: none;
+	}
+
+	.hero-signals li {
+		display: grid;
+		grid-template-columns: 4.5rem minmax(0, 1fr);
+		gap: 0 0.75rem;
+		align-items: baseline;
+	}
+
+	.hero-signal-title {
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+		font: 400 0.9375rem/1.5 var(--font-sans);
+		color: var(--stage-ink);
+	}
+
+	/* Stamps on the stage: the same three tones, lifted for the dark ground. */
+	.hero :global(.stamp) {
+		--stamp-color: var(--stage-ink);
+	}
+
+	.hero :global(.stamp--doubt) {
+		--stamp-color: var(--stage-accent);
+	}
+
+	.hero :global(.stamp--confirmed) {
+		--stamp-color: var(--stage-ink);
+	}
+
+	.hero :global(.stamp--try) {
+		--stamp-color: var(--stage-muted);
 	}
 
 	/* .btn-pill, made for the stage. */

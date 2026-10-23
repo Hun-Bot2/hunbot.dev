@@ -1,0 +1,122 @@
+---
+// The Library's views as a tab row: 신호 / 해설 / 주간 노트 / 자료
+// (docs/decisions/site-structure.md, Revision 2026-10-23). Real links, no
+// script: each tab is its own page, the current one carries aria-current="page".
+// A view with no published items is not in `tabs` (src/utils/library-tabs.ts);
+// 자료 is always there. Active = ink text with a 2px accent underline, like the
+// header's nav; the count is a quiet mono figure.
+import { useTranslations, type UILanguage } from '../../i18n/ui';
+import type { LibraryTab, LibraryTabId } from '../../utils/library-tabs';
+
+interface Props {
+	lang: UILanguage;
+	tabs: LibraryTab[];
+	current: LibraryTabId;
+}
+
+const { lang, tabs, current } = Astro.props;
+const t = useTranslations(lang);
+// A dynamic UI key; kept out of the template, where `as` casts do not parse.
+const tk = (key: string) => t(key as Parameters<typeof t>[0]);
+---
+
+<nav class="library-tabs page-frame" aria-label={t('library.tabs.label')}>
+	<ul class="library-tab-list">
+		{
+			tabs.map((tab) => (
+				<li>
+					<a
+						class:list={['library-tab', { 'is-current': tab.id === current }]}
+						href={tab.href}
+						aria-current={tab.id === current ? 'page' : undefined}
+					>
+						<span class="library-tab-label">{tk(`library.tab.${tab.id}`)}</span>
+						<span class="library-tab-count">{tab.count}</span>
+					</a>
+				</li>
+			))
+		}
+	</ul>
+</nav>
+
+<style>
+	.library-tabs {
+		margin-bottom: 0.5rem;
+		border-bottom: 1px solid var(--rule);
+	}
+
+	.library-tab-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0 1.75rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.library-tab {
+		position: relative;
+		display: inline-flex;
+		align-items: baseline;
+		gap: 0.45rem;
+		min-height: 2.75rem;
+		padding-top: 0.7rem;
+		color: var(--secondary);
+		text-decoration: none;
+		transition: color var(--dur-2) var(--ease-standard);
+	}
+
+	.library-tab-label {
+		font: 400 0.9375rem/1.4 var(--font-sans);
+		word-break: keep-all;
+	}
+
+	.library-tab-count {
+		font: 400 0.6875rem/1 var(--font-mono);
+		font-variant-numeric: tabular-nums;
+		letter-spacing: 0.06em;
+		color: var(--faint);
+	}
+
+	/* The underline sits on the row's rule, 2px, like the header's active tab. */
+	.library-tab::after {
+		content: '';
+		position: absolute;
+		left: 0;
+		right: 100%;
+		bottom: -1px;
+		height: 2px;
+		background: var(--accent);
+		transition: right var(--dur-3) var(--ease-out);
+	}
+
+	.library-tab:hover,
+	.library-tab:focus-visible,
+	.library-tab.is-current {
+		color: var(--ink);
+	}
+
+	.library-tab:hover::after,
+	.library-tab:focus-visible::after,
+	.library-tab.is-current::after {
+		right: 0;
+	}
+
+	.library-tab:not(.is-current):hover::after {
+		background: var(--rule-strong);
+	}
+
+	.library-tab.is-current .library-tab-label {
+		font-weight: 500;
+	}
+
+	.library-tab.is-current .library-tab-count {
+		color: var(--accent);
+	}
+
+	@media (max-width: 479px) {
+		.library-tab-list {
+			gap: 0 1.25rem;
+		}
+	}
+</style>
