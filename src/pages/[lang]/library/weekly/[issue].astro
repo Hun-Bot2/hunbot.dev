@@ -12,9 +12,12 @@ import BaseHead from '../../../../components/BaseHead.astro';
 import Header from '../../../../components/Header.astro';
 import FloatingLanguagePicker from '../../../../components/FloatingLanguagePicker.astro';
 import Breadcrumb from '../../../../components/Breadcrumb.astro';
+import Backlinks from '../../../../components/Backlinks.astro';
+import LinkPreview from '../../../../components/LinkPreview.astro';
 import ProvenanceBadge from '../../../../components/library/ProvenanceBadge.astro';
 import SignalRow from '../../../../components/library/SignalRow.astro';
 import { useTranslations, type UILanguage } from '../../../../i18n/ui';
+import { getBacklinksFor } from '../../../../utils/backlinks-sources';
 import { formatPostDate } from '../../../../utils/display';
 import { getLibraryViewData } from '../../../../utils/library-views';
 import { getSignalLineage, getSignalSlug } from '../../../../utils/signals';
@@ -54,6 +57,7 @@ const reviewedAt = data.review.reviewedAt ? new Date(data.review.reviewedAt) : u
 const signals = getSignalsForWeek(view.signals, data.weekOf);
 const { prev, next } = getAdjacentIssues(view.weeklyNotes, data.issue);
 const title = `${data.title} - ${t('weekly.title')} - Hun-Bot Blog`;
+const backlinks = await getBacklinksFor({ selfKey: `weekly:${data.issue}`, paths: [getWeeklyUrl('ko', data.issue)] }, lang);
 ---
 
 <html lang={lang}>
@@ -160,6 +164,8 @@ const title = `${data.title} - ${t('weekly.title')} - Hun-Bot Blog`;
 					)
 				}
 
+				<div class="page-frame"><Backlinks links={backlinks} lang={lang} /></div>
+
 				<nav class="weekly-pager page-frame" aria-label={t('weekly.title')}>
 					{
 						prev ? (
@@ -185,6 +191,7 @@ const title = `${data.title} - ${t('weekly.title')} - Hun-Bot Blog`;
 				</nav>
 			</article>
 		</main>
+		<LinkPreview />
 	</body>
 </html>
 

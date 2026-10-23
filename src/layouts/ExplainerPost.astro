@@ -16,6 +16,9 @@ import TableOfContents from '../components/TableOfContents.astro';
 import Breadcrumb from '../components/Breadcrumb.astro';
 import ProvenanceBadge from '../components/library/ProvenanceBadge.astro';
 import SourceLanguageChip from '../components/library/SourceLanguageChip.astro';
+import Backlinks from '../components/Backlinks.astro';
+import LinkPreview from '../components/LinkPreview.astro';
+import type { Backlink } from '../utils/backlinks';
 import ExplainerEyebrow from '../components/library/ExplainerEyebrow.astro';
 import { useTranslations, type UILanguage } from '../i18n/ui';
 import { formatPostDate } from '../utils/display';
@@ -28,9 +31,11 @@ type Props = {
 	lang: UILanguage;
 	/** The matching paper card on the Research hub, joined on DOI / arXiv id. */
 	relatedPaper?: { title: string; href: string } | null;
+	/** The site's own writing that links to this explainer. */
+	backlinks?: Backlink[];
 };
 
-const { explainer, lang, relatedPaper = null } = Astro.props as Props;
+const { explainer, lang, relatedPaper = null, backlinks = [] } = Astro.props as Props;
 const t = useTranslations(lang);
 // A dynamic UI key; kept out of the template, where `as` casts do not parse.
 const tk = (key: string) => t(key as Parameters<typeof t>[0]);
@@ -187,6 +192,8 @@ const judgementTone = { agree: 'confirmed', doubt: 'doubt', unverified: 'unverif
 							</aside>
 						)}
 
+						<Backlinks links={backlinks} lang={lang} />
+
 						{explainer.tags.length > 0 && (
 							<ul class="article-tags explainer-tags" aria-label={t('explainer.tags')}>
 								{explainer.tags.map((tag) => <li class="chip">{tag.replaceAll('-', ' ')}</li>)}
@@ -196,6 +203,7 @@ const judgementTone = { agree: 'confirmed', doubt: 'doubt', unverified: 'unverif
 				</div>
 			</article>
 		</main>
+		<LinkPreview />
 	</body>
 </html>
 

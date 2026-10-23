@@ -11,7 +11,7 @@
 import BaseHead from '../../../../components/BaseHead.astro';
 import Header from '../../../../components/Header.astro';
 import FloatingLanguagePicker from '../../../../components/FloatingLanguagePicker.astro';
-import BlogFilterBar from '../../../../components/blog/BlogFilterBar.astro';
+import LibraryFilterBar from '../../../../components/library/LibraryFilterBar.astro';
 import LibraryTabs from '../../../../components/library/LibraryTabs.astro';
 import SignalRow from '../../../../components/library/SignalRow.astro';
 import { getCollection } from 'astro:content';
@@ -44,7 +44,13 @@ const verdictOptions = signalVerdicts
 		count: view.signals.filter((signal) => signal.data.verdict === verdict).length,
 	}))
 	.filter((option) => option.count > 0);
-const filterGroups = [{ facet: 'verdict', label: t('signal.filter-verdict'), options: verdictOptions }];
+const countOptions = (values: string[], label: (value: string) => string) =>
+	[...new Set(values)].map((value) => ({ value, label: label(value), count: values.filter((item) => item === value).length }));
+const filterGroups = [
+	{ facet: 'verdict', label: t('signal.filter-verdict'), options: verdictOptions },
+	{ facet: 'sourceLanguage', label: t('signal.filter-source-language'), options: countOptions(view.signals.map((signal) => signal.data.source.language), (value) => tk(`signal.source-language.${value}`)) },
+	{ facet: 'sourceKind', label: t('signal.filter-source-kind'), options: countOptions(view.signals.map((signal) => signal.data.source.kind), (value) => tk(`signal.source-kind.${value}`)) },
+];
 const dayLabel = (day: string) => day.replaceAll('-', '.');
 ---
 
@@ -65,16 +71,15 @@ const dayLabel = (day: string) => day.replaceAll('-', '.');
 			<section class="subpage-intro subpage-intro--flush">
 				<h1 class="eyebrow">{t('library.title')}</h1>
 			</section>
-			<LibraryTabs lang={lang} tabs={view.tabs} current="signals" reserveFilter />
+			<LibraryTabs lang={lang} tabs={view.tabs} current="signals" />
 
-			<BlogFilterBar
+			<LibraryFilterBar
 				lang={lang}
 				groups={filterGroups}
 				storageKey="hunbot-signal-filters"
-				resultsTemplate={t('signal.filter-results')}
+				resultsTemplate={t('library.filter-total')}
 				label={t('library.filter-label')}
 				totalCount={view.signals.length}
-				anchor="tabs"
 			/>
 
 			<div class="page-frame signal-ledger" data-blog-posts>

@@ -3,6 +3,7 @@ import type { UILanguage } from '../i18n/ui';
 import { sortStable } from './ordering.ts';
 import { getPickSlug } from './picks.ts';
 import { getLibraryAreaId } from '../data/libraryAreas.ts';
+import type { ItemNote } from './item-notes.ts';
 import { getExplainerSlug, getExplainerUrl, getPublishedExplainers, type ExplainerEntry } from './explainers.ts';
 
 export type ResourceEntry = CollectionEntry<'resources'>;
@@ -209,6 +210,12 @@ export interface LibraryItem {
 	/** One-line summary in the requested language (resources only; '' when none). */
 	description: string;
 	/**
+	 * Set when the owner wrote a note about the item (docs/content/item-notes.md):
+	 * the row then links to the item's own page (`/{lang}/library/item/{pageId}/`)
+	 * instead of the original in a new tab.
+	 */
+	note?: { pageId: string };
+	/**
 	 * Set on an explainer (kind `explainer`): `url` is then an on-site page, not
 	 * an external link, and the row renders as ExplainerRow.
 	 */
@@ -241,6 +248,7 @@ export function getLibraryItems(
 	picks: PickEntry[],
 	lang: UILanguage = 'ko',
 	explainers: ExplainerEntry[] = [],
+	notes: ReadonlyMap<string, ItemNote> = new Map(),
 ): LibraryItem[] {
 	const fromResources = getApprovedResources(resources).map((resource): LibraryItem => ({
 		id: resource.data.id,
@@ -252,6 +260,7 @@ export function getLibraryItems(
 		date: resource.data.publishedAt ?? resource.data.source.firstSeenAt,
 		image: resource.data.image ?? { kind: 'typographic', label: hostLabel(resource.data.url) },
 		description: getResourceSummary(resource, lang),
+		note: notes.has(resource.data.id) ? { pageId: resource.data.id } : undefined,
 	}));
 
 	const fromPicks = picks
@@ -266,6 +275,7 @@ export function getLibraryItems(
 			date: String(pick.data.addedAt).slice(0, 10),
 			image: { kind: 'typographic', label: hostLabel(pick.data.url) },
 			description: '',
+			note: notes.has(getPickSlug(pick.id)) ? { pageId: getPickSlug(pick.id) } : undefined,
 		}));
 
 	// Explainers (docs/decisions/site-structure.md, Revision 2026-10-22): the same

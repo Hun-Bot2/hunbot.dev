@@ -188,3 +188,8 @@
 		grid-area: body;
 	}
 }
+
+/* The mark on a Library row whose item has the owner's own note (it opens an on-site page). */
+.entry-note {
+	color: var(--accent);
+}

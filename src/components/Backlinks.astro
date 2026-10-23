@@ -1,0 +1,108 @@
+---
+// "이 페이지를 언급한 글": the site's own writing that links to this page, found
+// from actual links in the text (src/utils/backlinks.ts), never from similarity.
+// Renders nothing when there are none. Each row: kind · date, the title, and the
+// sentence around the link. Used on item pages, explainers, weekly notes, posts.
+import { useTranslations, type UILanguage } from '../i18n/ui';
+import { formatPostDate } from '../utils/display';
+import type { Backlink } from '../utils/backlinks';
+
+interface Props {
+	links: Backlink[];
+	lang: UILanguage;
+}
+
+const { links, lang } = Astro.props;
+const t = useTranslations(lang);
+// A dynamic UI key; kept out of the template, where `as` casts do not parse.
+const tk = (key: string) => t(key as Parameters<typeof t>[0]);
+---
+
+{
+	links.length > 0 && (
+		<section class="backlinks" aria-labelledby="backlinks-title">
+			<h2 id="backlinks-title" class="backlinks-title">{t('backlinks.title')} <span class="backlinks-count">{links.length}</span></h2>
+			<ul class="backlinks-list">
+				{links.map((link) => (
+					<li class="backlink">
+						<p class="backlink-meta">
+							{tk(`backlinks.kind.${link.kind}`)} · <time datetime={link.date}>{formatPostDate(new Date(link.date))}</time>
+						</p>
+						<a class="backlink-title" href={link.url} lang={link.kind !== 'post' && lang !== 'ko' ? 'ko' : undefined}>{link.title}</a>
+						<p class="backlink-excerpt" lang={link.kind !== 'post' && lang !== 'ko' ? 'ko' : undefined}>{link.excerpt}</p>
+					</li>
+				))}
+			</ul>
+		</section>
+	)
+}
+
+<style is:global>
+	.backlinks {
+		margin-top: 3rem;
+		padding-top: 0.9rem;
+		border-top: 1px solid var(--rule-strong);
+	}
+
+	.backlinks-title {
+		margin: 0 0 0.4rem;
+		font: 400 0.6875rem/1.45 var(--font-mono);
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
+		color: var(--secondary);
+	}
+
+	.backlinks-count {
+		margin-left: 0.4rem;
+		font-variant-numeric: tabular-nums;
+		color: var(--faint);
+	}
+
+	.backlinks-list {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.backlink {
+		padding: 0.8rem 0;
+		border-top: 1px solid var(--rule);
+	}
+
+	.backlink:first-child {
+		border-top: 0;
+	}
+
+	.backlink-meta {
+		margin: 0;
+		font: 400 0.6875rem/1.5 var(--font-mono);
+		letter-spacing: 0.06em;
+		color: var(--secondary);
+	}
+
+	.backlink-title {
+		display: inline-block;
+		min-height: 2.5rem;
+		padding-top: 0.2rem;
+		font: 400 1.0625rem/1.5 var(--font-serif);
+		color: var(--ink);
+		text-decoration: none;
+		overflow-wrap: anywhere;
+	}
+
+	.backlink-title:hover,
+	.backlink-title:focus-visible {
+		color: var(--accent);
+	}
+
+	.backlink-excerpt {
+		margin: 0;
+		font: 400 0.875rem/1.6 var(--font-sans);
+		color: var(--secondary);
+	}
+
+	html:lang(ko) .backlink-excerpt,
+	.backlink-excerpt:lang(ko) {
+		word-break: keep-all;
+	}
+</style>

@@ -9,7 +9,7 @@
 import BaseHead from '../../components/BaseHead.astro';
 import Header from '../../components/Header.astro';
 import FloatingLanguagePicker from '../../components/FloatingLanguagePicker.astro';
-import BlogFilterBar from '../../components/blog/BlogFilterBar.astro';
+import LibraryFilterBar from '../../components/library/LibraryFilterBar.astro';
 import LibraryRow from '../../components/library/LibraryRow.astro';
 import LibraryTabs from '../../components/library/LibraryTabs.astro';
 import { useTranslations, type UILanguage } from '../../i18n/ui';
@@ -52,7 +52,10 @@ const areaOptions = facetOptions(items.map((item) => item.area), (area) => getLi
 );
 const areaOfTopic = new Map(items.map((item) => [item.topic, item.area]));
 const topicOptions = facetOptions(items.map((item) => item.topic), (topic) => getLibraryTopicLabel(topic, lang))
-	.map((option) => ({ ...option, parent: { facet: 'area', value: areaOfTopic.get(option.value)! } }))
+	.map((option) => {
+		const area = areaOfTopic.get(option.value)!;
+		return { ...option, parent: { facet: 'area', value: area, label: getLibraryArea(area).label[lang] } };
+	})
 	.sort((a, b) => areaOrder.indexOf(a.parent.value) - areaOrder.indexOf(b.parent.value));
 
 // One section per area that has items, in registry order (기타 last).
@@ -64,6 +67,8 @@ const filterGroups = [
 	{ facet: 'area', label: t('library.filter-area'), options: areaOptions },
 	{ facet: 'topic', label: t('library.filter-topic'), options: topicOptions },
 	{ facet: 'kind', label: t('library.filter-kind'), options: facetOptions(items.map((item) => item.kind), (kind) => getLibraryKindLabel(kind, lang)) },
+	// One chip: only the items the owner wrote a note about (they have their own page).
+	{ facet: 'note', label: t('library.filter-note'), toggle: true, options: [{ value: '1', label: t('library.filter-note'), count: items.filter((item) => item.note).length }] },
 ];
 ---
 
@@ -83,20 +88,19 @@ const filterGroups = [
 			<section class="subpage-intro subpage-intro--flush">
 				<h1 class="eyebrow">{t('library.title')}</h1>
 			</section>
-			<LibraryTabs lang={lang} tabs={view.tabs} current="resources" reserveFilter />
+			<LibraryTabs lang={lang} tabs={view.tabs} current="resources" />
 
 			{items.length === 0 ? (
 				<p class="page-frame library-empty">{t('library.empty')}</p>
 			) : (
 				<Fragment>
-					<BlogFilterBar
+					<LibraryFilterBar
 						lang={lang}
 						groups={filterGroups}
 						storageKey="hunbot-library-filters"
-						resultsTemplate={t('library.filter-results')}
+						resultsTemplate={t('library.filter-total')}
 						label={t('library.filter-label')}
 						totalCount={items.length}
-						anchor="tabs"
 					/>
 
 					<div class="page-frame library-archive" data-blog-posts>
@@ -111,6 +115,7 @@ const filterGroups = [
 											item={item}
 											kindLabel={getLibraryKindLabel(item.kind, lang)}
 											topicLabel={getLibraryTopicLabel(item.topic, lang)}
+											lang={lang}
 										/>,
 									)}
 								</ul>

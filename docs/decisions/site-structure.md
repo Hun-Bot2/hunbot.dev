@@ -6,6 +6,22 @@ Reviewed: 2026-09-27
 
 This record sets the public information architecture of `hun-bot.dev` so that the public site reflects the Research OS loop instead of running ahead of it. It amends [`discover-direction.md`](./discover-direction.md) on topic-page placement only (see [Amendments](#amendments)). It does not change any data contract in [`research-item-identity.md`](./research-item-identity.md) or [`research-os-data-contract.md`](./research-os-data-contract.md).
 
+## Revision 2026-10-23b: 자료 items get owner notes and their own pages
+
+The repository owner decided on 2026-10-23 that a 자료 item gets an on-site page **when the owner has written a note about it**, that the Library filter is laid out visibly with finer sub-divisions, and that inner pages show which of the site's own writing links to them.
+
+1. **Supersedes nothing in the delivered record; adds a separate note.** The 2026-09-27 rule that the site never enriches, summarizes or translates `resources` still holds for the delivered resource record itself: what the pipeline exported is rendered as delivered (the one-line `summary` on the item page is shown as the item's own description, unedited) and `src/content/resources/**` is never edited. The owner may now write a **separate note** about any 자료 item. The note is the owner's own commentary, stored apart from the resource (`itemNotes`, `src/content/item-notes/`), and it is what creates the on-site page. *An item has a page if and only if it has a note*; a `pick` with a non-empty Markdown body counts, because a pick's body already is the owner's note. Items without a note keep opening the original in a new tab.
+2. **Guardrails for notes** (details and examples in [`docs/content/item-notes.md`](../content/item-notes.md)):
+   - the owner's own words: no copying of the item's description, marketing copy or documentation; a short quotation only when necessary, attributed, and secondary to the note (`validate-item-notes.mjs` rejects a note that repeats a 40-character run of the item's `summary`);
+   - the item's name may be used to refer to it; no logos or screenshots beyond the existing small list thumbnail, and only when the resource's `license.canRepublishAssets` allows it (otherwise the item page shows no image);
+   - criticism is grounded opinion from use ("I found X slow when Y"), not an unsupported factual claim about the maker;
+   - the original is always linked (the "원문 보기" box is the page's only external link out);
+   - the site is non-commercial: no affiliate links (`docs/decisions/monetization.md` stands).
+3. **Backlinks are actual links.** An item or page lists "이 페이지를 언급한 글" from links that exist in the bodies of published posts, explainers, weekly notes, signals and item notes, never from inferred similarity. A link to a tool's own website counts for that tool's item page.
+4. **Link previews are reader-initiated.** An internal link inside article text shows a preview card on hover or keyboard focus on pointer devices; nothing loads or moves on its own. External links are untouched.
+5. **Filter.** On 자료 and 신호 the floating filter is replaced by an inline bar under the tab bar (the blog keeps its floating filter). It scrolls with the page rather than staying sticky: a sticky bar with the topic line would cover part of the screen.
+6. **Routes.** `/{lang}/library/item/{id}/` for items with a note; `item` joins the reserved Library slugs. Language rule as for explainers: Korean content, localized chrome, `jp`/`en` pages noindex and canonical to `ko`.
+
 ## Revision 2026-10-23: the Library gets four views
 
 The repository owner decided on 2026-10-23 that the Library has four tabs, **신호** (signals), **해설** (explainers), **주간 노트** (weekly notes) and **자료** (the existing curated list). A hero was also added to the top of the Library and **dropped the same day** (owner decision: it copied too much from an outside site); the home page went back to its previous design, and no autonomous motion remains outside the footer character (see [`creative-direction.md`](./creative-direction.md#the-exceptions)). This revision supersedes two earlier statements, by supersede-not-delete: the text below stays as history. Feature doc: [`docs/features/signals-and-weekly.md`](../features/signals-and-weekly.md).

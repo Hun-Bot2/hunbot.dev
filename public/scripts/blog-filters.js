@@ -6,6 +6,9 @@ if (filterBar && postList) {
 	const FILTER_STORAGE_KEY = filterBar.getAttribute('data-storage-key') || 'neural-blog-filters';
 	const FACETS = (filterBar.getAttribute('data-facets') || 'category,year,series').split(',');
 	const chips = Array.from(filterBar.querySelectorAll('[data-facet][data-value]'));
+	const parentLines = Array.from(filterBar.querySelectorAll('[data-parent-line]'));
+	// The Library bar's "필터 · n" toggle (phones): opens and closes the chip rows.
+	const toggleBtn = filterBar.querySelector('[data-filter-toggle]');
 	const posts = Array.from(postList.querySelectorAll('[data-post-card]'));
 	const resultsEl = filterBar.querySelector('[data-filter-results]');
 	const resetBtn = filterBar.querySelector('[data-filter-reset]');
@@ -15,6 +18,7 @@ if (filterBar && postList) {
 	const triggerEl = document.getElementById('blog-filter-trigger');
 	const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 	const countEl = document.querySelector('[data-filter-count]');
+	const totalPosts = postList.querySelectorAll('[data-post-card]').length;
 	const emptyEl = document.querySelector('[data-blog-empty]');
 	const resultsTemplate = resultsEl?.getAttribute('data-results-template') ?? '{count}';
 
@@ -44,16 +48,20 @@ if (filterBar && postList) {
 		return chips.some((chip) => chip.dataset.facet === facet && chip.dataset.value === value);
 	}
 
-	// A chip with a parent (a topic under an area) is offered only while its
-	// parent facet is 'all' or that value; picking another parent clears it.
+	// A chip with a parent (a 주제 under its 분야) is offered only while that parent
+	// value is chosen; clearing or changing the parent clears the child. The
+	// Library bar puts those chips on a second line that is hidden while the
+	// parent facet is 'all'.
 	function applyParents() {
 		chips.forEach((chip) => {
 			const parentFacet = chip.dataset.parentFacet;
 			if (!parentFacet) return;
-			const parent = state[parentFacet];
-			const offered = parent === 'all' || parent === chip.dataset.parentValue;
+			const offered = state[parentFacet] === chip.dataset.parentValue;
 			chip.hidden = !offered;
 			if (!offered && state[chip.dataset.facet] === chip.dataset.value) state[chip.dataset.facet] = 'all';
+		});
+		parentLines.forEach((line) => {
+			line.hidden = state[line.dataset.parentFacet] === 'all';
 		});
 	}
 
@@ -191,7 +199,7 @@ if (filterBar && postList) {
 		transitionTo(next);
 
 		if (resultsEl) {
-			resultsEl.textContent = resultsTemplate.replace('{count}', String(visible));
+			resultsEl.textContent = resultsTemplate.replace('{count}', String(visible)).replace('{total}', String(totalPosts));
 		}
 
 		const activeCount = FACETS.filter((facet) => state[facet] !== 'all').length;
@@ -235,6 +243,11 @@ if (filterBar && postList) {
 		writeStored();
 		render();
 	}
+
+	toggleBtn?.addEventListener('click', () => {
+		const open = filterBar.classList.toggle('is-open');
+		toggleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+	});
 
 	resetBtn?.addEventListener('click', resetAll);
 	clearBtn?.addEventListener('click', resetAll);
