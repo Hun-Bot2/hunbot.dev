@@ -48,7 +48,7 @@ const items = getLibraryItems([], [], lang, view.explainers);
 		<Header />
 		<FloatingLanguagePicker belowTabs />
 		<main id="main-content" class="atelier-page" data-pagefind-body={isCanonical ? true : undefined}>
-			<section class="subpage-intro">
+			<section class="subpage-intro subpage-intro--flush">
 				<h1 class="eyebrow">{t('library.title')}</h1>
 			</section>
 			<LibraryTabs lang={lang} tabs={view.tabs} current="explainers" />

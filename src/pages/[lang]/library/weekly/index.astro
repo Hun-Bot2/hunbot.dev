@@ -53,7 +53,7 @@ const issues = view.weeklyNotes.map((note) => ({
 		<Header />
 		<FloatingLanguagePicker belowTabs />
 		<main id="main-content" class="atelier-page" data-pagefind-body={isCanonical ? true : undefined}>
-			<section class="subpage-intro weekly-intro">
+			<section class="subpage-intro subpage-intro--flush weekly-intro">
 				<h1 class="eyebrow">{t('library.title')}</h1>
 				<a class="weekly-rss" href={getWeeklyRssUrl('ko')}>{t('weekly.rss')} <span aria-hidden="true">↗</span></a>
 			</section>
@@ -133,6 +133,10 @@ const issues = view.weeklyNotes.map((note) => ({
 		gap: 0 1.5rem;
 		padding: 1.6rem 0 1.5rem;
 		border-top: 1px solid var(--rule-strong);
+	}
+
+	.weekly-issue:first-child {
+		border-top: 0;
 	}
 
 	.weekly-issue-no {

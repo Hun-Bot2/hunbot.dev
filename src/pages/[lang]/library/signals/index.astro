@@ -62,7 +62,7 @@ const dayLabel = (day: string) => day.replaceAll('-', '.');
 		<Header />
 		<FloatingLanguagePicker belowTabs />
 		<main id="main-content" class="atelier-page" data-pagefind-body={isCanonical ? true : undefined}>
-			<section class="subpage-intro">
+			<section class="subpage-intro subpage-intro--flush">
 				<h1 class="eyebrow">{t('library.title')}</h1>
 			</section>
 			<LibraryTabs lang={lang} tabs={view.tabs} current="signals" reserveFilter />
@@ -123,6 +123,10 @@ const dayLabel = (day: string) => day.replaceAll('-', '.');
 		display: grid;
 		grid-template-columns: 7rem minmax(0, 1fr);
 		border-top: 1px solid var(--rule-strong);
+	}
+
+	.signal-day:first-child {
+		border-top: 0;
 	}
 
 	.signal-day[hidden] {
