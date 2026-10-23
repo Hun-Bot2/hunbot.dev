@@ -1,10 +1,14 @@
 ---
-// The Library's views as a tab row: 신호 / 해설 / 주간 노트 / 자료
+// The Library's views as the top navigation: 신호 / 해설 / 주간 노트 / 자료
 // (docs/decisions/site-structure.md, Revision 2026-10-23). Real links, no
 // script: each tab is its own page, the current one carries aria-current="page".
 // A view with no published items is not in `tabs` (src/utils/library-tabs.ts);
-// 자료 is always there. Active = ink text with a 2px accent underline, like the
-// header's nav; the count is a quiet mono figure.
+// 자료 is always there. The bar is sticky just under the site header (paper
+// ground, 1px rule below) so it stays reachable while scrolling; below 640px the
+// row scrolls sideways without a scrollbar. Active = ink + 2px accent underline,
+// inactive = secondary; the count is a small mono figure set like a superscript.
+// `reserveFilter` leaves room at the right for the floating filter, which rests
+// at this row's right end on the views that have one.
 import { useTranslations, type UILanguage } from '../../i18n/ui';
 import type { LibraryTab, LibraryTabId } from '../../utils/library-tabs';
 
@@ -12,43 +16,66 @@ interface Props {
 	lang: UILanguage;
 	tabs: LibraryTab[];
 	current: LibraryTabId;
+	reserveFilter?: boolean;
 }
 
-const { lang, tabs, current } = Astro.props;
+const { lang, tabs, current, reserveFilter = false } = Astro.props;
 const t = useTranslations(lang);
 // A dynamic UI key; kept out of the template, where `as` casts do not parse.
 const tk = (key: string) => t(key as Parameters<typeof t>[0]);
 ---
 
-<nav class="library-tabs page-frame" aria-label={t('library.tabs.label')}>
-	<ul class="library-tab-list">
-		{
-			tabs.map((tab) => (
-				<li>
-					<a
-						class:list={['library-tab', { 'is-current': tab.id === current }]}
-						href={tab.href}
-						aria-current={tab.id === current ? 'page' : undefined}
-					>
-						<span class="library-tab-label">{tk(`library.tab.${tab.id}`)}</span>
-						<span class="library-tab-count">{tab.count}</span>
-					</a>
-				</li>
-			))
-		}
-	</ul>
+<nav class="library-tabs" aria-label={t('library.tabs.label')}>
+	<div class:list={['library-tabs-inner', 'page-frame', { 'has-filter': reserveFilter }]}>
+		<ul class="library-tab-list">
+			{
+				tabs.map((tab) => (
+					<li>
+						<a
+							class:list={['library-tab', { 'is-current': tab.id === current }]}
+							href={tab.href}
+							aria-current={tab.id === current ? 'page' : undefined}
+						>
+							<span class="library-tab-label">{tk(`library.tab.${tab.id}`)}</span>
+							<span class="library-tab-count">{tab.count}</span>
+						</a>
+					</li>
+				))
+			}
+		</ul>
+	</div>
 </nav>
 
 <style>
 	.library-tabs {
-		margin-bottom: 0.5rem;
+		position: sticky;
+		top: var(--header-height);
+		z-index: 80;
+		background: var(--paper);
 		border-bottom: 1px solid var(--rule);
+	}
+
+	.library-tabs-inner {
+		overflow-x: auto;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.library-tabs-inner::-webkit-scrollbar {
+		display: none;
+	}
+
+	/* Room for the floating filter at the row's right end. */
+	@media (min-width: 640px) {
+		.library-tabs-inner.has-filter {
+			padding-right: 7rem;
+		}
 	}
 
 	.library-tab-list {
 		display: flex;
-		flex-wrap: wrap;
-		gap: 0 1.75rem;
+		flex-wrap: nowrap;
+		gap: 0 2rem;
 		margin: 0;
 		padding: 0;
 		list-style: none;
@@ -57,34 +84,36 @@ const tk = (key: string) => t(key as Parameters<typeof t>[0]);
 	.library-tab {
 		position: relative;
 		display: inline-flex;
-		align-items: baseline;
-		gap: 0.45rem;
+		align-items: flex-start;
+		gap: 0.3rem;
 		min-height: 2.75rem;
-		padding-top: 0.7rem;
+		padding-top: 0.55rem;
 		color: var(--secondary);
 		text-decoration: none;
+		white-space: nowrap;
 		transition: color var(--dur-2) var(--ease-standard);
 	}
 
 	.library-tab-label {
-		font: 400 0.9375rem/1.4 var(--font-sans);
-		word-break: keep-all;
+		font: 400 1.1875rem/1.5 var(--font-serif);
+		letter-spacing: -0.01em;
 	}
 
 	.library-tab-count {
+		margin-top: 0.15rem;
 		font: 400 0.6875rem/1 var(--font-mono);
 		font-variant-numeric: tabular-nums;
-		letter-spacing: 0.06em;
+		letter-spacing: 0.04em;
 		color: var(--faint);
 	}
 
-	/* The underline sits on the row's rule, 2px, like the header's active tab. */
+	/* The underline is 2px on the bar's own bottom edge. */
 	.library-tab::after {
 		content: '';
 		position: absolute;
 		left: 0;
 		right: 100%;
-		bottom: -1px;
+		bottom: 0;
 		height: 2px;
 		background: var(--accent);
 		transition: right var(--dur-3) var(--ease-out);
@@ -106,17 +135,17 @@ const tk = (key: string) => t(key as Parameters<typeof t>[0]);
 		background: var(--rule-strong);
 	}
 
-	.library-tab.is-current .library-tab-label {
-		font-weight: 500;
-	}
-
 	.library-tab.is-current .library-tab-count {
 		color: var(--accent);
 	}
 
+	.library-tab:focus-visible {
+		outline-offset: -4px;
+	}
+
 	@media (max-width: 479px) {
 		.library-tab-list {
-			gap: 0 1.25rem;
+			gap: 0 1.5rem;
 		}
 	}
 </style>

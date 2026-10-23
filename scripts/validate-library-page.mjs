@@ -47,7 +47,11 @@ assert.match(libraryPage, /<LibraryRow\b/);
 assert.match(libraryPage, /data-filter-section/);
 assert.match(libraryPage, /<LibraryHero\b/, 'The Library hero belongs at the top of /{lang}/library/.');
 assert.match(libraryPage, /<LibraryTabs\b[^>]*current="resources"/, 'The 자료 view carries the tab bar.');
-assert.ok(libraryPage.indexOf('<LibraryHero') < libraryPage.indexOf('<LibraryTabs'), 'The hero comes before the tab bar.');
+assert.match(libraryPage, /<LibraryMasthead\b/, 'Every Library view leads with the masthead.');
+assert.ok(
+	libraryPage.indexOf('<LibraryMasthead') < libraryPage.indexOf('<LibraryTabs') && libraryPage.indexOf('<LibraryTabs') < libraryPage.indexOf('<LibraryHero'),
+	'Order on the 자료 view: masthead, tab bar, hero.',
+);
 assert.doesNotMatch(libraryPage, /<ExplainerRow\b/, 'Explainers moved to their own view; they must not lead the 자료 list.');
 assert.doesNotMatch(libraryPage, /id: 'explainers'/);
 const viewsUtil = readFileSync('src/utils/library-views.ts', 'utf8');
@@ -63,6 +67,7 @@ for (const [view, current] of [
 ]) {
 	const source = read(view);
 	assert.match(source, new RegExp(`<LibraryTabs\\b[^>]*current="${current}"`), `${view} must carry the tab bar.`);
+	assert.ok(source.indexOf('<LibraryMasthead') > -1 && source.indexOf('<LibraryMasthead') < source.indexOf('<LibraryTabs'), `${view}: the masthead comes before the tab bar.`);
 	assert.match(source, /published\.length > 0 \? .* : \[\]/, `${view} must generate no route while nothing is published.`);
 	assert.match(source, /canonicalURL=\{canonicalURL\.href\}/, `${view} must canonicalize to the ko page.`);
 	assert.match(source, /noindex, follow/, `${view} must be noindex outside ko.`);

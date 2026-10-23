@@ -8,6 +8,7 @@
 import BaseHead from '../../../../components/BaseHead.astro';
 import Header from '../../../../components/Header.astro';
 import FloatingLanguagePicker from '../../../../components/FloatingLanguagePicker.astro';
+import LibraryMasthead from '../../../../components/library/LibraryMasthead.astro';
 import LibraryTabs from '../../../../components/library/LibraryTabs.astro';
 import { getCollection } from 'astro:content';
 import { useTranslations, type UILanguage } from '../../../../i18n/ui';
@@ -51,17 +52,12 @@ const issues = view.weeklyNotes.map((note) => ({
 	</head>
 	<body>
 		<Header />
-		<FloatingLanguagePicker />
+		<FloatingLanguagePicker belowTabs />
 		<main id="main-content" class="atelier-page" data-pagefind-body={isCanonical ? true : undefined}>
-			<section class="subpage-intro">
-				<h1 class="eyebrow">{t('library.title')}</h1>
-			</section>
-
-			<LibraryTabs lang={lang} tabs={view.tabs} current="weekly" />
-			<div class="page-frame weekly-lead">
-				<p>{description}</p>
+			<LibraryMasthead lang={lang} description={description}>
 				<a class="weekly-rss" href={getWeeklyRssUrl('ko')}>{t('weekly.rss')} <span aria-hidden="true">↗</span></a>
-			</div>
+			</LibraryMasthead>
+			<LibraryTabs lang={lang} tabs={view.tabs} current="weekly" />
 
 			<ol class="page-frame weekly-issues">
 				{
@@ -97,28 +93,12 @@ const issues = view.weeklyNotes.map((note) => ({
 </html>
 
 <style>
-	.subpage-intro {
-		padding-bottom: 0.25rem;
-		border-bottom: 0;
-	}
 
-	.weekly-lead {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: baseline;
-		justify-content: space-between;
-		gap: 0.4rem 1.5rem;
-		margin-block: 0.9rem 0.5rem;
-	}
 
-	.weekly-lead p {
-		margin: 0;
-		max-width: 46rem;
-		font: 400 0.875rem/1.6 var(--font-sans);
-		color: var(--secondary);
-	}
 
 	.weekly-rss {
+		display: inline-block;
+		margin-top: 0.6rem;
 		font: 400 0.6875rem/1.4 var(--font-mono);
 		letter-spacing: 0.09em;
 		text-transform: uppercase;
@@ -133,7 +113,7 @@ const issues = view.weeklyNotes.map((note) => ({
 
 	.weekly-issues {
 		margin: 0 auto;
-		padding: 0 0 4rem;
+		padding: 0.5rem 0 4rem;
 		list-style: none;
 	}
 

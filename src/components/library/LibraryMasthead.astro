@@ -1,0 +1,57 @@
+---
+// The Library's masthead, shared by all four views (신호 / 해설 / 주간 노트 /
+// 자료): a serif title and one line that says what this view is. Order on every
+// view: masthead, tab bar (LibraryTabs, sticky), hero (자료 only), content.
+// The floating filter rests at the right of the tab bar's row, so the masthead
+// keeps its first line clear of that corner (padding-top below the header).
+import { useTranslations, type UILanguage } from '../../i18n/ui';
+
+interface Props {
+	lang: UILanguage;
+	/** The one line under the title; changes per view. */
+	description: string;
+}
+
+const { lang, description } = Astro.props;
+const t = useTranslations(lang);
+---
+
+<header class="library-masthead page-frame">
+	<h1 class="library-masthead-title">{t('library.title')}</h1>
+	<p class="library-masthead-line">{description}</p>
+	<slot />
+</header>
+
+<style>
+	/* The filter's resting spot is the header's bottom edge plus 4px, 36px tall:
+	   start the title below it so nothing ever sits under the button. */
+	.library-masthead {
+		padding: 2.75rem 0 1.4rem;
+	}
+
+	.library-masthead-title {
+		margin: 0;
+		font: 400 clamp(2.25rem, 1.6rem + 2.6vw, 3.5rem) / 1.1 var(--font-serif);
+		letter-spacing: -0.025em;
+		word-break: keep-all;
+	}
+
+	.library-masthead-line {
+		max-width: 44rem;
+		margin: 0.7rem 0 0;
+		font: 400 0.9375rem/1.65 var(--font-sans);
+		color: var(--secondary);
+		text-wrap: pretty;
+	}
+
+	:global(html:lang(ko)) .library-masthead-line,
+	:global(html:lang(jp)) .library-masthead-line {
+		word-break: keep-all;
+	}
+
+	@media (max-width: 639px) {
+		.library-masthead {
+			padding: 2.5rem 0 1.1rem;
+		}
+	}
+</style>

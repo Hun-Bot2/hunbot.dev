@@ -12,6 +12,7 @@ import FloatingLanguagePicker from '../../components/FloatingLanguagePicker.astr
 import BlogFilterBar from '../../components/blog/BlogFilterBar.astro';
 import LibraryRow from '../../components/library/LibraryRow.astro';
 import LibraryHero from '../../components/library/LibraryHero.astro';
+import LibraryMasthead from '../../components/library/LibraryMasthead.astro';
 import LibraryTabs from '../../components/library/LibraryTabs.astro';
 import { useTranslations, type UILanguage } from '../../i18n/ui';
 import { selectHeroSlides } from '../../utils/hero';
@@ -90,18 +91,14 @@ const filterGroups = [
 	</head>
 	<body>
 		<Header />
-		<FloatingLanguagePicker />
+		<FloatingLanguagePicker belowTabs />
 		<main id="main-content" class="atelier-page" data-pagefind-body>
-			<section class="subpage-intro">
-				<h1 class="eyebrow">{t('library.title')}</h1>
-			</section>
+			<LibraryMasthead lang={lang} description={description} />
+			<LibraryTabs lang={lang} tabs={view.tabs} current="resources" reserveFilter />
 
 			<div class="library-hero page-frame">
 				<LibraryHero slides={heroSlides} lang={lang} />
 			</div>
-
-			<LibraryTabs lang={lang} tabs={view.tabs} current="resources" />
-			<div class="page-frame"><p class="library-lead">{description}</p></div>
 
 			{items.length === 0 ? (
 				<p class="page-frame library-empty">{t('library.empty')}</p>
@@ -114,6 +111,7 @@ const filterGroups = [
 						resultsTemplate={t('library.filter-results')}
 						label={t('library.filter-label')}
 						totalCount={items.length}
+						anchor="tabs"
 					/>
 
 					<div class="page-frame library-archive" data-blog-posts>
@@ -147,21 +145,11 @@ const filterGroups = [
 <style>
 	/* The section heading carries the rule, so the title needs none of its own and
 	   the archive starts right under it. */
-	.subpage-intro {
-		padding-bottom: 0.25rem;
-		border-bottom: 0;
-	}
 
 	.library-hero {
 		padding-top: 0.5rem;
 	}
 
-	.library-lead {
-		margin-block: 0.9rem 0.25rem;
-		max-width: 46rem;
-		font: 400 0.875rem/1.6 var(--font-sans);
-		color: var(--secondary);
-	}
 
 	.library-archive {
 		padding: 0 0 1rem;

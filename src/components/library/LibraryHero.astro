@@ -11,7 +11,7 @@
 // ./library-hero-client.ts. Copy: `library.hero.*` in src/i18n/ui.ts.
 import { formatPostDate } from '../../utils/display';
 import { getExplainerUrl } from '../../utils/explainers';
-import { plateWord, splitHeadline, type HeroSlide } from '../../utils/hero';
+import { splitHeadline, type HeroSlide } from '../../utils/hero';
 import { getLibraryKindLabel } from '../../utils/library-labels';
 import { getResponsivePublicImage } from '../../utils/responsive-public-images';
 import { getSignalsUrl } from '../../utils/signals';
@@ -38,30 +38,41 @@ const items = slides.map((slide, index) => {
 	const image = responsive && slide.image ? { ...responsive, width: responsive.width ?? slide.image.width, height: responsive.height ?? slide.image.height } : null;
 	let href = '';
 	let eyebrow: string[] = [];
-	let plate = '';
-	let plateLabel = '';
 	let external = false;
+	// The plate (the media column when a slide has no image) is drawn by kind,
+	// never from the title: explainer = the row's 해설 plate, weekly = a huge issue
+	// numeral, signals = the day's stamps, 자료 = the host on ruled paper.
+	let corner = '';
+	let plate: Record<string, unknown> = {};
+	let stamps: Array<{ tone: 'confirmed' | 'doubt' | 'try'; label: string }> = [];
 	if (slide.kind === 'explainer') {
 		href = getExplainerUrl(lang, slide.slug);
 		eyebrow = [t('library.hero.kind.explainer'), tk(`explainer.source-language.${slide.sourceLanguage}`)];
-		plate = plateWord(slide.title, lang);
-		plateLabel = tk(`explainer.source.kind.${slide.sourceKind}`);
+		corner = tk(`explainer.source.kind.${slide.sourceKind}`);
+		plate = { glyph: t('explainer.plate'), code: slide.sourceLanguage.toUpperCase(), ja: slide.sourceLanguage === 'ja' };
 	} else if (slide.kind === 'weekly') {
 		href = getWeeklyUrl(lang, slide.issue);
 		eyebrow = [`${t('library.hero.kind.weekly')} ${t('weekly.issue').replace('{n}', String(slide.issue))}`];
-		plate = String(slide.issue);
-		plateLabel = formatWeekRange(slide.date);
+		corner = t('library.hero.kind.weekly');
+		plate = { prefix: t('weekly.issue').replace('{n}', '').trim(), issue: String(slide.issue), range: formatWeekRange(slide.weekOf) };
 	} else if (slide.kind === 'signals') {
 		href = getSignalsUrl(lang);
 		eyebrow = [t('library.hero.kind.signals'), formatPostDate(new Date(slide.day))];
-		plate = String(slide.count);
-		plateLabel = t('signal.count').replace('{n}', String(slide.count));
+		corner = t('signal.count').replace('{n}', String(slide.count));
+		plate = { date: slide.day.replaceAll('-', '.') };
+		stamps = slide.items.map((item) => ({ tone: item.verdict as 'confirmed' | 'doubt' | 'try', label: tk(`signal.verdict.${item.verdict}`) }));
 	} else {
 		href = slide.url;
 		external = true;
 		eyebrow = [t('library.tab.resources'), getLibraryKindLabel(slide.itemKind, lang)];
-		plate = plateWord(slide.title, lang);
-		plateLabel = getLibraryKindLabel(slide.itemKind, lang);
+		corner = getLibraryKindLabel(slide.itemKind, lang);
+		let host = slide.url;
+		try {
+			host = new URL(slide.url).hostname.replace(/^www\./, '');
+		} catch {
+			/* keep the raw url */
+		}
+		plate = { host };
 	}
 	return {
 		slide,
@@ -71,10 +82,9 @@ const items = slides.map((slide, index) => {
 		href,
 		external,
 		eyebrow: eyebrow.join(' · '),
+		corner,
 		plate,
-		plateLabel,
-		// Width of the plate word in em (CJK glyphs about twice a Latin one), so it can be sized to fit.
-		plateEm: Array.from(plate).reduce((sum, ch) => sum + (ch.charCodeAt(0) < 0x250 ? 0.52 : 1.02), 0.1),
+		stamps,
 		label: t('library.hero.slide').replace('{n}', String(index + 1)).replace('{total}', String(total)),
 	};
 });
@@ -92,7 +102,7 @@ const items = slides.map((slide, index) => {
 		>
 			<div class="hero-stage">
 				<div class="hero-slides" data-hero-slides aria-live="off">
-					{items.map(({ slide, index, words, image, href, external, eyebrow, plate, plateLabel, plateEm, label }) => (
+					{items.map(({ slide, index, words, image, href, external, eyebrow, corner, plate, stamps, label }) => (
 						<div
 							class="hero-slide"
 							role="group"
@@ -151,9 +161,34 @@ const items = slides.map((slide, index) => {
 										/>
 									</picture>
 								) : (
-									<div class="hero-plate" style={`--em:${plateEm.toFixed(2)}`}>
-										<span class="hero-plate-kind">{plateLabel}</span>
-										<span class="hero-plate-word">{plate}</span>
+									<div class:list={['hero-plate', `hero-plate--${slide.kind}`, { 'is-ja': plate.ja }]}>
+										<span class="hero-plate-kind">{corner}</span>
+										{slide.kind === 'explainer' && (
+											<Fragment>
+												<span class="hero-plate-glyph">{plate.glyph}</span>
+												<span class="hero-plate-code">{plate.code}</span>
+											</Fragment>
+										)}
+										{slide.kind === 'weekly' && (
+											<Fragment>
+												<span class="hero-plate-issue">
+													<span class="hero-plate-issue-prefix">{plate.prefix}</span>
+													<span class="hero-plate-issue-num">{plate.issue}</span>
+												</span>
+												<span class="hero-plate-range">{plate.range}</span>
+											</Fragment>
+										)}
+										{slide.kind === 'signals' && (
+											<Fragment>
+												<span class="hero-plate-stamps">
+													{stamps.map((stamp) => (
+														<Stamp tone={stamp.tone} label={stamp.label} />
+													))}
+												</span>
+												<span class="hero-plate-date">{plate.date}</span>
+											</Fragment>
+										)}
+										{slide.kind === 'item' && <span class="hero-plate-host">{plate.host}</span>}
 									</div>
 								)}
 							</div>
@@ -456,14 +491,109 @@ const items = slides.map((slide, index) => {
 		color: var(--stage-muted);
 	}
 
-	.hero-plate-word {
-		overflow: hidden;
-		/* As large as fits the plate, never past 7rem; 2.5rem is the floor, then it ellipsizes. */
-		font: italic 400 clamp(2.5rem, calc((100cqw - 2.5rem) / var(--em)), 7rem) / 1.05 var(--font-serif);
-		letter-spacing: -0.03em;
-		white-space: nowrap;
-		text-overflow: ellipsis;
+	/* explainer: the same plate as ExplainerRow, large: serif 해설, the source
+	   language code in mono at the corner; a Japanese source takes the accent. */
+	.hero-plate--explainer {
+		align-items: flex-start;
+	}
+
+	.hero-plate-glyph {
+		margin: auto 0;
+		font: 400 clamp(4rem, 2.5rem + 7vw, 8rem) / 1 var(--font-serif);
+		letter-spacing: -0.05em;
+		word-break: keep-all;
 		color: var(--stage-ink);
+	}
+
+	.hero-plate-code {
+		position: absolute;
+		right: 1.25rem;
+		bottom: 0.9rem;
+		font: 500 0.8125rem/1 var(--font-mono);
+		letter-spacing: 0.12em;
+		color: var(--stage-muted);
+	}
+
+	.hero-plate.is-ja .hero-plate-glyph,
+	.hero-plate.is-ja .hero-plate-code {
+		color: var(--stage-accent);
+	}
+
+	/* weekly: a huge issue numeral and the week in mono. */
+	.hero-plate-issue {
+		display: flex;
+		align-items: baseline;
+		gap: 0.6rem;
+		margin: auto 0;
+		color: var(--stage-ink);
+	}
+
+	.hero-plate-issue-prefix {
+		font: italic 400 clamp(1.5rem, 1rem + 2vw, 2.5rem) / 1 var(--font-serif);
+		color: var(--stage-muted);
+	}
+
+	.hero-plate-issue-num {
+		font: 400 clamp(6rem, 3.5rem + 11vw, 12rem) / 0.85 var(--font-serif);
+		font-variant-numeric: lining-nums;
+		letter-spacing: -0.06em;
+	}
+
+	.hero-plate-range,
+	.hero-plate-date {
+		font: 400 0.75rem/1.4 var(--font-mono);
+		font-variant-numeric: tabular-nums;
+		letter-spacing: 0.06em;
+		color: var(--stage-muted);
+	}
+
+	/* signals: the day's verdict stamps, a little rotated and overlapping. */
+	.hero-plate-stamps {
+		display: grid;
+		justify-items: start;
+		margin: auto 0;
+		padding-left: 0.5rem;
+	}
+
+	.hero-plate-stamps :global(.stamp) {
+		padding: 0.35rem 1.1rem 0.25rem;
+		border-width: 2px;
+		font-size: clamp(1.1rem, 0.9rem + 1vw, 1.6rem);
+		background: var(--stage);
+	}
+
+	.hero-plate-stamps :global(.stamp:nth-child(1)) {
+		transform: rotate(-5deg);
+	}
+
+	.hero-plate-stamps :global(.stamp:nth-child(2)) {
+		margin: -0.5rem 0 0 2.2rem;
+		transform: rotate(3deg);
+	}
+
+	.hero-plate-stamps :global(.stamp:nth-child(3)) {
+		margin: -0.5rem 0 0 0.8rem;
+		transform: rotate(-2deg);
+	}
+
+	/* 자료 without an image: the host in mono on the ruled plate. */
+	.hero-plate-host {
+		margin: auto 0;
+		padding: 0.15rem 0.6rem;
+		background: var(--stage);
+		font: 400 clamp(1rem, 0.8rem + 1vw, 1.5rem) / 1.3 var(--font-mono);
+		letter-spacing: 0.02em;
+		overflow-wrap: anywhere;
+		color: var(--stage-ink);
+	}
+
+	.hero-plate-host::before {
+		content: '';
+		display: inline-block;
+		width: 0.5em;
+		height: 0.5em;
+		margin-right: 0.55em;
+		background: var(--stage-accent);
 	}
 
 	/* ── Reveal: words, then the rest of the copy, then the media ── */
@@ -674,9 +804,6 @@ const items = slides.map((slide, index) => {
 			padding: 0.75rem 1rem;
 		}
 
-		.hero-plate-word {
-			font-size: clamp(2.25rem, calc((100cqw - 2rem) / var(--em)), 4.5rem);
-		}
 
 		.hero-glow {
 			top: 0;

@@ -41,7 +41,7 @@ export type HeroImage = { src: string; width?: number; height?: number };
 
 export type HeroSlide =
 	| { kind: 'explainer'; key: string; slug: string; title: string; description: string; date: string; sourceLanguage: 'ko' | 'en' | 'ja'; sourceKind: 'paper' | 'article'; image: HeroImage | null }
-	| { kind: 'weekly'; key: string; issue: number; title: string; description: string; date: string; signalCount: number; image: null }
+	| { kind: 'weekly'; key: string; issue: number; weekOf: string; title: string; description: string; date: string; signalCount: number; image: null }
 	| { kind: 'signals'; key: string; day: string; title: string; count: number; items: Array<{ title: string; verdict: string }>; image: null }
 	| { kind: 'item'; key: string; url: string; itemKind: string; title: string; description: string; date: string; image: HeroImage | null };
 
@@ -99,6 +99,7 @@ export function selectHeroSlides(input: HeroInput): HeroSlide[] {
 			kind: 'weekly',
 			key: `weekly-${note.data.issue}`,
 			issue: note.data.issue,
+			weekOf: note.data.weekOf,
 			title: note.data.title,
 			description: note.data.dek,
 			date: note.data.publishedAt,

@@ -12,6 +12,7 @@ import BaseHead from '../../../../components/BaseHead.astro';
 import Header from '../../../../components/Header.astro';
 import FloatingLanguagePicker from '../../../../components/FloatingLanguagePicker.astro';
 import BlogFilterBar from '../../../../components/blog/BlogFilterBar.astro';
+import LibraryMasthead from '../../../../components/library/LibraryMasthead.astro';
 import LibraryTabs from '../../../../components/library/LibraryTabs.astro';
 import SignalRow from '../../../../components/library/SignalRow.astro';
 import { getCollection } from 'astro:content';
@@ -60,14 +61,10 @@ const dayLabel = (day: string) => day.replaceAll('-', '.');
 	</head>
 	<body>
 		<Header />
-		<FloatingLanguagePicker />
+		<FloatingLanguagePicker belowTabs />
 		<main id="main-content" class="atelier-page" data-pagefind-body={isCanonical ? true : undefined}>
-			<section class="subpage-intro">
-				<h1 class="eyebrow">{t('library.title')}</h1>
-			</section>
-
-			<LibraryTabs lang={lang} tabs={view.tabs} current="signals" />
-			<div class="page-frame"><p class="library-lead">{description}</p></div>
+			<LibraryMasthead lang={lang} description={description} />
+			<LibraryTabs lang={lang} tabs={view.tabs} current="signals" reserveFilter />
 
 			<BlogFilterBar
 				lang={lang}
@@ -76,6 +73,7 @@ const dayLabel = (day: string) => day.replaceAll('-', '.');
 				resultsTemplate={t('signal.filter-results')}
 				label={t('library.filter-label')}
 				totalCount={view.signals.length}
+				anchor="tabs"
 			/>
 
 			<div class="page-frame signal-ledger" data-blog-posts>
@@ -99,21 +97,17 @@ const dayLabel = (day: string) => day.replaceAll('-', '.');
 				}
 			</div>
 
-			<div class="page-frame" data-blog-empty hidden><p class="library-lead">{t('signal.filter-no-results')}</p></div>
+			<div class="page-frame" data-blog-empty hidden><p class="signal-empty">{t('signal.filter-no-results')}</p></div>
 		</main>
 		<script type="module" src="/scripts/blog-filters.js"></script>
 	</body>
 </html>
 
 <style>
-	.subpage-intro {
-		padding-bottom: 0.25rem;
-		border-bottom: 0;
-	}
 
-	.library-lead {
-		margin-block: 0.9rem 0.25rem;
-		max-width: 46rem;
+
+	.signal-empty {
+		margin: 1rem 0 3rem;
 		font: 400 0.875rem/1.6 var(--font-sans);
 		color: var(--secondary);
 	}

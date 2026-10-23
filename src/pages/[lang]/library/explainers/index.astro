@@ -7,6 +7,7 @@
 import BaseHead from '../../../../components/BaseHead.astro';
 import Header from '../../../../components/Header.astro';
 import FloatingLanguagePicker from '../../../../components/FloatingLanguagePicker.astro';
+import LibraryMasthead from '../../../../components/library/LibraryMasthead.astro';
 import LibraryTabs from '../../../../components/library/LibraryTabs.astro';
 import ExplainerRow from '../../../../components/library/ExplainerRow.astro';
 import { getCollection } from 'astro:content';
@@ -46,14 +47,10 @@ const items = getLibraryItems([], [], lang, view.explainers);
 	</head>
 	<body>
 		<Header />
-		<FloatingLanguagePicker />
+		<FloatingLanguagePicker belowTabs />
 		<main id="main-content" class="atelier-page" data-pagefind-body={isCanonical ? true : undefined}>
-			<section class="subpage-intro">
-				<h1 class="eyebrow">{t('library.title')}</h1>
-			</section>
-
+			<LibraryMasthead lang={lang} description={description} />
 			<LibraryTabs lang={lang} tabs={view.tabs} current="explainers" />
-			<div class="page-frame"><p class="library-lead">{description}</p></div>
 
 			<div class="page-frame library-archive">
 				<ul class="entry-list">
@@ -65,17 +62,7 @@ const items = getLibraryItems([], [], lang, view.explainers);
 </html>
 
 <style>
-	.subpage-intro {
-		padding-bottom: 0.25rem;
-		border-bottom: 0;
-	}
 
-	.library-lead {
-		margin-block: 0.9rem 0.25rem;
-		max-width: 46rem;
-		font: 400 0.875rem/1.6 var(--font-sans);
-		color: var(--secondary);
-	}
 
 	.library-archive {
 		padding: 0.5rem 0 4rem;

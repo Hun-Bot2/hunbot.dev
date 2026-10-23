@@ -15,7 +15,7 @@ The angle that separates this from a news site: **every item shows the owner's j
 | 주간 노트 | `/{lang}/library/weekly/` (+ `/{n}/`, `rss.xml`) | weekly notes, newest issue first | at least one note is published |
 | 자료 | `/{lang}/library/` | the Library hero, the tab bar, the curated resources and picks | always |
 
-A view with nothing published has no tab and no route (`getStaticPaths` returns no paths). The tab bar is `LibraryTabs.astro` (real links, `aria-current="page"`, a mono count per tab); the tab list comes from `getLibraryTabs()` in `src/utils/library-tabs.ts`. The slugs `signals`, `explainers` and `weekly` are reserved: `scripts/validate-picks.mjs` fails if a pick section uses one.
+Order on every view: **masthead** (`LibraryMasthead.astro`: a serif h1 "라이브러리" at `clamp(2.25rem, 1.6rem + 2.6vw, 3.5rem)` and one line that changes per view) → **tab bar** → (the hero, 자료 only) → content. A view with nothing published has no tab and no route (`getStaticPaths` returns no paths). The tab bar is `LibraryTabs.astro`: real links, `aria-current="page"`, serif labels, a small mono count set like a superscript, active = ink + 2px accent underline, inactive = `--secondary`, 44px targets, **sticky just under the site header** (paper ground, 1px rule below), and below 640px it scrolls sideways without a scrollbar; the tab list comes from `getLibraryTabs()` in `src/utils/library-tabs.ts`. The slugs `signals`, `explainers` and `weekly` are reserved: `scripts/validate-picks.mjs` fails if a pick section uses one.
 
 **Languages.** The text is Korean on every language's page, under that language's chrome. The `jp` and `en` pages of these views are `noindex, follow` and canonical to the `ko` page; the sitemap lists `ko` URLs only.
 
@@ -85,6 +85,10 @@ The week's signals are **derived**: the published signals whose `keptAt` falls i
 ## The Library hero
 
 `src/components/library/LibraryHero.astro` (behaviour `library-hero-client.ts`, selection `selectHeroSlides()` in `src/utils/hero.ts`), at the top of `/{lang}/library/` only. Slides, at most four: the latest published explainer, the latest weekly note, "today's signals" (the most recent `keptAt` day: the count and up to three titles with stamps), then the newest 자료 items (with a preview image first) to fill up to four, so the hero exists before any of the new kinds is published. Eyebrows: `해설 · 일본 자료`, `주간 노트 No. n`, `신호 · date`, `자료 · kind`. Fewer than two slides renders one static slide with no controls. Its four binding conditions are in `docs/decisions/creative-direction.md` (The Exceptions).
+
+**Plates by kind** (the media column when a slide has no image; never drawn from the title): explainer = the `ExplainerRow` plate language, large (serif 해설, the source language code JA/EN/KO in mono at the corner, a Japanese source in the accent); weekly note = a huge serif issue numeral "No. 1" with the week range in mono; signals = the day's verdict stamps, rotated and overlapping, with the date; 자료 = its image, else the host in mono on the ruled plate. The corner label is the kind or category.
+
+**Floating controls on the Library views.** The filter (`BlogFilterBar anchor="tabs"`) rests at the right end of the tab row on desktop (the row reserves room) and at the bottom right above the safe area on phones, where the row has no room; the language globe (`FloatingLanguagePicker belowTabs`) rests just below the tab row. Dragging is unchanged.
 
 ## Fixtures
 
