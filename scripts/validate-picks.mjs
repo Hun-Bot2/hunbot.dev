@@ -6,7 +6,8 @@ import { extname, join, relative } from 'node:path';
 // no new dependency.
 import yaml from 'js-yaml';
 
-import { isLibrarySectionSlug } from '../src/data/librarySections.ts';
+import { isLibrarySectionSlug, librarySections } from '../src/data/librarySections.ts';
+import { reservedLibrarySlugs } from '../src/utils/library-tabs.ts';
 import { isPickKind, isPickTierId } from '../src/data/libraryPolicy.ts';
 import { getPickSlug, normalizePickUrl } from '../src/utils/picks.ts';
 
@@ -22,6 +23,13 @@ const errors = [];
 const warnings = [];
 
 errors.push(...validateUniqueSlugs(picks));
+// A pick section is served at /{lang}/library/{slug}/ by [section].astro; the tab
+// routes (signals, explainers, weekly) live at the same level and must not collide.
+for (const section of librarySections) {
+	if (reservedLibrarySlugs.includes(section.slug)) {
+		errors.push(`src/data/librarySections.ts section "${section.slug}" collides with a Library tab route (${reservedLibrarySlugs.join(", ")} are reserved).`);
+	}
+}
 
 for (const pick of picks) {
 	errors.push(...validatePick(pick));

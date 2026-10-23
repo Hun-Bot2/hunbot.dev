@@ -36,36 +36,62 @@ for (const lang of languages) {
 	}
 }
 
-// One Library list (docs/decisions/site-structure.md, revision 2026-10-04):
-// approved resources and published picks together as image cards, filtered
-// by the blog's floating filter. No tabs — where an item was written is not a
-// distinction visitors can see.
-assert.match(libraryPage, /getCollection\('picks'\)/);
-assert.match(libraryPage, /getCollection\('resources'\)/);
-assert.match(libraryPage, /getLibraryItems/);
+// The 자료 view (docs/decisions/site-structure.md, revisions 2026-10-04 and
+// 2026-10-23): approved resources and published picks together as editorial
+// rows, filtered by the blog's floating filter. Explainers no longer lead this
+// list: they have their own view (the 해설 tab). The page carries the Library
+// hero and the tab bar.
+assert.match(libraryPage, /getLibraryViewData/);
 assert.match(libraryPage, /<BlogFilterBar\b/, 'Library should reuse the blog filter bar.');
-// The page lists editorial rows (one external link each, with a small image).
 assert.match(libraryPage, /<LibraryRow\b/);
-// Explainers (docs/decisions/site-structure.md, Revision 2026-10-22) join the
-// same list as on-site rows: no tab, and only the published ones.
-assert.match(libraryPage, /getCollection\('explainers'\)/);
-assert.match(libraryPage, /<ExplainerRow\b/);
-// Explainers lead the list as their own first section (not a tab), hidden when
-// there are none, and the section keeps data-filter-section so the filter hides
-// it when empty.
-assert.match(libraryPage, /id: 'explainers'/, 'Explainers should be the first Library section, id "explainers".');
-assert.match(libraryPage, /explainerItems\.length > 0/, 'The explainers section must not render without published explainers.');
 assert.match(libraryPage, /data-filter-section/);
-assert.ok(
-	libraryPage.indexOf("id: 'explainers'") < libraryPage.indexOf('...areaSections'),
-	'The explainers section must come before the area sections.',
-);
+assert.match(libraryPage, /<LibraryHero\b/, 'The Library hero belongs at the top of /{lang}/library/.');
+assert.match(libraryPage, /<LibraryTabs\b[^>]*current="resources"/, 'The 자료 view carries the tab bar.');
+assert.ok(libraryPage.indexOf('<LibraryHero') < libraryPage.indexOf('<LibraryTabs'), 'The hero comes before the tab bar.');
+assert.doesNotMatch(libraryPage, /<ExplainerRow\b/, 'Explainers moved to their own view; they must not lead the 자료 list.');
+assert.doesNotMatch(libraryPage, /id: 'explainers'/);
+const viewsUtil = readFileSync('src/utils/library-views.ts', 'utf8');
+assert.match(viewsUtil, /getPublishedExplainers/);
+assert.match(viewsUtil, /getPublishedSignals/);
+assert.match(viewsUtil, /getPublishedWeeklyNotes/);
+// Every view is its own page with the same tab bar; a view with nothing
+// published has no route (getStaticPaths returns no paths) and no tab.
+for (const [view, current] of [
+	['src/pages/[lang]/library/signals/index.astro', 'signals'],
+	['src/pages/[lang]/library/explainers/index.astro', 'explainers'],
+	['src/pages/[lang]/library/weekly/index.astro', 'weekly'],
+]) {
+	const source = read(view);
+	assert.match(source, new RegExp(`<LibraryTabs\\b[^>]*current="${current}"`), `${view} must carry the tab bar.`);
+	assert.match(source, /published\.length > 0 \? .* : \[\]/, `${view} must generate no route while nothing is published.`);
+	assert.match(source, /canonicalURL=\{canonicalURL\.href\}/, `${view} must canonicalize to the ko page.`);
+	assert.match(source, /noindex, follow/, `${view} must be noindex outside ko.`);
+}
+const tabsComponent = read('src/components/library/LibraryTabs.astro');
+assert.match(tabsComponent, /aria-current=/, 'The active tab must carry aria-current="page".');
+assert.doesNotMatch(tabsComponent, /<script/i, 'Tabs are real links, not script.');
 const explainerRow = readFileSync('src/components/library/ExplainerRow.astro', 'utf8');
 assert.doesNotMatch(explainerRow, /target="_blank"/, 'An explainer row is an on-site link.');
 assert.match(explainerRow, /data-post-kind/, 'An explainer row must carry the filter data attributes.');
 assert.match(readFileSync('src/utils/library.ts', 'utf8'), /getPublishedExplainers/);
 for (const lang of languages) {
-	for (const key of ['library.pick.kind.explainer', 'explainer.source-language.ja', 'explainer.badge.ai-draft', 'explainer.badge.reviewed', 'explainer.source.notice']) {
+	for (const key of [
+		'library.pick.kind.explainer',
+		'explainer.source-language.ja',
+		'explainer.badge.ai-draft',
+		'explainer.badge.reviewed',
+		'explainer.source.notice',
+		'library.tab.signals',
+		'library.tab.explainers',
+		'library.tab.weekly',
+		'library.tab.resources',
+		'signal.verdict.confirmed',
+		'signal.verdict.doubt',
+		'signal.verdict.try',
+		'weekly.page.in',
+		'weekly.page.out',
+		'explainer.claims.title',
+	]) {
 		assert.ok(ui[lang]?.[key], `${lang} ${key} copy is required.`);
 	}
 }
@@ -75,7 +101,6 @@ assert.match(libraryPage, /data-pagefind-filter="language\[content\]"/);
 assert.match(libraryPage, /data-pagefind-filter="section\[content\]"/);
 assert.doesNotMatch(libraryPage, /getCollection\('topics'\)/);
 assert.doesNotMatch(libraryPage, /getCollection\('papers'\)/);
-assert.doesNotMatch(libraryPage, /LibraryTabs/);
 
 // Pick section pages replace the old resources-backed design/vibe-coding/
 // dev-docs/useful-feeds sections. Decks moved off the Library entirely onto

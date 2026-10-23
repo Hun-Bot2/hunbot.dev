@@ -20,6 +20,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { basename, extname, join, relative } from 'node:path';
 
 import { isWellFormedDoi } from '../src/data/identifierSchemes.ts';
+import { checkFieldNames, scanForbiddenDeep } from './lib/forbidden-fields.mjs';
 
 const root = process.cwd();
 const directory = 'src/content/explainers';
@@ -34,6 +35,8 @@ const sourceLanguages = new Set(['ko', 'en', 'ja']);
 const sourceKinds = new Set(['paper', 'article']);
 const authorships = new Set(['bot']);
 const reviewStatuses = new Set(['draft', 'pending', 'approved', 'rejected']);
+const claimJudgements = new Set(['agree', 'doubt', 'unverified']);
+const signalsDirectory = 'src/content/signals';
 
 // The allowlist: every key an explainer may carry, per object.
 const allowed = {
@@ -50,53 +53,17 @@ const allowed = {
 		'review',
 		'tags',
 		'image',
+		'claims',
+		'signals',
 	]),
+	claim: new Set(['claim', 'judgement', 'check']),
 	source: new Set(['name', 'url', 'language', 'kind']),
 	ids: new Set(['doi', 'arxiv']),
 	review: new Set(['status', 'humanReviewed', 'reviewedAt', 'reviewer']),
 	image: new Set(['kind', 'src', 'width', 'height', 'label']),
 };
 
-// Names that are never valid in an explainer, with the reason shown on failure.
-// Matched case-insensitively at any nesting depth.
-const forbiddenByReason = [
-	{
-		reason: 'quotes from the source are not published — an explainer is commentary in its own words',
-		names: ['quote', 'quotes', 'quoted', 'quotedtext', 'sourcequote', 'sourcequotes', 'excerpt', 'excerpts', 'passage', 'passages', 'verbatim'],
-	},
-	{
-		reason: 'model names, costs and token counts are pipeline internals',
-		names: ['model', 'modelname', 'modelid', 'models', 'llm', 'provider', 'cost', 'costs', 'price', 'tokens', 'tokencount', 'inputtokens', 'outputtokens', 'usage', 'prompt', 'prompts', 'temperature'],
-	},
-	{
-		reason: 'verification-check results are pipeline internals',
-		names: ['verification', 'verifications', 'verificationchecks', 'verificationresult', 'verificationresults', 'checks', 'checkresults', 'factcheck', 'factchecks', 'validation', 'validationresults'],
-	},
-	{
-		reason: 'private signals and scores never leave the private pipeline',
-		names: ['signals', 'signal', 'privatesignals', 'score', 'scores', 'rank', 'ranking', 'pipeline', 'pipelinestage', 'rights', 'rightsdecision', 'license', 'licensing'],
-	},
-];
-
-// Contract-level forbidden names (corpus-only, personal-state, removed scores),
-// read from the contract so they cannot drift from the machine contract.
-const contract = JSON.parse(
-	readFileSync(new URL('../contracts/research-os/research-item.schema.json', import.meta.url), 'utf8'),
-)['x-contract'];
-const contractForbidden = new Map();
-for (const name of [
-	...contract.forbiddenInPublicProjection.fromT01,
-	...contract.forbiddenInPublicProjection.addedByT02,
-	...contract.personalStateFieldNames.names,
-	...contract.removedScoreFields.names,
-]) {
-	contractForbidden.set(name.toLowerCase(), 'a private Research OS field that is never part of a public projection');
-}
-const forbiddenReasons = new Map(contractForbidden);
-for (const { reason, names } of forbiddenByReason) {
-	for (const name of names) forbiddenReasons.set(name, reason);
-}
-
+const signalIds = readSignalIds();
 const entries = readEntries();
 const errors = [];
 
@@ -116,6 +83,12 @@ if (errors.length > 0) {
 
 const published = entries.filter((entry) => entry.data.review?.status === 'approved').length;
 console.log(`Validated explainers: ${entries.length} entries, ${published} published.`);
+
+function readSignalIds() {
+	const dir = join(root, signalsDirectory);
+	if (!existsSync(dir)) return new Set();
+	return new Set(readdirSync(dir).filter((name) => /\.(md|mdx)$/.test(name)).map((name) => name.replace(/\.(md|mdx)$/, '')));
+}
 
 function readEntries() {
 	const fullDirectory = join(root, directory);
@@ -299,49 +272,56 @@ function validateEntry(entry) {
 		}
 	}
 
+	// claims: the source's claims in the owner's words, the owner's judgement,
+	// and how to check it. At most 8, never a quote (the quote names are
+	// forbidden elsewhere; here a claim is plain text).
+	if (typeof data.claims !== 'undefined') {
+		if (!Array.isArray(data.claims) || data.claims.length > 8) {
+			errors.push(`${label}.claims must be an array of at most 8 entries.`);
+		} else {
+			data.claims.forEach((claim, index) => {
+				const at = `${label}.claims[${index}]`;
+				if (!isObject(claim)) {
+					errors.push(`${at} must be an object ({ claim, judgement, check }).`);
+					return;
+				}
+				if (!nonEmpty(claim.claim) || claim.claim.length > 300) errors.push(`${at}.claim is required (at most 300 characters).`);
+				if (!claimJudgements.has(claim.judgement)) errors.push(`${at}.judgement must be one of: ${[...claimJudgements].join(', ')}.`);
+				if (!nonEmpty(claim.check) || claim.check.length > 300) errors.push(`${at}.check is required (at most 300 characters).`);
+			});
+		}
+	}
+
+	// signals: lineage declared on this (the later) artifact. Ids must exist; a
+	// reference to an unpublished signal is withheld at render time, not an error.
+	if (Array.isArray(data.signals)) {
+		if (!data.signals.every((id) => typeof id === 'string' && slugPattern.test(id))) {
+			errors.push(`${label}.signals must be an array of Library signal ids (slugs).`);
+		} else {
+			for (const id of data.signals) {
+				if (!signalIds.has(id)) errors.push(`${label}.signals references unknown signal "${id}".`);
+			}
+		}
+	}
+
 	return errors;
 }
 
-// The allowlist plus the by-name rejection. A forbidden name is reported as
-// forbidden (with its reason) wherever it sits; any other unlisted name is
-// reported as not allowed.
+// The allowlist plus the by-name rejection (scripts/lib/forbidden-fields.mjs).
+// A top-level `signals` is the lineage declaration (ids of Library signals the
+// explainer grew out of), validated in validateEntry; everywhere else the name
+// stays forbidden (an object-valued `signals` is the private scores, rejected by name).
 function validateFieldNames(data, label) {
-	const errors = [];
-
-	const check = (object, allowedKeys, path) => {
-		for (const key of Object.keys(object)) {
-			const fullPath = `${path}.${key}`;
-			const reason = forbiddenReasons.get(key.toLowerCase());
-			if (reason) {
-				errors.push(`${fullPath} is a forbidden field in an explainer: ${reason}.`);
-			} else if (!allowedKeys.has(key)) {
-				errors.push(`${fullPath} is not an allowed explainer field (the schema is an allowlist; see docs/features/explainers.md).`);
-			}
-		}
-	};
-
-	check(data, allowed.top, label);
+	const ctx = { noun: 'an explainer', doc: 'docs/features/explainers.md' };
+	const errors = checkFieldNames(data, allowed.top, label, { ...ctx, skip: Array.isArray(data.signals) ? ['signals'] : [] });
 	for (const nested of ['source', 'ids', 'review', 'image']) {
-		if (isObject(data[nested])) check(data[nested], allowed[nested], `${label}.${nested}`);
+		if (isObject(data[nested])) errors.push(...checkFieldNames(data[nested], allowed[nested], `${label}.${nested}`, ctx));
 	}
-
-	// A forbidden name hidden deeper than the allowlisted objects (e.g. inside a
-	// value that should be a string) is still caught.
-	const scan = (value, path) => {
-		if (Array.isArray(value)) {
-			value.forEach((item, index) => scan(item, `${path}[${index}]`));
-		} else if (isObject(value)) {
-			for (const [key, child] of Object.entries(value)) {
-				const childPath = `${path}.${key}`;
-				const depth = childPath.slice(label.length).split('.').length - 1;
-				if (depth >= 3 && forbiddenReasons.has(key.toLowerCase())) {
-					errors.push(`${childPath} is a forbidden field in an explainer: ${forbiddenReasons.get(key.toLowerCase())}.`);
-				}
-				scan(child, childPath);
-			}
-		}
-	};
-	scan(data, label);
-
+	if (Array.isArray(data.claims)) {
+		data.claims.forEach((claim, index) => {
+			if (isObject(claim)) errors.push(...checkFieldNames(claim, allowed.claim, `${label}.claims[${index}]`, ctx));
+		});
+	}
+	errors.push(...scanForbiddenDeep(data, label, { noun: ctx.noun, skipPaths: [] }));
 	return errors;
 }

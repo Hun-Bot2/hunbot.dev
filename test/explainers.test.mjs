@@ -192,3 +192,26 @@ test('a paper card is never matched by title, and ids of different schemes never
 	assert.equal(findPaperForExplainer({ data: { ids: { arxiv: '10.1000/abc.1' } } }, papers), null);
 	assert.equal(findPaperForExplainer({ data: { ids: { doi: '10.1000/zzz' } } }, papers), null);
 });
+
+// Claims ledger and lineage (docs/features/explainers.md).
+const claim = (overrides = {}) => ({ claim: 'The source says X.', judgement: 'agree', check: 'Try it yourself.', ...overrides });
+
+test('validate-explainers accepts up to eight claims', () => {
+	withExplainer((data) => (data.claims = Array.from({ length: 8 }, () => claim())), (dir) => assertValidatorAccepts(script, dir));
+});
+
+test('validate-explainers rejects more than eight claims, a bad judgement, a missing check', () => {
+	withExplainer((data) => (data.claims = Array.from({ length: 9 }, () => claim())), (dir) => assertValidatorRejects(script, dir, /claims must be an array of at most 8/));
+	withExplainer((data) => (data.claims = [claim({ judgement: 'maybe' })]), (dir) => assertValidatorRejects(script, dir, /claims\[0\]\.judgement must be one of: agree, doubt, unverified/));
+	withExplainer((data) => (data.claims = [claim({ check: '' })]), (dir) => assertValidatorRejects(script, dir, /claims\[0\]\.check is required/));
+});
+
+test('validate-explainers rejects a claim carrying a quote or any unlisted field', () => {
+	withExplainer((data) => (data.claims = [claim({ quote: 'verbatim text' })]), (dir) => assertValidatorRejects(script, dir, /claims\[0\]\.quote is a forbidden field in an explainer: quotes from the source/));
+	withExplainer((data) => (data.claims = [claim({ note: 'x' })]), (dir) => assertValidatorRejects(script, dir, /claims\[0\]\.note is not an allowed explainer field/));
+});
+
+test('validate-explainers rejects a signals lineage that names a missing signal', () => {
+	withExplainer((data) => (data.signals = ['no-such-signal']), (dir) => assertValidatorRejects(script, dir, /signals references unknown signal "no-such-signal"/));
+	withExplainer((data) => (data.signals = ['Bad Id']), (dir) => assertValidatorRejects(script, dir, /signals must be an array of Library signal ids/));
+});

@@ -21,7 +21,25 @@
     "reviewedAt": "2026-10-20",
     "reviewer": "owner"
   },
-  "tags": ["llm-serving", "memory-layout"]
+  "tags": ["llm-serving", "memory-layout"],
+  "signals": ["fixture-en-try"],
+  "claims": [
+    {
+      "claim": "메모리를 고정 크기 블록으로 나누면 같은 장치에 동시에 올릴 수 있는 요청 수가 늘어난다.",
+      "judgement": "agree",
+      "check": "논문의 첫 번째 비교 실험과 같은 설정으로 동시 요청 수를 직접 세어 본다."
+    },
+    {
+      "claim": "블록 표를 한 번 더 거치는 읽기 비용은 무시할 만큼 작다.",
+      "judgement": "doubt",
+      "check": "내 장치와 내 길이 분포에서 읽기 지연을 따로 측정해 논문 수치와 비교한다."
+    },
+    {
+      "claim": "블록 크기의 기본값이 대부분의 트래픽에서 잘 맞는다.",
+      "judgement": "unverified",
+      "check": "블록 크기를 바꿔 가며 낭비되는 공간을 직접 비교한다."
+    }
+  ]
 }
 ---
 

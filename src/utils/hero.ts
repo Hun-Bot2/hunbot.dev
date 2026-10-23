@@ -1,79 +1,159 @@
-// Pure logic for the home hero (src/components/library/LibraryHero.astro): which
-// items become slides, and how a headline is split into the words that reveal
-// one by one. No `astro:content` import, so node:test can run it directly.
+// Pure logic for the Library hero (src/components/library/LibraryHero.astro):
+// which items become slides, and how a headline is split into the words that
+// reveal one by one. No `astro:content` import, so node:test can run it.
+
+import { getSignalsForWeek } from './weekly.ts';
 
 export const HERO_SLIDE_LIMIT = 4;
+export const HERO_SIGNAL_TITLES = 3;
 
-type PostLike = {
+type Dated = { data: { keptAt: string; title: string; verdict: string } };
+type SignalInput = Dated & { id: string };
+
+type ExplainerInput = {
 	id: string;
-	data: { title: string; description: string; pubDate: Date; heroImage?: string | undefined };
+	data: {
+		id?: string;
+		title: string;
+		dek: string;
+		publishedAt: string;
+		source: { language: 'ko' | 'en' | 'ja'; kind: 'paper' | 'article' };
+		image?: { kind: string; src?: string; width?: number; height?: number };
+	};
 };
 
-type ReviewLike = {
+type WeeklyInput = {
 	id: string;
-	data: { title: string; pubDate: Date; paper: { title: string; venue?: string | undefined; year?: number | undefined } };
+	data: { issue: number; title: string; dek: string; weekOf: string; publishedAt: string };
 };
 
-export type HeroSlide<P extends PostLike = PostLike, R extends ReviewLike = ReviewLike> =
-	| { kind: 'post'; entry: P; title: string; description: string; date: Date; heroImage: string | undefined }
-	| { kind: 'review'; entry: R; title: string; description: string; date: Date; heroImage: undefined };
+type ItemInput = {
+	id: string;
+	title: string;
+	url: string;
+	kind: string;
+	date: string;
+	description?: string;
+	image: { kind: string; src?: string; width?: number; height?: number };
+};
 
-const newestFirst = <T extends { data: { pubDate: Date } }>(items: readonly T[]): T[] =>
-	[...items].sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+export type HeroImage = { src: string; width?: number; height?: number };
+
+export type HeroSlide =
+	| { kind: 'explainer'; key: string; slug: string; title: string; description: string; date: string; sourceLanguage: 'ko' | 'en' | 'ja'; sourceKind: 'paper' | 'article'; image: HeroImage | null }
+	| { kind: 'weekly'; key: string; issue: number; title: string; description: string; date: string; signalCount: number; image: null }
+	| { kind: 'signals'; key: string; day: string; title: string; count: number; items: Array<{ title: string; verdict: string }>; image: null }
+	| { kind: 'item'; key: string; url: string; itemKind: string; title: string; description: string; date: string; image: HeroImage | null };
+
+function toImage(image: { kind: string; src?: string; width?: number; height?: number } | undefined): HeroImage | null {
+	if (!image || image.kind === 'typographic' || !image.src) return null;
+	return { src: image.src, width: image.width, height: image.height };
+}
+
+const newest = <T>(items: readonly T[], date: (item: T) => string, tie: (item: T) => string): T[] =>
+	[...items].sort((a, b) => date(b).localeCompare(date(a)) || tie(a).localeCompare(tie(b)));
+
+export type HeroInput = {
+	/** Published only. */
+	explainers: readonly ExplainerInput[];
+	/** Published only. */
+	weeklyNotes: readonly WeeklyInput[];
+	/** Published only. */
+	signals: readonly SignalInput[];
+	/** The 자료 list (resources and picks), newest first or not: sorted here. */
+	items: readonly ItemInput[];
+	/** The headline of the signals slide (a translated label). */
+	signalsTitle: string;
+	limit?: number;
+};
 
 /**
- * Newest `limit` posts; when a review is published, the newest review replaces
- * the last slot. `posts` and `reviews` are already filtered to published items
- * of the page language (getAllPosts() / getPublishedAcademicReviews()).
- * Fewer than two slides means the hero is a single static slide (the caller
- * decides; this just returns what exists).
+ * At most `limit` slides: the latest published explainer, the latest weekly
+ * note, "today's signals" (the most recent keptAt day), then the newest 자료
+ * items to fill the rest, so the hero exists before any of the new kinds are
+ * published. Items with a preview image come first. Fewer than two slides means
+ * a single static slide (the caller decides; this returns what exists).
  */
-export function selectHeroSlides<P extends PostLike, R extends ReviewLike>(
-	posts: readonly P[],
-	reviews: readonly R[],
-	limit = HERO_SLIDE_LIMIT,
-): HeroSlide<P, R>[] {
-	const newestReview = newestFirst(reviews)[0];
-	const postSlots = newestReview ? Math.max(limit - 1, 0) : limit;
+export function selectHeroSlides(input: HeroInput): HeroSlide[] {
+	const limit = input.limit ?? HERO_SLIDE_LIMIT;
+	const slides: HeroSlide[] = [];
 
-	const slides: HeroSlide<P, R>[] = newestFirst(posts)
-		.slice(0, postSlots)
-		.map((entry) => ({
-			kind: 'post' as const,
-			entry,
-			title: entry.data.title,
-			description: entry.data.description,
-			date: entry.data.pubDate,
-			heroImage: entry.data.heroImage,
-		}));
-
-	if (newestReview && limit > 0) {
-		const { paper } = newestReview.data;
-		const source = [paper.venue, paper.year ? String(paper.year) : null].filter(Boolean).join(' · ');
+	const explainer = newest(input.explainers, (e) => e.data.publishedAt, (e) => e.data.title)[0];
+	if (explainer) {
 		slides.push({
-			kind: 'review',
-			entry: newestReview,
-			title: newestReview.data.title,
-			description: [paper.title, source].filter(Boolean).join(' — '),
-			date: newestReview.data.pubDate,
-			heroImage: undefined,
+			kind: 'explainer',
+			key: `explainer-${explainer.data.id ?? explainer.id}`,
+			slug: explainer.data.id ?? explainer.id,
+			title: explainer.data.title,
+			description: explainer.data.dek,
+			date: explainer.data.publishedAt,
+			sourceLanguage: explainer.data.source.language,
+			sourceKind: explainer.data.source.kind,
+			image: toImage(explainer.data.image),
 		});
 	}
-	return slides;
+
+	const note = [...input.weeklyNotes].sort((a, b) => b.data.issue - a.data.issue)[0];
+	if (note) {
+		slides.push({
+			kind: 'weekly',
+			key: `weekly-${note.data.issue}`,
+			issue: note.data.issue,
+			title: note.data.title,
+			description: note.data.dek,
+			date: note.data.publishedAt,
+			signalCount: getSignalsForWeek([...input.signals], note.data.weekOf).length,
+			image: null,
+		});
+	}
+
+	const sortedSignals = newest(input.signals, (s) => s.data.keptAt, (s) => s.data.title);
+	if (sortedSignals.length > 0) {
+		const day = sortedSignals[0].data.keptAt;
+		const ofDay = sortedSignals.filter((s) => s.data.keptAt === day);
+		slides.push({
+			kind: 'signals',
+			key: `signals-${day}`,
+			day,
+			title: input.signalsTitle,
+			count: ofDay.length,
+			items: ofDay.slice(0, HERO_SIGNAL_TITLES).map((s) => ({ title: s.data.title, verdict: s.data.verdict })),
+			image: null,
+		});
+	}
+
+	if (slides.length < limit) {
+		const withImage = (item: ItemInput) => toImage(item.image) !== null;
+		const ordered = newest(input.items, (item) => item.date, (item) => item.title);
+		const fill = [...ordered.filter(withImage), ...ordered.filter((item) => !withImage(item))];
+		for (const item of fill.slice(0, limit - slides.length)) {
+			slides.push({
+				kind: 'item',
+				key: `item-${item.id}`,
+				url: item.url,
+				itemKind: item.kind,
+				title: item.title,
+				description: item.description ?? '',
+				date: item.date,
+				image: toImage(item.image),
+			});
+		}
+	}
+
+	return slides.slice(0, limit);
 }
 
 export type HeadlineWord = { text: string; spaceAfter: boolean };
 
 /**
- * Split a headline into reveal units. Uses the word segmenter of the page
- * language (Japanese has no spaces, so it uses a word segmenter); spaces become
- * `spaceAfter`, and punctuation sticks to the word before it so a line never
- * starts with a closing mark.
+ * Split a headline into reveal units. Japanese has no spaces, so it uses a word
+ * segmenter; ko and en split on spaces (a Latin word glued to a Hangul
+ * particle, like "Boot와", stays one unit). Spaces become `spaceAfter`, and
+ * punctuation sticks to the word before it so a line never starts with a
+ * closing mark.
  */
 export function splitHeadline(title: string, lang: string): HeadlineWord[] {
 	const words: HeadlineWord[] = [];
-	// Only Japanese needs a dictionary segmenter; ko and en words are space-separated
-	// (a Latin word glued to a Hangul particle, like "Boot와", must stay one unit).
 	const segments: Array<{ segment: string; isWordLike?: boolean }> =
 		lang === 'jp' && typeof Intl.Segmenter === 'function'
 			? Array.from(new Intl.Segmenter('ja', { granularity: 'word' }).segment(title))

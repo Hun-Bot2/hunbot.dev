@@ -26,6 +26,11 @@ export function getExplainerUrl(lang: UILanguage, id: string): string {
 	return `/${lang}/library/explainers/${id}/`;
 }
 
+/** The 해설 view (the Library tab). */
+export function getExplainersIndexUrl(lang: UILanguage): string {
+	return `/${lang}/library/explainers/`;
+}
+
 /** An entry's slug is its frontmatter `id` (validated to equal the file name). */
 export function getExplainerSlug(explainer: Pick<ExplainerEntry, 'id' | 'data'>): string {
 	return explainer.data.id ?? explainer.id;
