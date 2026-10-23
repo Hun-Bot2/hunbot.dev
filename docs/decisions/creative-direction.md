@@ -36,7 +36,7 @@ Explicitly rejected as direction, not merely deprioritized:
 
 - A site-wide ambient background layer behind prose.
 - A hero 3D object.
-- Scroll hijacking, smooth-scroll takeover, or entrance animations — except the Library hero (see [The Exceptions](#the-exceptions)).
+- Scroll hijacking, smooth-scroll takeover, or entrance animations — except the footer cat (see [The Exceptions](#the-exceptions)).
 - Cursor followers.
 - Cards that expand spatially instead of navigating.
 - Magnetism, deformation, or inertia applied as a global system.
@@ -111,26 +111,21 @@ Coherence comes from physics and initiative, not from a component inventory.
 
 - **One spring configuration, one easing family, one duration scale**, defined as tokens alongside the existing design tokens. If a character, a card, and a graph node all decelerate identically, they read as inhabitants of one universe even though they share no code. This is what makes variation legible as style rather than as inconsistency.
 
-- **The site never moves unless the reader moved first.** Two exceptions, below.
+- **The site never moves unless the reader moved first.** One exception, below.
 
 That single rule eliminates, without further argument: autoplaying backgrounds, scroll hijacking, entrance animations, cursor followers, and attention loops.
 
 ### The Exceptions
 
-Relaxed 2026-10-22 (owner decision) to admit a hero; on 2026-10-23 the owner moved it from the home page to the top of the Library. The rule stands everywhere else.
+The rule was relaxed on 2026-10-22 (owner decision) to admit a home-page hero, and on 2026-10-23 that hero moved to the top of the Library. **Removed 2026-10-23, owner decision, the same day: no autonomous motion outside the footer character.** The record below is kept as history, per the supersede convention; the rule stands everywhere.
 
-**1. The Library hero.** The top of `/{lang}/library/` may carry an auto-advancing slider of featured items, and its headline may reveal word by word on each slide change. Nothing else on the site gets autonomous motion, and the hero does not set a precedent for list pages, posts, or reviews. It must:
+~~**1. The Library hero.**~~ Withdrawn: it was added on 2026-10-22 and removed on 2026-10-23 (owner decision; it copied too much from an outside site). Its four conditions (a visible pause control with pause on hover, focus and a hidden tab; the first slide readable with no JavaScript; no autoplay and no reveal under reduced motion; the shared motion tokens) are kept here as the standard any future autonomous motion would have to meet, and none is currently approved.
 
-- show a visible pause control, and pause on hover, keyboard focus, and while the tab is hidden;
-- render the first slide complete and readable with no JavaScript;
-- under `prefers-reduced-motion: reduce`, not auto-advance and show the headline at once;
-- use the shared motion tokens (one easing family, one duration scale), not one-off curves.
+**The cat.** One recurring character, footer-scoped, rare.
 
-**2. The cat.** One recurring character, footer-scoped, rare.
+It is the only autonomous agent on the site, and the scarcity is the point. A single character becomes an identity mark. A menagerie of birds and cats becomes a theme park, which is the aesthetic this record rejects. It is also the highest ratio of personality to bytes available, and it survives a decade without maintenance.
 
-It is the only autonomous agent outside the Library hero, and the scarcity is the point. A single character becomes an identity mark. A menagerie of birds and cats becomes a theme park, which is the aesthetic this record rejects. It is also the highest ratio of personality to bytes available, and it survives a decade without maintenance.
-
-It is the one module permitted under boundary 3 (the Library hero is scoped to one route, so it does not count against it).
+It is the one module permitted under boundary 3.
 
 ## Variation Policy
 

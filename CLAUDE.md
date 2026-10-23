@@ -142,7 +142,7 @@ src/pages/
     ├── index.astro                      → /ko/, /jp/, /en/ (home)
     ├── search.astro                     → /ko/search/ (Pagefind UI)
     ├── rss.xml.js                       → /ko/rss.xml per-language feed
-    ├── library.astro                    → /ko/library/ (자료 view: Library hero + tab bar + one list of image cards + blog filter; resources + picks; explainers have their own view)
+    ├── library.astro                    → /ko/library/ (자료 view: masthead + tab bar + one list of image cards + blog filter; resources + picks; explainers have their own view)
     ├── explore.astro                    → /ko/explore/ (relationship map: the records with a declared link on a pannable, zoomable, window-wide canvas with its mode switch and search (top right) and zoom inside it, no frame; no page title row, legend or help text; reads only the public artifact contract)
     ├── paths.astro                      → /ko/paths/ (learning paths index)
     ├── research.astro                   → /ko/research/ (Research hub: study log, reviews, paths, decks card, featured topics)
@@ -197,7 +197,6 @@ src/pages/
 | `graph/` | `layoutBoard()`, `rankNodes()`, `CARD_W` (`board.ts`); `placeFloating()`, `placeAtCorner()` (`place.ts`); `resolveText()`, `resolveHref()`, `formatArtifactTime()` (`display.ts`) | Explore's pure modules. `layoutBoard()` takes card heights measured in the browser and returns every card position plus edge paths for the linked records only: layered DAG per connected group, arrows routed through reserved slots (never through a card), groups packed in rows. `placeFloating()` picks the spot beside a card for the inspector. Deterministic; tested without a browser in `test/graph-board.test.mjs`. |
 | `artifacts/series.ts` | `buildSeriesIndex()`, `normalizeSeriesName()` | Language-independent series identity for blog posts from the existing `series` frontmatter: spellings on translations of one post, or that normalize alike, are one series; nothing is guessed beyond that. Feeds the optional `series` field of the public artifact contract. |
 | `artifacts/load.ts` | `getPublicArtifactSet()` | Astro-side public artifact set: same adapters as the validator, merged with a committed Research OS export if present, validated; an invalid set fails the build. Pages read artifacts only through this. |
-| `hero.ts` | `selectHeroSlides()`, `splitHeadline()`, `plateWord()`, `HERO_SLIDE_LIMIT` | Pure Library-hero logic (no `astro:content` import, tested in `test/hero.test.mjs`): up to four slides: latest explainer, latest weekly note, today's signals (latest `keptAt` day, count + up to 3 titles), then the newest 자료 items (image first) to fill; plus headline splitting into reveal words (`Intl.Segmenter` for Japanese, spaces for ko/en). |
 | `signals.ts` | `isPublishedRecord()`, `getPublishedSignals()`, `sortSignals()`, `groupSignalsByDay()`, `getLatestSignalDay()`, `getSignalLineage()`, `signalVerdicts` | Pure helpers for `signals`: the single definition of *published* (approved + human reviewed), newest-first day grouping, and the derived lineage (explainers and posts that declare the signal; unpublished ones withheld). |
 | `weekly.ts` | `getPublishedWeeklyNotes()`, `getWeekRange()`, `getSignalsForWeek()`, `formatWeekRange()`, `getAdjacentIssues()`, `getWeeklyUrl()` | Pure helpers for `weeklyNotes`: published notes (newest issue first), the Monday-to-Sunday week, the signals whose `keptAt` falls in it, prev/next issue. |
 | `library-tabs.ts` | `getLibraryTabs()`, `getLibraryTabUrl()`, `reservedLibrarySlugs` | The Library's four views: the tab list (empty views omitted, 자료 always present) and the slugs reserved against pick sections. |
@@ -237,12 +236,9 @@ src/pages/
 | `diagrams/SecureBootChain.astro` | study/secure-boot post | Static inline-SVG diagram; colours come from tokens so it follows the theme |
 | `GiscusComments.astro` | Post detail | Embeds Giscus comment widget |
 
-### Library hero
 
 | Component | Used in | What it does |
 |---|---|---|
-| `library/LibraryHero.astro` | `library.astro` (top, above the tab bar) | The hero stage: auto-advancing slider (explainer / weekly note / today's signals with stamps / 자료 items; fewer than 2 slides renders one static slide, no controls). Words of the headline are split at build time (`--i`) for the reveal; slide 1 is complete without JS. Styles scoped in the component; copy in `library.hero.*`. |
-| `library/library-hero-client.ts` | `LibraryHero.astro` | Behaviour: the active dot's CSS progress animation is the timer (`animationend` advances; `animation-play-state` pauses on hover, keyboard focus, hidden tab, manual pause); dots, arrow keys, touch swipe; no autoplay under `prefers-reduced-motion`. |
 
 ### Library
 
@@ -254,9 +250,9 @@ src/pages/
 | `library/LibraryRow.astro` | `library.astro` | One Library item in the editorial archive (`.entry--item`): thumbnail → title → resource `summary` (via `getLibraryItems(…, lang)`) → mono kind · topic ↗; the whole row is one external link. |
 | `library/ExplainerRow.astro` | `library/explainers/index.astro` | One published explainer in the 해설 view, same `.entry` grid as `LibraryRow` but an on-site link with a 2px accent left rule: mono 해설 eyebrow + source-language chip, serif title, `dek`, compact badge · source name · read link; typographic plate (large serif 해설 + source code) when there is no image. Filter data attributes as `LibraryRow`. |
 | `library/ProvenanceBadge.astro` | `ExplainerRow`, `layouts/ExplainerPost.astro` | Reusable authorship/review badge. `full` = `<details>` pill with fixed segments (AI 초안 / 직접 씀 · 사람이 검토함 / 검토 전 · review date) and a one-sentence panel; `compact` = inline text. Segments are fixed so state changes never shift the layout. |
-| `library/LibraryMasthead.astro` | all four Library views | Serif h1 "라이브러리" (`clamp(2.25rem, 1.6rem + 2.6vw, 3.5rem)`) + the one-line description of the current view (optional slot). Order on every view: masthead, tab bar, (hero on 자료), content. |
+| `library/LibraryMasthead.astro` | all four Library views | Serif h1 "라이브러리" (`clamp(2.25rem, 1.6rem + 2.6vw, 3.5rem)`) + the one-line description of the current view (optional slot). Order on every view: masthead, tab bar, content. |
 | `library/LibraryTabs.astro` | all four Library views | The sticky tab row (just under the site header, paper ground, 1px rule) 신호 / 해설 / 주간 노트 / 자료: real links, `aria-current="page"`, serif labels, a mono superscript-style count, active = ink + 2px accent underline, scrolls sideways without a scrollbar on phones; tabs with no published items are not in `tabs` (`getLibraryTabs()`). |
-| `library/Stamp.astro` | `SignalRow`, claims ledger, hero | The verdict stamp: a bordered mono label rotated -2 degrees (`confirmed` in `--state-reviewed`, `doubt` in `--accent`, `try` in `--state-reading`, `unverified` dashed). Colour via `--stamp-color`; meaning is the label, not the colour. |
+| `library/Stamp.astro` | `SignalRow`, claims ledger | The verdict stamp: a bordered mono label rotated -2 degrees (`confirmed` in `--state-reviewed`, `doubt` in `--accent`, `try` in `--state-reading`, `unverified` dashed). Colour via `--stamp-color`; meaning is the label, not the colour. |
 | `library/SignalRow.astro` | `signals/index.astro`, weekly spread (`compact`) | One signal: stamp, serif external-link title, the `why` line, optional note, source + language chip, and the derived "where it led" links. Carries `data-post-card` / `data-post-verdict` for the floating filter. |
 | `library/SourceLanguageChip.astro` | `ExplainerRow`, `ExplainerPost` | Source-language chip: accent for a Japanese source (일본 자료), quiet for en/ko. |
 | `library/PickCard.astro` | Library hub, section pages, home | One `picks` entry as a `.knowledge-item`: `art/ResourceVisual` → mono kind·section label → serif title → owner note → meta line (tier · ★ stars · freshness chips). Tier/stars/freshness still come from `picks.ts`. |
@@ -316,7 +312,7 @@ The visual language is "a research notebook on paper": warm paper background, in
 | `src/styles/academic-review.css` | Review MDX component styles. |
 | `tailwind.config.mjs` | Maps the tokens to utilities (`text-ink`, `text-secondary`, `border-rule`, `bg-paper-deep`, `text-accent`, `font-serif`, `font-sans`, `font-mono`). |
 
-The hover system (editorial-row plate, thumbnail zoom, card lift) lives in one "Hover system" block in `global.css`; the Library hero is the only autonomous motion on the site (`docs/decisions/creative-direction.md`, The Exceptions).
+The hover system (editorial-row plate, thumbnail zoom, card lift) lives in one "Hover system" block in `global.css`; no motion on the site is autonomous except the footer cat (`docs/decisions/creative-direction.md`, The Exceptions).
 
 Rules: use **tokens, not `dark:` variants** — a token already follows the theme. No hard-coded colours or Tailwind palette classes (`slate-*`, `orange-*`) in `.astro`/`.css` (the only literals are the `theme-color` meta tags in `BaseHead`, which cannot read CSS variables). Every `<main>` carries `atelier-page` (list/hub pages) or `article-page` (posts, reviews). Buttons are unstyled by default; opt in with `.btn-text` / `.btn-pill`.
 
@@ -521,7 +517,7 @@ docs/
 │   └── research-os-pre-aws/  Pre-AWS readiness audit, task DAG, and per-task packets (AWS_READY gate)
 ├── features/
 │   ├── explainers.md        Explainers: schema allowlist, validator, behaviour, fixtures
-│   ├── signals-and-weekly.md  Library views (신호 / 해설 / 주간 노트 / 자료), signals and weekly notes: schemas, lineage, hero, fixtures
+│   ├── signals-and-weekly.md  Library views (신호 / 해설 / 주간 노트 / 자료), signals and weekly notes: schemas, lineage, fixtures
 │   ├── library-data-model.md  Content Collections for Library (resources/papers/topics)
 │   ├── library-page.md      Library hub and section pages
 │   ├── learning-paths.md    Learning path routes and metadata

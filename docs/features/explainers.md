@@ -85,7 +85,7 @@ Two draft fixtures (`src/content/explainers/fixture-jp-article.md`, a Japanese-s
 - **Badge** (`ProvenanceBadge`): `full` is a `<details>` disclosure (no JavaScript, keyboard operable, 40px target, never wraps) with two fixed segments plus the review date, so the pill keeps its shape across states (below 480px the date leaves the pill and shows in the page's meta row as 검토일; the panel still has it): author ("AI 초안", or "직접 씀" for `owner`) and review ("사람이 검토함" with a check, or "검토 전"). `compact` is inline text for the row.
 - **Related paper**: shown only when an approved `papers` entry carries an identical DOI or arXiv id in `source.externalIds` (`findPaperForExplainer()`; versions and resolver prefixes are normalized). Never matched on title. The link goes to that card's anchor on `/{lang}/research/`.
 - **Languages**: written in Korean only. The `ko`, `jp` and `en` pages all list and serve the same Korean text under their own page chrome (the `resources` fallback rule); the `jp` and `en` detail pages show a "Korean only" notice, are `noindex` and canonical to the `ko` page, and the sitemap lists the `ko` URL only.
-- Not shown on the home page's Library block (external items only). The Library hero shows the latest explainer as its first slide.
+- Not shown on the home page's Library block (external items only).
 
 ## Public-repository rules
 

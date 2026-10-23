@@ -39,18 +39,18 @@ for (const lang of languages) {
 // The 자료 view (docs/decisions/site-structure.md, revisions 2026-10-04 and
 // 2026-10-23): approved resources and published picks together as editorial
 // rows, filtered by the blog's floating filter. Explainers no longer lead this
-// list: they have their own view (the 해설 tab). The page carries the Library
-// hero and the tab bar.
+// list: they have their own view (the 해설 tab). The page carries the masthead
+// and the tab bar.
 assert.match(libraryPage, /getLibraryViewData/);
 assert.match(libraryPage, /<BlogFilterBar\b/, 'Library should reuse the blog filter bar.');
 assert.match(libraryPage, /<LibraryRow\b/);
 assert.match(libraryPage, /data-filter-section/);
-assert.match(libraryPage, /<LibraryHero\b/, 'The Library hero belongs at the top of /{lang}/library/.');
+assert.doesNotMatch(libraryPage, /Hero/, 'The Library hero was removed (2026-10-23, owner decision).');
 assert.match(libraryPage, /<LibraryTabs\b[^>]*current="resources"/, 'The 자료 view carries the tab bar.');
 assert.match(libraryPage, /<LibraryMasthead\b/, 'Every Library view leads with the masthead.');
 assert.ok(
-	libraryPage.indexOf('<LibraryMasthead') < libraryPage.indexOf('<LibraryTabs') && libraryPage.indexOf('<LibraryTabs') < libraryPage.indexOf('<LibraryHero'),
-	'Order on the 자료 view: masthead, tab bar, hero.',
+	libraryPage.indexOf('<LibraryMasthead') < libraryPage.indexOf('<LibraryTabs'),
+	'Order on the 자료 view: masthead, then the tab bar.',
 );
 assert.doesNotMatch(libraryPage, /<ExplainerRow\b/, 'Explainers moved to their own view; they must not lead the 자료 list.');
 assert.doesNotMatch(libraryPage, /id: 'explainers'/);

@@ -23,7 +23,7 @@ All colours come from `src/styles/tokens.css`; fonts and `--content-max` live th
 | `--rule`, `--rule-strong` | Row separators / section rules and input underlines |
 | `--accent` | Links on hover, active state, focus ring, blockquote bar. Light value is darkened for AA text contrast |
 | `--state-reviewed`, `--state-reading`, `--state-success`, `--state-error` | Status chips and form feedback |
-| `--stage`, `--stage-ink`, `--stage-muted`, `--stage-accent` | The always-dark Library hero band. `--stage-accent` is `--accent` as it reads on the stage (the light-theme `--accent` is darkened for paper and too dim there) |
+| `--stage`, `--stage-ink`, `--stage-muted` | The always-dark surface (deck frames) |
 | `--lift-shadow` | The soft shadow of a lifted card (hover system below) |
 
 - Light values are on `:root`; dark values are on `html.dark`. Always key theme colours on `html.dark`, never on `body.light-theme` / `body.dark-theme` (those are added after first paint and flash the wrong theme).
@@ -65,19 +65,15 @@ One easing family and one duration scale, defined in `tokens.css`. Use these and
 | `--dur-1` | 120ms | Press |
 | `--dur-2` | 200ms | Hover colour, small state |
 | `--dur-3` | 360ms | Hover lift, popovers |
-| `--dur-4` | 700ms | Slide cross-fade, thumbnail zoom |
-| `--dur-5` | 1100ms | Hero headline / image reveal |
+| `--dur-4` | 700ms | Thumbnail zoom, long fades |
+| `--dur-5` | 1100ms | Long reveals |
 
-- The site does not move on its own except the Library hero (`docs/decisions/creative-direction.md`, The Exceptions). Everything else moves because the reader did.
-- The global `prefers-reduced-motion: reduce` rule in `global.css` turns every transition and animation off. Write animated states so that "no animation" is the resting state (keyframes with only a `from`), and nothing depends on `animationend` for correctness except the hero's autoplay, which reduced motion must not run.
+- The site does not move on its own (the home-page hero was removed on 2026-10-23, the Library hero the same day; only the footer cat moves unprompted, `docs/decisions/creative-direction.md`). Everything else moves because the reader did.
+- The global `prefers-reduced-motion: reduce` rule in `global.css` turns every transition and animation off. Write animated states so that "no animation" is the resting state (keyframes with only a `from`), and nothing may depend on `animationend` for correctness.
 - **Hover system** (`global.css`, "Hover system"; pointer devices only under `@media (hover: hover)`, keyboard `:focus-visible` gets the same treatment):
   - Editorial rows (`.entry`, home post / brief / review rows): a `--paper-light` plate bleeds 0.75rem past the column (a pseudo-element, so the row's own rule keeps its width), the thumbnail zooms to 1.04 inside its frame, the title turns accent, a trailing `.entry-arrow` nudges 3px.
   - Cards (`.knowledge-item`, `.library-card`): lift `translateY(-2px)` with `--ease-spring`, border to `--rule-strong`, `--lift-shadow`; pressed `scale(.995)`. The padding and 1px border are reserved in every state (compensated by a negative margin), so nothing shifts.
   - No hover effect may change layout or text wrapping.
-
-## Library Hero
-
-`src/components/library/LibraryHero.astro` (behaviour `library-hero-client.ts`, pure logic `src/utils/hero.ts`): the lit stage at the top of `/{lang}/library/` (moved there from the home page on 2026-10-23, owner decision), auto-advancing through the latest explainer, the latest weekly note, today's signals and the newest 자료 items (selection in `src/utils/hero.ts`). Binding conditions are in `creative-direction.md`: visible pause control; pause on hover, keyboard focus and a hidden tab; slide 1 complete with no JavaScript (controls and other slides appear only after the script sets `data-ready`); under reduced motion no autoplay and no word/rise animation, manual controls still work. The slide timer is the CSS progress animation on the active dot (`animationend` advances, `animation-play-state` pauses). Words are split at build time into `.hero-word` spans with `--i`. Strings: `library.hero.*`.
 
 ## Lists, Not Cards
 

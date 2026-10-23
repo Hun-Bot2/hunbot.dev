@@ -4,12 +4,11 @@
 // try) and for an explainer claim's judgement (agree / doubt / unverified), so
 // the owner's judgement looks the same wherever it appears. Colour comes from
 // the tokens (`--stamp-color`), so it follows the theme; meaning is carried by
-// the label, never by colour alone. The stage (Library hero) overrides
-// `--stamp-color` for its dark ground.
+// the label, never by colour alone.
 interface Props {
 	tone: 'confirmed' | 'doubt' | 'try' | 'unverified';
 	label: string;
-	/** Smaller stamp for dense lists (the weekly spread, the hero). */
+	/** Smaller stamp for dense lists (the weekly spread). */
 	size?: 'md' | 'sm';
 }
 
