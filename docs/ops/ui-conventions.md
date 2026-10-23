@@ -23,6 +23,8 @@ All colours come from `src/styles/tokens.css`; fonts and `--content-max` live th
 | `--rule`, `--rule-strong` | Row separators / section rules and input underlines |
 | `--accent` | Links on hover, active state, focus ring, blockquote bar. Light value is darkened for AA text contrast |
 | `--state-reviewed`, `--state-reading`, `--state-success`, `--state-error` | Status chips and form feedback |
+| `--stage`, `--stage-ink`, `--stage-muted` | The always-dark surface (deck frames) |
+| `--lift-shadow` | The soft shadow of a lifted card (hover system below) |
 
 - Light values are on `:root`; dark values are on `html.dark`. Always key theme colours on `html.dark`, never on `body.light-theme` / `body.dark-theme` (those are added after first paint and flash the wrong theme).
 - Use tokens, not `dark:` variants: a token already follows the theme. Tailwind utilities map to the tokens (`text-ink`, `text-secondary`, `border-rule`, `bg-paper-deep`, `text-accent`).
@@ -32,10 +34,10 @@ All colours come from `src/styles/tokens.css`; fonts and `--content-max` live th
 
 | Role | Font | Size |
 |---|---|---|
-| Article title (h1) | serif 400, line-height 1.25, `text-wrap: balance` (`keep-all` for ko) | `clamp(1.5rem, 2.4vw, 2rem)` |
+| Article title (h1) | serif 400, line-height 1.2, letter-spacing -0.015em, `text-wrap: balance` (`keep-all` for ko) | `clamp(2rem, 1.4rem + 2.6vw, 3rem)`; its minimum stays above the `.prose h2` maximum |
 | Section heading (`.column-heading h2`) | serif 400 | 28px |
 | List/card title | serif 400 | 19-23px |
-| Lead paragraph | serif | 22px, `--secondary` |
+| Lead paragraph (`.article-lead`) | serif, max 40ch (30em for ko/jp) | `clamp(1.0625rem, 0.95rem + 0.6vw, 1.3rem)`, `--secondary` |
 | Prose body | sans (Noto Sans KR/JP; Noto Sans for en) | 17px / 1.85 (ko, jp), 18px / 1.8 (en) |
 | Eyebrow, meta, chips | mono (IBM Plex Mono), uppercase, 0.09em tracking | **min 11px** |
 | Secondary description | sans | **min 13px** |
@@ -51,10 +53,32 @@ All colours come from `src/styles/tokens.css`; fonts and `--content-max` live th
 - Header bottom padding is 1rem and the gap to the body 1.5rem; keep it tight so the title block flows into the text.
 - Posts (`BlogPost.astro`) and academic reviews (`AcademicReviewPost.astro`) share this shell through `prose.css`; change both together.
 
+## Motion And Hover
+
+One easing family and one duration scale, defined in `tokens.css`. Use these and nothing else: no one-off `160ms ease`.
+
+| Token | Value | Use |
+|---|---|---|
+| `--ease-standard` | `cubic-bezier(.2, 0, 0, 1)` | Default: colour, opacity, fades, zooms |
+| `--ease-out` | `cubic-bezier(.16, 1, .3, 1)` | Long decelerations: reveals, rises |
+| `--ease-spring` | `cubic-bezier(.34, 1.4, .64, 1)` | Small overshoot: hover lifts, arrows, pills |
+| `--dur-1` | 120ms | Press |
+| `--dur-2` | 200ms | Hover colour, small state |
+| `--dur-3` | 360ms | Hover lift, popovers |
+| `--dur-4` | 700ms | Thumbnail zoom, long fades |
+| `--dur-5` | 1100ms | Long reveals |
+
+- The site does not move on its own (the home-page hero was removed on 2026-10-23, the Library hero the same day; only the footer cat moves unprompted, `docs/decisions/creative-direction.md`). Everything else moves because the reader did.
+- The global `prefers-reduced-motion: reduce` rule in `global.css` turns every transition and animation off. Write animated states so that "no animation" is the resting state (keyframes with only a `from`), and nothing may depend on `animationend` for correctness.
+- **Hover system** (`global.css`, "Hover system"; pointer devices only under `@media (hover: hover)`, keyboard `:focus-visible` gets the same treatment):
+  - Editorial rows (`.entry`, home post / brief / review rows): a `--paper-light` plate bleeds 0.75rem past the column (a pseudo-element, so the row's own rule keeps its width), the thumbnail zooms to 1.04 inside its frame, the title turns accent, a trailing `.entry-arrow` nudges 3px.
+  - Cards (`.knowledge-item`, `.library-card`): lift `translateY(-2px)` with `--ease-spring`, border to `--rule-strong`, `--lift-shadow`; pressed `scale(.995)`. The padding and 1px border are reserved in every state (compensated by a negative margin), so nothing shifts.
+  - No hover effect may change layout or text wrapping.
+
 ## Lists, Not Cards
 
-- Present collections as **rule-separated rows** (`.rule-list`, `.writing-entry`, `.paper-reading-list` rows): 1px `--rule` between rows, no shadows, no rounded card surfaces. The title turns `--accent` on hover.
-- The one grid is the Library `.knowledge-item` grid (4 columns at 1100px+, 2 at 640px+, 1 below); items are still separated by rules, not boxed.
+- Present collections as **rule-separated rows** (`.rule-list`, `.writing-entry`, `.paper-reading-list` rows): 1px `--rule` between rows, no resting shadows, no rounded card surfaces. The title turns `--accent` on hover.
+- The one grid is the Library `.knowledge-item` grid (4 columns at 1100px+, 2 at 640px+, 1 below); items sit unboxed at rest; the 1px border and `--lift-shadow` appear only on hover or keyboard focus (Motion And Hover).
 - Page headers use `.subpage-intro` (eyebrow + one line, 14px bottom padding; the blog index is the eyebrow alone); section heads use `.column-heading` (serif title, mono link on the right, `--rule-strong` underline). Empty sections either do not render or show a single `.empty-line`.
 - Shared Library/Research row, tab, and grid styles live in `LibraryPageStyles.astro`; list rows in `src/styles/lists.css`.
 

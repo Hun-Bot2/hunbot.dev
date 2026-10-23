@@ -273,7 +273,7 @@ The visual language is "a research notebook on paper": warm paper background, in
 
 | File | Role |
 |---|---|
-| `src/styles/tokens.css` | The only colour definitions: `--paper*`, `--ink`, `--secondary`, `--faint`, `--rule*`, `--accent`, `--state-*`, plus font stacks and `--content-max`. Light values on `:root`, dark values on **`html.dark`** (set by the `BaseHead` bootstrap before first paint). Never key colours on `body.dark-theme` / `body.light-theme` — those classes arrive after DOMContentLoaded and would flash the wrong theme. |
+| `src/styles/tokens.css` | The only colour definitions: `--paper*`, `--ink`, `--secondary`, `--faint`, `--rule*`, `--accent`, `--state-*`, `--stage*`, `--lift-shadow`, plus font stacks, `--content-max` and the motion tokens (`--ease-standard/out/spring`, `--dur-1..5`: one easing family, one duration scale; every transition uses them, see `docs/ops/ui-conventions.md` Motion And Hover). Light values on `:root`, dark values on **`html.dark`** (set by the `BaseHead` bootstrap before first paint). Never key colours on `body.dark-theme` / `body.light-theme` — those classes arrive after DOMContentLoaded and would flash the wrong theme. |
 | `src/styles/global.css` | Tailwind layers, base elements, `.skip-link`, `:focus-visible`, and the shared vocabulary: `.page-frame`, `.eyebrow`, `.column-heading`, `.subpage-intro`, `.rule-list`, `.chip`, `.state-chip--*`, `.btn-text`, `.btn-pill`. Imported by `BaseHead`. |
 | `src/styles/prose.css` | Article shell (`.article-page`, single centred column) and the `.prose` body, Shiki dual theme. Imported by `BlogPost` and `AcademicReviewPost`. |
 | `src/styles/lists.css` | Rule-separated list rows (`.writing-entry`, `.year-separator`, `.atelier-page`) for home, blog, categories, search, and the Library/Research pages (via `LibraryPageStyles`). |
@@ -281,6 +281,8 @@ The visual language is "a research notebook on paper": warm paper background, in
 | `src/styles/art.css` | Decorative pick illustrations (`.resource-art--*`). |
 | `src/styles/academic-review.css` | Review MDX component styles. |
 | `tailwind.config.mjs` | Maps the tokens to utilities (`text-ink`, `text-secondary`, `border-rule`, `bg-paper-deep`, `text-accent`, `font-serif`, `font-sans`, `font-mono`). |
+
+The hover system (editorial-row plate, thumbnail zoom, card lift) lives in one "Hover system" block in `global.css`; no motion on the site is autonomous except the footer cat (`docs/decisions/creative-direction.md`, The Exceptions).
 
 Rules: use **tokens, not `dark:` variants** — a token already follows the theme. No hard-coded colours or Tailwind palette classes (`slate-*`, `orange-*`) in `.astro`/`.css` (the only literals are the `theme-color` meta tags in `BaseHead`, which cannot read CSS variables). Every `<main>` carries `atelier-page` (list/hub pages) or `article-page` (posts, reviews). Buttons are unstyled by default; opt in with `.btn-text` / `.btn-pill`.
 

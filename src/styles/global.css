@@ -83,7 +83,7 @@ body {
 	text-transform: uppercase;
 	text-decoration: none;
 	pointer-events: none;
-	transition: transform 160ms ease;
+	transition: transform var(--dur-2) var(--ease-standard);
 }
 
 .skip-link:focus:not(:focus-visible) {
@@ -178,7 +178,7 @@ body {
 	letter-spacing: 0.09em;
 	text-transform: uppercase;
 	color: var(--secondary);
-	transition: color 160ms ease;
+	transition: color var(--dur-2) var(--ease-standard);
 }
 
 .intro-back:hover {
@@ -444,6 +444,114 @@ hr {
 @media (max-width: 720px) {
 	html { font-size: 18px; }
 	body { font-size: 0.98rem; }
+}
+
+/* ── Hover system (docs/ops/ui-conventions.md, Motion And Hover) ──────────────
+   Reader-initiated, so it is allowed everywhere. Pointer devices only; keyboard
+   focus-visible gets the same treatment. Nothing here changes layout or text
+   wrapping: bleeds are painted by pseudo-elements, cards reserve their padding
+   and border in every state. */
+
+/* Editorial rows: a paper-light plate that bleeds 0.75rem past the column on
+   both sides (the row's own rule stays at column width), the thumbnail zooms
+   inside its frame, the title turns accent, the trailing arrow nudges. */
+.entry,
+.home-post-row,
+.home-brief-row,
+.home-review-row {
+	position: relative;
+	isolation: isolate;
+}
+
+.entry::before,
+.home-post-row::before,
+.home-brief-row::before,
+.home-review-row::before {
+	content: '';
+	position: absolute;
+	z-index: -1;
+	inset: 0 -0.75rem;
+	background: var(--paper-light);
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity var(--dur-2) var(--ease-standard);
+}
+
+.entry-thumb img,
+.post-thumb img {
+	transition: transform var(--dur-4) var(--ease-standard);
+}
+
+.entry-arrow {
+	display: inline-block;
+	margin-left: 0.25rem;
+	transition: transform var(--dur-3) var(--ease-spring);
+}
+
+/* Card grids: lift, stronger border, soft shadow; pressed state sits back. */
+.knowledge-item,
+.library-card {
+	padding: 0.75rem;
+	margin: calc(-0.75rem - 1px);
+	border: 1px solid transparent;
+	transition:
+		transform var(--dur-3) var(--ease-spring),
+		border-color var(--dur-2) var(--ease-standard),
+		box-shadow var(--dur-3) var(--ease-standard);
+}
+
+@media (hover: hover) {
+	.entry:hover::before,
+	.home-post-row:hover::before,
+	.home-brief-row:hover::before,
+	.home-review-row:hover::before {
+		opacity: 1;
+	}
+
+	.entry:hover .entry-thumb img,
+	.home-post-row:hover .post-thumb img {
+		transform: scale(1.04);
+	}
+
+	.entry:hover .entry-arrow {
+		transform: translateX(3px);
+	}
+
+	.knowledge-item:hover,
+	.library-card:hover {
+		transform: translateY(-2px);
+		border-color: var(--rule-strong);
+		box-shadow: var(--lift-shadow);
+	}
+}
+
+.entry:focus-visible::before,
+.home-post-row:focus-visible::before,
+.home-brief-row:focus-visible::before,
+.home-review-row:focus-visible::before {
+	opacity: 1;
+}
+
+.entry:focus-visible .entry-thumb img,
+.home-post-row:focus-visible .post-thumb img {
+	transform: scale(1.04);
+}
+
+.entry:focus-visible .entry-arrow {
+	transform: translateX(3px);
+}
+
+.knowledge-item:has(:focus-visible),
+.library-card:focus-visible {
+	transform: translateY(-2px);
+	border-color: var(--rule-strong);
+	box-shadow: var(--lift-shadow);
+}
+
+.knowledge-item:active,
+.library-card:active {
+	transform: scale(0.995);
+	transition-duration: var(--dur-1);
 }
 
 @media (prefers-reduced-motion: reduce) {

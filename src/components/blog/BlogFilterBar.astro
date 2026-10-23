@@ -148,7 +148,7 @@ const initialResults = resultsTemplate.replace('{count}', String(totalCount));
 		cursor: pointer;
 		user-select: none;
 		-webkit-user-select: none;
-		transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+		transition: background-color var(--dur-2) var(--ease-standard), color var(--dur-2) var(--ease-standard), border-color var(--dur-2) var(--ease-standard), box-shadow var(--dur-2) var(--ease-standard);
 	}
 
 	.blog-filter-float.is-dragging .blog-filter-trigger {
@@ -196,7 +196,7 @@ const initialResults = resultsTemplate.replace('{count}', String(totalCount));
 		color: var(--secondary);
 		box-shadow: 0 2px 10px rgb(0 0 0 / 0.12);
 		cursor: pointer;
-		transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
+		transition: background-color var(--dur-2) var(--ease-standard), color var(--dur-2) var(--ease-standard), border-color var(--dur-2) var(--ease-standard);
 	}
 
 	.blog-filter-clear[hidden] {
@@ -234,12 +234,12 @@ const initialResults = resultsTemplate.replace('{count}', String(totalCount));
 		padding: 0.5rem 1rem 0.25rem;
 		border: 1px solid var(--rule-strong);
 		background: var(--paper);
-		/* Closed: out of sight and out of the tab order; open: 200ms fade + slide. */
+		/* Closed: out of sight and out of the tab order; open: --dur-2 fade + slide. */
 		visibility: hidden;
 		opacity: 0;
 		transform: translateY(-6px);
 		pointer-events: none;
-		transition: opacity 200ms ease, transform 200ms ease, visibility 0s linear 200ms;
+		transition: opacity var(--dur-2) var(--ease-standard), transform var(--dur-2) var(--ease-standard), visibility 0s linear var(--dur-2);
 	}
 
 	.blog-filter-bar.is-open {
@@ -289,7 +289,7 @@ const initialResults = resultsTemplate.replace('{count}', String(totalCount));
 		white-space: nowrap;
 		color: var(--ink);
 		cursor: pointer;
-		transition: color 120ms ease, background-color 120ms ease;
+		transition: color var(--dur-1) var(--ease-standard), background-color var(--dur-1) var(--ease-standard);
 	}
 
 	.filter-option:hover {
@@ -341,7 +341,7 @@ const initialResults = resultsTemplate.replace('{count}', String(totalCount));
 		background: transparent;
 		color: var(--accent);
 		cursor: pointer;
-		transition: background-color 160ms ease, color 160ms ease;
+		transition: background-color var(--dur-2) var(--ease-standard), color var(--dur-2) var(--ease-standard);
 	}
 
 	.filter-reset:hover {

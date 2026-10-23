@@ -104,7 +104,7 @@
 	overflow: hidden;
 	font: 400 1.25rem/1.25 var(--font-serif);
 	letter-spacing: -0.01em;
-	transition: color 160ms ease;
+	transition: color var(--dur-2) var(--ease-standard);
 }
 
 .writing-entry-copy > p {

@@ -36,7 +36,7 @@
 .entry-title {
 	font: 400 1rem/1.5 var(--font-serif);
 	overflow-wrap: anywhere;
-	transition: color 160ms ease;
+	transition: color var(--dur-2) var(--ease-standard);
 }
 
 /* Metadata is text that follows the title and wraps with it. */
