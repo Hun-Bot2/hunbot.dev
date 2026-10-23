@@ -1,20 +1,20 @@
 ---
-// The Library (docs/decisions/site-structure.md, revision 2026-10-04): one
-// list of external tools, repos and sites as image cards, filtered with the
-// same floating filter the blog uses. It used to be split into 외부 링크
-// (`picks`) and Useful Feeds (`resources` from research-os) tabs — a
-// distinction of where an item was written, which visitors cannot see — so
-// both collections now render here together (src/utils/library.ts's
-// getLibraryItems) and /{lang}/library/useful-feeds/ redirects here.
+// The Library, 자료 view (docs/decisions/site-structure.md, revisions
+// 2026-10-04 and 2026-10-23): the one curated list of external tools, repos and
+// sites, filtered with the same floating filter the blog uses. Resources and
+// picks render together (src/utils/library.ts's getLibraryItems) —
+// /{lang}/library/useful-feeds/ redirects here. The page label and the tab bar
+// lead to the other views (신호, 해설, 주간 노트), each its own
+// page; a view with no published items is not in the bar.
 import BaseHead from '../../components/BaseHead.astro';
 import Header from '../../components/Header.astro';
 import FloatingLanguagePicker from '../../components/FloatingLanguagePicker.astro';
 import BlogFilterBar from '../../components/blog/BlogFilterBar.astro';
 import LibraryRow from '../../components/library/LibraryRow.astro';
-import { getCollection } from 'astro:content';
+import LibraryTabs from '../../components/library/LibraryTabs.astro';
 import { useTranslations, type UILanguage } from '../../i18n/ui';
-import { getLibraryItems } from '../../utils/library';
 import { getLibraryKindLabel, getLibraryTopicLabel } from '../../utils/library-labels';
+import { getLibraryViewData } from '../../utils/library-views';
 import { getLibraryArea, libraryAreas } from '../../data/libraryAreas';
 import '../../styles/lists.css';
 import '../../styles/entry-list.css';
@@ -32,7 +32,8 @@ const t = useTranslations(lang);
 const title = `${t('library.title')} - Hun-Bot Blog`;
 const description = t('library.description');
 
-const items = getLibraryItems(await getCollection('resources'), await getCollection('picks'), lang);
+const view = await getLibraryViewData(lang);
+const items = view.items;
 
 // Facet options with counts, most common first (ties by label).
 function facetOptions(values: string[], label: (value: string) => string) {
@@ -56,7 +57,7 @@ const topicOptions = facetOptions(items.map((item) => item.topic), (topic) => ge
 
 // One section per area that has items, in registry order (기타 last).
 const sections = areaOrder
-	.map((id) => ({ id, label: getLibraryArea(id).label[lang], items: items.filter((item) => item.area === id) }))
+	.map((id) => ({ id: `area-${id}`, label: getLibraryArea(id).label[lang], items: items.filter((item) => item.area === id) }))
 	.filter((section) => section.items.length > 0);
 
 const filterGroups = [
@@ -77,11 +78,12 @@ const filterGroups = [
 	</head>
 	<body>
 		<Header />
-		<FloatingLanguagePicker />
+		<FloatingLanguagePicker belowTabs />
 		<main id="main-content" class="atelier-page" data-pagefind-body>
-			<section class="subpage-intro">
+			<section class="subpage-intro subpage-intro--flush">
 				<h1 class="eyebrow">{t('library.title')}</h1>
 			</section>
+			<LibraryTabs lang={lang} tabs={view.tabs} current="resources" reserveFilter />
 
 			{items.length === 0 ? (
 				<p class="page-frame library-empty">{t('library.empty')}</p>
@@ -94,22 +96,23 @@ const filterGroups = [
 						resultsTemplate={t('library.filter-results')}
 						label={t('library.filter-label')}
 						totalCount={items.length}
+						anchor="tabs"
 					/>
 
 					<div class="page-frame library-archive" data-blog-posts>
 						{sections.map((section) => (
-							<section class="library-section" id={`area-${section.id}`} aria-labelledby={`area-${section.id}-title`} data-filter-section>
+							<section class="library-section" id={section.id} aria-labelledby={`${section.id}-title`} data-filter-section>
 								<div class="library-section-head">
-									<h2 id={`area-${section.id}-title`}>{section.label}</h2>
+									<h2 id={`${section.id}-title`}>{section.label}</h2>
 								</div>
 								<ul class="entry-list">
-									{section.items.map((item) => (
+									{section.items.map((item) =>
 										<LibraryRow
 											item={item}
 											kindLabel={getLibraryKindLabel(item.kind, lang)}
 											topicLabel={getLibraryTopicLabel(item.topic, lang)}
-										/>
-									))}
+										/>,
+									)}
 								</ul>
 							</section>
 						))}
@@ -126,10 +129,8 @@ const filterGroups = [
 <style>
 	/* The section heading carries the rule, so the title needs none of its own and
 	   the archive starts right under it. */
-	.subpage-intro {
-		padding-bottom: 0.25rem;
-		border-bottom: 0;
-	}
+
+
 
 	.library-archive {
 		padding: 0 0 1rem;
@@ -151,8 +152,10 @@ const filterGroups = [
 
 	.library-section-head h2 {
 		margin: 0;
-		font: 400 1.25rem/1.3 var(--font-serif);
-		letter-spacing: -0.02em;
+		font: 400 0.75rem/1.5 var(--font-mono);
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
+		color: var(--secondary);
 	}
 
 	.library-empty {

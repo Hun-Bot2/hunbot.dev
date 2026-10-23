@@ -68,8 +68,15 @@ Defined in `src/content.config.ts`. Each collection has a Zod schema — check i
 | `topics` | `src/content/topics/**` | Library topic definitions + Discover taxonomy nodes |
 | `academicReviews` | `src/content/academic-reviews/**` | Structured paper review posts |
 | `picks` | `src/content/picks/**/*.{md,mdx}` | Hand-curated Library "picks" (tools/SKILLs/sites the owner actually uses) |
+| `explainers` | `src/content/explainers/**/*.{md,mdx}` | Bot-drafted, owner-approved Korean commentary on one external paper or article (Library, on-site detail page) |
+| `signals` | `src/content/signals/**/*.{md,mdx}` | One item that passed the owner's filter, with a verdict (확인함 / 의심 / 해볼 것) and why it was kept (Library 신호 view) |
+| `weeklyNotes` | `src/content/weekly-notes/**/*.{md,mdx}` | The owner's weekly conclusions, last week's questions answered, questions carried forward (Library 주간 노트 view; web + RSS only) |
 
 > **Site structure (2026-09-26):** `hun-bot.dev` has three public surfaces, one per Research OS loop stage (`docs/decisions/site-structure.md`) — Writing (`/{lang}/blog/`), Research (`/{lang}/research/`, paper study log + reviews + learning paths + topics), and Library (`/{lang}/library/`, curated references only — no papers). `papers` gained `studiedAt` (`YYYY-MM-DD` or `null`; C4's dated "I studied this" statement, distinct from the private, mutable `readingState`). `academicReviews` gained `draft` (default `false`, same rule as `blog.draft` — filter through `getPublishedAcademicReviews()` in `src/utils/academic-review-routing.ts`, never re-check `!data.draft` yourself) and optional `paperId` (a `papers` entry `id`). `blog` gained optional `papers: string[]` (`papers` entry ids the post is about). Both link fields are declared on the *later* artifact and derived on the paper card — a paper card never lists its own reviews or posts (`src/utils/research.ts`: `getReviewForPaper()`, `getPostsForPaper()`). Reference existence is checked by `scripts/validate-academic-reviews.mjs` and `scripts/validate-blog-content.mjs`, not Zod. The `ai-papers` Library section is retired; `librarySections` in `src/utils/library.ts` no longer has a `'papers'` kind.
+
+> **Explainers collection (2026-10-22):** `explainers` is JSON-frontmatter like `resources`/`papers`, and its schema is an **allowlist** (`id`, `title`, `dek`, `canonicalLanguage` `ko`-only, `publishedAt`/`updatedAt`, `source { name, url, language ko|en|ja, kind paper|article }`, optional `ids { doi?, arxiv? }`, `authorship` enum `['bot']`, `review` (the shared `reviewMeta`), `tags`, optional `image`). Published means `review.status === 'approved'`, which a refine ties to `review.humanReviewed === true` and a `reviewedAt` date; filter through `getPublishedExplainers()` in `src/utils/explainers.ts`, never inline. Quotes from the source, model names/costs/token counts, verification-check results and private signals are never valid fields — `scripts/validate-explainers.mjs` (`npm run explainers:validate`, part of `content:validate`) rejects them by name; `contracts/research-os/` is deliberately not edited (it is vendored by the private repository). An explainer is never merged with a `papers` card: the detail page links to the card only when a DOI/arXiv id matches (`findPaperForExplainer()`), never by title. The two `fixture-*` entries are `review.status: "draft"` with a `TEMP:` title. Full spec: `docs/features/explainers.md`; decisions: `docs/decisions/site-structure.md` Revision 2026-10-22. Revision 2026-10-23 adds optional `claims` (max 8 `{ claim, judgement agree|doubt|unverified, check }`, rendered as the claims ledger after the body) and `signals` (lineage: ids of the Library signals it grew out of); an object-valued `signals` is still rejected as the private scores.
+
+> **Signals and weekly notes (2026-10-23):** both are JSON-frontmatter allowlist collections like `explainers`, published only when `review.status === 'approved'` with `humanReviewed: true` and a `reviewedAt` date (`isPublishedRecord()` / `getPublishedSignals()` in `src/utils/signals.ts`, `getPublishedWeeklyNotes()` in `src/utils/weekly.ts`; never filter inline). `signals`: `id`, `title`, `url`, `source { name, language ko|en|ja, kind paper|article|release|post }`, `sourceDate`, `keptAt`, `verdict confirmed|doubt|try`, `why` (one line, max 200), `authorship bot|owner`, `review`, `tags`; the optional body is a short note. **Where a signal led is never stored on it**: explainers and blog posts declare `signals: string[]` (ids), the row derives "→ 해설 / → 글" links via `getSignalLineage()` and withholds unpublished ones; `scripts/validate-signals.mjs` rejects lineage fields by name, and `validate-explainers.mjs` / `validate-blog-content.mjs` check that a declared id exists. `weeklyNotes`: `issue` (positive integer = file name), `title`, `dek`, `weekOf` (a Monday), `publishedAt`, `resolved [{ question, outcome }]`, `openQuestions`, `authorship`, `review`, `tags`; body = the conclusions; the week's signals are derived from `keptAt` (`getSignalsForWeek()`), never listed. Forbidden-field names are shared in `scripts/lib/forbidden-fields.mjs`. The Library has four views (신호 / 해설 / 주간 노트 / 자료), a view with nothing published has no tab and no route, and `signals`/`explainers`/`weekly` are reserved slugs (`validate-picks.mjs`). Fixtures: `fixture-*` signals, weekly note `1.md`, `fixture-en-paper` claims, all `draft` with `TEMP:` titles. Full spec: `docs/features/signals-and-weekly.md`; decisions: `docs/decisions/site-structure.md` Revision 2026-10-23.
 
 > **Picks collection:** `picks` is the one content collection with plain YAML frontmatter (`resources`/`papers`/`topics` use JSON frontmatter) — fields are `title`, `url`, optional `repo` (`owner/name`), `section` (`src/data/librarySections.ts` slug), `kind` (`src/data/libraryPolicy.ts`, e.g. `skill`/`tool`/`site`/`reference`), optional manual `tier`, optional `createdAt`, required `addedAt`/`checkedAt` (`YYYY-MM-DD`, quoted or unquoted), and `draft` (default `false`). The Markdown body is a short owner-written note — picks are hand-curated, live outside the research-os projection (no `itemId`, no review/provenance machinery), and a pick's `url` must never duplicate a `resources` entry's `url`/`repoUrl`. `src/utils/picks.ts` derives tier/freshness/star-count display from `src/data/popularity.json`. Three npm scripts manage the collection: `npm run picks:refresh` (refreshes `popularity.json` from the GitHub API), `npm run picks:check -- <slug>` (bumps a pick's `checkedAt` to today), and `npm run picks:validate` (part of `content:validate`).
 >
@@ -111,6 +118,7 @@ seriesOrder: number     # optional, ordering within series
 draft: boolean          # optional, default false — hides from site when true
 papers: string[]        # optional, `papers` entry ids this post is about (-> `explains`)
 informedBy: string[]    # optional, blog slugs (no lang prefix, e.g. devlog/local_llm/snl_llm_01) that informed this post (-> `informed`, an Explore lineage edge); declared on the later post, withheld while the other post is a draft; e.g. a study note lists the devlog it grew out of
+signals: string[]       # optional, Library signal ids (src/content/signals/<id>.md) this post grew out of (lineage, declared on the later artifact; shown as "→ 글" on the signal row; withheld while the signal is unpublished)
 ---
 ```
 
@@ -134,7 +142,7 @@ src/pages/
     ├── index.astro                      → /ko/, /jp/, /en/ (home)
     ├── search.astro                     → /ko/search/ (Pagefind UI)
     ├── rss.xml.js                       → /ko/rss.xml per-language feed
-    ├── library.astro                    → /ko/library/ (one list of image cards + blog filter; resources + picks)
+    ├── library.astro                    → /ko/library/ (자료 view: page label + tab bar + one list of image cards + blog filter; resources + picks; explainers have their own view)
     ├── explore.astro                    → /ko/explore/ (relationship map: the records with a declared link on a pannable, zoomable, window-wide canvas with its mode switch and search (top right) and zoom inside it, no frame; no page title row, legend or help text; reads only the public artifact contract)
     ├── paths.astro                      → /ko/paths/ (learning paths index)
     ├── research.astro                   → /ko/research/ (Research hub: study log, reviews, paths, decks card, featured topics)
@@ -144,6 +152,12 @@ src/pages/
     │   ├── categories.astro             → /ko/blog/categories/
     │   └── categories/[category].astro  → /ko/blog/categories/{cat}/
     ├── library/
+    │   ├── explainers/[slug].astro      → /ko/library/explainers/{id}/ (published explainers only; jp/en = same Korean text, noindex, canonical to ko)
+    │   ├── explainers/index.astro       → /ko/library/explainers/ (해설 view; only while an explainer is published; jp/en = same Korean list, noindex, canonical to ko)
+    │   ├── signals/index.astro          → /ko/library/signals/ (신호 view: dated ledger with verdict stamps + verdict filter; only while a signal is published)
+    │   ├── weekly/index.astro           → /ko/library/weekly/ (주간 노트 index: large serif issue numerals; only while a note is published)
+    │   ├── weekly/[issue].astro         → /ko/library/weekly/{n}/ (two-page notebook spread + last questions + open questions + prev/next)
+    │   ├── weekly/rss.xml.js            → /ko/library/weekly/rss.xml (weekly notes feed; web + RSS are the only delivery, no email)
     │   └── [section].astro              → /ko/library/{section}/ (pick sections, slugs from src/data/librarySections.ts; /library/useful-feeds/ 301s to /library/)
     ├── paths/
     │   └── [path].astro                 → /ko/paths/{id}/
@@ -169,7 +183,7 @@ src/pages/
 | `blog-routing.ts` | `getBlogUrlFromPost()`, `getBlogUrlFromId()`, `getBlogSlugFromId()`, `getBlogLanguageFromId()` | Converts content IDs → localized URLs. **Only source of truth for post URLs.** |
 | `academic-review-routing.ts` | `getAcademicReviewUrlFromId()`, `getPublishedAcademicReviews()` | Same as blog-routing but for `academicReviews`. `getPublishedAcademicReviews()` is the single "published" filter (`!data.draft`) — every route/listing/sitemap reads through it, never `!data.draft` inline. |
 | `homepage.ts` | `getHomepageData()` | Aggregates recent posts + library data for home page. |
-| `library.ts` | `librarySections`, `getLibrarySectionPath()`, `getApprovedPapers()`, `getFeaturedPapers()`, `getLibraryItems()` | Library section metadata and URL helpers. `getLibraryItems()` merges approved `resources` and published `picks` into the one Library list (labels: `library-labels.ts`). `librarySections` no longer has a `'papers'` kind — the `ai-papers` section moved to the Research hub (`src/utils/research.ts`). |
+| `library.ts` | `librarySections`, `getLibrarySectionPath()`, `getApprovedPapers()`, `getFeaturedPapers()`, `getLibraryItems()` | Library section metadata and URL helpers. `getLibraryItems(resources, picks, lang, explainers)` merges approved `resources`, published `picks` and (4th argument, the Library page only — not the home page) published `explainers` into the one Library list; an explainer item has `kind: 'explainer'` (a value of the existing 종류 facet) and an `explainer` payload (labels: `library-labels.ts`). `librarySections` no longer has a `'papers'` kind — the `ai-papers` section moved to the Research hub (`src/utils/research.ts`). |
 | `research.ts` | `getStudyLog()`, `getSelectedNotYetStudied()`, `getReviewForPaper()`, `getPostsForPaper()`, `getTopicsWithLinkedPapers()`, `getReviewsForPapers()`, `getPostsForPapers()` | Research hub data: study log / selected-not-yet-studied paper splits, and the paper ⇄ review/post ⇄ topic linking derived at build time. Backs `research.astro` and `research/topics/[topic].astro`. |
 | `learning-paths.ts` | `getPublishedLearningPaths()`, `getLearningPathUrl()` | Published learning paths and URLs. |
 | `view-counter.ts` | `getViewCount()`, `incrementViewCount()` | Redis-backed view count read/write. |
@@ -178,10 +192,15 @@ src/pages/
 | `canonicalization.ts` | `canonicalizeUrl()`, `normalizeTitle()`, `computeContentHash()`, `normalizeExternalIdentifier()`, `deriveDedupKey()` | URL canonicalization, CJK-safe title normalization, versioned content hashing, and identifier-index dedup-key derivation for the private Research OS pipeline. Not imported anywhere in the public site. **Vendored byte-for-byte by the private Research OS repository**, together with `contracts/research-os/research-item.schema.json`. Editing either file here means the copy there is stale; that repository's `npm run contract:sync` compares them exactly, and `INV-12` guards `CONTENT_HASH_FIELDS` specifically — a change to it leaves both copies individually valid while silently invalidating every stored hash. |
 | `rehype-external-links.mjs` | Rehype plugin | Marks absolute `http(s)` links to hosts other than `hun-bot.dev` with `target="_blank"`, `rel="noopener noreferrer"`, and class `external-link` (CSS adds the ↗). Registered in `astro.config.mjs` `rehypePlugins` ahead of `rehypeKatex`. |
 | `floating.ts` | `makeDraggable()`, `placePopover()`, `clearPopoverPlacement()` | Shared pointer-drag (4px click threshold, viewport + header clamping, sessionStorage position) and popover placement for the floating controls (globe, TOC, filter). Imported by component scripts, so it is bundled, not inline. |
+| `explainers.ts` | `isPublishedExplainer()`, `getPublishedExplainers()`, `getExplainerUrl()`, `getExplainerSlug()`, `findPaperForExplainer()`, `normalizeDoi()`, `normalizeArxivId()` | Pure helpers for the `explainers` collection: the single definition of *published* (approved + human reviewed), the localized detail URL, and the DOI/arXiv-id join to a `papers` card (never by title). No `astro:content` runtime import, so validators and tests load it. |
 | `picks.ts` | `computePickTier()`, `getPickFacts()`, `getFreshnessBadges()`, `formatStarCount()`, `normalizePickUrl()`, `getPickSlug()` | Pure helpers for the `picks` collection: tier derivation (manual override, else GitHub stars via `src/data/popularity.json`, else `discovery`), freshness badges, star-count formatting, and the URL comparison key `scripts/validate-picks.mjs` uses for duplicate detection against `resources`. Deliberately separate from `canonicalization.ts` above. |
 | `graph/` | `layoutBoard()`, `rankNodes()`, `CARD_W` (`board.ts`); `placeFloating()`, `placeAtCorner()` (`place.ts`); `resolveText()`, `resolveHref()`, `formatArtifactTime()` (`display.ts`) | Explore's pure modules. `layoutBoard()` takes card heights measured in the browser and returns every card position plus edge paths for the linked records only: layered DAG per connected group, arrows routed through reserved slots (never through a card), groups packed in rows. `placeFloating()` picks the spot beside a card for the inspector. Deterministic; tested without a browser in `test/graph-board.test.mjs`. |
 | `artifacts/series.ts` | `buildSeriesIndex()`, `normalizeSeriesName()` | Language-independent series identity for blog posts from the existing `series` frontmatter: spellings on translations of one post, or that normalize alike, are one series; nothing is guessed beyond that. Feeds the optional `series` field of the public artifact contract. |
 | `artifacts/load.ts` | `getPublicArtifactSet()` | Astro-side public artifact set: same adapters as the validator, merged with a committed Research OS export if present, validated; an invalid set fails the build. Pages read artifacts only through this. |
+| `signals.ts` | `isPublishedRecord()`, `getPublishedSignals()`, `sortSignals()`, `groupSignalsByDay()`, `getLatestSignalDay()`, `getSignalLineage()`, `signalVerdicts` | Pure helpers for `signals`: the single definition of *published* (approved + human reviewed), newest-first day grouping, and the derived lineage (explainers and posts that declare the signal; unpublished ones withheld). |
+| `weekly.ts` | `getPublishedWeeklyNotes()`, `getWeekRange()`, `getSignalsForWeek()`, `formatWeekRange()`, `getAdjacentIssues()`, `getWeeklyUrl()` | Pure helpers for `weeklyNotes`: published notes (newest issue first), the Monday-to-Sunday week, the signals whose `keptAt` falls in it, prev/next issue. |
+| `library-tabs.ts` | `getLibraryTabs()`, `getLibraryTabUrl()`, `reservedLibrarySlugs` | The Library's four views: the tab list (empty views omitted, 자료 always present) and the slugs reserved against pick sections. |
+| `library-views.ts` | `getLibraryViewData()` | Page-side loader (uses `astro:content`): the published records of each kind, the 자료 items, the language's posts for lineage, and the tab list. Pages read the Library views through it. |
 | `display.ts` | `hashString()`, `pickVariant()`, `formatPostDate()` | Pure list-page display helpers: a stable FNV-1a hash and `pickVariant(seed, variants)` so a post/pick keeps the same thumbnail variant on every page and deploy (never an index), and `formatPostDate()` (`YYYY.MM.DD`, UTC). Used by `art/ResourceVisual.astro` and the list pages. |
 
 ---
@@ -217,6 +236,10 @@ src/pages/
 | `diagrams/SecureBootChain.astro` | study/secure-boot post | Static inline-SVG diagram; colours come from tokens so it follows the theme |
 | `GiscusComments.astro` | Post detail | Embeds Giscus comment widget |
 
+
+| Component | Used in | What it does |
+|---|---|---|
+
 ### Library
 
 | Component | Used in | What it does |
@@ -224,7 +247,13 @@ src/pages/
 | `library/LibraryIcon.astro` | Library pages, Research hub | Section icon display |
 | `library/LibraryPageStyles.astro` | Library pages, Research hub, Paths, Decks | One `is:global` stylesheet for the rule-separated row/grid vocabulary (`.research-section`, `.knowledge-item` grid, paper rows, tabs, empty lines) built purely on tokens; also imports `lists.css`. Research, Paths and Decks pages reuse it rather than defining their own theme |
 | `library/LibraryCard.astro` | home | One Library item (`getLibraryItems()`): preview image (or typographic card) → mono kind · topic → serif title, all one external link |
-| `library/LibraryRow.astro` | `library.astro` | One Library item in the editorial archive (`.entry--item`): thumbnail → title → resource `summary` (via `getLibraryItems(…, lang)`) → mono kind · topic ↗; the whole row is one external link. |
+| `library/LibraryRow.astro` | `library.astro` | One Library item in the editorial archive (`.entry--item`): thumbnail (only when the item has an image; otherwise the row starts at the left edge) → title → resource `summary` (via `getLibraryItems(…, lang)`) → mono kind · topic ↗; the whole row is one external link. |
+| `library/ExplainerRow.astro` | `library/explainers/index.astro` | One published explainer in the 해설 view, same `.entry` grid as `LibraryRow` but an on-site link with a 2px accent left rule: mono 해설 eyebrow + source-language chip, serif title, `dek`, compact badge · source name · read link; typographic plate (large serif 해설 + source code) when there is no image. Filter data attributes as `LibraryRow`. |
+| `library/ProvenanceBadge.astro` | `ExplainerRow`, `layouts/ExplainerPost.astro` | Reusable authorship/review badge. `full` = `<details>` pill with fixed segments (AI 초안 / 직접 씀 · 사람이 검토함 / 검토 전 · review date) and a one-sentence panel; `compact` = inline text. Segments are fixed so state changes never shift the layout. |
+| `library/LibraryTabs.astro` | all four Library views | The sticky tab row (just under the site header, paper ground, 1px rule) 신호 / 해설 / 주간 노트 / 자료: real links, `aria-current="page"`, serif labels, a mono superscript-style count, active = ink + 2px accent underline, scrolls sideways without a scrollbar on phones; tabs with no published items are not in `tabs` (`getLibraryTabs()`). |
+| `library/Stamp.astro` | `SignalRow`, claims ledger | The verdict stamp: a bordered mono label rotated -2 degrees (`confirmed` in `--state-reviewed`, `doubt` in `--accent`, `try` in `--state-reading`, `unverified` dashed). Colour via `--stamp-color`; meaning is the label, not the colour. |
+| `library/SignalRow.astro` | `signals/index.astro`, weekly spread (`compact`) | One signal: stamp, serif external-link title, the `why` line, optional note, source + language chip, and the derived "where it led" links. Carries `data-post-card` / `data-post-verdict` for the floating filter. |
+| `library/SourceLanguageChip.astro` | `ExplainerRow`, `ExplainerPost` | Source-language chip: accent for a Japanese source (일본 자료), quiet for en/ko. |
 | `library/PickCard.astro` | Library hub, section pages, home | One `picks` entry as a `.knowledge-item`: `art/ResourceVisual` → mono kind·section label → serif title → owner note → meta line (tier · ★ stars · freshness chips). Tier/stars/freshness still come from `picks.ts`. |
 
 ### Art / Research
@@ -294,6 +323,7 @@ Rules: use **tokens, not `dark:` variants** — a token already follows the them
 |---|---|---|
 | `BlogPost.astro` | `[lang]/blog/[...slug].astro` | Full post page: `BaseHead` + `Header` + TOC + `ViewCounter` + `GiscusComments` (no site footer). Also handles series navigation and hreflang. |
 | `AcademicReviewPost.astro` | `[lang]/reviews/[...slug].astro` | Review post page with structured review components. |
+| `ExplainerPost.astro` | `[lang]/library/explainers/[slug].astro` | Explainer page on the blog shell (`.article-page`, `.prose`, TOC, reading controls; no comments/view counter/feedback): breadcrumb, title, dek, rule, `ProvenanceBadge`, body, source box, related paper card (identifier match only), tags. |
 
 ---
 
@@ -485,6 +515,8 @@ docs/
 ├── plans/
 │   └── research-os-pre-aws/  Pre-AWS readiness audit, task DAG, and per-task packets (AWS_READY gate)
 ├── features/
+│   ├── explainers.md        Explainers: schema allowlist, validator, behaviour, fixtures
+│   ├── signals-and-weekly.md  Library views (신호 / 해설 / 주간 노트 / 자료), signals and weekly notes: schemas, lineage, fixtures
 │   ├── library-data-model.md  Content Collections for Library (resources/papers/topics)
 │   ├── library-page.md      Library hub and section pages
 │   ├── learning-paths.md    Learning path routes and metadata

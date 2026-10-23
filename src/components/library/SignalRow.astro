@@ -1,0 +1,242 @@
+---
+// One signal in the ledger: the owner's verdict as a stamp, the item's headline
+// as an external link, the one-line reason it was kept, where it came from, and
+// where it led (derived from the explainers and posts that declare this signal,
+// never stored on it). The row is a <li>; its filter data attributes
+// (`data-post-card`, `data-post-verdict`) feed the shared floating filter.
+// Styles: this file (global, shared with the weekly spread).
+import { render, type CollectionEntry } from 'astro:content';
+import { useTranslations, type UILanguage } from '../../i18n/ui';
+import { getBlogUrlFromId } from '../../utils/blog-routing';
+import { getExplainerUrl, type ExplainerEntry } from '../../utils/explainers';
+import type { SignalLineage } from '../../utils/signals';
+import SourceLanguageChip from './SourceLanguageChip.astro';
+import Stamp from './Stamp.astro';
+
+interface Props {
+	signal: CollectionEntry<'signals'>;
+	lineage: SignalLineage;
+	lang: UILanguage;
+	/** Compact variant for the weekly spread: no note, no lineage. */
+	compact?: boolean;
+}
+
+const { signal, lineage, lang, compact = false } = Astro.props;
+const t = useTranslations(lang);
+// A dynamic UI key; kept out of the template, where `as` casts do not parse.
+const tk = (key: string) => t(key as Parameters<typeof t>[0]);
+const { data } = signal;
+const hasNote = !compact && (signal.body?.trim().length ?? 0) > 0;
+const Note = hasNote ? (await render(signal)).Content : null;
+const hasLineage = !compact && (lineage.explainers.length > 0 || lineage.posts.length > 0);
+// The text is Korean on every language's page; mark it for screen readers and fonts.
+const contentLang = lang !== 'ko' ? 'ko' : undefined;
+---
+
+<li class:list={['signal', { 'signal--compact': compact }]} data-post-card data-post-verdict={data.verdict}>
+	<div class="signal-stamp">
+		<Stamp tone={data.verdict} label={tk(`signal.verdict.${data.verdict}`)} size={compact ? 'sm' : 'md'} />
+	</div>
+	<div class="signal-body">
+		<h3 class="signal-title" lang={contentLang}>
+			<a href={data.url} target="_blank" rel="noopener noreferrer">{data.title}<span class="signal-ext" aria-hidden="true"> ↗</span></a>
+		</h3>
+		{!compact && <p class="signal-why" lang={contentLang}>{data.why}</p>}
+		{Note && (
+			<div class="signal-note" lang={contentLang}>
+				<Note />
+			</div>
+		)}
+		<p class="signal-source">
+			<span class="signal-source-name">{data.source.name}</span>
+			<SourceLanguageChip sourceLanguage={data.source.language} lang={lang} />
+			{!compact && <span class="signal-source-kind">{tk(`signal.source-kind.${data.source.kind}`)}</span>}
+		</p>
+		{hasLineage && (
+			<ul class="signal-led" aria-label={t('signal.led-to')}>
+				{lineage.explainers.map((explainer) => (
+					<li>
+						<span class="signal-led-arrow" aria-hidden="true">→</span>
+						<span class="signal-led-kind">{t('signal.led-to.explainer')}</span>
+						<a href={getExplainerUrl(lang, explainer.id)} lang="ko">{explainer.title}</a>
+					</li>
+				))}
+				{lineage.posts.map((post) => (
+					<li>
+						<span class="signal-led-arrow" aria-hidden="true">→</span>
+						<span class="signal-led-kind">{t('signal.led-to.post')}</span>
+						<a href={getBlogUrlFromId(post.id)}>{post.title}</a>
+					</li>
+				))}
+			</ul>
+		)}
+	</div>
+</li>
+
+<style is:global>
+	.signal {
+		display: grid;
+		grid-template-columns: 6.25rem minmax(0, 1fr);
+		gap: 0 1rem;
+		align-items: start;
+		padding: 0.95rem 0;
+		list-style: none;
+	}
+
+	.signal + .signal {
+		border-top: 1px solid var(--rule);
+	}
+
+	.signal[hidden] {
+		display: none;
+	}
+
+	.signal-stamp {
+		padding-top: 0.2rem;
+		padding-left: 0.15rem;
+	}
+
+	.signal-body {
+		min-width: 0;
+	}
+
+	.signal-title {
+		margin: 0;
+		font: 400 1.3rem/1.35 var(--font-serif);
+		letter-spacing: -0.01em;
+		overflow-wrap: anywhere;
+	}
+
+	.signal-title:lang(ko) {
+		word-break: keep-all;
+	}
+
+	.signal-title a {
+		color: var(--ink);
+		text-decoration: none;
+		transition: color var(--dur-2) var(--ease-standard);
+	}
+
+	.signal-title a:hover,
+	.signal-title a:focus-visible {
+		color: var(--accent);
+	}
+
+	.signal-ext {
+		font: 400 0.7em/1 var(--font-mono);
+		color: var(--secondary);
+	}
+
+	.signal-why {
+		margin: 0.35rem 0 0;
+		max-width: 38rem;
+		font: 400 0.9375rem/1.65 var(--font-sans);
+		color: var(--ink);
+	}
+
+	.signal-why:lang(ko) {
+		word-break: keep-all;
+	}
+
+	.signal-note {
+		margin: 0.5rem 0 0;
+		max-width: 38rem;
+		padding-left: 0.85rem;
+		border-left: 2px solid var(--rule-strong);
+		font: 400 0.8125rem/1.65 var(--font-sans);
+		color: var(--secondary);
+	}
+
+	.signal-note p {
+		margin: 0;
+	}
+
+	.signal-source {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.2rem 0.6rem;
+		margin: 0.55rem 0 0;
+		font: 400 0.6875rem/1.5 var(--font-mono);
+		letter-spacing: 0.06em;
+		color: var(--secondary);
+	}
+
+	.signal-source-kind {
+		text-transform: uppercase;
+	}
+
+	/* Where it led: the signal's own lineage, set apart by a hung arrow. */
+	.signal-led {
+		display: grid;
+		gap: 0.2rem;
+		margin: 0.7rem 0 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.signal-led li {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 0 0.5rem;
+		font: 400 0.875rem/1.55 var(--font-sans);
+	}
+
+	.signal-led-arrow {
+		font-family: var(--font-mono);
+		color: var(--accent);
+	}
+
+	.signal-led-kind {
+		font: 400 0.6875rem/1.5 var(--font-mono);
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
+		color: var(--secondary);
+	}
+
+	.signal-led a {
+		color: var(--ink);
+		text-decoration: underline;
+		text-decoration-color: var(--rule-strong);
+		text-underline-offset: 0.2em;
+		transition: color var(--dur-2) var(--ease-standard), text-decoration-color var(--dur-2) var(--ease-standard);
+	}
+
+	.signal-led a:hover,
+	.signal-led a:focus-visible {
+		color: var(--accent);
+		text-decoration-color: var(--accent);
+	}
+
+	/* Compact (the weekly spread): stamp inline above a smaller title. */
+	.signal--compact {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 0.3rem;
+		padding: 0.7rem 0;
+	}
+
+	.signal--compact .signal-stamp {
+		padding-top: 0;
+	}
+
+	.signal--compact .signal-title {
+		font-size: 1.0625rem;
+		line-height: 1.4;
+	}
+
+	.signal--compact .signal-source {
+		margin-top: 0.2rem;
+	}
+
+	@media (max-width: 639px) {
+		.signal {
+			grid-template-columns: minmax(0, 1fr);
+			gap: 0.45rem;
+		}
+
+		.signal-title {
+			font-size: 1.15rem;
+		}
+	}
+</style>

@@ -52,6 +52,10 @@ Section resource pages group resources by `category`. Cards show type, tags, loc
 
 Paper cards are not read or rendered here. They surface on the Research hub instead — see `docs/decisions/site-structure.md` and, once written, a dedicated Research hub feature doc.
 
+## Explainer Selection
+
+`/{lang}/library/` is the **자료** view: the page label (`.subpage-intro` + `h1.eyebrow`, as on `/research/`), the tab bar (신호 / 해설 / 주간 노트 / 자료; a tab with nothing published is omitted) and the one curated list of resources and picks. Explainers are no longer in this list: they have their own view, `/{lang}/library/explainers/`. See [`signals-and-weekly.md`](./signals-and-weekly.md), [`explainers.md`](./explainers.md) and [Revision 2026-10-23](../decisions/site-structure.md#revision-2026-10-23-the-library-gets-four-views).
+
 ## Topic Selection
 
 The page reads from `src/content/topics/` and displays only topics where:

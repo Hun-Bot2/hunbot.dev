@@ -158,6 +158,11 @@ body {
 	}
 }
 
+/* Library views: the tab bar's own bottom rule is the one line under the chrome. */
+.subpage-intro--flush {
+	border-bottom: 0;
+}
+
 /* Subpage intro extras: back link. */
 
 .subpage-intro .eyebrow {

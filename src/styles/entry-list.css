@@ -127,6 +127,10 @@
 	grid-template-columns: 5.25rem minmax(0, 1fr);
 }
 
+.entry--item.entry--bare {
+	grid-template-columns: minmax(0, 1fr);
+}
+
 .entry--post .entry-lead {
 	padding-top: 0.1rem;
 }
@@ -157,6 +161,10 @@
 	.entry--item {
 		grid-template-columns: 4.5rem minmax(0, 1fr);
 		gap: 0 0.75rem;
+	}
+
+	.entry--item.entry--bare {
+		grid-template-columns: minmax(0, 1fr);
 	}
 
 	.entry--post {

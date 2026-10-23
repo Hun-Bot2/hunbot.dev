@@ -122,6 +122,14 @@ for (const sourceFile of runtimeSourceFiles) {
 	}
 }
 
+// Weekly notes are delivered on the web and in RSS only (docs/decisions/site-structure.md,
+// Revision 2026-10-23): no form, no email field, no signup, anywhere on the Library views.
+for (const weeklyFile of listFiles('src/pages/[lang]/library').concat(listFiles('src/components/library'))) {
+	const source = readFileSync(weeklyFile, 'utf8');
+	assert.doesNotMatch(source, /<form\b/i, `${relative(root, weeklyFile)} must not add a form (weekly notes are web and RSS only).`);
+	assert.doesNotMatch(source, /type=["']email["']/i, `${relative(root, weeklyFile)} must not collect email addresses.`);
+}
+
 const boundaryDoc = read('docs/decisions/product-boundaries.md');
 assert.match(boundaryDoc, /personal trust asset/);
 assert.match(boundaryDoc, /Do not add these to the personal blog/);

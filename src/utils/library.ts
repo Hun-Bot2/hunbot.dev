@@ -3,6 +3,7 @@ import type { UILanguage } from '../i18n/ui';
 import { sortStable } from './ordering.ts';
 import { getPickSlug } from './picks.ts';
 import { getLibraryAreaId } from '../data/libraryAreas.ts';
+import { getExplainerSlug, getExplainerUrl, getPublishedExplainers, type ExplainerEntry } from './explainers.ts';
 
 export type ResourceEntry = CollectionEntry<'resources'>;
 export type PaperEntry = CollectionEntry<'papers'>;
@@ -207,6 +208,20 @@ export interface LibraryItem {
 	image: LibraryItemImage;
 	/** One-line summary in the requested language (resources only; '' when none). */
 	description: string;
+	/**
+	 * Set on an explainer (kind `explainer`): `url` is then an on-site page, not
+	 * an external link, and the row renders as ExplainerRow.
+	 */
+	explainer?: {
+		authorship: 'bot' | 'owner';
+		humanReviewed: boolean;
+		reviewedAt: string | null;
+		sourceName: string;
+		sourceLanguage: 'ko' | 'en' | 'ja';
+		sourceKind: 'paper' | 'article';
+		/** The explainer text is Korean (its canonical language) on every language's page. */
+		contentLanguage: UILanguage;
+	};
 }
 
 function hostLabel(url: string): string {
@@ -221,7 +236,12 @@ function hostLabel(url: string): string {
  * distinction visitors need, so the page has no tabs. Newest first, then by
  * title. An item without a preview image gets the typographic card.
  */
-export function getLibraryItems(resources: ResourceEntry[], picks: PickEntry[], lang: UILanguage = 'ko'): LibraryItem[] {
+export function getLibraryItems(
+	resources: ResourceEntry[],
+	picks: PickEntry[],
+	lang: UILanguage = 'ko',
+	explainers: ExplainerEntry[] = [],
+): LibraryItem[] {
 	const fromResources = getApprovedResources(resources).map((resource): LibraryItem => ({
 		id: resource.data.id,
 		title: resource.data.title,
@@ -248,5 +268,30 @@ export function getLibraryItems(resources: ResourceEntry[], picks: PickEntry[], 
 			description: '',
 		}));
 
-	return sortStable([...fromResources, ...fromPicks], (a, b) => b.date.localeCompare(a.date) || a.title.localeCompare(b.title));
+	// Explainers (docs/decisions/site-structure.md, Revision 2026-10-22): the same
+	// list, not a tab. Their `kind` is `explainer`, a value of the existing 종류
+	// facet. Text stays in the explainer's canonical language (Korean) on every
+	// language's page, the same fallback `resources` use.
+	const fromExplainers = getPublishedExplainers(explainers).map((explainer): LibraryItem => ({
+		id: `explainer-${getExplainerSlug(explainer)}`,
+		title: explainer.data.title,
+		url: getExplainerUrl(lang, getExplainerSlug(explainer)),
+		kind: 'explainer',
+		area: getLibraryAreaId(explainer.data.tags),
+		topic: explainer.data.tags[0] ?? 'explainer',
+		date: explainer.data.publishedAt,
+		image: explainer.data.image ?? { kind: 'typographic', label: explainer.data.source.name },
+		description: explainer.data.dek,
+		explainer: {
+			authorship: explainer.data.authorship,
+			humanReviewed: explainer.data.review.humanReviewed,
+			reviewedAt: explainer.data.review.reviewedAt,
+			sourceName: explainer.data.source.name,
+			sourceLanguage: explainer.data.source.language,
+			sourceKind: explainer.data.source.kind,
+			contentLanguage: explainer.data.canonicalLanguage,
+		},
+	}));
+
+	return sortStable([...fromResources, ...fromPicks, ...fromExplainers], (a, b) => b.date.localeCompare(a.date) || a.title.localeCompare(b.title));
 }

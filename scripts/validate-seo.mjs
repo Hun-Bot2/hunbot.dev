@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 import { learningPaths } from '../src/data/learningPaths.ts';
@@ -23,6 +23,7 @@ assert.match(baseHead, /type="application\/rss\+xml"/);
 assert.match(baseHead, /\$\{currentLang\}\/rss\.xml/);
 assert.doesNotMatch(baseHead, /feed\.json/, 'BaseHead should not advertise a JSON feed route that does not exist.');
 
+assert.match(read('src/pages/[lang]/library/weekly/rss.xml.js'), /getPublishedWeeklyNotes/, 'The weekly feed must list published notes only.');
 assert.match(languageRssRoute, /getStaticPaths/);
 assert.match(languageRssRoute, /SUPPORTED_LANGUAGES/);
 assert.match(languageRssRoute, /getBlogLanguageFromId/);
@@ -36,6 +37,15 @@ assert.match(sitemapRoute, /getPublishedAcademicReviews/);
 assert.match(sitemapRoute, /getTopicsWithLinkedPapers/);
 assert.match(sitemapRoute, /\/research\//);
 assert.match(sitemapRoute, /\/explore\//, 'sitemap should list /{lang}/explore/.');
+// Explainers: only published ones, and only the canonical-language URL.
+assert.match(sitemapRoute, /getPublishedExplainers/, 'sitemap should list published explainers only.');
+assert.match(sitemapRoute, /getExplainerUrl/);
+// Signals, weekly notes and the view index pages (Revision 2026-10-23): published
+// only, ko URLs only.
+assert.match(sitemapRoute, /getPublishedSignals/, 'sitemap should list the signals view only while signals are published.');
+assert.match(sitemapRoute, /getPublishedWeeklyNotes/, 'sitemap should list weekly notes only when published.');
+assert.match(sitemapRoute, /getSignalsUrl\('ko'\)/, 'sitemap should list the ko signals URL only.');
+assert.match(sitemapRoute, /getWeeklyUrl\('ko'/, 'sitemap should list ko weekly note URLs only.');
 // getLibrarySectionPath is gone from the sitemap: it was kept only to build
 // the temporary /{lang}/library/decks/ path, which moved to
 // /{lang}/research/decks/ (docs/decisions/site-structure.md#2). Pick section
@@ -124,6 +134,23 @@ for (const outputRoot of [join(root, 'dist/client'), join(root, '.vercel/output/
 		assert.ok(existsSync(newDecksPath), `${relative(root, newDecksPath)} should exist after build.`);
 	}
 
+	// Placeholder content never ships (docs/decisions/site-structure.md, Placeholder
+	// Content Is Unpublished): no `TEMP:` fixture title in any page, feed or sitemap,
+	// and a Library view with nothing published has no page at all. The weekly feed
+	// exists only with the weekly pages it points at.
+	for (const file of listBuiltFiles(outputRoot)) {
+		if (!/(?:index\.html|\.xml)$/.test(file)) continue;
+		assert.doesNotMatch(readFileSync(file, 'utf8'), /TEMP:/, `${relative(root, file)} contains a TEMP: fixture string.`);
+	}
+	for (const lang of learningPathLanguages) {
+		const weeklyIndex = join(outputRoot, lang, 'library', 'weekly', 'index.html');
+		const weeklyFeed = join(outputRoot, lang, 'library', 'weekly', 'rss.xml');
+		assert.equal(existsSync(weeklyFeed), existsSync(weeklyIndex), `${lang}: the weekly feed and the weekly index must exist together.`);
+		if (existsSync(weeklyFeed)) {
+			assert.doesNotMatch(readFileSync(weeklyFeed, 'utf8'), /mailto:|newsletter/i, 'The weekly feed must not offer email delivery.');
+		}
+	}
+
 	for (const lang of learningPathLanguages) {
 		const homePath = join(outputRoot, lang, 'index.html');
 		if (existsSync(homePath)) {
@@ -139,6 +166,13 @@ for (const outputRoot of [join(root, 'dist/client'), join(root, '.vercel/output/
 			assert.match(rss, new RegExp(`/${lang}/blog/`), `${relative(root, rssPath)} should include localized blog links.`);
 		}
 	}
+}
+
+function listBuiltFiles(directory) {
+	return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+		const fullPath = join(directory, entry.name);
+		return entry.isDirectory() ? (entry.name === 'pagefind' ? [] : listBuiltFiles(fullPath)) : [fullPath];
+	});
 }
 
 console.log('Validated SEO, RSS, and sitemap source/output checks.');

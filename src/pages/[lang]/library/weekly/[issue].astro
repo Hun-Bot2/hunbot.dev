@@ -1,0 +1,525 @@
+---
+// /{lang}/library/weekly/{issue}/ — one weekly note (docs/decisions/site-structure.md,
+// Revision 2026-10-23; docs/features/signals-and-weekly.md). Above: last week's
+// questions answered ("지난 질문"). Then a two-page notebook spread: the left
+// page is what came in that week (its signals, derived from their keptAt dates),
+// the right page is the owner's conclusions (the Markdown body). Below: the
+// questions carried to next week. Generated only for published notes. The text
+// is Korean on every language's page: jp/en are the same note under that
+// language's chrome, noindex, canonical to the ko page.
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import BaseHead from '../../../../components/BaseHead.astro';
+import Header from '../../../../components/Header.astro';
+import FloatingLanguagePicker from '../../../../components/FloatingLanguagePicker.astro';
+import Breadcrumb from '../../../../components/Breadcrumb.astro';
+import ProvenanceBadge from '../../../../components/library/ProvenanceBadge.astro';
+import SignalRow from '../../../../components/library/SignalRow.astro';
+import { useTranslations, type UILanguage } from '../../../../i18n/ui';
+import { formatPostDate } from '../../../../utils/display';
+import { getLibraryViewData } from '../../../../utils/library-views';
+import { getSignalLineage, getSignalSlug } from '../../../../utils/signals';
+import {
+	formatWeekRange,
+	getAdjacentIssues,
+	getPublishedWeeklyNotes,
+	getSignalsForWeek,
+	getWeeklyIndexUrl,
+	getWeeklyRssUrl,
+	getWeeklyUrl,
+} from '../../../../utils/weekly';
+import '../../../../styles/prose.css';
+
+export async function getStaticPaths() {
+	const langs: UILanguage[] = ['ko', 'jp', 'en'];
+	const notes = getPublishedWeeklyNotes(await getCollection('weeklyNotes'));
+	return langs.flatMap((lang) => notes.map((entry) => ({ params: { lang, issue: String(entry.data.issue) }, props: { entry } })));
+}
+
+type Props = { entry: CollectionEntry<'weeklyNotes'> };
+
+const lang = (Astro.params.lang ?? 'ko') as UILanguage;
+const { entry } = Astro.props as Props;
+const t = useTranslations(lang);
+const { data } = entry;
+const { Content } = await render(entry);
+const view = await getLibraryViewData(lang);
+
+const isCanonical = lang === 'ko';
+const contentLangAttr = isCanonical ? undefined : 'ko';
+const canonicalURL = new URL(getWeeklyUrl('ko', data.issue), Astro.site);
+const rssURL = new URL(getWeeklyRssUrl('ko'), Astro.site);
+const issueLabel = t('weekly.issue').replace('{n}', String(data.issue));
+const range = formatWeekRange(data.weekOf);
+const reviewedAt = data.review.reviewedAt ? new Date(data.review.reviewedAt) : undefined;
+const signals = getSignalsForWeek(view.signals, data.weekOf);
+const { prev, next } = getAdjacentIssues(view.weeklyNotes, data.issue);
+const title = `${data.title} - ${t('weekly.title')} - Hun-Bot Blog`;
+---
+
+<html lang={lang}>
+	<head>
+		<BaseHead title={title} description={data.dek} canonicalURL={canonicalURL.href} lang={lang} availableLangs={['ko']} />
+		<link rel="alternate" type="application/rss+xml" title={`${t('weekly.title')} (RSS)`} href={rssURL.href} />
+		{!isCanonical && <meta name="robots" content="noindex, follow" />}
+		<meta property="og:type" content="article" />
+		<meta property="article:published_time" content={new Date(data.publishedAt).toISOString()} />
+		<meta data-pagefind-meta="title[content]" content={`${issueLabel} ${data.title}`} />
+		<meta data-pagefind-meta="description[content]" content={data.dek} />
+		<meta data-pagefind-filter="language[content]" content="ko" />
+		<meta data-pagefind-filter="section[content]" content="library" />
+	</head>
+	<body>
+		<Header />
+		<FloatingLanguagePicker />
+		<main id="main-content" class="article-page weekly-page" data-post-lang={lang}>
+			<article aria-labelledby="weekly-title" data-pagefind-body={isCanonical ? true : undefined}>
+				<header class="article-header weekly-header page-frame">
+					<Breadcrumb
+						items={[
+							{ name: t('library.title'), href: `/${lang}/library/` },
+							{ name: t('weekly.title'), href: getWeeklyIndexUrl(lang) },
+						]}
+					/>
+					<p class="weekly-eyebrow">
+						<span class="weekly-eyebrow-label">{t('weekly.title')}</span>
+						<span class="weekly-eyebrow-issue">{issueLabel}</span>
+						<time datetime={data.weekOf}>{range}</time>
+					</p>
+					<h1 id="weekly-title" class="article-title weekly-title" lang={contentLangAttr}>{data.title}</h1>
+					<p class="weekly-dek" lang={contentLangAttr}>{data.dek}</p>
+					<hr class="weekly-rule" />
+					<div class="weekly-provenance">
+						<ProvenanceBadge authorship={data.authorship} humanReviewed={data.review.humanReviewed} reviewedAt={reviewedAt} lang={lang} variant="full" />
+						<p class="weekly-dates article-meta">
+							<span>{t('weekly.published')} <time datetime={data.publishedAt}>{formatPostDate(new Date(data.publishedAt))}</time></span>
+							<a class="weekly-rss-link" href={getWeeklyRssUrl('ko')}>{t('weekly.rss')} <span aria-hidden="true">↗</span></a>
+						</p>
+					</div>
+					{!isCanonical && <p class="weekly-ko-only">{t('weekly.ko-only')}</p>}
+				</header>
+
+				{
+					data.resolved.length > 0 && (
+						<section class="weekly-resolved page-frame" aria-labelledby="weekly-resolved-title" lang={contentLangAttr}>
+							<h2 id="weekly-resolved-title" class="weekly-band-title">{t('weekly.resolved.title')}</h2>
+							<ul class="weekly-resolved-list">
+								{data.resolved.map((item) => (
+									<li>
+										<p class="weekly-question">{item.question}</p>
+										<p class="weekly-outcome">
+											<span class="weekly-arrow" aria-hidden="true">→</span>
+											<span>{item.outcome}</span>
+										</p>
+									</li>
+								))}
+							</ul>
+						</section>
+					)
+				}
+
+				<div class="weekly-spread page-frame">
+					<section class="weekly-leaf weekly-leaf--in" aria-labelledby="weekly-in-title">
+						<h2 id="weekly-in-title" class="weekly-leaf-title">
+							{t('weekly.page.in')} <span class="weekly-leaf-count">{signals.length}</span>
+						</h2>
+						{
+							signals.length > 0 ? (
+								<ul class="weekly-signals">
+									{signals.map((signal) => (
+										<SignalRow
+											signal={signal}
+											lineage={getSignalLineage(getSignalSlug(signal), view.explainers, view.posts)}
+											lang={lang}
+											compact
+										/>
+									))}
+								</ul>
+							) : (
+								<p class="weekly-empty">{t('weekly.no-signals')}</p>
+							)
+						}
+					</section>
+					<section class="weekly-leaf weekly-leaf--out" aria-labelledby="weekly-out-title">
+						<h2 id="weekly-out-title" class="weekly-leaf-title">{t('weekly.page.out')}</h2>
+						<div class="prose weekly-body" lang={contentLangAttr}>
+							<Content />
+						</div>
+					</section>
+				</div>
+
+				{
+					data.openQuestions.length > 0 && (
+						<section class="weekly-open page-frame" aria-labelledby="weekly-open-title" lang={contentLangAttr}>
+							<h2 id="weekly-open-title" class="weekly-band-title">{t('weekly.open.title')}</h2>
+							<ul class="weekly-open-list">
+								{data.openQuestions.map((question) => (
+									<li>{question}</li>
+								))}
+							</ul>
+						</section>
+					)
+				}
+
+				<nav class="weekly-pager page-frame" aria-label={t('weekly.title')}>
+					{
+						prev ? (
+							<a class="weekly-pager-link" href={getWeeklyUrl(lang, prev.data.issue)} rel="prev">
+								<span class="weekly-pager-dir">← {t('weekly.prev')}</span>
+								<span class="weekly-pager-title" lang={contentLangAttr}>{t('weekly.issue').replace('{n}', String(prev.data.issue))} · {prev.data.title}</span>
+							</a>
+						) : (
+							<span />
+						)
+					}
+					<a class="weekly-pager-all" href={getWeeklyIndexUrl(lang)}>{t('weekly.back')}</a>
+					{
+						next ? (
+							<a class="weekly-pager-link weekly-pager-link--next" href={getWeeklyUrl(lang, next.data.issue)} rel="next">
+								<span class="weekly-pager-dir">{t('weekly.next')} →</span>
+								<span class="weekly-pager-title" lang={contentLangAttr}>{t('weekly.issue').replace('{n}', String(next.data.issue))} · {next.data.title}</span>
+							</a>
+						) : (
+							<span />
+						)
+					}
+				</nav>
+			</article>
+		</main>
+	</body>
+</html>
+
+<style is:global>
+	.weekly-header {
+		padding-bottom: 1.25rem;
+	}
+
+	.weekly-eyebrow {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 0.2rem 0.8rem;
+		margin: 0 0 0.9rem;
+		font: 400 0.6875rem/1.5 var(--font-mono);
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
+		color: var(--secondary);
+	}
+
+	.weekly-eyebrow-label {
+		font-weight: 500;
+		color: var(--accent);
+	}
+
+	.weekly-eyebrow-issue {
+		color: var(--ink);
+	}
+
+	.article-header .weekly-title {
+		margin: 0;
+		font: 400 clamp(2rem, 1.4rem + 2.6vw, 3rem) / 1.2 var(--font-serif);
+		letter-spacing: -0.01em;
+	}
+
+	.weekly-title:lang(ko) {
+		word-break: keep-all;
+	}
+
+	.weekly-dek {
+		max-width: 40ch;
+		margin: 0.9rem 0 1.25rem;
+		font: 400 clamp(1.0625rem, 0.95rem + 0.6vw, 1.3rem) / 1.55 var(--font-serif);
+		color: var(--secondary);
+		text-wrap: pretty;
+	}
+
+	html:lang(ko) .weekly-dek,
+	.weekly-dek:lang(ko) {
+		word-break: keep-all;
+	}
+
+	.weekly-rule {
+		margin: 0 0 1rem;
+		border: 0;
+		border-top: 1px solid var(--rule);
+	}
+
+	.weekly-provenance {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 0.5rem 1.5rem;
+	}
+
+	.weekly-dates {
+		margin: 0;
+		min-height: 2.5rem;
+		align-items: center;
+		flex: 1 1 auto;
+		justify-content: flex-end;
+	}
+
+	.weekly-rss-link {
+		color: var(--secondary);
+	}
+
+	.weekly-rss-link:hover,
+	.weekly-rss-link:focus-visible {
+		color: var(--accent);
+	}
+
+	.weekly-ko-only {
+		margin: 0.9rem 0 0;
+		font: 400 0.75rem/1.6 var(--font-mono);
+		letter-spacing: 0.06em;
+		color: var(--secondary);
+	}
+
+	@media (max-width: 639px) {
+		.weekly-dates {
+			min-height: 0;
+			justify-content: flex-start;
+		}
+	}
+
+	/* ── Last week's questions, answered ── */
+	.weekly-resolved,
+	.weekly-open {
+		margin-top: 1.75rem;
+	}
+
+	.weekly-band-title {
+		margin: 0 0 0.6rem;
+		font: 400 0.6875rem/1.45 var(--font-mono);
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
+		color: var(--accent);
+	}
+
+	.weekly-resolved-list {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+		gap: 0 2rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		border-top: 1px solid var(--rule-strong);
+	}
+
+	.weekly-resolved-list li {
+		padding: 0.9rem 0 1rem;
+		border-bottom: 1px solid var(--rule);
+	}
+
+	.weekly-question {
+		margin: 0;
+		font: 400 1.0625rem/1.5 var(--font-serif);
+		color: var(--secondary);
+	}
+
+	.weekly-outcome {
+		display: flex;
+		gap: 0.55rem;
+		margin: 0.35rem 0 0;
+		font: 400 0.9375rem/1.65 var(--font-sans);
+		color: var(--ink);
+	}
+
+	.weekly-arrow {
+		font-family: var(--font-mono);
+		color: var(--accent);
+	}
+
+	.weekly-question:lang(ko),
+	.weekly-outcome:lang(ko),
+	html:lang(ko) .weekly-question,
+	html:lang(ko) .weekly-outcome {
+		word-break: keep-all;
+	}
+
+	/* ── The spread: two pages and a gutter ── */
+	.weekly-spread {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+		margin-top: 1.75rem;
+		border: 1px solid var(--rule-strong);
+		background: var(--paper-light);
+	}
+
+	.weekly-leaf {
+		min-width: 0;
+		padding: 1.4rem 1.6rem 1.6rem;
+	}
+
+	/* The gutter: a hairline and a soft shade running into the fold. */
+	.weekly-leaf--in {
+		box-shadow: inset -1.1rem 0 1.1rem -1.1rem color-mix(in oklab, var(--ink) 16%, transparent);
+	}
+
+	.weekly-leaf--out {
+		border-left: 1px solid var(--rule-strong);
+		box-shadow: inset 1.1rem 0 1.1rem -1.1rem color-mix(in oklab, var(--ink) 16%, transparent);
+	}
+
+	.weekly-leaf-title {
+		display: flex;
+		align-items: baseline;
+		gap: 0.6rem;
+		margin: 0 0 0.5rem;
+		padding-bottom: 0.55rem;
+		border-bottom: 1px solid var(--rule);
+		font: 400 1.375rem/1.3 var(--font-serif);
+		letter-spacing: -0.015em;
+	}
+
+	html:lang(ko) .weekly-leaf-title {
+		word-break: keep-all;
+	}
+
+	.weekly-leaf-count {
+		font: 400 0.6875rem/1 var(--font-mono);
+		letter-spacing: 0.06em;
+		color: var(--secondary);
+	}
+
+	.weekly-signals {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.weekly-empty {
+		margin: 0.75rem 0 0;
+		font: 400 0.875rem/1.6 var(--font-sans);
+		color: var(--secondary);
+	}
+
+	/* The conclusions read as prose, at the page's scale rather than an article's. */
+	.weekly-body {
+		max-width: none;
+	}
+
+	.weekly-body > :first-child {
+		margin-top: 0.5rem;
+	}
+
+	.weekly-body h2 {
+		margin: 1.75rem 0 0.5rem;
+		font-size: 1.3rem;
+		line-height: 1.35;
+	}
+
+	.weekly-body h2:first-child {
+		margin-top: 0.5rem;
+	}
+
+	@media (max-width: 899px) {
+		.weekly-spread {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.weekly-leaf--in,
+		.weekly-leaf--out {
+			box-shadow: none;
+		}
+
+		.weekly-leaf--out {
+			border-top: 1px solid var(--rule-strong);
+			border-left: 0;
+		}
+	}
+
+	@media (max-width: 479px) {
+		.weekly-leaf {
+			padding: 1.1rem 1rem 1.25rem;
+		}
+	}
+
+	/* ── Carried to next week ── */
+	.weekly-open-list {
+		display: grid;
+		gap: 0.45rem;
+		margin: 0;
+		padding: 0.8rem 0 0.9rem;
+		border-top: 1px solid var(--rule-strong);
+		border-bottom: 1px solid var(--rule);
+		list-style: none;
+	}
+
+	.weekly-open-list li {
+		position: relative;
+		padding-left: 1.4rem;
+		font: 400 0.9375rem/1.65 var(--font-sans);
+	}
+
+	.weekly-open-list li::before {
+		content: '?';
+		position: absolute;
+		left: 0;
+		font: 500 0.875rem/1.65 var(--font-mono);
+		color: var(--accent);
+	}
+
+	html:lang(ko) .weekly-open-list li,
+	.weekly-open:lang(ko) li {
+		word-break: keep-all;
+	}
+
+	/* ── Pager ── */
+	.weekly-pager {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+		align-items: start;
+		gap: 0.75rem 1.5rem;
+		margin-top: 2.25rem;
+		padding: 1rem 0 4rem;
+		border-top: 1px solid var(--rule);
+	}
+
+	.weekly-pager-link {
+		display: grid;
+		gap: 0.15rem;
+		min-height: 2.5rem;
+		color: var(--ink);
+		text-decoration: none;
+	}
+
+	.weekly-pager-link--next {
+		text-align: right;
+	}
+
+	.weekly-pager-dir,
+	.weekly-pager-all {
+		font: 400 0.6875rem/1.4 var(--font-mono);
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
+		color: var(--secondary);
+	}
+
+	.weekly-pager-title {
+		font: 400 1rem/1.4 var(--font-serif);
+		overflow-wrap: anywhere;
+		transition: color var(--dur-2) var(--ease-standard);
+	}
+
+	.weekly-pager-link:hover .weekly-pager-title,
+	.weekly-pager-link:focus-visible .weekly-pager-title,
+	.weekly-pager-all:hover,
+	.weekly-pager-all:focus-visible {
+		color: var(--accent);
+	}
+
+	@media (max-width: 639px) {
+		.weekly-pager {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.weekly-pager-all {
+			order: 3;
+		}
+
+		.weekly-pager-link--next {
+			text-align: left;
+		}
+	}
+</style>

@@ -1,0 +1,237 @@
+---
+// /{lang}/library/weekly/ — the 주간 노트 view (docs/decisions/site-structure.md,
+// Revision 2026-10-23; docs/features/signals-and-weekly.md): the owner's weekly
+// conclusions as a column of issues, each led by a large serif issue number.
+// Web and RSS only (no email, no signup). Generated only while at least one
+// note is published. The text is Korean on every language's page: jp/en are the
+// same list under that language's chrome, noindex, canonical to ko.
+import BaseHead from '../../../../components/BaseHead.astro';
+import Header from '../../../../components/Header.astro';
+import FloatingLanguagePicker from '../../../../components/FloatingLanguagePicker.astro';
+import LibraryTabs from '../../../../components/library/LibraryTabs.astro';
+import { getCollection } from 'astro:content';
+import { useTranslations, type UILanguage } from '../../../../i18n/ui';
+import { getLibraryViewData } from '../../../../utils/library-views';
+import { formatWeekRange, getPublishedWeeklyNotes, getSignalsForWeek, getWeeklyIndexUrl, getWeeklyRssUrl, getWeeklyUrl } from '../../../../utils/weekly';
+import '../../../../styles/lists.css';
+
+export async function getStaticPaths() {
+	const langs: UILanguage[] = ['ko', 'jp', 'en'];
+	const published = getPublishedWeeklyNotes(await getCollection('weeklyNotes'));
+	return published.length > 0 ? langs.map((lang) => ({ params: { lang } })) : [];
+}
+
+const lang = (Astro.params.lang ?? 'ko') as UILanguage;
+const t = useTranslations(lang);
+const view = await getLibraryViewData(lang);
+const isCanonical = lang === 'ko';
+const canonicalURL = new URL(getWeeklyIndexUrl('ko'), Astro.site);
+const rssURL = new URL(getWeeklyRssUrl('ko'), Astro.site);
+const title = `${t('weekly.title')} - ${t('library.title')} - Hun-Bot Blog`;
+const description = t('weekly.description');
+
+const issues = view.weeklyNotes.map((note) => ({
+	note,
+	href: getWeeklyUrl(lang, note.data.issue),
+	range: formatWeekRange(note.data.weekOf),
+	signalCount: getSignalsForWeek(view.signals, note.data.weekOf).length,
+}));
+---
+
+<!doctype html>
+<html lang={lang}>
+	<head>
+		<BaseHead title={title} description={description} canonicalURL={canonicalURL.href} lang={lang} availableLangs={['ko']} />
+		<link rel="alternate" type="application/rss+xml" title={`${t('weekly.title')} (RSS)`} href={rssURL.href} />
+		{!isCanonical && <meta name="robots" content="noindex, follow" />}
+		<meta data-pagefind-meta="title[content]" content={t('weekly.title')} />
+		<meta data-pagefind-meta="description[content]" content={description} />
+		<meta data-pagefind-filter="language[content]" content="ko" />
+		<meta data-pagefind-filter="section[content]" content="library" />
+	</head>
+	<body>
+		<Header />
+		<FloatingLanguagePicker belowTabs />
+		<main id="main-content" class="atelier-page" data-pagefind-body={isCanonical ? true : undefined}>
+			<section class="subpage-intro subpage-intro--flush weekly-intro">
+				<h1 class="eyebrow">{t('library.title')}</h1>
+				<a class="weekly-rss" href={getWeeklyRssUrl('ko')}>{t('weekly.rss')} <span aria-hidden="true">↗</span></a>
+			</section>
+			<LibraryTabs lang={lang} tabs={view.tabs} current="weekly" />
+
+			<ol class="page-frame weekly-issues">
+				{
+					issues.map(({ note, href, range, signalCount }) => (
+						<li class="weekly-issue">
+							<p class="weekly-issue-no" aria-hidden="true">
+								<span class="weekly-issue-no-label">No.</span>
+								<span class="weekly-issue-no-num">{note.data.issue}</span>
+							</p>
+							<div class="weekly-issue-body">
+								<p class="weekly-issue-range">
+									<span class="sr-only">{t('weekly.issue').replace('{n}', String(note.data.issue))} · </span>
+									<time datetime={note.data.weekOf}>{range}</time>
+								</p>
+								<h2 class="weekly-issue-title" lang={lang !== 'ko' ? 'ko' : undefined}>
+									<a href={href}>{note.data.title}</a>
+								</h2>
+								<p class="weekly-issue-dek" lang={lang !== 'ko' ? 'ko' : undefined}>{note.data.dek}</p>
+								<p class="weekly-issue-counts">
+									<span>{t('weekly.count.signals').replace('{n}', String(signalCount))}</span>
+									<span aria-hidden="true">·</span>
+									<span>{t('weekly.count.resolved').replace('{n}', String(note.data.resolved.length))}</span>
+									<span aria-hidden="true">·</span>
+									<span>{t('weekly.count.open').replace('{n}', String(note.data.openQuestions.length))}</span>
+								</p>
+							</div>
+						</li>
+					))
+				}
+			</ol>
+		</main>
+	</body>
+</html>
+
+<style>
+
+
+
+	/* The page label and the feed link share the subpage-intro row. */
+	.weekly-intro {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 0 1rem;
+	}
+
+	.weekly-rss {
+		display: inline-block;
+		font: 400 0.6875rem/1.4 var(--font-mono);
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
+		color: var(--secondary);
+		transition: color var(--dur-2) var(--ease-standard);
+	}
+
+	.weekly-rss:hover,
+	.weekly-rss:focus-visible {
+		color: var(--accent);
+	}
+
+	.weekly-issues {
+		margin: 0 auto;
+		padding: 0.5rem 0 4rem;
+		list-style: none;
+	}
+
+	/* An issue: its number in the margin (small mono, chrome-sized), then the issue. */
+	.weekly-issue {
+		position: relative;
+		display: grid;
+		grid-template-columns: 4rem minmax(0, 1fr);
+		gap: 0 1.5rem;
+		padding: 1.6rem 0 1.5rem;
+		border-top: 1px solid var(--rule-strong);
+	}
+
+	.weekly-issue:first-child {
+		border-top: 0;
+	}
+
+	.weekly-issue-no {
+		display: flex;
+		align-items: baseline;
+		gap: 0.35rem;
+		margin: 0;
+		line-height: 1;
+		color: var(--ink);
+	}
+
+	.weekly-issue-no-label {
+		font: 400 0.75rem/1 var(--font-mono);
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
+		color: var(--secondary);
+	}
+
+	.weekly-issue-no-num {
+		font: 400 0.75rem/1 var(--font-mono);
+		font-variant-numeric: tabular-nums;
+		letter-spacing: 0.04em;
+		transition: color var(--dur-3) var(--ease-standard);
+	}
+
+	.weekly-issue:hover .weekly-issue-no-num,
+	.weekly-issue:focus-within .weekly-issue-no-num {
+		color: var(--accent);
+	}
+
+	.weekly-issue-body {
+		min-width: 0;
+	}
+
+	.weekly-issue-range {
+		margin: 0 0 0.35rem;
+		font: 400 0.75rem/1.5 var(--font-mono);
+		font-variant-numeric: tabular-nums;
+		letter-spacing: 0.04em;
+		color: var(--secondary);
+	}
+
+	.weekly-issue-title {
+		margin: 0;
+		font: 400 clamp(1.4rem, 1.1rem + 1.2vw, 1.9rem) / 1.25 var(--font-serif);
+		letter-spacing: -0.015em;
+		overflow-wrap: anywhere;
+	}
+
+	.weekly-issue-title:lang(ko) {
+		word-break: keep-all;
+	}
+
+	/* The whole issue is the click target. */
+	.weekly-issue-title a {
+		color: var(--ink);
+		text-decoration: none;
+	}
+
+	.weekly-issue-title a::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+	}
+
+	.weekly-issue-title a:hover,
+	.weekly-issue-title a:focus-visible {
+		color: var(--accent);
+	}
+
+	.weekly-issue-dek {
+		max-width: 38rem;
+		margin: 0.5rem 0 0;
+		font: 400 0.9375rem/1.65 var(--font-sans);
+		color: var(--secondary);
+	}
+
+	.weekly-issue-dek:lang(ko) {
+		word-break: keep-all;
+	}
+
+	.weekly-issue-counts {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.2rem 0.6rem;
+		margin: 0.8rem 0 0;
+		font: 400 0.6875rem/1.5 var(--font-mono);
+		letter-spacing: 0.06em;
+		color: var(--secondary);
+	}
+
+	@media (max-width: 639px) {
+		.weekly-issue {
+			grid-template-columns: minmax(0, 1fr);
+			gap: 0.6rem;
+		}
+	}
+</style>

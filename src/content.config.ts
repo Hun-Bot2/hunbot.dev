@@ -120,6 +120,12 @@ const blog = defineCollection({
 		informedBy: z
 			.array(z.string().regex(/^[a-z0-9][a-z0-9_\-/]*[a-z0-9]$/, 'Use a lowercase blog slug such as study/linux/secure-boot.'))
 			.default([]),
+		// Library signals (docs/features/signals-and-weekly.md) this post grew out
+		// of: `signals` entry ids. Declared here, on the later artifact; the
+		// signal row derives its "-> post" link from this and never lists the post
+		// itself. Existence is checked by scripts/validate-blog-content.mjs; a ref
+		// to an unpublished signal is withheld from the row, not an error.
+		signals: z.array(slugSafeString).default([]),
 	}),
 });
 
@@ -202,6 +208,83 @@ const resources = defineCollection({
 					code: z.ZodIssueCode.custom,
 					path: ['summary', resource.canonicalLanguage],
 					message: `Approved resources must include a human-reviewed summary in their canonical language (${resource.canonicalLanguage}).`,
+				});
+			}
+		}),
+});
+
+// Explainers (docs/features/explainers.md, docs/decisions/site-structure.md
+// Revision 2026-10-22): long-form Korean commentary on ONE paper or ONE piece
+// of external writing, drafted by a bot and approved by the owner. Exported by
+// the private pipeline; every field below is an allowlist entry, nothing else
+// is accepted (scripts/validate-explainers.mjs rejects unknown and forbidden
+// fields by name). Frontmatter is JSON, like `resources` and `papers`; the
+// Markdown body is the explainer. It is never a translation or a close
+// paraphrase of the source, and it always names and links the source.
+// Published means `review.status === 'approved'` (a refine below ties that to
+// `humanReviewed: true`); anything else is unpublished and renders nowhere.
+const explainerSource = z.object({
+	name: z.string().min(1),
+	url: httpUrl,
+	// `ja`, not the site's `jp` route code: this is the source's ISO language,
+	// shown as "JA" on the card; it never selects a site language.
+	language: z.enum(['ko', 'en', 'ja']),
+	kind: z.enum(['paper', 'article']),
+});
+
+// The source's claims in the owner's words (never a quote), the owner's
+// judgement of each, and how a reader can check it. Rendered as the claims
+// ledger after the body (docs/features/explainers.md).
+const explainerClaim = z.object({
+	claim: z.string().min(1).max(300),
+	judgement: z.enum(['agree', 'doubt', 'unverified']),
+	check: z.string().min(1).max(300),
+});
+
+const explainers = defineCollection({
+	loader: glob({ base: './src/content/explainers', pattern: '**/*.{md,mdx}' }),
+	schema: z
+		.object({
+			id: slugSafeString,
+			title: z.string().min(1),
+			// One or two sentences, owner-approved text.
+			dek: z.string().min(1).max(400),
+			// `ko` only for now; widen the literal when a second language ships.
+			canonicalLanguage: z.literal('ko').default('ko'),
+			publishedAt: dateString,
+			updatedAt: dateString.optional(),
+			source: explainerSource,
+			// Used only to link a paper card (joined on identifier, never title).
+			ids: z
+				.object({
+					doi: z.string().min(1).optional(),
+					arxiv: z.string().min(1).optional(),
+				})
+				.optional(),
+			// An enum so 'owner' can be added without a schema reshuffle.
+			authorship: z.enum(['bot']),
+			review: reviewMeta,
+			tags: z.array(shortSlugString).default([]),
+			image: resourceImage.optional(),
+			claims: z.array(explainerClaim).max(8).optional(),
+			// Library signals this explainer grew out of (lineage, declared on the
+			// later artifact). Existence: scripts/validate-explainers.mjs.
+			signals: z.array(slugSafeString).default([]),
+		})
+		.superRefine((explainer, context) => {
+			if (explainer.review.status === 'approved' && explainer.review.humanReviewed !== true) {
+				context.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ['review', 'humanReviewed'],
+					message: 'Approved explainers must be human reviewed.',
+				});
+			}
+
+			if (explainer.review.status === 'approved' && !explainer.review.reviewedAt) {
+				context.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ['review', 'reviewedAt'],
+					message: 'Approved explainers must carry the review date the badge shows.',
 				});
 			}
 		}),
@@ -472,4 +555,70 @@ const picks = defineCollection({
 	}),
 });
 
-export const collections = { blog, resources, papers, topics, academicReviews, picks };
+// Signals (docs/features/signals-and-weekly.md): one item that passed the
+// owner's filter, shown with the owner's verdict and why it was kept. JSON
+// frontmatter, an allowlist like `explainers` (scripts/validate-signals.mjs
+// rejects unknown and forbidden fields by name); the optional Markdown body is
+// a short note. Lineage ("where it led") is never declared here: explainers and
+// posts declare the signals they grew out of.
+const signalSource = z.object({
+	name: z.string().min(1),
+	language: z.enum(['ko', 'en', 'ja']),
+	kind: z.enum(['paper', 'article', 'release', 'post']),
+});
+
+const signals = defineCollection({
+	loader: glob({ base: './src/content/signals', pattern: '**/*.{md,mdx}' }),
+	schema: z
+		.object({
+			id: slugSafeString,
+			title: z.string().min(1),
+			url: httpUrl,
+			source: signalSource,
+			sourceDate: dateString,
+			keptAt: dateString,
+			verdict: z.enum(['confirmed', 'doubt', 'try']),
+			why: z.string().min(1).max(200),
+			authorship: z.enum(['bot', 'owner']),
+			review: reviewMeta,
+			tags: z.array(shortSlugString).default([]),
+		})
+		.superRefine((signal, context) => {
+			if (signal.review.status === 'approved' && signal.review.humanReviewed !== true) {
+				context.addIssue({ code: z.ZodIssueCode.custom, path: ['review', 'humanReviewed'], message: 'Approved signals must be human reviewed.' });
+			}
+			if (signal.review.status === 'approved' && !signal.review.reviewedAt) {
+				context.addIssue({ code: z.ZodIssueCode.custom, path: ['review', 'reviewedAt'], message: 'Approved signals must carry the review date.' });
+			}
+		}),
+});
+
+// Weekly notes (docs/features/signals-and-weekly.md): the owner's conclusions
+// for one week, web and RSS only. The week's signals are derived from their
+// `keptAt` dates, never listed here.
+const weeklyNotes = defineCollection({
+	loader: glob({ base: './src/content/weekly-notes', pattern: '**/*.{md,mdx}' }),
+	schema: z
+		.object({
+			issue: z.number().int().positive(),
+			title: z.string().min(1),
+			dek: z.string().min(1).max(400),
+			weekOf: dateString,
+			publishedAt: dateString,
+			resolved: z.array(z.object({ question: z.string().min(1), outcome: z.string().min(1) })).default([]),
+			openQuestions: z.array(z.string().min(1)).default([]),
+			authorship: z.enum(['bot', 'owner']),
+			review: reviewMeta,
+			tags: z.array(shortSlugString).default([]),
+		})
+		.superRefine((note, context) => {
+			if (note.review.status === 'approved' && note.review.humanReviewed !== true) {
+				context.addIssue({ code: z.ZodIssueCode.custom, path: ['review', 'humanReviewed'], message: 'Approved weekly notes must be human reviewed.' });
+			}
+			if (note.review.status === 'approved' && !note.review.reviewedAt) {
+				context.addIssue({ code: z.ZodIssueCode.custom, path: ['review', 'reviewedAt'], message: 'Approved weekly notes must carry the review date.' });
+			}
+		}),
+});
+
+export const collections = { blog, resources, papers, topics, academicReviews, picks, explainers, signals, weeklyNotes };
