@@ -1,0 +1,39 @@
+---
+// /{lang}/library/explainers/{slug}/ — one explainer. Generated only for
+// published explainers (getPublishedExplainers: approved and human reviewed);
+// a draft produces no route at all. The text exists in its canonical language
+// (Korean) only; the ja and en routes show the same text under that
+// language's page chrome, with the canonical URL pointing at the Korean page
+// (docs/decisions/site-structure.md, Revision 2026-10-22).
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import ExplainerPost from '../../../../layouts/ExplainerPost.astro';
+import type { UILanguage } from '../../../../i18n/ui';
+import { findPaperForExplainer, getExplainerSlug, getPublishedExplainers } from '../../../../utils/explainers';
+import { getApprovedPapers, getPaperUrl } from '../../../../utils/library';
+
+export async function getStaticPaths() {
+	const langs: UILanguage[] = ['ko', 'jp', 'en'];
+	const explainers = getPublishedExplainers(await getCollection('explainers'));
+	return langs.flatMap((lang) =>
+		explainers.map((entry) => ({
+			params: { lang, slug: getExplainerSlug(entry) },
+			props: { entry },
+		})),
+	);
+}
+
+type Props = { entry: CollectionEntry<'explainers'> };
+
+const lang = (Astro.params.lang ?? 'ko') as UILanguage;
+const { entry } = Astro.props as Props;
+const { Content } = await render(entry);
+
+// A paper card is a different claim ("I studied this") about the same work;
+// the explainer only links to it, joined on DOI / arXiv id, never on title.
+const paper = findPaperForExplainer(entry, getApprovedPapers(await getCollection('papers')));
+const relatedPaper = paper ? { title: paper.data.title, href: getPaperUrl(lang, paper.data.id) } : null;
+---
+
+<ExplainerPost explainer={entry.data} lang={lang} relatedPaper={relatedPaper}>
+	<Content />
+</ExplainerPost>

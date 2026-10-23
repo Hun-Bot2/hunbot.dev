@@ -1,0 +1,400 @@
+---
+// Detail page of an explainer: commentary on one external paper or article
+// (docs/features/explainers.md). Reuses the blog post shell — `.article-page`,
+// `.prose` (src/styles/prose.css), TableOfContents, ReadingControls — and
+// leaves out everything that belongs to a post (comments, view counter,
+// feedback box, series navigation).
+//
+// Order: breadcrumb, title, dek, rule, provenance badge, body, source box,
+// related paper card (only when an identifier matches), tags.
+import type { CollectionEntry } from 'astro:content';
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import FloatingLanguagePicker from '../components/FloatingLanguagePicker.astro';
+import ReadingControls from '../components/ReadingControls.astro';
+import TableOfContents from '../components/TableOfContents.astro';
+import Breadcrumb from '../components/Breadcrumb.astro';
+import ProvenanceBadge from '../components/library/ProvenanceBadge.astro';
+import SourceLanguageChip from '../components/library/SourceLanguageChip.astro';
+import ExplainerEyebrow from '../components/library/ExplainerEyebrow.astro';
+import { useTranslations, type UILanguage } from '../i18n/ui';
+import { formatPostDate } from '../utils/display';
+import { getExplainerUrl } from '../utils/explainers';
+import '../styles/prose.css';
+
+type Props = {
+	explainer: CollectionEntry<'explainers'>['data'];
+	lang: UILanguage;
+	/** The matching paper card on the Research hub, joined on DOI / arXiv id. */
+	relatedPaper?: { title: string; href: string } | null;
+};
+
+const { explainer, lang, relatedPaper = null } = Astro.props as Props;
+const t = useTranslations(lang);
+
+const contentLang = explainer.canonicalLanguage;
+// The explainer exists in its canonical language only; the other languages'
+// pages are the same text with that language's page chrome. Search engines get
+// one canonical URL.
+const isCanonicalLanguage = lang === contentLang;
+const canonicalURL = new URL(getExplainerUrl(contentLang, explainer.id), Astro.site);
+const contentLangAttr = isCanonicalLanguage ? undefined : contentLang;
+const headingId = 'explainer-title';
+const reviewedAt = explainer.review.reviewedAt ? new Date(explainer.review.reviewedAt) : undefined;
+const sourceKindLabel = t(`explainer.source.kind.${explainer.source.kind}` as Parameters<typeof t>[0]);
+const imageSrc = explainer.image && explainer.image.kind !== 'typographic' ? explainer.image.src : undefined;
+const libraryUrl = `/${lang}/library/`;
+---
+
+<html lang={lang}>
+	<head>
+		<BaseHead
+			title={`${explainer.title} - Hun-Bot Blog`}
+			description={explainer.dek}
+			canonicalURL={canonicalURL.href}
+			image={imageSrc}
+			lang={lang}
+			availableLangs={[contentLang]}
+		/>
+		{!isCanonicalLanguage && <meta name="robots" content="noindex, follow" />}
+		<meta property="og:type" content="article" />
+		<meta property="article:published_time" content={new Date(explainer.publishedAt).toISOString()} />
+		<meta data-pagefind-meta="title[content]" content={explainer.title} />
+		<meta data-pagefind-meta="description[content]" content={explainer.dek} />
+		<meta data-pagefind-filter="language[content]" content={contentLang} />
+		<meta data-pagefind-filter="section[content]" content="library" />
+		{explainer.tags.map((tag) => <meta data-pagefind-filter="tag[content]" content={tag} />)}
+	</head>
+
+	<body>
+		<Header />
+		<FloatingLanguagePicker />
+		<ReadingControls lang={lang} />
+		<main id="main-content" class="article-page explainer-page" data-post-lang={lang}>
+			<article aria-labelledby={headingId}>
+				<header class="article-header explainer-header page-frame">
+					<Breadcrumb
+						items={[
+							{ name: t('library.title'), href: libraryUrl },
+							{ name: t('explainer.breadcrumb'), href: `${libraryUrl}#explainers` },
+						]}
+					/>
+					<p class="explainer-eyebrow-line">
+						<ExplainerEyebrow sourceLanguage={explainer.source.language} sourceKind={explainer.source.kind} lang={lang} />
+					</p>
+					<h1
+						id={headingId}
+						class="article-title explainer-title"
+						lang={contentLangAttr}
+						data-pagefind-body={isCanonicalLanguage ? true : undefined}
+						data-pagefind-meta="title"
+					>
+						{explainer.title}
+					</h1>
+					<p class="explainer-dek" lang={contentLangAttr}>{explainer.dek}</p>
+					<hr class="explainer-rule" />
+					<div class="explainer-provenance">
+						<ProvenanceBadge
+							authorship={explainer.authorship}
+							humanReviewed={explainer.review.humanReviewed}
+							reviewedAt={reviewedAt}
+							lang={lang}
+							variant="full"
+						/>
+						<p class="explainer-dates article-meta">
+							{reviewedAt && explainer.review.humanReviewed && (
+								<span class="explainer-reviewed-on">{t('explainer.reviewed-on')} <time datetime={explainer.review.reviewedAt ?? undefined}>{formatPostDate(reviewedAt)}</time></span>
+							)}
+							<span>{t('blog.published')} <time datetime={explainer.publishedAt}>{formatPostDate(new Date(explainer.publishedAt))}</time></span>
+							{explainer.updatedAt && (
+								<span>{t('blog.updated')} <time datetime={explainer.updatedAt}>{formatPostDate(new Date(explainer.updatedAt))}</time></span>
+							)}
+						</p>
+					</div>
+					{!isCanonicalLanguage && <p class="explainer-ko-only">{t('explainer.ko-only')}</p>}
+				</header>
+
+				<div class="article-canvas page-frame">
+					<TableOfContents lang={lang} />
+					<div class="article-main">
+						<div class="prose" lang={contentLangAttr} data-pagefind-body={isCanonicalLanguage ? true : undefined}>
+							<slot />
+						</div>
+
+						<aside class="source-box" aria-labelledby="source-box-label">
+							<p id="source-box-label" class="source-box-label">{t('explainer.source.label')}</p>
+							<div class="source-box-body">
+								<p class="source-box-name">{explainer.source.name}</p>
+								<p class="source-box-facts">
+									<SourceLanguageChip sourceLanguage={explainer.source.language} lang={lang} />
+									<span class="source-box-kind">{sourceKindLabel}</span>
+								</p>
+								<a
+									class="btn-pill source-box-link"
+									href={explainer.source.url}
+									target="_blank"
+									rel="noopener noreferrer"
+									aria-label={`${t('explainer.source.open')}: ${explainer.source.name}`}
+								>
+									{t('explainer.source.open')} <span aria-hidden="true">↗</span>
+								</a>
+							</div>
+							<p class="source-box-notice">{t('explainer.source.notice')}</p>
+						</aside>
+
+						{relatedPaper && (
+							<aside class="related-paper" aria-label={t('explainer.related-paper.label')}>
+								<p class="related-paper-label">{t('explainer.related-paper.label')}</p>
+								<a class="related-paper-link" href={relatedPaper.href}>
+									<span class="related-paper-title">{relatedPaper.title}</span>
+									<span class="related-paper-open">{t('explainer.related-paper.open')} <span aria-hidden="true">→</span></span>
+								</a>
+							</aside>
+						)}
+
+						{explainer.tags.length > 0 && (
+							<ul class="article-tags explainer-tags" aria-label={t('explainer.tags')}>
+								{explainer.tags.map((tag) => <li class="chip">{tag.replaceAll('-', ' ')}</li>)}
+							</ul>
+						)}
+					</div>
+				</div>
+			</article>
+		</main>
+	</body>
+</html>
+
+<style is:global>
+	/* ── Header: title, dek, rule, badge ── */
+	.explainer-header {
+		padding-bottom: 1.25rem;
+	}
+
+	/* The explainer's own scale: the title is always larger than any prose
+	   heading (h2 tops out at 2.125rem), and the dek reads clearly smaller. The
+	   blog's article-title scale is untouched. */
+	.explainer-eyebrow-line {
+		margin: 0 0 0.9rem;
+	}
+
+	.article-header .explainer-title {
+		margin: 0;
+		font: 400 clamp(2rem, 1.4rem + 2.6vw, 3rem) / 1.2 var(--font-serif);
+		letter-spacing: -0.01em;
+	}
+
+	.explainer-dek {
+		max-width: 40ch;
+		margin: 0.9rem 0 1.25rem;
+		font: 400 clamp(1.0625rem, 0.95rem + 0.6vw, 1.3rem) / 1.55 var(--font-serif);
+		letter-spacing: -0.005em;
+		color: var(--secondary);
+		text-wrap: pretty;
+	}
+
+	html:lang(ko) .explainer-dek,
+	.explainer-dek:lang(ko) {
+		word-break: keep-all;
+	}
+
+	.explainer-title:lang(ko) {
+		word-break: keep-all;
+	}
+
+	.explainer-rule {
+		margin: 0 0 1rem;
+		border: 0;
+		border-top: 1px solid var(--rule);
+	}
+
+	.explainer-provenance {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 0.5rem 1.5rem;
+	}
+
+	.explainer-dates {
+		margin: 0;
+		min-height: 2.5rem;
+		align-items: center;
+		flex: 1 1 auto;
+		justify-content: flex-end;
+	}
+
+	/* The pill drops its date below 480px; the date moves here. */
+	.explainer-reviewed-on {
+		display: none;
+	}
+
+	@media (max-width: 479px) {
+		.explainer-reviewed-on {
+			display: inline;
+		}
+	}
+
+	@media (max-width: 639px) {
+		.explainer-dates {
+			min-height: 0;
+			justify-content: flex-start;
+		}
+	}
+
+	.explainer-ko-only {
+		margin: 0.9rem 0 0;
+		font: 400 0.75rem/1.6 var(--font-mono);
+		letter-spacing: 0.06em;
+		color: var(--secondary);
+	}
+
+	/* ── Source box ── */
+	.source-box {
+		margin-top: 3rem;
+		padding: 1.25rem 1.4rem 1.2rem;
+		border: 1px solid var(--rule-strong);
+		background: var(--paper-deep);
+	}
+
+	.source-box-label {
+		margin: 0 0 0.8rem;
+		font: 400 0.6875rem/1.45 var(--font-mono);
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
+		color: var(--accent);
+	}
+
+	.source-box-body {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		grid-template-areas:
+			'name link'
+			'facts link';
+		align-items: center;
+		gap: 0.45rem 1.5rem;
+	}
+
+	.source-box-name {
+		grid-area: name;
+		margin: 0;
+		font: 400 1.25rem/1.4 var(--font-serif);
+		letter-spacing: -0.01em;
+		overflow-wrap: anywhere;
+	}
+
+	.source-box-facts {
+		grid-area: facts;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.4rem 0.7rem;
+		margin: 0;
+	}
+
+	.source-box-kind {
+		font: 400 0.6875rem/1.5 var(--font-mono);
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
+		color: var(--secondary);
+	}
+
+	.source-box-link {
+		grid-area: link;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		min-height: 2.5rem;
+		white-space: nowrap;
+		text-decoration: none;
+	}
+
+	.source-box-link:hover,
+	.source-box-link:focus-visible {
+		border-color: var(--accent);
+		color: var(--accent);
+	}
+
+	.source-box-notice {
+		margin: 1rem 0 0;
+		padding-top: 0.85rem;
+		border-top: 1px solid var(--rule);
+		font: 400 0.875rem/1.6 var(--font-sans);
+		color: var(--secondary);
+	}
+
+	html:lang(ko) .source-box-notice {
+		word-break: keep-all;
+	}
+
+	@media (max-width: 639px) {
+		.source-box {
+			padding: 1.05rem 1rem;
+		}
+
+		.source-box-body {
+			grid-template-columns: minmax(0, 1fr);
+			grid-template-areas:
+				'name'
+				'facts'
+				'link';
+			align-items: start;
+		}
+
+		.source-box-link {
+			justify-self: start;
+			margin-top: 0.4rem;
+		}
+	}
+
+	/* ── Related paper card ── */
+	.related-paper {
+		margin-top: 1.75rem;
+		padding: 0.9rem 0 0.4rem;
+		border-top: 1px solid var(--rule-strong);
+		border-bottom: 1px solid var(--rule);
+	}
+
+	.related-paper-label {
+		margin: 0 0 0.2rem;
+		font: 400 0.6875rem/1.45 var(--font-mono);
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
+		color: var(--secondary);
+	}
+
+	.related-paper-link {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 0.2rem 1.5rem;
+		min-height: 2.5rem;
+		padding: 0.35rem 0 0.7rem;
+		color: var(--ink);
+		text-decoration: none;
+	}
+
+	.related-paper-title {
+		font: 400 1.0625rem/1.45 var(--font-serif);
+		overflow-wrap: anywhere;
+		transition: color 160ms ease;
+	}
+
+	.related-paper-open {
+		font: 400 0.6875rem/1.4 var(--font-mono);
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
+		color: var(--secondary);
+	}
+
+	.related-paper-link:hover .related-paper-title,
+	.related-paper-link:focus-visible .related-paper-title,
+	.related-paper-link:hover .related-paper-open,
+	.related-paper-link:focus-visible .related-paper-open {
+		color: var(--accent);
+	}
+
+	.explainer-tags {
+		margin-top: 1.75rem;
+	}
+</style>

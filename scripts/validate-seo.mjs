@@ -36,6 +36,9 @@ assert.match(sitemapRoute, /getPublishedAcademicReviews/);
 assert.match(sitemapRoute, /getTopicsWithLinkedPapers/);
 assert.match(sitemapRoute, /\/research\//);
 assert.match(sitemapRoute, /\/explore\//, 'sitemap should list /{lang}/explore/.');
+// Explainers: only published ones, and only the canonical-language URL.
+assert.match(sitemapRoute, /getPublishedExplainers/, 'sitemap should list published explainers only.');
+assert.match(sitemapRoute, /getExplainerUrl/);
 // getLibrarySectionPath is gone from the sitemap: it was kept only to build
 // the temporary /{lang}/library/decks/ path, which moved to
 // /{lang}/research/decks/ (docs/decisions/site-structure.md#2). Pick section

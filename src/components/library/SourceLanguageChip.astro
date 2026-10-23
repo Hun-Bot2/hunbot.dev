@@ -1,0 +1,41 @@
+---
+// The language the explained source is written in, as a bordered chip. A
+// Japanese source is a deliberate differentiator of explainers, so it is the
+// loud one (accent border and text); English and Korean sources are quiet
+// (rule border, secondary text). Shared by the Library row and the detail
+// page's source box so the two cannot drift.
+import { useTranslations, type UILanguage } from '../../i18n/ui';
+
+interface Props {
+	sourceLanguage: 'ko' | 'en' | 'ja';
+	lang: UILanguage;
+}
+
+const { sourceLanguage, lang } = Astro.props;
+const t = useTranslations(lang);
+const label = t(`explainer.source-language.${sourceLanguage}` as Parameters<typeof t>[0]);
+---
+
+<span class:list={['source-chip', `source-chip--${sourceLanguage}`]}>{label}</span>
+
+<style>
+	.source-chip {
+		display: inline-flex;
+		align-items: center;
+		width: max-content;
+		padding: 0.05rem 0.5rem;
+		border: 1px solid var(--rule-strong);
+		border-radius: 999px;
+		font: 400 0.6875rem/1.5 var(--font-mono);
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		white-space: nowrap;
+		color: var(--secondary);
+	}
+
+	.source-chip--ja {
+		border-color: var(--accent);
+		color: var(--accent);
+		font-weight: 500;
+	}
+</style>
