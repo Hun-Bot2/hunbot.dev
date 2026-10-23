@@ -1,4 +1,4 @@
-// Behaviour of the home hero (HomeHero.astro). The timer is the CSS progress
+// Behaviour of the Library hero (LibraryHero.astro). The timer is the CSS progress
 // animation on the active dot: `animationend` advances the slide, and pausing
 // is `animation-play-state`, so the bar the reader sees is the clock. Under
 // `prefers-reduced-motion: reduce` the global rule removes animations, so

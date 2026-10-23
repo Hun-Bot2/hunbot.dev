@@ -43,38 +43,6 @@ assert.match(homepage, /data-pagefind-filter="section\[content\]"/);
 assert.doesNotMatch(homepage, /<form\b/i, 'Homepage PR must not add newsletter forms.');
 assert.doesNotMatch(homepage, /type=["']email["']/i, 'Homepage PR must not collect email addresses.');
 
-// The hero (docs/decisions/creative-direction.md, The Exceptions) replaced the
-// single featured post: it sits above 최근 글, which lists only posts the hero
-// does not show. Its binding conditions are checked in the component source.
-assert.match(homepage, /<HomeHero\b/, 'Homepage should render the HomeHero.');
-assert.ok(homepage.indexOf('<HomeHero') < homepage.indexOf('home-latest'), 'HomeHero must come before 최근 글.');
-assert.match(homepage, /selectHeroSlides/);
-assert.match(homepage, /heroPostIds/, 'Latest posts must exclude the posts the hero shows.');
-assert.doesNotMatch(homepage, /home-featured/, 'The featured-post block was replaced by the hero.');
-{
-	const hero = read('src/components/home/HomeHero.astro');
-	const client = read('src/components/home/hero-client.ts');
-	assert.match(hero, /aria-roledescription="carousel"/);
-	assert.match(hero, /aria-roledescription="slide"/);
-	assert.match(hero, /data-hero-toggle/, 'Hero needs a visible pause control.');
-	assert.match(hero, /hero:not\(\[data-ready\]\) \.hero-slide:not\(\[data-active\]\)/, 'No JS: only the first slide may show.');
-	assert.match(hero, /hero-controls \{\s*display: none;/, 'No JS: the controls must stay hidden.');
-	for (const token of ['--ease-out', '--dur-5', '--dur-4']) {
-		assert.ok(hero.includes(token), `Hero must use the ${token} motion token.`);
-	}
-	assert.doesNotMatch(hero, /cubic-bezier|\d+ms ease|\d+(\.\d+)?s ease/, 'Hero must use the shared motion tokens, not one-off curves.');
-	assert.match(client, /document\.hidden/);
-	assert.match(client, /focusin/);
-	assert.match(client, /pointerenter/);
-	assert.match(client, /ArrowRight/);
-	assert.match(client, /prefers-reduced-motion/);
-}
-for (const lang of languages) {
-	for (const key of ['label', 'kind.post', 'kind.review', 'read', 'pause', 'play', 'go', 'slide']) {
-		assert.ok(ui[lang]?.[`home.hero.${key}`], `${lang} home.hero.${key} copy is required.`);
-	}
-}
-
 const sectionOrder = [
 	'home-latest',
 	'home-library',

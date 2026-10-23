@@ -1,4 +1,4 @@
-// Pure logic for the home hero (src/components/home/HomeHero.astro): which
+// Pure logic for the home hero (src/components/library/LibraryHero.astro): which
 // items become slides, and how a headline is split into the words that reveal
 // one by one. No `astro:content` import, so node:test can run it directly.
 

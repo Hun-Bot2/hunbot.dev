@@ -1,6 +1,6 @@
 ---
-// The home hero: a lit "stage" band at the top of /{lang}/ that auto-advances
-// through the newest writing. The one place on the site that moves on its own
+// The Library hero: a lit "stage" band at the top of /{lang}/library/ that
+// auto-advances through the newest items. The one place on the site that moves on its own
 // (docs/decisions/creative-direction.md, The Exceptions). It must:
 //   - show a visible pause control, and pause on hover, focus and a hidden tab;
 //   - render the first slide complete with no JavaScript (the controls and the
@@ -8,7 +8,7 @@
 //   - not auto-advance, and show headlines at once, under reduced motion;
 //   - use only the motion tokens (src/styles/tokens.css).
 // Slide selection and word splitting: src/utils/hero.ts. Behaviour:
-// ./hero-client.ts. Copy: `home.hero.*` in src/i18n/ui.ts.
+// ./library-hero-client.ts. Copy: `library.hero.*` in src/i18n/ui.ts.
 import type { CollectionEntry } from 'astro:content';
 import { getAcademicReviewUrlFromEntry } from '../../utils/academic-review-routing';
 import { getBlogUrlFromId } from '../../utils/blog-routing';
@@ -38,15 +38,15 @@ const items = slides.map((slide, index) => {
 		words,
 		hero,
 		href: slide.kind === 'post' ? getBlogUrlFromId(slide.entry.id) : getAcademicReviewUrlFromEntry(slide.entry),
-		kindLabel: t(slide.kind === 'post' ? 'home.hero.kind.post' : 'home.hero.kind.review'),
+		kindLabel: t(slide.kind === 'post' ? 'library.hero.kind.post' : 'library.hero.kind.review'),
 		plate: plateWord(slide.title, lang),
 		plateLabel:
 			slide.kind === 'post'
 				? (plateLabels[slide.entry.id] ?? '')
-				: ([slide.entry.data.paper.venue, slide.entry.data.paper.year].filter(Boolean).join(' · ') || t('home.hero.kind.review')),
+				: ([slide.entry.data.paper.venue, slide.entry.data.paper.year].filter(Boolean).join(' · ') || t('library.hero.kind.review')),
 		// Width of the plate word in em (CJK glyphs about twice a Latin one), so it can be sized to fit.
 		plateEm: Array.from(plateWord(slide.title, lang)).reduce((sum, ch) => sum + (ch.charCodeAt(0) < 0x250 ? 0.52 : 1.02), 0.1),
-		label: t('home.hero.slide').replace('{n}', String(index + 1)).replace('{total}', String(total)),
+		label: t('library.hero.slide').replace('{n}', String(index + 1)).replace('{total}', String(total)),
 	};
 });
 ---
@@ -58,8 +58,8 @@ const items = slides.map((slide, index) => {
 			data-hero
 			data-interval="7000"
 			aria-roledescription="carousel"
-			aria-label={t('home.hero.label')}
-			data-labels={JSON.stringify({ pause: t('home.hero.pause'), play: t('home.hero.play') })}
+			aria-label={t('library.hero.label')}
+			data-labels={JSON.stringify({ pause: t('library.hero.pause'), play: t('library.hero.play') })}
 		>
 			<div class="hero-stage">
 				<div class="hero-slides" data-hero-slides aria-live="off">
@@ -92,7 +92,7 @@ const items = slides.map((slide, index) => {
 									</h2>
 									{slide.description && <p class="hero-desc">{slide.description}</p>}
 									<span class="btn-pill hero-cta">
-										{t('home.hero.read')} <span aria-hidden="true">→</span>
+										{t('library.hero.read')} <span aria-hidden="true">→</span>
 									</span>
 								</a>
 							</div>
@@ -126,7 +126,7 @@ const items = slides.map((slide, index) => {
 
 			{interactive && (
 				<div class="hero-controls" data-hero-controls>
-					<button type="button" class="hero-toggle" data-hero-toggle aria-label={t('home.hero.pause')}>
+					<button type="button" class="hero-toggle" data-hero-toggle aria-label={t('library.hero.pause')}>
 						<svg class="hero-icon hero-icon--pause" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
 							<path d="M5 3.5v9M11 3.5v9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
 						</svg>
@@ -134,13 +134,13 @@ const items = slides.map((slide, index) => {
 							<path d="M5.5 3.4v9.2l7-4.6z" fill="currentColor" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" />
 						</svg>
 					</button>
-					<div class="hero-dots" role="group" aria-label={t('home.hero.label')}>
+					<div class="hero-dots" role="group" aria-label={t('library.hero.label')}>
 						{items.map(({ index }) => (
 							<button
 								type="button"
 								class="hero-dot"
 								data-hero-dot
-								aria-label={t('home.hero.go').replace('{n}', String(index + 1))}
+								aria-label={t('library.hero.go').replace('{n}', String(index + 1))}
 								aria-current={index === 0 ? 'true' : undefined}
 							>
 								<span class="hero-dot-bar">
@@ -156,7 +156,7 @@ const items = slides.map((slide, index) => {
 }
 
 <script>
-	import { initHero } from './hero-client';
+	import { initHero } from './library-hero-client';
 
 	document.querySelectorAll<HTMLElement>('[data-hero]').forEach(initHero);
 </script>
