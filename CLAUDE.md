@@ -182,7 +182,6 @@ src/pages/
 | `graph/` | `layoutBoard()`, `rankNodes()`, `CARD_W` (`board.ts`); `placeFloating()`, `placeAtCorner()` (`place.ts`); `resolveText()`, `resolveHref()`, `formatArtifactTime()` (`display.ts`) | Explore's pure modules. `layoutBoard()` takes card heights measured in the browser and returns every card position plus edge paths for the linked records only: layered DAG per connected group, arrows routed through reserved slots (never through a card), groups packed in rows. `placeFloating()` picks the spot beside a card for the inspector. Deterministic; tested without a browser in `test/graph-board.test.mjs`. |
 | `artifacts/series.ts` | `buildSeriesIndex()`, `normalizeSeriesName()` | Language-independent series identity for blog posts from the existing `series` frontmatter: spellings on translations of one post, or that normalize alike, are one series; nothing is guessed beyond that. Feeds the optional `series` field of the public artifact contract. |
 | `artifacts/load.ts` | `getPublicArtifactSet()` | Astro-side public artifact set: same adapters as the validator, merged with a committed Research OS export if present, validated; an invalid set fails the build. Pages read artifacts only through this. |
-| `hero.ts` | `selectHeroSlides()`, `splitHeadline()`, `plateWord()`, `HERO_SLIDE_LIMIT` | Pure Library-hero logic (no `astro:content` import, tested in `test/hero.test.mjs`): newest posts with the newest review taking the last slot, and headline splitting into reveal words (`Intl.Segmenter` for Japanese, spaces for ko/en). |
 | `display.ts` | `hashString()`, `pickVariant()`, `formatPostDate()` | Pure list-page display helpers: a stable FNV-1a hash and `pickVariant(seed, variants)` so a post/pick keeps the same thumbnail variant on every page and deploy (never an index), and `formatPostDate()` (`YYYY.MM.DD`, UTC). Used by `art/ResourceVisual.astro` and the list pages. |
 
 ---
@@ -217,13 +216,6 @@ src/pages/
 | `Term.astro` | MDX posts | Inline glossary term: click opens a note in the right margin (draggable via its title bar, pinnable). With `href` it becomes a "go to this post?" confirmation (chain-link underline). `href` may carry `#section`. |
 | `diagrams/SecureBootChain.astro` | study/secure-boot post | Static inline-SVG diagram; colours come from tokens so it follows the theme |
 | `GiscusComments.astro` | Post detail | Embeds Giscus comment widget |
-
-### Library hero
-
-| Component | Used in | What it does |
-|---|---|---|
-| `library/LibraryHero.astro` | (not rendered yet; the top of `library.astro` once wired) | The hero stage: auto-advancing slider over the newest items (fewer than 2 slides renders one static slide, no controls). Words of the headline are split at build time (`--i`) for the reveal; slide 1 is complete without JS. Styles scoped in the component; copy in `library.hero.*`. |
-| `library/library-hero-client.ts` | `LibraryHero.astro` | Behaviour: the active dot's CSS progress animation is the timer (`animationend` advances; `animation-play-state` pauses on hover, keyboard focus, hidden tab, manual pause); dots, arrow keys, touch swipe; no autoplay under `prefers-reduced-motion`. |
 
 ### Library
 
@@ -290,7 +282,7 @@ The visual language is "a research notebook on paper": warm paper background, in
 | `src/styles/academic-review.css` | Review MDX component styles. |
 | `tailwind.config.mjs` | Maps the tokens to utilities (`text-ink`, `text-secondary`, `border-rule`, `bg-paper-deep`, `text-accent`, `font-serif`, `font-sans`, `font-mono`). |
 
-The hover system (editorial-row plate, thumbnail zoom, card lift) lives in one "Hover system" block in `global.css`; the Library hero is the only autonomous motion on the site (`docs/decisions/creative-direction.md`, The Exceptions).
+The hover system (editorial-row plate, thumbnail zoom, card lift) lives in one "Hover system" block in `global.css`; no motion on the site is autonomous except the footer cat (`docs/decisions/creative-direction.md`, The Exceptions).
 
 Rules: use **tokens, not `dark:` variants** — a token already follows the theme. No hard-coded colours or Tailwind palette classes (`slate-*`, `orange-*`) in `.astro`/`.css` (the only literals are the `theme-color` meta tags in `BaseHead`, which cannot read CSS variables). Every `<main>` carries `atelier-page` (list/hub pages) or `article-page` (posts, reviews). Buttons are unstyled by default; opt in with `.btn-text` / `.btn-pill`.
 
