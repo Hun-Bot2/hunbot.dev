@@ -31,51 +31,88 @@ for (const lang of languages) {
 	assert.match(libraryPage, new RegExp(`params: \\{ lang: '${lang}' \\}`), `Library page should generate ${lang} route.`);
 	assert.ok(ui[lang]?.['nav.library'], `${lang} nav.library copy is required.`);
 	assert.ok(ui[lang]?.['library.title'], `${lang} Library title copy is required.`);
-	for (const key of ['library.intro', 'library.filter-area', 'library.filter-kind', 'library.filter-topic', 'library.filter-results']) {
+	for (const key of ['library.intro', 'library.filter-no-results', 'library.areas.label', 'library.tab.all']) {
 		assert.ok(ui[lang]?.[key], `${lang} ${key} copy is required.`);
 	}
 }
 
-// The 자료 view (docs/decisions/site-structure.md, revisions 2026-10-04 and
-// 2026-10-23): approved resources and published picks together as editorial
-// rows, filtered by the Library's visible filter bar (LibraryFilterBar; the blog keeps its floating filter). Explainers no longer lead this
-// list: they have their own view (the 해설 tab). The page carries the page label
-// and the tab bar.
+// The Library (docs/decisions/site-structure.md, revisions 2026-10-04,
+// 2026-10-23 and 2026-10-23c): approved resources and published picks together
+// as a card grid under category tabs (분야); the tabs filter the grid through
+// the shared public/scripts/blog-filters.js (facet `area`). Explainers, signals
+// and weekly notes are the Reading section's, not the Library's.
 assert.match(libraryPage, /getLibraryViewData/);
-assert.match(libraryPage, /<LibraryFilterBar\b/, 'The 자료 view uses the visible Library filter bar.');
-assert.doesNotMatch(libraryPage, /<BlogFilterBar\b/, 'The Library no longer uses the floating blog filter.');
-assert.match(libraryPage, /toggle: true/, 'The 노트 있음 filter is a single toggle chip.');
-assert.match(libraryPage, /parent: \{ facet: 'area'/, '주제 chips are grouped under their 분야.');
-assert.match(libraryPage, /<LibraryRow\b/);
-assert.match(libraryPage, /data-filter-section/);
+assert.match(libraryPage, /<AreaTabs\b/, 'The Library carries the category tab bar.');
+assert.match(libraryPage, /getAreaTabs\(items, lang\)/, 'Tabs come from the area registry and the items (zero-item areas get no tab).');
+assert.match(libraryPage, /<ResourceCard\b/, 'Every published item renders one card.');
+assert.match(libraryPage, /items\.map\(\(item\) => <ResourceCard\b/, 'The grid renders exactly the delivered items, one card each.');
+assert.match(libraryPage, /data-blog-posts/);
+assert.match(libraryPage, /blog-filters\.js/, 'The tabs reuse the shared filter script, not a fork.');
+assert.doesNotMatch(libraryPage, /<LibraryFilterBar\b|<BlogFilterBar\b|<LibraryTabs\b|<SectionTabs\b|<LibraryRow\b/, 'The Library has no filter bar, view tabs or rows any more.');
+assert.match(libraryPage, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/, 'Four columns from 1100px.');
 assert.doesNotMatch(libraryPage, /Hero/, 'The Library hero was removed (2026-10-23, owner decision).');
-assert.match(libraryPage, /<LibraryTabs\b[^>]*current="resources"/, 'The 자료 view carries the tab bar.');
 assert.match(libraryPage, /<h1 class="eyebrow">/, 'Every Library view leads with the Research-style page label.');
 assert.ok(
-	libraryPage.indexOf('subpage-intro') > -1 && libraryPage.indexOf('subpage-intro') < libraryPage.indexOf('<LibraryTabs'),
-	'Order on the 자료 view: page label, then the tab bar.',
+	libraryPage.indexOf('subpage-intro') > -1 && libraryPage.indexOf('subpage-intro') < libraryPage.indexOf('<AreaTabs'),
+	'Order on the Library: page label, then the category tabs.',
 );
 assert.ok(!existsSync('src/components/library/LibraryMasthead.astro'), 'The Library masthead was removed (Content First).');
-assert.doesNotMatch(libraryPage, /<ExplainerRow\b/, 'Explainers moved to their own view; they must not lead the 자료 list.');
-assert.doesNotMatch(libraryPage, /id: 'explainers'/);
-const viewsUtil = readFileSync('src/utils/library-views.ts', 'utf8');
-assert.match(viewsUtil, /getPublishedExplainers/);
-assert.match(viewsUtil, /getPublishedSignals/);
-assert.match(viewsUtil, /getPublishedWeeklyNotes/);
-// Every view is its own page with the same tab bar; a view with nothing
-// published has no route (getStaticPaths returns no paths) and no tab.
+assert.ok(!existsSync('src/components/library/LibraryRow.astro'), 'LibraryRow was replaced by ResourceCard.');
+assert.doesNotMatch(libraryPage, /<ExplainerRow\b/, 'Explainers moved to the Reading section.');
+const areaTabs = read('src/components/library/AreaTabs.astro');
+assert.match(areaTabs, /aria-pressed=/, 'Area tabs are buttons with aria-pressed.');
+assert.match(areaTabs, /data-js-only[^>]*hidden|hidden[^>]*data-js-only/, 'Without JavaScript the tabs are hidden and every card shows.');
+assert.match(areaTabs, /data-facets="area"/, 'The tabs filter the `area` facet.');
+assert.doesNotMatch(areaTabs, /<script/i, 'The tabs add no script of their own.');
+assert.match(read('public/scripts/blog-filters.js'), /data-js-only/, 'The shared filter script reveals the JS-only controls.');
+const resourceCard = read('src/components/library/ResourceCard.astro');
+assert.match(resourceCard, /item\.note \? getItemUrl/, 'A card with a note links to the item page.');
+assert.match(resourceCard, /data-post-area=/, 'A card carries its area for the tab filter.');
+assert.doesNotMatch(resourceCard, /<img\b|favicon/i, 'Cards never fetch or show third-party logos or screenshots.');
+assert.match(resourceCard, /@media \(hover: hover\)/, 'Card hover effects only where hovering exists.');
+// The Reading section (Revision 2026-10-23c): every view is its own page under
+// /{lang}/reading/ with the same tab bar and the Research-style page label.
+const readingViews = readFileSync('src/utils/reading-views.ts', 'utf8');
+assert.match(readingViews, /getPublishedExplainers/);
+assert.match(readingViews, /getPublishedSignals/);
+assert.match(readingViews, /getPublishedWeeklyNotes/);
+const readingIndex = read('src/pages/[lang]/reading/index.astro');
+assert.match(readingIndex, /getStaticPaths\(\) \{\s*return \[\{ params: \{ lang: 'ko' \} \}, \{ params: \{ lang: 'jp' \} \}, \{ params: \{ lang: 'en' \} \}\]/, '/reading/ is always generated (the nav item never 404s).');
+assert.match(readingIndex, /reading\.empty/, '/reading/ shows one honest empty line while nothing is published.');
 for (const [view, current] of [
-	['src/pages/[lang]/library/signals/index.astro', 'signals'],
-	['src/pages/[lang]/library/explainers/index.astro', 'explainers'],
-	['src/pages/[lang]/library/weekly/index.astro', 'weekly'],
+	['src/pages/[lang]/reading/index.astro', 'explainers'],
+	['src/pages/[lang]/reading/signals/index.astro', 'signals'],
+	['src/pages/[lang]/reading/weekly/index.astro', 'weekly'],
 ]) {
 	const source = read(view);
-	assert.match(source, new RegExp(`<LibraryTabs\\b[^>]*current="${current}"`), `${view} must carry the tab bar.`);
-	assert.ok(source.indexOf('subpage-intro') > -1 && source.indexOf('subpage-intro') < source.indexOf('<LibraryTabs') && /<h1 class="eyebrow">/.test(source), `${view}: the page label comes before the tab bar.`);
-	assert.match(source, /published\.length > 0 \? .* : \[\]/, `${view} must generate no route while nothing is published.`);
+	assert.match(source, new RegExp(`<SectionTabs\\b[^>]*current="${current}"`), `${view} must carry the tab bar.`);
+	assert.ok(source.indexOf('subpage-intro') > -1 && source.indexOf('subpage-intro') < source.indexOf('<SectionTabs') && /<h1 class="eyebrow">\{t\('reading\.title'\)\}<\/h1>/.test(source), `${view}: the page label comes before the tab bar.`);
+	if (current !== 'explainers') assert.match(source, /published\.length > 0 \? .* : \[\]/, `${view} must generate no route while nothing is published.`);
 	assert.match(source, /canonicalURL=\{canonicalURL\.href\}/, `${view} must canonicalize to the ko page.`);
 	assert.match(source, /noindex, follow/, `${view} must be noindex outside ko.`);
+	assert.match(source, /content="reading"/, `${view} must filter as the Reading section in search.`);
 }
+for (const retired of ['explainers', 'signals', 'weekly']) {
+	assert.ok(!existsSync(`src/pages/[lang]/library/${retired}`), `src/pages/[lang]/library/${retired} moved to the Reading section.`);
+}
+const vercelRedirects = JSON.parse(read('vercel.json')).redirects;
+for (const [source, destination] of [
+	['/:lang(ko|jp|en)/library/explainers', '/:lang/reading/'],
+	['/:lang(ko|jp|en)/library/explainers/:slug', '/:lang/reading/explainers/:slug/'],
+	['/:lang(ko|jp|en)/library/signals', '/:lang/reading/signals/'],
+	['/:lang(ko|jp|en)/library/weekly', '/:lang/reading/weekly/'],
+	['/:lang(ko|jp|en)/library/weekly/rss.xml', '/:lang/reading/weekly/rss.xml'],
+	['/:lang(ko|jp|en)/library/weekly/:issue', '/:lang/reading/weekly/:issue/'],
+]) {
+	const redirect = vercelRedirects.find((entry) => entry.source === source);
+	assert.ok(redirect, `vercel.json must redirect ${source}.`);
+	assert.equal(redirect.destination, destination, `${source} must redirect to ${destination}.`);
+	assert.equal(redirect.permanent, true, `${source} must be a permanent redirect.`);
+}
+assert.ok(
+	vercelRedirects.findIndex((entry) => entry.source.endsWith('/library/weekly/rss.xml')) < vercelRedirects.findIndex((entry) => entry.source.endsWith('/library/weekly/:issue')),
+	'The weekly rss.xml redirect must precede the :issue redirect.',
+);
 // Item pages (Revision 2026-10-23b): an item has a page iff it has a note.
 const itemRoute = read('src/pages/[lang]/library/item/[id].astro');
 assert.match(itemRoute, /buildItemNoteIndex/, 'Item pages are generated from the note index only.');
@@ -84,13 +121,11 @@ const itemLayout = read('src/layouts/LibraryItemPost.astro');
 assert.match(itemLayout, /noindex, follow/, 'Item pages are noindex outside ko.');
 assert.match(itemLayout, /canonicalURL=\{canonicalURL\.href\}/, 'Item pages canonicalize to the ko page.');
 assert.match(itemLayout, /rel="noopener noreferrer"/, 'The original box is the one external link, opened safely.');
-const libraryRow = read('src/components/library/LibraryRow.astro');
-assert.match(libraryRow, /item\.note \? getItemUrl/, 'A row with a note links to the item page.');
 for (const page of [
 	'src/layouts/BlogPost.astro',
 	'src/layouts/ExplainerPost.astro',
 	'src/layouts/LibraryItemPost.astro',
-	'src/pages/[lang]/library/weekly/[issue].astro',
+	'src/pages/[lang]/reading/weekly/[issue].astro',
 ]) {
 	assert.match(read(page), /<Backlinks\b/, `${page} must render the backlinks section.`);
 	assert.match(read(page), /<LinkPreview\b/, `${page} must load the link previews.`);
@@ -101,7 +136,7 @@ assert.doesNotMatch(filterBar, /<script/i, 'The Library filter bar adds no scrip
 const previewScript = read('src/scripts/link-preview.ts');
 assert.match(previewScript, /\(hover: hover\)/, 'Link previews run only where hovering exists.');
 assert.match(previewScript, /placePopover/, 'The preview card is placed with placePopover().');
-const tabsComponent = read('src/components/library/LibraryTabs.astro');
+const tabsComponent = read('src/components/SectionTabs.astro');
 assert.match(tabsComponent, /aria-current=/, 'The active tab must carry aria-current="page".');
 assert.doesNotMatch(tabsComponent, /<script/i, 'Tabs are real links, not script.');
 const explainerRow = readFileSync('src/components/library/ExplainerRow.astro', 'utf8');
@@ -115,10 +150,16 @@ for (const lang of languages) {
 		'explainer.badge.ai-draft',
 		'explainer.badge.reviewed',
 		'explainer.source.notice',
-		'library.tab.signals',
-		'library.tab.explainers',
-		'library.tab.weekly',
-		'library.tab.resources',
+		'reading.tab.signals',
+		'reading.tab.explainers',
+		'reading.tab.weekly',
+		'reading.tabs.label',
+		'reading.title',
+		'reading.empty',
+		'reading.empty-view',
+		'nav.reading',
+		'library.tab.all',
+		'library.areas.label',
 		'signal.verdict.confirmed',
 		'signal.verdict.doubt',
 		'signal.verdict.try',
@@ -137,7 +178,6 @@ for (const lang of languages) {
 		assert.ok(ui[lang]?.[key], `${lang} ${key} copy is required.`);
 	}
 }
-assert.match(readFileSync('src/components/library/LibraryRow.astro', 'utf8'), /entry-thumb/);
 assert.match(libraryPage, /data-pagefind-body/);
 assert.match(libraryPage, /data-pagefind-filter="language\[content\]"/);
 assert.match(libraryPage, /data-pagefind-filter="section\[content\]"/);

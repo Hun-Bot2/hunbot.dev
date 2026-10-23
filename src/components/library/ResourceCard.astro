@@ -1,0 +1,189 @@
+---
+// One Library item as a card in the grid (docs/decisions/site-structure.md,
+// Revision 2026-10-23c): a monogram tile in the item's area tint, a "노트" badge
+// when the owner wrote a note, the title, the delivered summary, and the kind
+// and topic as soft chips at the bottom. The whole card is one link: the item's
+// own page when it has a note, else the original in a new tab. No logos
+// or screenshots are fetched (third-party marks, network, CSP): the mark is the
+// item's first letters. The item's filter data attributes sit on the <li>
+// (public/scripts/blog-filters.js).
+import { useTranslations, type UILanguage } from '../../i18n/ui';
+import { getLibraryArea } from '../../data/libraryAreas';
+import { getItemUrl } from '../../utils/item-notes';
+import type { LibraryItem } from '../../utils/library';
+import { getLibraryKindLabel, getLibraryTopicLabel } from '../../utils/library-labels';
+import { getMonogram } from '../../utils/library-area-tabs';
+
+interface Props {
+	item: LibraryItem;
+	lang: UILanguage;
+}
+
+const { item, lang } = Astro.props;
+const t = useTranslations(lang);
+// An item with an owner note opens its own page; the rest open the original.
+const href = item.note ? getItemUrl(lang, item.note.pageId) : item.url;
+const external = !item.note;
+const tint = getLibraryArea(item.area).tint;
+const chips = [getLibraryKindLabel(item.kind, lang), getLibraryTopicLabel(item.topic, lang), ...item.tags.slice(0, 1).map((tag) => getLibraryTopicLabel(tag, lang))].filter(
+	(chip, index, all) => chip && all.indexOf(chip) === index,
+);
+---
+
+<li id={item.id} class="resource-card-cell" data-post-card data-post-area={item.area} data-post-kind={item.kind} data-post-topic={item.topic} data-post-note={item.note ? '1' : undefined}>
+	<a class="resource-card" href={href} target={external ? '_blank' : undefined} rel={external ? 'noopener noreferrer' : undefined} style={`--tint: var(--area-${tint})`}>
+		<span class="resource-card-top">
+			<span class="resource-mark" aria-hidden="true">{getMonogram(item.title)}</span>
+			{item.note && <span class="resource-note">{t('item.note-marker')}</span>}
+		</span>
+		<span class="resource-title">{item.title}{external && <Fragment> <span class="resource-arrow" aria-hidden="true">↗</span></Fragment>}</span>
+		{item.description && <span class="resource-summary">{item.description}</span>}
+		<span class="resource-chips">
+			{chips.map((chip) => <span class="resource-chip">{chip}</span>)}
+		</span>
+	</a>
+</li>
+
+<style>
+	.resource-card-cell {
+		display: flex;
+		min-width: 0;
+	}
+
+	.resource-card-cell[hidden] {
+		display: none;
+	}
+
+	.resource-card {
+		display: flex;
+		flex-direction: column;
+		flex: 1 1 auto;
+		min-width: 0;
+		padding: 1.5rem;
+		border: 1px solid var(--rule);
+		border-radius: 6px;
+		background: var(--paper-light);
+		color: var(--ink);
+		text-decoration: none;
+		transition:
+			transform var(--dur-3) var(--ease-spring),
+			border-color var(--dur-2) var(--ease-standard),
+			box-shadow var(--dur-3) var(--ease-standard);
+	}
+
+	.resource-card-top {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 0.75rem;
+		margin-bottom: 1.1rem;
+	}
+
+	.resource-mark {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 56px;
+		height: 56px;
+		border: 1px solid var(--tint);
+		border-radius: 10px;
+		background: color-mix(in srgb, var(--tint) 20%, var(--paper-light));
+		color: var(--ink);
+		font: 500 1.75rem/1 var(--font-serif);
+		letter-spacing: -0.01em;
+		transition: transform var(--dur-3) var(--ease-spring);
+	}
+
+	.resource-note {
+		padding: 0.15rem 0.5rem;
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--accent) 12%, var(--paper-light));
+		font: 400 0.6875rem/1.5 var(--font-mono);
+		letter-spacing: 0.06em;
+		color: var(--accent);
+	}
+
+	.resource-title {
+		font: 600 1.375rem/1.3 var(--font-sans);
+		letter-spacing: -0.01em;
+		overflow-wrap: anywhere;
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
+		overflow: hidden;
+	}
+
+	.resource-arrow {
+		display: inline-block;
+		font-size: 0.875rem;
+		font-weight: 400;
+		color: var(--faint);
+		transition: transform var(--dur-3) var(--ease-spring);
+	}
+
+	.resource-summary {
+		margin-top: 0.6rem;
+		font: 400 0.95rem/1.6 var(--font-sans);
+		color: var(--secondary);
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 4;
+		line-clamp: 4;
+		overflow: hidden;
+		overflow-wrap: anywhere;
+	}
+
+	html:lang(ko) .resource-summary,
+	html:lang(ko) .resource-title {
+		word-break: keep-all;
+	}
+
+	.resource-chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+		margin-top: auto;
+		padding-top: 1.1rem;
+	}
+
+	.resource-chip {
+		padding: 0.15rem 0.5rem;
+		border-radius: 4px;
+		background: var(--paper-deep);
+		font: 400 0.75rem/1.5 var(--font-mono);
+		letter-spacing: 0.02em;
+		color: var(--secondary);
+	}
+
+	@media (hover: hover) {
+		.resource-card:hover {
+			transform: translateY(-2px);
+			border-color: var(--rule-strong);
+			box-shadow: var(--lift-shadow);
+		}
+
+		.resource-card:hover .resource-mark {
+			transform: scale(1.04);
+		}
+
+		.resource-card:hover .resource-arrow {
+			transform: translate(2px, -2px);
+		}
+	}
+
+	.resource-card:focus-visible {
+		transform: translateY(-2px);
+		border-color: var(--rule-strong);
+		box-shadow: var(--lift-shadow);
+	}
+
+	.resource-card:focus-visible .resource-mark {
+		transform: scale(1.04);
+	}
+
+	.resource-card:active {
+		transform: scale(0.995);
+		transition-duration: var(--dur-1);
+	}
+</style>

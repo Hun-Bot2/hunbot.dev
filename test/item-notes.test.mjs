@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 
 import { buildItemNoteIndex, findPageIdCollisions, getItemUrl, longestSharedRun, parseAbout } from '../src/utils/item-notes.ts';
-import { reservedLibrarySlugs } from '../src/utils/library-tabs.ts';
+import { reservedLibrarySlugs } from '../src/utils/reading-tabs.ts';
 import { assertValidatorAccepts, assertValidatorRejects } from './helpers/validator-harness.mjs';
 
 const script = 'scripts/validate-item-notes.mjs';

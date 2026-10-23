@@ -18,4 +18,4 @@ TEMP: 이 노트는 미리보기용 예시입니다. 공개 전에 이 줄과 `d
 - 이징 곡선이 많은 프로젝트에서는 복사한 값이 그대로 들어가지 않아 한 번 손을 봐야 했습니다.
 - 목록이 길어서 원하는 효과를 찾는 데 시간이 걸렸습니다.
 
-관련 글: [해설 예시](/ko/library/explainers/fixture-en-paper/)
+관련 글: [해설 예시](/ko/reading/explainers/fixture-en-paper/)

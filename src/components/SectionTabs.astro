@@ -1,0 +1,140 @@
+---
+// A section's views as its top navigation (Reading: 해설 / 신호 / 주간 노트;
+// docs/decisions/site-structure.md, Revision 2026-10-23c). Real links, no
+// script: each tab is its own page, the current one carries aria-current="page".
+// The caller decides which tabs exist (a view with no published items is not in
+// `tabs`, src/utils/reading-tabs.ts). The bar is sticky just under the site
+// header (paper ground, 1px rule below) so it stays reachable while scrolling;
+// below 640px the row scrolls sideways without a scrollbar. Active = ink + 2px
+// accent underline, inactive = secondary; the count is a small mono figure.
+export interface SectionTab {
+	id: string;
+	href: string;
+	label: string;
+	count: number;
+}
+
+interface Props {
+	label: string;
+	tabs: SectionTab[];
+	current: string;
+}
+
+const { label, tabs, current } = Astro.props;
+---
+
+{tabs.length > 0 && (
+	<nav class="section-tabs" aria-label={label}>
+		<div class="section-tabs-inner page-frame">
+			<ul class="section-tab-list">
+				{tabs.map((tab) => (
+					<li>
+						<a
+							class:list={['section-tab', { 'is-current': tab.id === current }]}
+							href={tab.href}
+							aria-current={tab.id === current ? 'page' : undefined}
+						>
+							<span class="section-tab-label">{tab.label}</span>
+							<span class="section-tab-count">{tab.count}</span>
+						</a>
+					</li>
+				))}
+			</ul>
+		</div>
+	</nav>
+)}
+
+<style>
+	.section-tabs {
+		position: sticky;
+		top: var(--header-height);
+		z-index: 80;
+		background: var(--paper);
+		border-bottom: 1px solid var(--rule);
+	}
+
+	.section-tabs-inner {
+		overflow-x: auto;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.section-tabs-inner::-webkit-scrollbar {
+		display: none;
+	}
+
+	.section-tab-list {
+		display: flex;
+		flex-wrap: nowrap;
+		gap: 0 1.75rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.section-tab {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		min-height: 2.5rem;
+		color: var(--secondary);
+		text-decoration: none;
+		white-space: nowrap;
+		transition: color var(--dur-2) var(--ease-standard);
+	}
+
+	.section-tab-label {
+		font: 400 0.875rem/1.5 var(--font-mono);
+		letter-spacing: 0.04em;
+	}
+
+	.section-tab-count {
+		font: 400 0.6875rem/1 var(--font-mono);
+		font-variant-numeric: tabular-nums;
+		letter-spacing: 0.04em;
+		color: var(--faint);
+	}
+
+	/* The underline is 2px on the bar's own bottom edge. */
+	.section-tab::after {
+		content: '';
+		position: absolute;
+		left: 0;
+		right: 100%;
+		bottom: 0;
+		height: 2px;
+		background: var(--accent);
+		transition: right var(--dur-3) var(--ease-out);
+	}
+
+	.section-tab:hover,
+	.section-tab:focus-visible,
+	.section-tab.is-current {
+		color: var(--ink);
+	}
+
+	.section-tab:hover::after,
+	.section-tab:focus-visible::after,
+	.section-tab.is-current::after {
+		right: 0;
+	}
+
+	.section-tab:not(.is-current):hover::after {
+		background: var(--rule-strong);
+	}
+
+	.section-tab.is-current .section-tab-count {
+		color: var(--accent);
+	}
+
+	.section-tab:focus-visible {
+		outline-offset: -4px;
+	}
+
+	@media (max-width: 479px) {
+		.section-tab-list {
+			gap: 0 1.5rem;
+		}
+	}
+</style>

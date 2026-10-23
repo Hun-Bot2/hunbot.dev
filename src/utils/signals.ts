@@ -81,7 +81,7 @@ export function getSignalLineage(
 }
 
 export function getSignalsUrl(lang: UILanguage): string {
-	return `/${lang}/library/signals/`;
+	return `/${lang}/reading/signals/`;
 }
 
 /** The most recent `keptAt` day and its signals (the hero's "today's signals"). */

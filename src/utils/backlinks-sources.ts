@@ -45,7 +45,7 @@ export async function loadBacklinkSources(): Promise<BacklinkSource[]> {
 		sources.push({
 			kind: 'explainer',
 			key: `explainer:${getExplainerSlug(entry)}`,
-			url: `/{lang}/library/explainers/${getExplainerSlug(entry)}/`,
+			url: `/{lang}/reading/explainers/${getExplainerSlug(entry)}/`,
 			title: entry.data.title,
 			date: entry.data.publishedAt,
 			body: `${entry.data.dek}\n\n${entry.body ?? ''}`,
@@ -68,7 +68,7 @@ export async function loadBacklinkSources(): Promise<BacklinkSource[]> {
 		sources.push({
 			kind: 'signal',
 			key: `signal:${getSignalSlug(entry)}`,
-			url: `/{lang}/library/signals/#signal-${getSignalSlug(entry)}`,
+			url: `/{lang}/reading/signals/#signal-${getSignalSlug(entry)}`,
 			title: entry.data.title,
 			date: entry.data.keptAt,
 			body: `${entry.data.why}\n\n${entry.body ?? ''}`,
