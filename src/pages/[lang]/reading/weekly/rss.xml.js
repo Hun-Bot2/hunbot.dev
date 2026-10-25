@@ -4,7 +4,7 @@ import { SITE_TITLE, SUPPORTED_LANGUAGES } from '../../../../consts';
 import { ui } from '../../../../i18n/ui';
 import { getPublishedWeeklyNotes, getWeeklyUrl } from '../../../../utils/weekly';
 
-// /{lang}/library/weekly/rss.xml — the weekly notes feed (docs/features/signals-and-weekly.md).
+// /{lang}/reading/weekly/rss.xml — the weekly notes feed (docs/features/signals-and-weekly.md).
 // Web and RSS are the only ways a weekly note is delivered: no email, no signup.
 // The text is Korean on every language's feed (the notes are written in Korean);
 // each feed links to the page of its own language. Built only while at least

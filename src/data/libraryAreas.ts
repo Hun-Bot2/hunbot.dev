@@ -11,36 +11,48 @@ export interface LibraryArea {
 	label: Record<UILanguage, string>;
 	/** Resource tags and pick section slugs that belong to this area. */
 	topics: string[];
+	/**
+	 * Suffix of the area's tint token (`--area-<tint>`, src/styles/tokens.css): an
+	 * identity mark for the Library's tab icon and card monogram, never text or
+	 * state (docs/ops/ui-conventions.md, "Area tints").
+	 */
+	tint: string;
 }
 
 export const libraryAreas: LibraryArea[] = [
 	{
 		id: 'design',
+		tint: 'design',
 		label: { ko: '디자인', jp: 'デザイン', en: 'Design' },
 		topics: ['design-inspiration', 'typography', 'color', 'ui-patterns', 'design'],
 	},
 	{
 		id: 'code',
+		tint: 'code',
 		label: { ko: '코드·프론트엔드', jp: 'コード・フロントエンド', en: 'Code & Frontend' },
 		topics: ['css-snippets', 'css-animation', 'css-generator', 'svg-generator', 'frontend-design', 'dev-docs'],
 	},
 	{
 		id: 'ai-engineering',
+		tint: 'ai',
 		label: { ko: 'AI 엔지니어링', jp: 'AIエンジニアリング', en: 'AI Engineering' },
 		topics: ['agent-skills', 'agent-context', 'context-compression', 'llm-gateway', 'model-routing', 'vibe-coding'],
 	},
 	{
 		id: 'data-viz',
+		tint: 'dataviz',
 		label: { ko: '데이터 시각화', jp: 'データ可視化', en: 'Data Visualization' },
 		topics: ['data-visualization'],
 	},
 	{
 		id: 'learning',
-		label: { ko: '배움·생각 도구', jp: '学び・思考ツール', en: 'Learning & Thinking' },
+		tint: 'learning',
+		label: { ko: '인터랙티브 탐구', jp: 'インタラクティブ探究', en: 'Interactive explorations' },
 		topics: ['explorable-explanations', 'tools-for-thought'],
 	},
 	{
 		id: 'creative',
+		tint: 'creative',
 		label: { ko: '창작', jp: '創作', en: 'Creative' },
 		topics: ['video', 'touchdesigner', 'art', 'digital-music'],
 	},
@@ -48,6 +60,7 @@ export const libraryAreas: LibraryArea[] = [
 
 export const otherLibraryArea: LibraryArea = {
 	id: 'other',
+	tint: 'other',
 	label: { ko: '기타', jp: 'その他', en: 'Other' },
 	topics: [],
 };

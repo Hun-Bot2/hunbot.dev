@@ -1,5 +1,5 @@
 ---
-// /{lang}/library/weekly/ — the 주간 노트 view (docs/decisions/site-structure.md,
+// /{lang}/reading/weekly/ — the 주간 노트 view (docs/decisions/site-structure.md,
 // Revision 2026-10-23; docs/features/signals-and-weekly.md): the owner's weekly
 // conclusions as a column of issues, each led by a large serif issue number.
 // Web and RSS only (no email, no signup). Generated only while at least one
@@ -8,10 +8,10 @@
 import BaseHead from '../../../../components/BaseHead.astro';
 import Header from '../../../../components/Header.astro';
 import FloatingLanguagePicker from '../../../../components/FloatingLanguagePicker.astro';
-import LibraryTabs from '../../../../components/library/LibraryTabs.astro';
+import SectionTabs from '../../../../components/SectionTabs.astro';
 import { getCollection } from 'astro:content';
 import { useTranslations, type UILanguage } from '../../../../i18n/ui';
-import { getLibraryViewData } from '../../../../utils/library-views';
+import { getReadingViewData } from '../../../../utils/reading-views';
 import { formatWeekRange, getPublishedWeeklyNotes, getSignalsForWeek, getWeeklyIndexUrl, getWeeklyRssUrl, getWeeklyUrl } from '../../../../utils/weekly';
 import '../../../../styles/lists.css';
 
@@ -23,11 +23,11 @@ export async function getStaticPaths() {
 
 const lang = (Astro.params.lang ?? 'ko') as UILanguage;
 const t = useTranslations(lang);
-const view = await getLibraryViewData(lang);
+const view = await getReadingViewData(lang, 'weekly');
 const isCanonical = lang === 'ko';
 const canonicalURL = new URL(getWeeklyIndexUrl('ko'), Astro.site);
 const rssURL = new URL(getWeeklyRssUrl('ko'), Astro.site);
-const title = `${t('weekly.title')} - ${t('library.title')} - Hun-Bot Blog`;
+const title = `${t('weekly.title')} - ${t('reading.title')} - Hun-Bot Blog`;
 const description = t('weekly.description');
 
 const issues = view.weeklyNotes.map((note) => ({
@@ -47,17 +47,17 @@ const issues = view.weeklyNotes.map((note) => ({
 		<meta data-pagefind-meta="title[content]" content={t('weekly.title')} />
 		<meta data-pagefind-meta="description[content]" content={description} />
 		<meta data-pagefind-filter="language[content]" content="ko" />
-		<meta data-pagefind-filter="section[content]" content="library" />
+		<meta data-pagefind-filter="section[content]" content="reading" />
 	</head>
 	<body>
 		<Header />
 		<FloatingLanguagePicker belowTabs />
 		<main id="main-content" class="atelier-page" data-pagefind-body={isCanonical ? true : undefined}>
 			<section class="subpage-intro subpage-intro--flush weekly-intro">
-				<h1 class="eyebrow">{t('library.title')}</h1>
+				<h1 class="eyebrow">{t('reading.title')}</h1>
 				<a class="weekly-rss" href={getWeeklyRssUrl('ko')}>{t('weekly.rss')} <span aria-hidden="true">↗</span></a>
 			</section>
-			<LibraryTabs lang={lang} tabs={view.tabs} current="weekly" />
+			<SectionTabs label={t('reading.tabs.label')} tabs={view.tabs} current="weekly" />
 
 			<ol class="page-frame weekly-issues">
 				{

@@ -81,6 +81,61 @@
       "permanent": true
     },
     {
+      "source": "/:lang(ko|jp|en)/library/explainers",
+      "destination": "/:lang/reading/",
+      "permanent": true
+    },
+    {
+      "source": "/:lang(ko|jp|en)/library/explainers/",
+      "destination": "/:lang/reading/",
+      "permanent": true
+    },
+    {
+      "source": "/:lang(ko|jp|en)/library/explainers/:slug",
+      "destination": "/:lang/reading/explainers/:slug/",
+      "permanent": true
+    },
+    {
+      "source": "/:lang(ko|jp|en)/library/explainers/:slug/",
+      "destination": "/:lang/reading/explainers/:slug/",
+      "permanent": true
+    },
+    {
+      "source": "/:lang(ko|jp|en)/library/signals",
+      "destination": "/:lang/reading/signals/",
+      "permanent": true
+    },
+    {
+      "source": "/:lang(ko|jp|en)/library/signals/",
+      "destination": "/:lang/reading/signals/",
+      "permanent": true
+    },
+    {
+      "source": "/:lang(ko|jp|en)/library/weekly",
+      "destination": "/:lang/reading/weekly/",
+      "permanent": true
+    },
+    {
+      "source": "/:lang(ko|jp|en)/library/weekly/",
+      "destination": "/:lang/reading/weekly/",
+      "permanent": true
+    },
+    {
+      "source": "/:lang(ko|jp|en)/library/weekly/rss.xml",
+      "destination": "/:lang/reading/weekly/rss.xml",
+      "permanent": true
+    },
+    {
+      "source": "/:lang(ko|jp|en)/library/weekly/:issue",
+      "destination": "/:lang/reading/weekly/:issue/",
+      "permanent": true
+    },
+    {
+      "source": "/:lang(ko|jp|en)/library/weekly/:issue/",
+      "destination": "/:lang/reading/weekly/:issue/",
+      "permanent": true
+    },
+    {
       "source": "/library/decks",
       "destination": "/ko/research/decks/",
       "permanent": true

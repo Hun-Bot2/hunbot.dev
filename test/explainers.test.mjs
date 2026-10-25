@@ -11,6 +11,7 @@ import {
 	isPublishedExplainer,
 	normalizeArxivId,
 	normalizeDoi,
+	getExplainersIndexUrl,
 } from '../src/utils/explainers.ts';
 import { assertValidatorAccepts, assertValidatorRejects } from './helpers/validator-harness.mjs';
 
@@ -33,14 +34,14 @@ function baseData(overrides = {}) {
 
 // Each case is the base record plus exactly one stated mutation, written to a
 // throwaway directory shaped like the repository (test/fixtures/README.md).
-function withExplainer(mutate, run, fileName = null) {
+function withExplainer(mutate, run, fileName = null, body = 'Body text.') {
 	const data = baseData();
 	mutate(data);
 	const dir = mkdtempSync(join(tmpdir(), 'explainer-fixture-'));
 	try {
 		const contentDir = join(dir, 'src/content/explainers');
 		mkdirSync(contentDir, { recursive: true });
-		writeFileSync(join(contentDir, `${fileName ?? data.id}.md`), `---\n${JSON.stringify(data, null, 2)}\n---\n\nBody text.\n`);
+		writeFileSync(join(contentDir, `${fileName ?? data.id}.md`), `---\n${JSON.stringify(data, null, 2)}\n---\n\n${body}\n`);
 		return run(dir);
 	} finally {
 		rmSync(dir, { recursive: true, force: true });
@@ -165,8 +166,10 @@ test('only an approved, human-reviewed explainer is published', () => {
 });
 
 test('explainer detail URLs follow the localized route convention', () => {
-	assert.equal(getExplainerUrl('ko', 'my-slug'), '/ko/library/explainers/my-slug/');
-	assert.equal(getExplainerUrl('jp', 'my-slug'), '/jp/library/explainers/my-slug/');
+	assert.equal(getExplainerUrl('ko', 'my-slug'), '/ko/reading/explainers/my-slug/');
+	assert.equal(getExplainerUrl('jp', 'my-slug'), '/jp/reading/explainers/my-slug/');
+	// The 해설 list is the Reading section's front page.
+	assert.equal(getExplainersIndexUrl('en'), '/en/reading/');
 });
 
 test('identifier normalization strips resolver prefixes and arXiv versions', () => {
@@ -204,6 +207,13 @@ test('validate-explainers rejects more than eight claims, a bad judgement, a mis
 	withExplainer((data) => (data.claims = Array.from({ length: 9 }, () => claim())), (dir) => assertValidatorRejects(script, dir, /claims must be an array of at most 8/));
 	withExplainer((data) => (data.claims = [claim({ judgement: 'maybe' })]), (dir) => assertValidatorRejects(script, dir, /claims\[0\]\.judgement must be one of: agree, doubt, unverified/));
 	withExplainer((data) => (data.claims = [claim({ check: '' })]), (dir) => assertValidatorRejects(script, dir, /claims\[0\]\.check is required/));
+});
+
+test('validate-explainers: a #claim-n link in the body must name an existing ledger entry', () => {
+	const two = (data) => (data.claims = [claim(), claim()]);
+	withExplainer(two, (dir) => assertValidatorAccepts(script, dir), null, 'See [주장 1](#claim-1) and [주장 2](#claim-2).');
+	withExplainer(two, (dir) => assertValidatorRejects(script, dir, /links to #claim-3 but the claims ledger has 2 entries/), null, 'See [주장 3](#claim-3).');
+	withExplainer(() => {}, (dir) => assertValidatorRejects(script, dir, /links to #claim-1 but the claims ledger has 0 entries/), null, 'See [주장 1](#claim-1).');
 });
 
 test('validate-explainers rejects a claim carrying a quote or any unlisted field', () => {

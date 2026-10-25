@@ -1,19 +1,21 @@
 ---
 // Detail page of an explainer: commentary on one external paper or article
-// (docs/features/explainers.md). Reuses the blog post shell — `.article-page`,
-// `.prose` (src/styles/prose.css), TableOfContents, ReadingControls — and
+// (docs/features/explainers.md) as a split reader (docs/decisions/site-structure.md,
+// Revision 2026-10-23c). From 1100px: full window width, a slim toolbar, and two
+// panes that scroll on their own, the source on the left (its title page, the
+// claims ledger, the link to the original; never its text) and the explainer on
+// the right. Below 1100px: one column, the explainer first, then the source
+// panel. The explainer keeps the blog's `.prose` body (src/styles/prose.css) and
 // leaves out everything that belongs to a post (comments, view counter,
 // feedback box, series navigation).
 //
-// Order: breadcrumb, title, dek, rule, provenance badge, body, source box,
-// related paper card (only when an identifier matches), tags.
+// In the body, a link to `#claim-n` is a chip for claim n of the ledger;
+// public/scripts/explainer-reader.js scrolls the source pane to it and flashes it.
 import type { CollectionEntry } from 'astro:content';
 import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import FloatingLanguagePicker from '../components/FloatingLanguagePicker.astro';
 import ReadingControls from '../components/ReadingControls.astro';
-import TableOfContents from '../components/TableOfContents.astro';
-import Breadcrumb from '../components/Breadcrumb.astro';
 import ProvenanceBadge from '../components/library/ProvenanceBadge.astro';
 import SourceLanguageChip from '../components/library/SourceLanguageChip.astro';
 import Backlinks from '../components/Backlinks.astro';
@@ -51,7 +53,8 @@ const headingId = 'explainer-title';
 const reviewedAt = explainer.review.reviewedAt ? new Date(explainer.review.reviewedAt) : undefined;
 const sourceKindLabel = tk(`explainer.source.kind.${explainer.source.kind}`);
 const imageSrc = explainer.image && explainer.image.kind !== 'typographic' ? explainer.image.src : undefined;
-const libraryUrl = `/${lang}/library/`;
+const readingUrl = `/${lang}/reading/`;
+const sourceHost = new URL(explainer.source.url).host.replace(/^www\./, '');
 const claims = explainer.claims ?? [];
 const judgementTone = { agree: 'confirmed', doubt: 'doubt', unverified: 'unverified' } as const;
 ---
@@ -72,115 +75,76 @@ const judgementTone = { agree: 'confirmed', doubt: 'doubt', unverified: 'unverif
 		<meta data-pagefind-meta="title[content]" content={explainer.title} />
 		<meta data-pagefind-meta="description[content]" content={explainer.dek} />
 		<meta data-pagefind-filter="language[content]" content={contentLang} />
-		<meta data-pagefind-filter="section[content]" content="library" />
+		<meta data-pagefind-filter="section[content]" content="reading" />
 		{explainer.tags.map((tag) => <meta data-pagefind-filter="tag[content]" content={tag} />)}
 	</head>
 
 	<body>
 		<Header />
-		<FloatingLanguagePicker />
+		<FloatingLanguagePicker belowTabs />
 		<ReadingControls lang={lang} />
-		<main id="main-content" class="article-page explainer-page" data-post-lang={lang}>
-			<article aria-labelledby={headingId}>
-				<header class="article-header explainer-header page-frame">
-					<Breadcrumb
-						items={[
-							{ name: t('library.title'), href: libraryUrl },
-							{ name: t('explainer.breadcrumb'), href: getExplainersIndexUrl(lang) },
-						]}
-					/>
-					<p class="explainer-eyebrow-line">
-						<ExplainerEyebrow sourceLanguage={explainer.source.language} sourceKind={explainer.source.kind} lang={lang} />
-					</p>
-					<h1
-						id={headingId}
-						class="article-title explainer-title"
-						lang={contentLangAttr}
-						data-pagefind-body={isCanonicalLanguage ? true : undefined}
-						data-pagefind-meta="title"
-					>
-						{explainer.title}
-					</h1>
-					<p class="explainer-dek" lang={contentLangAttr}>{explainer.dek}</p>
-					<hr class="explainer-rule" />
-					<div class="explainer-provenance">
-						<ProvenanceBadge
-							authorship={explainer.authorship}
-							humanReviewed={explainer.review.humanReviewed}
-							reviewedAt={reviewedAt}
-							lang={lang}
-							variant="full"
-						/>
-						<p class="explainer-dates article-meta">
-							{reviewedAt && explainer.review.humanReviewed && (
-								<span class="explainer-reviewed-on">{t('explainer.reviewed-on')} <time datetime={explainer.review.reviewedAt ?? undefined}>{formatPostDate(reviewedAt)}</time></span>
-							)}
-							<span>{t('blog.published')} <time datetime={explainer.publishedAt}>{formatPostDate(new Date(explainer.publishedAt))}</time></span>
-							{explainer.updatedAt && (
-								<span>{t('blog.updated')} <time datetime={explainer.updatedAt}>{formatPostDate(new Date(explainer.updatedAt))}</time></span>
-							)}
-						</p>
-					</div>
-					{!isCanonicalLanguage && <p class="explainer-ko-only">{t('explainer.ko-only')}</p>}
-				</header>
+		<main id="main-content" class="article-page explainer-reader" data-post-lang={lang}>
+			<div class="reader-toolbar">
+				<nav class="reader-crumbs" aria-label="Breadcrumb">
+					<ol>
+						<li><a href={readingUrl}>{t('reading.title')}</a></li>
+						<li><a href={getExplainersIndexUrl(lang)} aria-current="page">{t('explainer.breadcrumb')}</a></li>
+					</ol>
+				</nav>
+				<p class="reader-toolbar-title" lang={contentLangAttr} aria-hidden="true">{explainer.title}</p>
+				<a
+					class="btn-pill reader-toolbar-open"
+					href={explainer.source.url}
+					target="_blank"
+					rel="noopener noreferrer"
+					aria-label={`${t('explainer.source.open')}: ${explainer.source.name}`}
+				>
+					{t('explainer.source.open')} <span aria-hidden="true">↗</span>
+				</a>
+			</div>
 
-				<div class="article-canvas page-frame">
-					<TableOfContents lang={lang} />
-					<div class="article-main">
+			<div class="reader-panes">
+				<article class="reader-pane reader-pane--explainer" aria-labelledby={headingId} tabindex="0">
+					<div class="reader-inner">
+						<header class="explainer-header">
+							<p class="explainer-eyebrow-line">
+								<ExplainerEyebrow sourceLanguage={explainer.source.language} sourceKind={explainer.source.kind} lang={lang} />
+							</p>
+							<h1
+								id={headingId}
+								class="explainer-title"
+								lang={contentLangAttr}
+								data-pagefind-body={isCanonicalLanguage ? true : undefined}
+								data-pagefind-meta="title"
+							>
+								{explainer.title}
+							</h1>
+							<p class="explainer-dek" lang={contentLangAttr}>{explainer.dek}</p>
+							<hr class="explainer-rule" />
+							<div class="explainer-provenance">
+								<ProvenanceBadge
+									authorship={explainer.authorship}
+									humanReviewed={explainer.review.humanReviewed}
+									reviewedAt={reviewedAt}
+									lang={lang}
+									variant="full"
+								/>
+								<p class="explainer-dates article-meta">
+									{reviewedAt && explainer.review.humanReviewed && (
+										<span class="explainer-reviewed-on">{t('explainer.reviewed-on')} <time datetime={explainer.review.reviewedAt ?? undefined}>{formatPostDate(reviewedAt)}</time></span>
+									)}
+									<span>{t('blog.published')} <time datetime={explainer.publishedAt}>{formatPostDate(new Date(explainer.publishedAt))}</time></span>
+									{explainer.updatedAt && (
+										<span>{t('blog.updated')} <time datetime={explainer.updatedAt}>{formatPostDate(new Date(explainer.updatedAt))}</time></span>
+									)}
+								</p>
+							</div>
+							{!isCanonicalLanguage && <p class="explainer-ko-only">{t('explainer.ko-only')}</p>}
+						</header>
+
 						<div class="prose" lang={contentLangAttr} data-pagefind-body={isCanonicalLanguage ? true : undefined}>
 							<slot />
 						</div>
-
-						{claims.length > 0 && (
-							<section class="claims" aria-labelledby="claims-title">
-								<h2 id="claims-title" class="claims-title">{t('explainer.claims.title')}</h2>
-								<table class="claims-table" lang={contentLangAttr}>
-									<thead>
-										<tr>
-											<th scope="col">{t('explainer.claims.claim')}</th>
-											<th scope="col">{t('explainer.claims.judgement')}</th>
-											<th scope="col">{t('explainer.claims.check')}</th>
-										</tr>
-									</thead>
-									<tbody>
-										{claims.map((claim) => (
-											<tr>
-												<th scope="row" class="claims-claim" data-label={t('explainer.claims.claim')}>{claim.claim}</th>
-												<td class="claims-judgement" data-label={t('explainer.claims.judgement')}>
-													<Stamp
-														tone={judgementTone[claim.judgement]}
-														label={tk(`explainer.judgement.${claim.judgement}`)}
-														size="sm"
-													/>
-												</td>
-												<td class="claims-check" data-label={t('explainer.claims.check')}>{claim.check}</td>
-											</tr>
-										))}
-									</tbody>
-								</table>
-							</section>
-						)}
-
-						<aside class="source-box" aria-labelledby="source-box-label">
-							<p id="source-box-label" class="source-box-label">{t('explainer.source.label')}</p>
-							<div class="source-box-body">
-								<p class="source-box-name">{explainer.source.name}</p>
-								<p class="source-box-facts">
-									<SourceLanguageChip sourceLanguage={explainer.source.language} lang={lang} />
-									<span class="source-box-kind">{sourceKindLabel}</span>
-								</p>
-								<a
-									class="btn-pill source-box-link"
-									href={explainer.source.url}
-									target="_blank"
-									rel="noopener noreferrer"
-									aria-label={`${t('explainer.source.open')}: ${explainer.source.name}`}
-								>
-									{t('explainer.source.open')} <span aria-hidden="true">↗</span>
-								</a>
-							</div>
-							<p class="source-box-notice">{t('explainer.source.notice')}</p>
-						</aside>
 
 						{relatedPaper && (
 							<aside class="related-paper" aria-label={t('explainer.related-paper.label')}>
@@ -200,30 +164,250 @@ const judgementTone = { agree: 'confirmed', doubt: 'doubt', unverified: 'unverif
 							</ul>
 						)}
 					</div>
-				</div>
-			</article>
+				</article>
+
+				<section class="reader-pane reader-pane--source" aria-labelledby="source-title" tabindex="0" data-reader-source>
+					<div class="reader-inner">
+						<p class="source-eyebrow">
+							<span class="source-eyebrow-label">{t('explainer.source.label')}</span>
+							<span class="source-eyebrow-kind">{sourceKindLabel}</span>
+							<SourceLanguageChip sourceLanguage={explainer.source.language} lang={lang} />
+						</p>
+						<h2 id="source-title" class="source-title" lang={explainer.source.language}>{explainer.source.name}</h2>
+						<p class="source-host">{sourceHost}</p>
+
+						{claims.length > 0 && (
+							<div class="ledger">
+								<h3 class="ledger-title">{t('explainer.claims.title')}</h3>
+								<ol class="ledger-list" lang={contentLangAttr}>
+									{claims.map((claim, index) => (
+										<li id={`claim-${index + 1}`} class="ledger-entry" tabindex="-1">
+											<span class="ledger-no" aria-hidden="true">[{index + 1}]</span>
+											<div class="ledger-body">
+												<p class="ledger-label">{t('explainer.claims.claim')}</p>
+												<p class="ledger-claim">{claim.claim}</p>
+												<div class="ledger-judgement">
+													<span class="ledger-label">{t('explainer.claims.judgement')}</span>
+													<Stamp tone={judgementTone[claim.judgement]} label={tk(`explainer.judgement.${claim.judgement}`)} size="sm" />
+												</div>
+												<p class="ledger-label">{t('explainer.claims.check')}</p>
+												<p class="ledger-check">{claim.check}</p>
+											</div>
+										</li>
+									))}
+								</ol>
+							</div>
+						)}
+
+						<aside class="source-box" aria-label={t('explainer.source.label')}>
+							<a
+								class="btn-pill source-box-link"
+								href={explainer.source.url}
+								target="_blank"
+								rel="noopener noreferrer"
+								aria-label={`${t('explainer.source.open')}: ${explainer.source.name}`}
+							>
+								{t('explainer.source.open')} <span aria-hidden="true">↗</span>
+							</a>
+							<p class="source-box-notice">{t('explainer.source.notice')}</p>
+						</aside>
+					</div>
+				</section>
+			</div>
 		</main>
 		<LinkPreview />
+		<script type="module" src="/scripts/explainer-reader.js"></script>
 	</body>
 </html>
 
 <style is:global>
-	/* ── Header: title, dek, rule, badge ── */
+	:root {
+		--reader-toolbar: 48px;
+	}
+
+	.article-page.explainer-reader {
+		padding: 0;
+	}
+
+	/* ── Toolbar: where I am, the title, the way to the original ── */
+	.reader-toolbar {
+		z-index: 70;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		align-items: center;
+		gap: 0 1rem;
+		min-height: var(--reader-toolbar);
+		padding: 0 1rem;
+		background: var(--paper);
+		border-bottom: 1px solid var(--rule);
+	}
+
+	.reader-crumbs ol {
+		display: flex;
+		align-items: center;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		font: 400 0.6875rem/1.45 var(--font-mono);
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
+		color: var(--secondary);
+	}
+
+	.reader-crumbs li + li::before {
+		content: '/';
+		margin: 0 0.7em;
+		color: var(--faint);
+	}
+
+	.reader-crumbs a {
+		display: inline-flex;
+		align-items: center;
+		min-height: 40px;
+		color: inherit;
+	}
+
+	.reader-crumbs a:hover,
+	.reader-crumbs a:focus-visible {
+		color: var(--accent);
+	}
+
+	.reader-crumbs a[aria-current='page'] {
+		color: var(--ink);
+	}
+
+	.reader-toolbar-title {
+		display: none;
+		margin: 0;
+		overflow: hidden;
+		font: 400 0.75rem/1.5 var(--font-mono);
+		letter-spacing: 0.02em;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		color: var(--secondary);
+	}
+
+	.reader-toolbar-open {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		min-height: 40px;
+		white-space: nowrap;
+		text-decoration: none;
+	}
+
+	.reader-toolbar-open:hover,
+	.reader-toolbar-open:focus-visible,
+	.source-box-link:hover,
+	.source-box-link:focus-visible {
+		border-color: var(--accent);
+		color: var(--accent);
+	}
+
+	/* ── Panes: one column by default (the explainer, then the source) ── */
+	.reader-panes {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		grid-template-areas:
+			'explainer'
+			'source';
+	}
+
+	.reader-pane {
+		min-width: 0;
+	}
+
+	.reader-pane--explainer {
+		grid-area: explainer;
+	}
+
+	.reader-pane--source {
+		grid-area: source;
+		position: relative;
+		background: var(--paper-deep);
+	}
+
+	.reader-inner {
+		padding: 1.5rem 1rem 3.5rem;
+	}
+
+	.reader-pane:focus-visible {
+		outline-offset: -4px;
+	}
+
+	@media (min-width: 640px) {
+		.reader-toolbar {
+			padding-inline: 2rem;
+		}
+
+		.reader-inner {
+			padding-inline: 2rem;
+		}
+	}
+
+	/* Desktop: two panes under the toolbar, the page itself does not scroll. */
+	@media (min-width: 1100px) {
+		.reader-toolbar {
+			position: sticky;
+			top: var(--header-height);
+			grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
+			padding-inline: 2.5rem;
+		}
+
+		.reader-toolbar-title {
+			display: block;
+			text-align: center;
+		}
+
+		.reader-toolbar-open {
+			justify-self: end;
+		}
+
+		.reader-panes {
+			grid-template-columns: minmax(0, 45fr) minmax(0, 55fr);
+			grid-template-areas: 'source explainer';
+		}
+
+		.reader-pane {
+			/* The extra 1px is the site header's bottom border: the page never scrolls. */
+			height: calc(100vh - var(--header-height) - var(--reader-toolbar) - 1px);
+			height: calc(100dvh - var(--header-height) - var(--reader-toolbar) - 1px);
+			overflow-y: auto;
+			overscroll-behavior: contain;
+		}
+
+		.reader-pane--explainer {
+			border-left: 1px solid var(--rule);
+		}
+
+		.reader-pane--source .reader-inner {
+			padding: 2.5rem 2.5rem 4rem;
+		}
+
+		.reader-pane--explainer .reader-inner {
+			max-width: 46rem;
+			margin-inline: auto;
+			padding: 2.5rem 3rem 5rem;
+			box-sizing: content-box;
+		}
+	}
+
+	/* ── Right pane: the explainer ── */
 	.explainer-header {
 		padding-bottom: 1.25rem;
 	}
 
-	/* The explainer's own scale: the title is always larger than any prose
-	   heading (h2 tops out at 2.125rem), and the dek reads clearly smaller. The
-	   blog's article-title scale is untouched. */
 	.explainer-eyebrow-line {
 		margin: 0 0 0.9rem;
 	}
 
-	.article-header .explainer-title {
+	/* The explainer's own scale: its title is larger than any prose heading
+	   (h2 tops out at 2.125rem) and the dek reads clearly smaller. */
+	.explainer-title {
 		margin: 0;
 		font: 400 clamp(2rem, 1.4rem + 2.6vw, 3rem) / 1.2 var(--font-serif);
 		letter-spacing: -0.01em;
+		text-wrap: balance;
 	}
 
 	.explainer-dek {
@@ -236,10 +420,7 @@ const judgementTone = { agree: 'confirmed', doubt: 'doubt', unverified: 'unverif
 	}
 
 	html:lang(ko) .explainer-dek,
-	.explainer-dek:lang(ko) {
-		word-break: keep-all;
-	}
-
+	.explainer-dek:lang(ko),
 	.explainer-title:lang(ko) {
 		word-break: keep-all;
 	}
@@ -291,180 +472,191 @@ const judgementTone = { agree: 'confirmed', doubt: 'doubt', unverified: 'unverif
 		color: var(--secondary);
 	}
 
-	/* ── Claims ledger: the source's claims, my judgement, how to check ── */
-	.claims {
-		margin-top: 3rem;
+	.reader-pane--explainer .prose {
+		margin-top: 1.5rem;
 	}
 
-	.claims-title {
-		margin: 0 0 0.9rem;
-		padding-bottom: 0.45rem;
-		border-bottom: 1px solid var(--rule-strong);
-		font: 400 1.5rem/1.3 var(--font-serif);
-		letter-spacing: -0.015em;
-	}
-
-	html:lang(ko) .claims-title {
-		word-break: keep-all;
-	}
-
-	.claims-table {
-		width: 100%;
-		border-collapse: collapse;
-		table-layout: fixed;
-	}
-
-	.claims-table thead th {
-		padding: 0 1rem 0.5rem 0;
-		border-bottom: 1px solid var(--rule);
-		font: 400 0.6875rem/1.45 var(--font-mono);
-		letter-spacing: 0.09em;
-		text-align: left;
-		text-transform: uppercase;
-		color: var(--secondary);
-	}
-
-	.claims-table thead th:nth-child(1) {
-		width: 40%;
-	}
-
-	.claims-table thead th:nth-child(2) {
-		width: 8.5rem;
-	}
-
-	.claims-table tbody tr + tr > * {
-		border-top: 1px solid var(--rule);
-	}
-
-	.claims-table tbody th,
-	.claims-table tbody td {
-		padding: 0.95rem 1rem 0.95rem 0;
-		vertical-align: top;
-		text-align: left;
-		font: 400 0.9375rem/1.65 var(--font-sans);
-		overflow-wrap: anywhere;
-	}
-
-	.claims-table tbody th {
-		font-family: var(--font-serif);
-		font-size: 1.0625rem;
-		line-height: 1.55;
-	}
-
-	.claims-table:lang(ko) tbody th,
-	.claims-table:lang(ko) tbody td {
-		word-break: keep-all;
-	}
-
-	.claims-judgement {
-		padding-top: 1.1rem;
-	}
-
-	.claims-check {
-		color: var(--secondary);
-	}
-
-	/* Below 640px each claim is a stacked card with its column labels. */
-	@media (max-width: 639px) {
-		.claims-table,
-		.claims-table tbody,
-		.claims-table tr,
-		.claims-table tbody th,
-		.claims-table tbody td {
-			display: block;
-			width: 100%;
-		}
-
-		.claims-table thead {
-			position: absolute;
-			width: 1px;
-			height: 1px;
-			overflow: hidden;
-			clip-path: inset(50%);
-		}
-
-		.claims-table tbody tr {
-			padding: 0.9rem 0;
-			border-top: 1px solid var(--rule);
-		}
-
-		.claims-table tbody tr + tr > * {
-			border-top: 0;
-		}
-
-		.claims-table tbody th,
-		.claims-table tbody td {
-			padding: 0.15rem 0;
-			border: 0;
-		}
-
-		.claims-table tbody td::before {
-			content: attr(data-label);
-			display: block;
-			margin-bottom: 0.1rem;
-			font: 400 0.6875rem/1.45 var(--font-mono);
-			letter-spacing: 0.09em;
-			text-transform: uppercase;
-			color: var(--secondary);
-		}
-
-		.claims-judgement {
-			padding: 0.4rem 0;
-		}
-	}
-
-	/* ── Source box ── */
-	.source-box {
-		margin-top: 3rem;
-		padding: 1.25rem 1.4rem 1.2rem;
-		border: 1px solid var(--rule-strong);
+	/* A link to #claim-n in the body is a numbered chip for that claim. */
+	.prose a[href^='#claim-'] {
+		display: inline-block;
+		padding: 0.05rem 0.4rem;
+		border-radius: 4px;
 		background: var(--paper-deep);
+		font: 400 0.75rem/1.6 var(--font-mono);
+		letter-spacing: 0.02em;
+		text-decoration: none;
+		color: var(--ink);
+		vertical-align: 0.05em;
+		transition: color var(--dur-2) var(--ease-standard), background-color var(--dur-2) var(--ease-standard);
 	}
 
-	.source-box-label {
-		margin: 0 0 0.8rem;
+	.prose a[href^='#claim-']:hover,
+	.prose a[href^='#claim-']:focus-visible {
+		background: color-mix(in srgb, var(--accent) 14%, var(--paper-deep));
+		color: var(--accent);
+	}
+
+	/* ── Left pane: the source ── */
+	.source-eyebrow {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.4rem 0.75rem;
+		margin: 0 0 1.1rem;
+	}
+
+	.source-eyebrow-label {
 		font: 400 0.6875rem/1.45 var(--font-mono);
 		letter-spacing: 0.09em;
 		text-transform: uppercase;
 		color: var(--accent);
 	}
 
-	.source-box-body {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto;
-		grid-template-areas:
-			'name link'
-			'facts link';
-		align-items: center;
-		gap: 0.45rem 1.5rem;
-	}
-
-	.source-box-name {
-		grid-area: name;
-		margin: 0;
-		font: 400 1.25rem/1.4 var(--font-serif);
-		letter-spacing: -0.01em;
-		overflow-wrap: anywhere;
-	}
-
-	.source-box-facts {
-		grid-area: facts;
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 0.4rem 0.7rem;
-		margin: 0;
-	}
-
-	.source-box-kind {
+	.source-eyebrow-kind {
 		font: 400 0.6875rem/1.5 var(--font-mono);
 		letter-spacing: 0.09em;
 		text-transform: uppercase;
 		color: var(--secondary);
 	}
 
+	/* The original's title, set like a paper's title page. */
+	.source-title {
+		margin: 0;
+		font: 400 clamp(1.75rem, 1.3rem + 1.6vw, 2.25rem) / 1.2 var(--font-serif);
+		letter-spacing: -0.015em;
+		text-wrap: balance;
+		overflow-wrap: anywhere;
+	}
+
+	.source-title:lang(ko) {
+		word-break: keep-all;
+	}
+
+	.source-host {
+		margin: 0.8rem 0 0;
+		font: 400 0.75rem/1.5 var(--font-mono);
+		letter-spacing: 0.04em;
+		color: var(--secondary);
+	}
+
+	/* Claims ledger: numbered entries [1], [2]… (the body's #claim-n chips point here). */
+	.ledger {
+		margin-top: 2.5rem;
+	}
+
+	.ledger-title {
+		margin: 0 0 0.25rem;
+		padding-bottom: 0.45rem;
+		border-bottom: 1px solid var(--rule-strong);
+		font: 400 1.25rem/1.3 var(--font-serif);
+		letter-spacing: -0.01em;
+	}
+
+	html:lang(ko) .ledger-title {
+		word-break: keep-all;
+	}
+
+	.ledger-list {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.ledger-entry {
+		display: grid;
+		grid-template-columns: 2.25rem minmax(0, 1fr);
+		gap: 0 0.5rem;
+		padding: 1.1rem 0.5rem 1.1rem 0;
+		scroll-margin-top: 1.5rem;
+	}
+
+	.ledger-entry + .ledger-entry {
+		border-top: 1px solid var(--rule);
+	}
+
+	.ledger-entry:focus {
+		outline: none;
+	}
+
+	.ledger-entry:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
+	}
+
+	/* The flash: one background fade, reader-initiated. Only a `from` keyframe, so
+	   the resting state is the plain entry and reduced motion shows no flash. */
+	.ledger-entry.is-flash {
+		animation: ledger-flash 1.4s var(--ease-standard);
+	}
+
+	@keyframes ledger-flash {
+		from {
+			background: color-mix(in srgb, var(--accent) 18%, transparent);
+		}
+	}
+
+	.ledger-no {
+		padding-top: 0.15rem;
+		font: 400 0.75rem/1.6 var(--font-mono);
+		color: var(--accent);
+	}
+
+	.ledger-body {
+		min-width: 0;
+	}
+
+	.ledger-label {
+		margin: 0.7rem 0 0.15rem;
+		font: 400 0.6875rem/1.45 var(--font-mono);
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
+		color: var(--secondary);
+	}
+
+	.ledger-label:first-child {
+		margin-top: 0;
+	}
+
+	.ledger-claim {
+		margin: 0;
+		font: 400 1.0625rem/1.55 var(--font-serif);
+		overflow-wrap: anywhere;
+	}
+
+	.ledger-judgement {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		margin-top: 0.8rem;
+	}
+
+	.ledger-judgement .ledger-label {
+		margin: 0;
+	}
+
+	.ledger-check {
+		margin: 0;
+		font: 400 0.9375rem/1.65 var(--font-sans);
+		color: var(--secondary);
+		overflow-wrap: anywhere;
+	}
+
+	.ledger-body:lang(ko) .ledger-claim,
+	.ledger-list:lang(ko) .ledger-check,
+	html:lang(ko) .ledger-claim,
+	html:lang(ko) .ledger-check {
+		word-break: keep-all;
+	}
+
+	/* The original: the one link out, and the notice that this is commentary. */
+	.source-box {
+		margin-top: 2.5rem;
+		padding: 1.25rem 1.4rem 1.2rem;
+		border: 1px solid var(--rule-strong);
+		background: var(--paper);
+	}
+
 	.source-box-link {
-		grid-area: link;
 		display: inline-flex;
 		align-items: center;
 		gap: 0.4rem;
@@ -473,42 +665,14 @@ const judgementTone = { agree: 'confirmed', doubt: 'doubt', unverified: 'unverif
 		text-decoration: none;
 	}
 
-	.source-box-link:hover,
-	.source-box-link:focus-visible {
-		border-color: var(--accent);
-		color: var(--accent);
-	}
-
 	.source-box-notice {
-		margin: 1rem 0 0;
-		padding-top: 0.85rem;
-		border-top: 1px solid var(--rule);
+		margin: 0.9rem 0 0;
 		font: 400 0.875rem/1.6 var(--font-sans);
 		color: var(--secondary);
 	}
 
 	html:lang(ko) .source-box-notice {
 		word-break: keep-all;
-	}
-
-	@media (max-width: 639px) {
-		.source-box {
-			padding: 1.05rem 1rem;
-		}
-
-		.source-box-body {
-			grid-template-columns: minmax(0, 1fr);
-			grid-template-areas:
-				'name'
-				'facts'
-				'link';
-			align-items: start;
-		}
-
-		.source-box-link {
-			justify-self: start;
-			margin-top: 0.4rem;
-		}
 	}
 
 	/* ── Related paper card ── */
@@ -542,7 +706,7 @@ const judgementTone = { agree: 'confirmed', doubt: 'doubt', unverified: 'unverif
 	.related-paper-title {
 		font: 400 1.0625rem/1.45 var(--font-serif);
 		overflow-wrap: anywhere;
-		transition: color 160ms ease;
+		transition: color var(--dur-2) var(--ease-standard);
 	}
 
 	.related-paper-open {

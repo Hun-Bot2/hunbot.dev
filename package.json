@@ -22,6 +22,7 @@
     "signals:validate": "node scripts/validate-signals.mjs",
     "weekly:validate": "node scripts/validate-weekly.mjs",
     "item-notes:validate": "node scripts/validate-item-notes.mjs",
+    "note:new": "node scripts/new-item-note.mjs",
     "library:validate": "node scripts/validate-library.mjs",
     "picks:refresh": "node scripts/refresh-popularity.mjs",
     "picks:check": "node scripts/picks-check.mjs",

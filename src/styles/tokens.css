@@ -26,6 +26,17 @@
 	--state-success: rgb(21, 128, 61);
 	--state-error: rgb(153, 27, 27);
 
+	/* Area tints (docs/ops/ui-conventions.md, "Area tints"): identity marks for
+	   the Library's 분야 only (tab icon, card monogram tile). Never text, never
+	   state. Each is >= 3:1 on --paper for non-text use. */
+	--area-design: #b04b78;
+	--area-code: #3a6ca6;
+	--area-ai: #7552b5;
+	--area-dataviz: #2b7d72;
+	--area-learning: #9a6f12;
+	--area-creative: #65822a;
+	--area-other: #76786f;
+
 	/* Motion: one easing family, one duration scale (docs/ops/ui-conventions.md). */
 	--ease-standard: cubic-bezier(.2, 0, 0, 1);
 	--ease-out: cubic-bezier(.16, 1, .3, 1); /* long decelerations: reveals, rises */
@@ -72,6 +83,13 @@ html.dark {
 	--state-reading: #7fb0e0;
 	--state-success: rgb(134, 239, 172);
 	--state-error: rgb(252, 165, 165);
+	--area-design: #e08aae;
+	--area-code: #7fa9de;
+	--area-ai: #a98be0;
+	--area-dataviz: #5fc2b3;
+	--area-learning: #d9a94a;
+	--area-creative: #a3c364;
+	--area-other: #a2a49c;
 
 	color-scheme: dark;
 }

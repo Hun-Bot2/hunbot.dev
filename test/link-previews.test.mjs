@@ -5,12 +5,12 @@ import { lookupPreview, pickLocalized } from '../src/utils/link-previews.ts';
 
 const items = {
 	'/blog/x/': { kind: 'post', title: { ko: '글', en: 'Post' }, description: { ko: '설명' } },
-	'/library/explainers/e/': { kind: 'explainer', title: { ko: '해설' }, description: { ko: '요약' } },
+	'/reading/explainers/e/': { kind: 'explainer', title: { ko: '해설' }, description: { ko: '요약' } },
 };
 
 test('lookupPreview matches a target in any language and ignores query and hash', () => {
 	assert.equal(lookupPreview(items, '/en/blog/x/?a=1#h')?.kind, 'post');
-	assert.equal(lookupPreview(items, '/jp/library/explainers/e')?.kind, 'explainer');
+	assert.equal(lookupPreview(items, '/jp/reading/explainers/e')?.kind, 'explainer');
 });
 
 test('an unpublished or unknown target has no preview', () => {

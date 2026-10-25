@@ -84,14 +84,15 @@ export const GET: APIRoute = async ({ site }) => {
   const explainerPages = publishedExplainers.map((explainer) =>
     getExplainerUrl(explainer.data.canonicalLanguage, getExplainerSlug(explainer)),
   );
-  // The Library's other views (docs/decisions/site-structure.md, Revision
-  // 2026-10-23): ko URLs only (the jp/en pages are the same Korean text,
+  // The Reading section's views (docs/decisions/site-structure.md, Revision
+  // 2026-10-23c): ko URLs only (the jp/en pages are the same Korean text,
   // noindex, canonical to ko), and a view is listed only while it has a
   // published item, the same gate its route's getStaticPaths uses.
   const publishedSignals = getPublishedSignals(await getCollection('signals'));
   const publishedWeekly = getPublishedWeeklyNotes(await getCollection('weeklyNotes'));
-  // Item pages (Revision 2026-10-23b): an item has a page iff it has a published
-  // note; ko URLs only, like the other Library pages.
+  // Item pages (Revision 2026-10-23c): every item has a page, but a page without a
+  // published note is thin and noindex, so only items WITH a published note are
+  // listed; ko URLs only, like the other Library pages.
   const itemNoteIndex = buildItemNoteIndex({
     notes: await getCollection('itemNotes'),
     picks: await getCollection('picks'),
@@ -99,7 +100,7 @@ export const GET: APIRoute = async ({ site }) => {
     pickSlug: getPickSlug,
   });
   const itemPages = [...itemNoteIndex.keys()].sort().map((pageId) => getItemUrl('ko', pageId));
-  const libraryViewPages = [
+  const readingPages = [
     ...(publishedSignals.length > 0 ? [getSignalsUrl('ko')] : []),
     ...(publishedExplainers.length > 0 ? [getExplainersIndexUrl('ko')] : []),
     ...(publishedWeekly.length > 0 ? [getWeeklyIndexUrl('ko'), ...publishedWeekly.map((note) => getWeeklyUrl('ko', note.data.issue))] : []),
@@ -119,7 +120,7 @@ export const GET: APIRoute = async ({ site }) => {
     ...learningPathPages,
     ...researchPages,
     ...explainerPages,
-    ...libraryViewPages,
+    ...readingPages,
     ...itemPages,
   ];
   
@@ -130,7 +131,7 @@ export const GET: APIRoute = async ({ site }) => {
   <url>
     <loc>${new URL(path, siteUrl).href}</loc>
     <lastmod>${listingLastmod}</lastmod>
-    <changefreq>${path.includes('/library/') || path.includes('/paths/') || path.includes('/research/') ? 'monthly' : 'weekly'}</changefreq>
+    <changefreq>${path.includes('/library/') || path.includes('/reading/') || path.includes('/paths/') || path.includes('/research/') ? 'monthly' : 'weekly'}</changefreq>
     <priority>${path === '/' ? '1.0' : path.endsWith('/blog/') ? '0.9' : '0.7'}</priority>
   </url>`).join('')}
   

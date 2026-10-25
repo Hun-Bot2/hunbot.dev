@@ -1,23 +1,20 @@
 ---
-// The Library, 자료 view (docs/decisions/site-structure.md, revisions
-// 2026-10-04 and 2026-10-23): the one curated list of external tools, repos and
-// sites, filtered with the same floating filter the blog uses. Resources and
+// The Library (docs/decisions/site-structure.md, revisions 2026-10-04,
+// 2026-10-23 and 2026-10-23c): the one curated list of external tools, repos
+// and sites you use, as a card grid under category tabs (분야). Resources and
 // picks render together (src/utils/library.ts's getLibraryItems) —
-// /{lang}/library/useful-feeds/ redirects here. The page label and the tab bar
-// lead to the other views (신호, 해설, 주간 노트), each its own
-// page; a view with no published items is not in the bar.
+// /{lang}/library/useful-feeds/ redirects here. Explainers, signals and weekly
+// notes are the Reading section's (/{lang}/reading/). The tabs filter the grid
+// through public/scripts/blog-filters.js (facet `area`).
 import BaseHead from '../../components/BaseHead.astro';
 import Header from '../../components/Header.astro';
 import FloatingLanguagePicker from '../../components/FloatingLanguagePicker.astro';
-import LibraryFilterBar from '../../components/library/LibraryFilterBar.astro';
-import LibraryRow from '../../components/library/LibraryRow.astro';
-import LibraryTabs from '../../components/library/LibraryTabs.astro';
+import AreaTabs from '../../components/library/AreaTabs.astro';
+import ResourceCard from '../../components/library/ResourceCard.astro';
 import { useTranslations, type UILanguage } from '../../i18n/ui';
-import { getLibraryKindLabel, getLibraryTopicLabel } from '../../utils/library-labels';
+import { getAreaTabs } from '../../utils/library-area-tabs';
 import { getLibraryViewData } from '../../utils/library-views';
-import { getLibraryArea, libraryAreas } from '../../data/libraryAreas';
 import '../../styles/lists.css';
-import '../../styles/entry-list.css';
 
 export function getStaticPaths() {
 	return [
@@ -32,44 +29,8 @@ const t = useTranslations(lang);
 const title = `${t('library.title')} - Hun-Bot Blog`;
 const description = t('library.description');
 
-const view = await getLibraryViewData(lang);
-const items = view.items;
-
-// Facet options with counts, most common first (ties by label).
-function facetOptions(values: string[], label: (value: string) => string) {
-	const counts = new Map<string, number>();
-	for (const value of values) counts.set(value, (counts.get(value) ?? 0) + 1);
-	return [...counts]
-		.map(([value, count]) => ({ value, label: label(value), count }))
-		.sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
-}
-
-// 분야 keeps the registry order (src/data/libraryAreas.ts), 기타 last; each
-// 주제 chip belongs to its items' area, so picking an area narrows the topics.
-const areaOrder = [...libraryAreas.map((area) => area.id), 'other'];
-const areaOptions = facetOptions(items.map((item) => item.area), (area) => getLibraryArea(area).label[lang]).sort(
-	(a, b) => areaOrder.indexOf(a.value) - areaOrder.indexOf(b.value),
-);
-const areaOfTopic = new Map(items.map((item) => [item.topic, item.area]));
-const topicOptions = facetOptions(items.map((item) => item.topic), (topic) => getLibraryTopicLabel(topic, lang))
-	.map((option) => {
-		const area = areaOfTopic.get(option.value)!;
-		return { ...option, parent: { facet: 'area', value: area, label: getLibraryArea(area).label[lang] } };
-	})
-	.sort((a, b) => areaOrder.indexOf(a.parent.value) - areaOrder.indexOf(b.parent.value));
-
-// One section per area that has items, in registry order (기타 last).
-const sections = areaOrder
-	.map((id) => ({ id: `area-${id}`, label: getLibraryArea(id).label[lang], items: items.filter((item) => item.area === id) }))
-	.filter((section) => section.items.length > 0);
-
-const filterGroups = [
-	{ facet: 'area', label: t('library.filter-area'), options: areaOptions },
-	{ facet: 'topic', label: t('library.filter-topic'), options: topicOptions },
-	{ facet: 'kind', label: t('library.filter-kind'), options: facetOptions(items.map((item) => item.kind), (kind) => getLibraryKindLabel(kind, lang)) },
-	// One chip: only the items the owner wrote a note about (they have their own page).
-	{ facet: 'note', label: t('library.filter-note'), toggle: true, options: [{ value: '1', label: t('library.filter-note'), count: items.filter((item) => item.note).length }] },
-];
+const { items } = await getLibraryViewData(lang);
+const tabs = getAreaTabs(items, lang);
 ---
 
 <!doctype html>
@@ -83,44 +44,22 @@ const filterGroups = [
 	</head>
 	<body>
 		<Header />
-		<FloatingLanguagePicker belowTabs />
+		<FloatingLanguagePicker />
 		<main id="main-content" class="atelier-page" data-pagefind-body>
 			<section class="subpage-intro subpage-intro--flush">
 				<h1 class="eyebrow">{t('library.title')}</h1>
 			</section>
-			<LibraryTabs lang={lang} tabs={view.tabs} current="resources" />
 
 			{items.length === 0 ? (
 				<p class="page-frame library-empty">{t('library.empty')}</p>
 			) : (
 				<Fragment>
-					<LibraryFilterBar
-						lang={lang}
-						groups={filterGroups}
-						storageKey="hunbot-library-filters"
-						resultsTemplate={t('library.filter-total')}
-						label={t('library.filter-label')}
-						totalCount={items.length}
-					/>
+					<AreaTabs lang={lang} tabs={tabs} storageKey="hunbot-library-area" />
 
 					<div class="page-frame library-archive" data-blog-posts>
-						{sections.map((section) => (
-							<section class="library-section" id={section.id} aria-labelledby={`${section.id}-title`} data-filter-section>
-								<div class="library-section-head">
-									<h2 id={`${section.id}-title`}>{section.label}</h2>
-								</div>
-								<ul class="entry-list">
-									{section.items.map((item) =>
-										<LibraryRow
-											item={item}
-											kindLabel={getLibraryKindLabel(item.kind, lang)}
-											topicLabel={getLibraryTopicLabel(item.topic, lang)}
-											lang={lang}
-										/>,
-									)}
-								</ul>
-							</section>
-						))}
+						<ul class="library-grid">
+							{items.map((item) => <ResourceCard item={item} lang={lang} />)}
+						</ul>
 					</div>
 
 					<p class="page-frame library-empty" data-blog-empty hidden>{t('library.filter-no-results')}</p>
@@ -132,41 +71,33 @@ const filterGroups = [
 </html>
 
 <style>
-	/* The section heading carries the rule, so the title needs none of its own and
-	   the archive starts right under it. */
-
-
-
 	.library-archive {
-		padding: 0 0 1rem;
+		padding: 1.5rem 0 1rem;
 	}
 
-	/* Same quiet section heading as the Writing archive's years. */
-	.library-section + .library-section {
-		margin-top: 1rem;
-	}
-
-	.library-section[hidden] {
-		display: none;
-	}
-
-	.library-section-head {
-		padding: 0.25rem 0 0.4rem;
-		border-bottom: 1px solid var(--rule-strong);
-	}
-
-	.library-section-head h2 {
+	.library-grid {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 1.25rem;
 		margin: 0;
-		font: 400 0.75rem/1.5 var(--font-mono);
-		letter-spacing: 0.09em;
-		text-transform: uppercase;
-		color: var(--secondary);
+		padding: 0;
+		list-style: none;
+	}
+
+	@media (min-width: 560px) {
+		.library-grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+
+	@media (min-width: 820px) {
+		.library-grid {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+		}
 	}
 
 	.library-empty {
-		margin-block: 0 4rem;
+		margin-block: 1rem 4rem;
 		color: var(--secondary);
 	}
-
-
 </style>
