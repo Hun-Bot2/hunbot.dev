@@ -1,7 +1,7 @@
 import type { UILanguage } from '../i18n/ui';
 
 // Item notes (docs/content/item-notes.md): the owner's own commentary on one
-// 자료 item. An item has an on-site page if and only if it has a note. Pure
+// 자료 item. Every published item has an on-site page; a note fills it. Pure
 // helpers only (no `astro:content` runtime import) so Node validators and tests
 // can load them.
 
@@ -28,6 +28,32 @@ export function getItemUrl(lang: UILanguage, pageId: string): string {
 export function findPageIdCollisions(resourceIds: string[], pickSlugs: string[]): string[] {
 	const resources = new Set(resourceIds);
 	return pickSlugs.filter((slug) => resources.has(slug));
+}
+
+/**
+ * A note body without HTML comments. `npm run note:new` writes a draft whose
+ * body is only a placeholder comment; that is an empty note until the owner
+ * writes something, so it never counts as published.
+ */
+export function noteBodyText(body: string | undefined): string {
+	return (body ?? '').replace(/<!--[\s\S]*?-->/g, '').trim();
+}
+
+/**
+ * Every published 자료 item has a page, with or without a note
+ * (docs/decisions/site-structure.md, Revision 2026-10-23c): the page id of each
+ * approved resource and each non-draft pick (resource id / pick slug).
+ */
+export function getPublishedItemPageIds(input: {
+	picks: Pick<PickLike, 'id' | 'data'>[];
+	resources: ResourceLike[];
+	pickSlug: (id: string) => string;
+}): string[] {
+	const resourceIds = input.resources
+		.filter((r) => r.data.status === 'approved' && r.data.review.humanReviewed === true)
+		.map((r) => r.data.id);
+	const pickSlugs = input.picks.filter((p) => p.data.draft !== true).map((p) => input.pickSlug(p.id));
+	return [...resourceIds, ...pickSlugs];
 }
 
 export interface ItemNote {
@@ -67,7 +93,7 @@ export function buildItemNoteIndex(input: {
 	const publishedPicks = new Map(input.picks.filter((p) => p.data.draft !== true).map((p) => [input.pickSlug(p.id), p]));
 
 	for (const pick of publishedPicks.values()) {
-		const body = (pick.body ?? '').trim();
+		const body = noteBodyText(pick.body);
 		if (!body) continue;
 		const slug = input.pickSlug(pick.id);
 		index.set(slug, { pageId: slug, ref: { kind: 'pick', id: slug }, origin: 'pick', body, writtenAt: isDate(pick.data.addedAt), updatedAt: null, tags: [] });
@@ -76,7 +102,7 @@ export function buildItemNoteIndex(input: {
 	for (const note of input.notes) {
 		if (note.data.draft === true) continue;
 		const ref = parseAbout(note.data.about);
-		const body = (note.body ?? '').trim();
+		const body = noteBodyText(note.body);
 		if (!ref || !body) continue;
 		if (ref.kind === 'resource' ? !approved.has(ref.id) : !publishedPicks.has(ref.id)) continue;
 		index.set(ref.id, {

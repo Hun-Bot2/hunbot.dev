@@ -1,18 +1,20 @@
 ---
 // One Library item as a card in the grid (docs/decisions/site-structure.md,
-// Revision 2026-10-23c): a monogram tile in the item's area tint, a "노트" badge
-// when the owner wrote a note, the title, the delivered summary, and the kind
-// and topic as soft chips at the bottom. The whole card is one link: the item's
-// own page when it has a note, else the original in a new tab. No logos
-// or screenshots are fetched (third-party marks, network, CSP): the mark is the
-// item's first letters. The item's filter data attributes sit on the <li>
-// (public/scripts/blog-filters.js).
+// Revision 2026-10-23c): at the top the item's own preview image (2:1 frame)
+// when it has one, otherwise a monogram tile in the item's area tint; a "노트"
+// badge when the owner wrote a note (over the image's top-right corner when
+// there is one); the title, the delivered summary, and the kind and topic as soft
+// chips at the bottom. The whole card is one internal link to the item's page
+// (/{lang}/library/item/{id}/), which carries the original link. No logos or
+// third-party marks are fetched: the mark is the item's first letters. The item's filter
+// data attributes sit on the <li> (public/scripts/blog-filters.js).
 import { useTranslations, type UILanguage } from '../../i18n/ui';
 import { getLibraryArea } from '../../data/libraryAreas';
 import { getItemUrl } from '../../utils/item-notes';
 import type { LibraryItem } from '../../utils/library';
 import { getLibraryKindLabel, getLibraryTopicLabel } from '../../utils/library-labels';
 import { getMonogram } from '../../utils/library-area-tabs';
+import { getResponsivePublicImage } from '../../utils/responsive-public-images';
 
 interface Props {
 	item: LibraryItem;
@@ -21,22 +23,39 @@ interface Props {
 
 const { item, lang } = Astro.props;
 const t = useTranslations(lang);
-// An item with an owner note opens its own page; the rest open the original.
-const href = item.note ? getItemUrl(lang, item.note.pageId) : item.url;
-const external = !item.note;
+const href = getItemUrl(lang, item.pageId!);
 const tint = getLibraryArea(item.area).tint;
+const picture = item.image.kind !== 'typographic' ? item.image : null;
+const responsive = picture ? getResponsivePublicImage(picture.src) : null;
 const chips = [getLibraryKindLabel(item.kind, lang), getLibraryTopicLabel(item.topic, lang), ...item.tags.slice(0, 1).map((tag) => getLibraryTopicLabel(tag, lang))].filter(
 	(chip, index, all) => chip && all.indexOf(chip) === index,
 );
 ---
 
 <li id={item.id} class="resource-card-cell" data-post-card data-post-area={item.area} data-post-kind={item.kind} data-post-topic={item.topic} data-post-note={item.note ? '1' : undefined}>
-	<a class="resource-card" href={href} target={external ? '_blank' : undefined} rel={external ? 'noopener noreferrer' : undefined} style={`--tint: var(--area-${tint})`}>
+	<a class:list={['resource-card', { 'has-image': picture }]} href={href} style={`--tint: var(--area-${tint})`}>
 		<span class="resource-card-top">
-			<span class="resource-mark" aria-hidden="true">{getMonogram(item.title)}</span>
+			{
+				picture ? (
+					<span class="resource-image" aria-hidden="true">
+						<img
+							src={picture.src}
+							srcset={responsive?.webpSrcSet}
+							sizes={responsive?.webpSrcSet ? '(min-width: 820px) 300px, (min-width: 560px) 45vw, 100vw' : undefined}
+							width={picture.width}
+							height={picture.height}
+							alt=""
+							loading="lazy"
+							decoding="async"
+						/>
+					</span>
+				) : (
+					<span class="resource-mark" aria-hidden="true">{getMonogram(item.title)}</span>
+				)
+			}
 			{item.note && <span class="resource-note">{t('item.note-marker')}</span>}
 		</span>
-		<span class="resource-title">{item.title}{external && <Fragment> <span class="resource-arrow" aria-hidden="true">↗</span></Fragment>}</span>
+		<span class="resource-title">{item.title}</span>
 		{item.description && <span class="resource-summary">{item.description}</span>}
 		<span class="resource-chips">
 			{chips.map((chip) => <span class="resource-chip">{chip}</span>)}
@@ -94,6 +113,38 @@ const chips = [getLibraryKindLabel(item.kind, lang), getLibraryTopicLabel(item.t
 		transition: transform var(--dur-3) var(--ease-spring);
 	}
 
+	/* The item's own preview image: a 2:1 frame, full card width. */
+	.resource-image {
+		display: block;
+		flex: 1 1 auto;
+		overflow: hidden;
+		aspect-ratio: 2 / 1;
+		border: 1px solid var(--rule);
+		border-radius: 6px;
+		background: var(--paper-deep);
+	}
+
+	.resource-image img {
+		display: block;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		transition: transform var(--dur-4) var(--ease-standard);
+	}
+
+	/* With an image the badge overlays its top-right corner on a paper pill. */
+	.has-image .resource-card-top {
+		position: relative;
+	}
+
+	.has-image .resource-note {
+		position: absolute;
+		top: 0.5rem;
+		right: 0.5rem;
+		background: var(--paper);
+		border: 1px solid var(--rule);
+	}
+
 	.resource-note {
 		padding: 0.15rem 0.5rem;
 		border-radius: 999px;
@@ -112,14 +163,6 @@ const chips = [getLibraryKindLabel(item.kind, lang), getLibraryTopicLabel(item.t
 		-webkit-line-clamp: 2;
 		line-clamp: 2;
 		overflow: hidden;
-	}
-
-	.resource-arrow {
-		display: inline-block;
-		font-size: 0.875rem;
-		font-weight: 400;
-		color: var(--faint);
-		transition: transform var(--dur-3) var(--ease-spring);
 	}
 
 	.resource-summary {
@@ -167,8 +210,8 @@ const chips = [getLibraryKindLabel(item.kind, lang), getLibraryTopicLabel(item.t
 			transform: scale(1.04);
 		}
 
-		.resource-card:hover .resource-arrow {
-			transform: translate(2px, -2px);
+		.resource-card:hover .resource-image img {
+			transform: scale(1.04);
 		}
 	}
 

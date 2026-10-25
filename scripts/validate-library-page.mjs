@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { extname, join, relative } from 'node:path';
+import { basename, extname, join, relative } from 'node:path';
 // js-yaml is not a direct dependency of this repo, but it is already
 // installed in node_modules as a direct dependency of astro (see astro's own
 // package.json) — same reasoning scripts/validate-picks.mjs already gives
@@ -10,7 +10,7 @@ import yaml from 'js-yaml';
 import { getApprovedResources, getResourceSummary } from '../src/utils/library.ts';
 import { librarySections as pickLibrarySections } from '../src/data/librarySections.ts';
 import { pickTiers } from '../src/data/libraryPolicy.ts';
-import { computePickTier } from '../src/utils/picks.ts';
+import { computePickTier, getPickSlug } from '../src/utils/picks.ts';
 import { ui } from '../src/i18n/ui.ts';
 
 const root = process.cwd();
@@ -49,7 +49,9 @@ assert.match(libraryPage, /items\.map\(\(item\) => <ResourceCard\b/, 'The grid r
 assert.match(libraryPage, /data-blog-posts/);
 assert.match(libraryPage, /blog-filters\.js/, 'The tabs reuse the shared filter script, not a fork.');
 assert.doesNotMatch(libraryPage, /<LibraryFilterBar\b|<BlogFilterBar\b|<LibraryTabs\b|<SectionTabs\b|<LibraryRow\b/, 'The Library has no filter bar, view tabs or rows any more.');
-assert.match(libraryPage, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/, 'Four columns from 1100px.');
+assert.match(libraryPage, /min-width: 820px[\s\S]*repeat\(3, minmax\(0, 1fr\)\)/, 'Three columns from 820px.');
+assert.match(libraryPage, /min-width: 560px[\s\S]*repeat\(2, minmax\(0, 1fr\)\)/, 'Two columns from 560px.');
+assert.doesNotMatch(libraryPage, /--content-max|repeat\(4,/, 'The Library uses the site-wide 980px frame like every other section (Content First rule 6), and has no four-column grid.');
 assert.doesNotMatch(libraryPage, /Hero/, 'The Library hero was removed (2026-10-23, owner decision).');
 assert.match(libraryPage, /<h1 class="eyebrow">/, 'Every Library view leads with the Research-style page label.');
 assert.ok(
@@ -66,9 +68,16 @@ assert.match(areaTabs, /data-facets="area"/, 'The tabs filter the `area` facet.'
 assert.doesNotMatch(areaTabs, /<script/i, 'The tabs add no script of their own.');
 assert.match(read('public/scripts/blog-filters.js'), /data-js-only/, 'The shared filter script reveals the JS-only controls.');
 const resourceCard = read('src/components/library/ResourceCard.astro');
-assert.match(resourceCard, /item\.note \? getItemUrl/, 'A card with a note links to the item page.');
+assert.match(resourceCard, /getItemUrl\(lang, item\.pageId/, 'Every card links to its item page.');
+assert.doesNotMatch(resourceCard, /target="_blank"|↗/, 'A card is an internal link: no new tab, no ↗.');
+assert.match(resourceCard, /aspect-ratio: 2 \/ 1/, 'A card image sits in a 2:1 frame.');
+assert.match(resourceCard, /getResponsivePublicImage/, 'Card images go through the responsive public image helper.');
+assert.match(resourceCard, /loading="lazy"/, 'Card images are lazy.');
+assert.match(resourceCard, /width=\{picture\.width\}[\s\S]*height=\{picture\.height\}/, 'Card images carry explicit width and height (no layout shift).');
+assert.match(resourceCard, /\.resource-image img[\s\S]*transition: transform var\(--dur-4\) var\(--ease-standard\)/, 'The card image zooms with --dur-4 / --ease-standard.');
+assert.match(resourceCard, /alt=""/, 'Card images are decorative (the title is the label).');
 assert.match(resourceCard, /data-post-area=/, 'A card carries its area for the tab filter.');
-assert.doesNotMatch(resourceCard, /<img\b|favicon/i, 'Cards never fetch or show third-party logos or screenshots.');
+assert.doesNotMatch(resourceCard, /favicon|logo\.(png|svg)|clearbit/i, 'Cards never fetch third-party logos or favicons.');
 assert.match(resourceCard, /@media \(hover: hover\)/, 'Card hover effects only where hovering exists.');
 // The Reading section (Revision 2026-10-23c): every view is its own page under
 // /{lang}/reading/ with the same tab bar and the Research-style page label.
@@ -115,10 +124,14 @@ assert.ok(
 );
 // Item pages (Revision 2026-10-23b): an item has a page iff it has a note.
 const itemRoute = read('src/pages/[lang]/library/item/[id].astro');
-assert.match(itemRoute, /buildItemNoteIndex/, 'Item pages are generated from the note index only.');
+assert.match(itemRoute, /getPublishedItemPageIds/, 'Every published item has a page (Revision 2026-10-23c).');
+assert.match(itemRoute, /buildItemNoteIndex/, 'An item page shows its note from the note index when one exists.');
 assert.match(itemRoute, /getBacklinksFor/, 'An item page lists its backlinks.');
 const itemLayout = read('src/layouts/LibraryItemPost.astro');
 assert.match(itemLayout, /noindex, follow/, 'Item pages are noindex outside ko.');
+assert.match(itemLayout, /const indexable = isCanonical && hasNote/, 'An item page without a note is noindex (thin page).');
+assert.match(itemLayout, /item\.no-note/, 'An item page without a note shows one quiet line, no fake content.');
+assert.match(itemLayout, /aspect-ratio: 2 \/ 1/, 'The item image sits in the same 2:1 frame.');
 assert.match(itemLayout, /canonicalURL=\{canonicalURL\.href\}/, 'Item pages canonicalize to the ko page.');
 assert.match(itemLayout, /rel="noopener noreferrer"/, 'The original box is the one external link, opened safely.');
 for (const page of [
@@ -311,6 +324,31 @@ for (const outputRoot of [join(root, 'dist/client'), join(root, '.vercel/output/
 
 		const usefulFeedsHtmlPath = join(outputRoot, lang, 'library', 'useful-feeds', 'index.html');
 		assert.equal(existsSync(usefulFeedsHtmlPath), false, `${relative(root, usefulFeedsHtmlPath)} should no longer be generated.`);
+	}
+}
+
+// Item pages in the build output: every published item has one in every language;
+// the sitemap lists only items with a published note (a no-note page is noindex).
+for (const outputRoot of [join(root, 'dist/client'), join(root, '.vercel/output/static')]) {
+	if (!existsSync(join(outputRoot, 'ko', 'library', 'index.html'))) continue;
+	const sitemapPath = join(outputRoot, 'sitemap.xml');
+	const sitemap = existsSync(sitemapPath) ? readFileSync(sitemapPath, 'utf8') : '';
+	for (const lang of languages) {
+		for (const entry of approvedResources) {
+			const pagePath = join(outputRoot, lang, 'library', 'item', entry.data.id, 'index.html');
+			assert.ok(existsSync(pagePath), `${relative(root, pagePath)} should exist: every published item has a page.`);
+		}
+		for (const pick of publishedPicks) {
+			const pagePath = join(outputRoot, lang, 'library', 'item', getPickSlug(basename(pick.filePath)), 'index.html');
+			assert.ok(existsSync(pagePath), `${relative(root, pagePath)} should exist: every published item has a page.`);
+		}
+	}
+	const noteRobots = (html) => /name="robots" content="noindex/.test(html);
+	for (const entry of approvedResources) {
+		const html = readFileSync(join(outputRoot, 'ko', 'library', 'item', entry.data.id, 'index.html'), 'utf8');
+		const inSitemap = sitemap.includes(`/ko/library/item/${entry.data.id}/`);
+		if (inSitemap) assert.ok(!noteRobots(html), `${entry.data.id}: a sitemap item page must be indexable.`);
+		else assert.ok(noteRobots(html), `${entry.data.id}: an item page without a published note must be noindex (and is not in the sitemap).`);
 	}
 }
 

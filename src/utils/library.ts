@@ -197,6 +197,8 @@ export type LibraryItemImage =
 
 export interface LibraryItem {
 	id: string;
+	/** The item page id (`/{lang}/library/item/{pageId}/`): resource id or pick slug; unset on explainers. */
+	pageId?: string;
 	title: string;
 	url: string;
 	/** Filter facet: tool / repo / site / skill / reference. */
@@ -212,9 +214,9 @@ export interface LibraryItem {
 	/** One-line summary in the requested language (resources only; '' when none). */
 	description: string;
 	/**
-	 * Set when the owner wrote a note about the item (docs/content/item-notes.md):
-	 * the row then links to the item's own page (`/{lang}/library/item/{pageId}/`)
-	 * instead of the original in a new tab.
+	 * Set when the owner wrote a note about the item (docs/content/item-notes.md).
+	 * Every item has its page (`/{lang}/library/item/{pageId}/`); this only marks
+	 * that the page carries a note (the 노트 badge).
 	 */
 	note?: { pageId: string };
 	/**
@@ -254,6 +256,7 @@ export function getLibraryItems(
 ): LibraryItem[] {
 	const fromResources = getApprovedResources(resources).map((resource): LibraryItem => ({
 		id: resource.data.id,
+		pageId: resource.data.id,
 		title: resource.data.title,
 		url: resource.data.url,
 		kind: resourceKinds[resource.data.type] ?? 'reference',
@@ -270,6 +273,7 @@ export function getLibraryItems(
 		.filter((pick) => pick.data.draft !== true)
 		.map((pick): LibraryItem => ({
 			id: `pick-${getPickSlug(pick.id)}`,
+			pageId: getPickSlug(pick.id),
 			title: pick.data.title,
 			url: pick.data.url,
 			kind: pick.data.kind,

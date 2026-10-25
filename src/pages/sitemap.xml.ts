@@ -90,8 +90,9 @@ export const GET: APIRoute = async ({ site }) => {
   // published item, the same gate its route's getStaticPaths uses.
   const publishedSignals = getPublishedSignals(await getCollection('signals'));
   const publishedWeekly = getPublishedWeeklyNotes(await getCollection('weeklyNotes'));
-  // Item pages (Revision 2026-10-23b): an item has a page iff it has a published
-  // note; ko URLs only, like the other Library pages.
+  // Item pages (Revision 2026-10-23c): every item has a page, but a page without a
+  // published note is thin and noindex, so only items WITH a published note are
+  // listed; ko URLs only, like the other Library pages.
   const itemNoteIndex = buildItemNoteIndex({
     notes: await getCollection('itemNotes'),
     picks: await getCollection('picks'),

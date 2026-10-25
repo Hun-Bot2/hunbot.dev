@@ -44,7 +44,7 @@ All colours come from `src/styles/tokens.css`; fonts and `--content-max` live th
 
 ## Area tints
 
-The Library's 분야 (design, code, AI engineering, data visualization, learning, creative, other) each have one muted, mid-saturation tint (`--area-*` in `tokens.css`, light on `:root`, dark on `html.dark`), every one at least 3:1 against `--paper` for non-text use. **They are identity marks only**: the tab icon of the area and the monogram tile on its cards (the tile is 20% of the tint mixed into the card with a 1px tint border; the letter stays `--ink`). Never use a tint for text, for state (reviewed, error, queue), or anywhere beyond those two marks; the accent stays the one accent and text stays ink or secondary. A new 분야 needs a `tint` in `src/data/libraryAreas.ts` and a token pair.
+The Library's 분야 (design, code, AI engineering, data visualization, learning, creative, other) each have one muted, mid-saturation tint (`--area-*` in `tokens.css`, light on `:root`, dark on `html.dark`), every one at least 3:1 against `--paper` for non-text use. **They are identity marks only**: the tab icon of the area and the monogram tile on its cards and on an item page without an image (the tile is 20% of the tint mixed into the card with a 1px tint border; the letter stays `--ink`). Never use a tint for text, for state (reviewed, error, queue), or anywhere beyond those two marks; the accent stays the one accent and text stays ink or secondary. A new 분야 needs a `tint` in `src/data/libraryAreas.ts` and a token pair.
 
 ## Type Scale
 
@@ -94,7 +94,7 @@ One easing family and one duration scale, defined in `tokens.css`. Use these and
 ## Lists, Not Cards
 
 - Present collections as **rule-separated rows** (`.rule-list`, `.writing-entry`, `.paper-reading-list` rows): 1px `--rule` between rows, no resting shadows, no rounded card surfaces. The title turns `--accent` on hover.
-- Grids: the pick-section `.knowledge-item` grid (4 columns at 1100px+, 2 at 640px+, 1 below; items sit unboxed at rest, the 1px border and `--lift-shadow` appear only on hover or keyboard focus) and the Library's `.resource-card` grid (4 / 3 / 2 / 1 columns at 1100 / 820 / 560px; boxed at rest: `--paper-light`, 1px `--rule`, 6px radius; the same lift on hover; see `docs/features/library-page.md`).
+- Grids: the pick-section `.knowledge-item` grid (4 columns at 1100px+, 2 at 640px+, 1 below; items sit unboxed at rest, the 1px border and `--lift-shadow` appear only on hover or keyboard focus) and the Library's `.resource-card` grid (3 / 2 / 1 columns at 820 / 560px, in the 980px frame; boxed at rest: `--paper-light`, 1px `--rule`, 6px radius; the same lift on hover; see `docs/features/library-page.md`).
 - Page headers use `.subpage-intro` (eyebrow + one line, 14px bottom padding; the blog index is the eyebrow alone); section heads use `.column-heading` (serif title, mono link on the right, `--rule-strong` underline). Empty sections either do not render or show a single `.empty-line`.
 - Shared Library/Research row, tab, and grid styles live in `LibraryPageStyles.astro`; list rows in `src/styles/lists.css`.
 

@@ -8,7 +8,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { basename, extname, join, relative } from 'node:path';
 import yaml from 'js-yaml';
 
-import { findPageIdCollisions, longestSharedRun, parseAbout } from '../src/utils/item-notes.ts';
+import { findPageIdCollisions, longestSharedRun, noteBodyText, parseAbout } from '../src/utils/item-notes.ts';
 import { getPickSlug } from '../src/utils/picks.ts';
 import { isDateString, isObject, readJsonFrontmatterDirectory, walk } from './lib/read-json-frontmatter.mjs';
 
@@ -39,7 +39,7 @@ for (const note of notes) {
 	noteFor.set(key, note.label);
 	if (ref.kind === 'pick') {
 		const pick = pickBySlug.get(ref.id);
-		if (pick && pick.body.trim() !== '') {
+		if (pick && noteBodyText(pick.body) !== '') {
 			errors.push(`${note.label}: pick "${ref.id}" already has its own Markdown body, which is its note (one note per item).`);
 		}
 	}
@@ -47,7 +47,7 @@ for (const note of notes) {
 
 for (const pick of picks) {
 	// A pick's own body is its note: the same guardrails apply to it.
-	if (pick.body.trim() === '' || pick.data.draft === true) continue;
+	if (noteBodyText(pick.body) === '' || pick.data.draft === true) continue;
 	if (/\bTEMP:/.test(pick.body)) errors.push(`${pick.label}: a published pick note may not contain TEMP:.`);
 }
 
@@ -96,7 +96,8 @@ function validateNote(note) {
 		errors.push(`${label}.tags must be short slug-like strings.`);
 	}
 
-	if (note.body.trim() === '') errors.push(`${label}: the note body is empty (a note is its body).`);
+	// A draft may hold only the placeholder comment `npm run note:new` writes; a published note needs text.
+	if (data.draft !== true && noteBodyText(note.body) === '') errors.push(`${label}: the note body is empty (a note is its body; only a draft may be a placeholder).`);
 	if (data.draft !== true && /\bTEMP:/.test(note.body)) errors.push(`${label}: a published note may not contain TEMP:.`);
 
 	// Copying guardrail: the delivered summary is the item's own text.
