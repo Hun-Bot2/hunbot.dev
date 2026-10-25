@@ -18,6 +18,7 @@ import TableOfContents from '../components/TableOfContents.astro';
 import Breadcrumb from '../components/Breadcrumb.astro';
 import Backlinks from '../components/Backlinks.astro';
 import LinkPreview from '../components/LinkPreview.astro';
+import ProvenanceBadge from '../components/library/ProvenanceBadge.astro';
 import { getLibraryArea } from '../data/libraryAreas';
 import { getMonogram } from '../utils/library-area-tabs';
 import { getResponsivePublicImage } from '../utils/responsive-public-images';
@@ -44,12 +45,16 @@ type Props = {
 	updatedAt: string | null;
 	readMinutes: number;
 	tags: string[];
+	/** 'bot': a draft written from public sources, shown only once the owner reviewed it. */
+	authorship?: 'owner' | 'bot';
+	sources?: string[];
+	reviewedAt?: string | null;
 	/** The item's own preview image, as shown in the list (owner decision 2026-10-25). */
 	image?: { src: string; width: number; height: number } | null;
 	backlinks: Backlink[];
 };
 
-const { lang, pageId, title, url, kind, area, topic, description, hasNote, writtenAt, updatedAt, readMinutes, tags, image = null, backlinks } = Astro.props as Props;
+const { lang, pageId, title, url, kind, area, topic, description, hasNote, writtenAt, updatedAt, readMinutes, tags, authorship = 'owner', sources = [], reviewedAt = null, image = null, backlinks } = Astro.props as Props;
 const t = useTranslations(lang);
 const host = new URL(url).host.replace(/^www\./, '');
 // The note is Korean on every language's page; the other pages are the same text under that language's chrome.
@@ -63,6 +68,12 @@ const tint = getLibraryArea(area).tint;
 // A page without a note is thin: noindex until the owner writes one.
 const indexable = isCanonical && hasNote;
 const metaDescription = description || title;
+const isBot = authorship === 'bot';
+// Shown as plain text: host + path, no query or fragment.
+const sourceLabel = (source: string) => {
+	const parsed = new URL(source);
+	return `${parsed.host.replace(/^www\./, '')}${parsed.pathname === '/' ? '' : parsed.pathname.replace(/\/$/, '')}`;
+};
 ---
 
 <html lang={lang}>
@@ -116,6 +127,12 @@ const metaDescription = description || title;
 								<span>{t('blog.published')} <time datetime={writtenAt}>{formatPostDate(new Date(writtenAt))}</time></span>
 								{updatedAt && <span>{t('blog.updated')} <time datetime={updatedAt}>{formatPostDate(new Date(updatedAt))}</time></span>}
 								<span>{t('post.read-time').replace('{minutes}', String(readMinutes))}</span>
+								{isBot && (
+									<span class="item-prov">
+										<ProvenanceBadge authorship="bot" humanReviewed={true} lang={lang} variant="compact" />
+										{reviewedAt && <> <time datetime={reviewedAt}>{formatPostDate(new Date(reviewedAt))}</time></>}
+									</span>
+								)}
 							</p>
 						)
 					}
@@ -132,6 +149,19 @@ const metaDescription = description || title;
 								</div>
 							) : (
 								<p class="item-no-note">{t('item.no-note')}</p>
+							)
+						}
+
+						{
+							hasNote && isBot && sources.length > 0 && (
+								<aside class="item-sources" aria-labelledby="item-sources-label">
+									<p id="item-sources-label" class="item-sources-label">{t('item.sources.label')}</p>
+									<ul>
+										{sources.map((source) => (
+											<li><a href={source} target="_blank" rel="noopener noreferrer">{sourceLabel(source)}</a></li>
+										))}
+									</ul>
+								</aside>
 							)
 						}
 
@@ -246,6 +276,47 @@ const metaDescription = description || title;
 
 	.item-dates {
 		margin: 1rem 0 0;
+	}
+
+	/* Bot-note sections (## 무엇인가 …) stay clearly below the page title. */
+	.item-page .prose h2 {
+		margin-top: 48px;
+		font-size: clamp(1.375rem, 2.4vw, 1.625rem);
+	}
+
+	.item-sources {
+		margin-top: 2.5rem;
+	}
+
+	.item-sources-label {
+		margin: 0 0 0.5rem;
+		font: 400 0.6875rem/1.45 var(--font-mono);
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
+		color: var(--secondary);
+	}
+
+	.item-sources ul {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.item-sources li {
+		margin: 0.2rem 0;
+		font: 400 0.75rem/1.6 var(--font-mono);
+		overflow-wrap: anywhere;
+	}
+
+	.item-sources a {
+		color: var(--secondary);
+		text-decoration: underline;
+		text-underline-offset: 3px;
+	}
+
+	.item-sources a:hover,
+	.item-sources a:focus-visible {
+		color: var(--accent);
 	}
 
 	.item-ko-only {

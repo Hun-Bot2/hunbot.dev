@@ -47,7 +47,7 @@ export const libraryAreas: LibraryArea[] = [
 	{
 		id: 'learning',
 		tint: 'learning',
-		label: { ko: '배움·생각 도구', jp: '学び・思考ツール', en: 'Learning & Thinking' },
+		label: { ko: '인터랙티브 탐구', jp: 'インタラクティブ探究', en: 'Interactive explorations' },
 		topics: ['explorable-explanations', 'tools-for-thought'],
 	},
 	{

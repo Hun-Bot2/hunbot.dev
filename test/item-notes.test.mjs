@@ -181,3 +181,26 @@ test('validate-item-notes rejects a non-draft note about an unpublished resource
 	withContent({ 'src/content/resources/animista.md': resourceFile({ status: 'pending' }), 'src/content/item-notes/a.md': noteFile(baseFront) }, (dir) =>
 		assertValidatorRejects(script, dir, /not a published resource/));
 });
+
+const botFront = `${baseFront}\nauthorship: bot\nsources:\n  - https://example.com/docs/start`;
+
+test('validate-item-notes requires sources for a bot note and reviewedAt to publish it', () => {
+	const res = { 'src/content/resources/animista.md': resourceFile() };
+	withContent({ ...res, 'src/content/item-notes/a.md': noteFile(`${baseFront}\nauthorship: bot\ndraft: true`) }, (dir) =>
+		assertValidatorRejects(script, dir, /must list the public sources/));
+	withContent({ ...res, 'src/content/item-notes/a.md': noteFile(botFront) }, (dir) => assertValidatorRejects(script, dir, /needs reviewedAt/));
+	withContent({ ...res, 'src/content/item-notes/a.md': noteFile(`${botFront}\ndraft: true`) }, (dir) => assertValidatorAccepts(script, dir));
+	withContent({ ...res, 'src/content/item-notes/a.md': noteFile(`${botFront}\nreviewedAt: '2026-10-25'`) }, (dir) => assertValidatorAccepts(script, dir));
+	withContent({ ...res, 'src/content/item-notes/a.md': noteFile(`${baseFront}\nsources:\n  - ftp://x`) }, (dir) => assertValidatorRejects(script, dir, /sources must be/));
+});
+
+test('a bot note enters the index only once reviewed, with its sources and date', () => {
+	const bot = (extra) => note('resource:approved', { authorship: 'bot', sources: ['https://example.com/a'], ...extra });
+	const unreviewed = buildItemNoteIndex({ notes: [bot({})], picks: [], resources, pickSlug: slug });
+	assert.equal(unreviewed.size, 0);
+	const reviewed = buildItemNoteIndex({ notes: [bot({ reviewedAt: '2026-10-25' })], picks: [], resources, pickSlug: slug });
+	const entry = reviewed.get('approved');
+	assert.equal(entry.authorship, 'bot');
+	assert.deepEqual(entry.sources, ['https://example.com/a']);
+	assert.equal(entry.reviewedAt, '2026-10-25');
+});

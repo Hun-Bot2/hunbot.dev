@@ -66,6 +66,9 @@ const backlinks = await getBacklinksFor(
 	updatedAt={note?.updatedAt ?? null}
 	readMinutes={note ? estimateReadTime(estimateWordCount(note.body)) : 0}
 	tags={note?.tags ?? []}
+	authorship={note?.authorship ?? 'owner'}
+	sources={note?.sources ?? []}
+	reviewedAt={note?.reviewedAt ?? null}
 	image={image}
 	backlinks={backlinks}
 >

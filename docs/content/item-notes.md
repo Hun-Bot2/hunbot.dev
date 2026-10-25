@@ -27,8 +27,20 @@ A **note** is the owner's own commentary on one 자료 item. Since 2026-10-25 **
 | `updatedAt` | `YYYY-MM-DD` | no | not before `writtenAt` |
 | `draft` | boolean | no, default `false` | `true` renders nowhere |
 | `tags` | slug strings | no | |
+| `authorship` | `owner` or `bot` | no, default `owner` | `bot`: a draft written from public sources, see [Bot drafts](#bot-drafts) |
+| `sources` | up to 8 `http(s)` URLs | no, default `[]`; required and non-empty when `authorship: bot` | the sources a bot draft was written from |
+| `reviewedAt` | `YYYY-MM-DD` | required for a non-draft bot note | the owner's review date |
 
 The body is required and must not be empty (HTML comments do not count as text) once the note is published; a draft may be only the placeholder comment. At most one note per item (a pick with a body already has one, so it may not also have an `item-notes` file).
+
+## Bot drafts
+
+Since 2026-10-25 an item page may carry a **draft written from the item's documentation and public sources**, not in the owner's words, so every item has an explanation. It is an `itemNotes` entry with `authorship: bot`.
+
+- **Labelled.** The page shows "AI 초안 · 사람이 검토함 {reviewedAt}" in its meta line and, after the body, a "참고한 자료" list of `sources` (host and path, external links).
+- **Reviewed before it shows.** A bot note is `draft: true` until the owner has read it. Publishing means setting `reviewedAt` to the review date and removing `draft: true`; the validator rejects a non-draft bot note without `reviewedAt`, and the site ignores one even if it slips through. Drafts never render anywhere (no page content, no 노트 badge, no sitemap entry, no backlinks).
+- **Writing rules.** Own sentences (no copied documentation or marketing copy; the 40-character guardrail below applies); facts only from the cited `sources`, and `sources` is required; no first-person claims of use ("I use", "I found") because the owner did not write it; sections in order with `##` headings: 무엇인가 / 이럴 때 쓴다 / 핵심 기능 / 시작하는 법 / 알아둘 점. Code blocks are rendered like blog code.
+- **Taking over.** The owner may rewrite a draft freely. Once it is theirs, change `authorship` to `owner` (`sources` and `reviewedAt` may stay or go); the label then disappears.
 
 ## Guardrails
 

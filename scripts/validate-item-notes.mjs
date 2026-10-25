@@ -13,7 +13,7 @@ import { getPickSlug } from '../src/utils/picks.ts';
 import { isDateString, isObject, readJsonFrontmatterDirectory, walk } from './lib/read-json-frontmatter.mjs';
 
 const root = process.cwd();
-const allowed = new Set(['about', 'writtenAt', 'updatedAt', 'draft', 'tags']);
+const allowed = new Set(['about', 'writtenAt', 'updatedAt', 'draft', 'tags', 'authorship', 'sources', 'reviewedAt']);
 const slugPattern = /^[a-z0-9][a-z0-9-]{0,39}$/;
 const copyRunLength = 40;
 
@@ -94,6 +94,20 @@ function validateNote(note) {
 	if (typeof data.draft !== 'undefined' && typeof data.draft !== 'boolean') errors.push(`${label}.draft must be true or false.`);
 	if (typeof data.tags !== 'undefined' && (!Array.isArray(data.tags) || !data.tags.every((tag) => typeof tag === 'string' && slugPattern.test(tag)))) {
 		errors.push(`${label}.tags must be short slug-like strings.`);
+	}
+
+	// Bot drafts (docs/content/item-notes.md, "Bot drafts"): sources required, review date required to publish.
+	const authorship = data.authorship ?? 'owner';
+	if (!['owner', 'bot'].includes(authorship)) errors.push(`${label}.authorship must be "owner" or "bot".`);
+	if (typeof data.sources !== 'undefined') {
+		const ok = Array.isArray(data.sources) && data.sources.length <= 8 && data.sources.every((url) => typeof url === 'string' && /^https?:\/\/\S+$/.test(url));
+		if (!ok) errors.push(`${label}.sources must be at most 8 http(s) URLs.`);
+	}
+	const reviewedAt = dateOf(data.reviewedAt);
+	if (typeof data.reviewedAt !== 'undefined' && !isDateString(reviewedAt)) errors.push(`${label}.reviewedAt must be YYYY-MM-DD.`);
+	if (authorship === 'bot') {
+		if (!Array.isArray(data.sources) || data.sources.length === 0) errors.push(`${label}: a bot note must list the public sources it was written from (sources).`);
+		if (data.draft !== true && !isDateString(reviewedAt)) errors.push(`${label}: a published bot note needs reviewedAt (the owner's review date); set it when you review the draft.`);
 	}
 
 	// A draft may hold only the placeholder comment `npm run note:new` writes; a published note needs text.

@@ -66,9 +66,16 @@ export interface ItemNote {
 	writtenAt: string;
 	updatedAt: string | null;
 	tags: string[];
+	/** 'bot': a draft written from public sources and reviewed by the owner. */
+	authorship: 'owner' | 'bot';
+	sources: string[];
+	reviewedAt: string | null;
 }
 
-type NoteLike = { data: { about: string; writtenAt: string; updatedAt?: string; draft?: boolean; tags?: string[] }; body?: string };
+type NoteLike = {
+	data: { about: string; writtenAt: string; updatedAt?: string; draft?: boolean; tags?: string[]; authorship?: 'owner' | 'bot'; sources?: string[]; reviewedAt?: string };
+	body?: string;
+};
 type PickLike = { id: string; data: { draft?: boolean; addedAt: unknown; tags?: never }; body?: string };
 type ResourceLike = { data: { id: string; status: string; review: { humanReviewed: boolean } } };
 
@@ -96,7 +103,7 @@ export function buildItemNoteIndex(input: {
 		const body = noteBodyText(pick.body);
 		if (!body) continue;
 		const slug = input.pickSlug(pick.id);
-		index.set(slug, { pageId: slug, ref: { kind: 'pick', id: slug }, origin: 'pick', body, writtenAt: isDate(pick.data.addedAt), updatedAt: null, tags: [] });
+		index.set(slug, { pageId: slug, ref: { kind: 'pick', id: slug }, origin: 'pick', body, writtenAt: isDate(pick.data.addedAt), updatedAt: null, tags: [], authorship: 'owner', sources: [], reviewedAt: null });
 	}
 
 	for (const note of input.notes) {
@@ -105,6 +112,9 @@ export function buildItemNoteIndex(input: {
 		const body = noteBodyText(note.body);
 		if (!ref || !body) continue;
 		if (ref.kind === 'resource' ? !approved.has(ref.id) : !publishedPicks.has(ref.id)) continue;
+		const authorship = note.data.authorship ?? 'owner';
+		// A bot note is never shown before the owner has reviewed it.
+		if (authorship === 'bot' && !note.data.reviewedAt) continue;
 		index.set(ref.id, {
 			pageId: ref.id,
 			ref,
@@ -113,6 +123,9 @@ export function buildItemNoteIndex(input: {
 			writtenAt: isDate(note.data.writtenAt),
 			updatedAt: note.data.updatedAt ? isDate(note.data.updatedAt) : null,
 			tags: note.data.tags ?? [],
+			authorship,
+			sources: note.data.sources ?? [],
+			reviewedAt: note.data.reviewedAt ? isDate(note.data.reviewedAt) : null,
 		});
 	}
 	return index;
