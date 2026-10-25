@@ -21,8 +21,8 @@ const { lang, tabs, storageKey } = Astro.props;
 const t = useTranslations(lang);
 ---
 
-<div class="area-tabs" data-blog-filters data-js-only data-facets="area" data-storage-key={storageKey} role="group" aria-label={t('library.areas.label')} hidden>
-	<div class="area-tabs-scroll page-frame" data-tabs-scroll>
+<div class="area-tabs page-frame" data-blog-filters data-js-only data-facets="area" data-storage-key={storageKey} role="group" aria-label={t('library.areas.label')} hidden>
+	<div class="area-tabs-scroll" data-tabs-scroll>
 		<ul class="area-tab-list">
 			{
 				tabs.map((tab) => (

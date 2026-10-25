@@ -50,10 +50,11 @@ const { label, tabs, current } = Astro.props;
 		top: var(--header-height);
 		z-index: 80;
 		background: var(--paper);
-		border-bottom: 1px solid var(--rule);
 	}
 
+	/* The rule spans the content column, like every section's heading rule. */
 	.section-tabs-inner {
+		border-bottom: 1px solid var(--rule);
 		overflow-x: auto;
 		scrollbar-width: none;
 		-ms-overflow-style: none;
