@@ -193,6 +193,7 @@ src/pages/
 | Component | Used in | What it does |
 |---|---|---|
 | `BaseHead.astro` | All layouts | `<head>`: canonical, hreflang, OG, fonts, analytics, theme bootstrap, JSON-LD |
+| `AnalyticsConsent.astro` | `BaseHead` | Loads GoatCounter (cookie-free, always) and Google Analytics (only after consent). Shows the consent banner (`.consent-banner`, `global.css`) until the reader chooses; any `[data-consent-open]` element (the mobile menu's 분석 설정) reopens it. Choice: `hunbot.analytics.consent` in localStorage. |
 | `Header.astro` | All pages | 72px header: wordmark only (no logo mark), centred text nav (글 / 연구 / 라이브러리 / 탐색, active = accent + underline), Search link, theme toggle (`#themeToggleBtn`), GitHub and LinkedIn icon links (language switching is the floating globe). Below 1100px the nav collapses into the `#menuToggle` / `#mobileMenu` panel (also holds GitHub/LinkedIn/RSS). Owns the skip link. |
 | `LocalizedLink.astro` | Various | Link that preserves current language prefix |
 | `FloatingLanguagePicker.astro` | Every localized page | Globe button (24px `earth-9-svgrepo-com.svg`, tinted via CSS mask), `position: fixed` near the top right under the header; draggable (`src/utils/floating.ts`); menu opens on the side with room, lists the languages that have this page, current one checked. The only language control |

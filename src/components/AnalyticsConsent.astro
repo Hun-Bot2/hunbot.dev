@@ -1,0 +1,142 @@
+---
+// Analytics loader + consent banner, rendered from BaseHead on every page.
+// GoatCounter is cookie-free and always loads. Google Analytics sets cookies, so
+// it loads only after the reader chooses "allow" (stored in localStorage).
+// Without a stored choice the banner is shown; any [data-consent-open] element
+// reopens it. In dev the banner works but nothing is loaded.
+import { useTranslations, type UILanguage } from '../i18n/ui';
+
+interface Props {
+	lang: UILanguage;
+}
+
+const t = useTranslations(Astro.props.lang);
+const enableAnalytics = import.meta.env.PROD;
+const strings = {
+	label: t('consent.label'),
+	title: t('consent.title'),
+	body: t('consent.body'),
+	accept: t('consent.accept'),
+	decline: t('consent.decline'),
+};
+---
+
+<script is:inline define:vars={{ enableAnalytics, strings }}>
+	(() => {
+		const STORAGE_KEY = 'hunbot.analytics.consent';
+		const GA_ID = 'G-KR3M3GY8J7';
+
+		const readChoice = () => {
+			try {
+				const value = localStorage.getItem(STORAGE_KEY);
+				return value === 'granted' || value === 'denied' ? value : null;
+			} catch (e) {
+				return null;
+			}
+		};
+
+		const loadGoatCounter = () => {
+			if (!enableAnalytics) return;
+			const script = document.createElement('script');
+			script.async = true;
+			script.src = 'https://gc.zgo.at/count.js';
+			script.dataset.goatcounter = 'https://hunbot.goatcounter.com/count';
+			document.head.appendChild(script);
+		};
+
+		const loadGoogleAnalytics = () => {
+			if (!enableAnalytics || document.getElementById('google-analytics')) return;
+			window.dataLayer = window.dataLayer || [];
+			window.gtag = window.gtag || function gtag() {
+				window.dataLayer.push(arguments);
+			};
+			window.gtag('js', new Date());
+			window.gtag('config', GA_ID, {
+				allow_google_signals: false,
+				allow_ad_personalization_signals: false,
+			});
+			const script = document.createElement('script');
+			script.id = 'google-analytics';
+			script.async = true;
+			script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ID}`;
+			document.head.appendChild(script);
+		};
+
+		// Withdrawing consent stops GA for the rest of this page and removes its cookies.
+		const stopGoogleAnalytics = () => {
+			if (typeof window.gtag === 'function') {
+				window.gtag('consent', 'update', { analytics_storage: 'denied' });
+			}
+			const domain = location.hostname.replace(/^www\./, '');
+			document.cookie.split(';').forEach((cookie) => {
+				const name = cookie.split('=')[0].trim();
+				if (!name.startsWith('_ga')) return;
+				[`; domain=.${domain}`, ''].forEach((scope) => {
+					document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/${scope}`;
+				});
+			});
+		};
+
+		let banner = null;
+
+		const choose = (value) => {
+			try {
+				localStorage.setItem(STORAGE_KEY, value);
+			} catch (e) {}
+			banner?.remove();
+			banner = null;
+			if (value === 'granted') loadGoogleAnalytics();
+			else stopGoogleAnalytics();
+		};
+
+		const showBanner = () => {
+			if (banner) return;
+			banner = document.createElement('section');
+			banner.className = 'consent-banner';
+			banner.setAttribute('role', 'region');
+			banner.setAttribute('aria-label', strings.label);
+			banner.setAttribute('data-pagefind-ignore', '');
+
+			const title = document.createElement('p');
+			title.className = 'consent-banner__title';
+			title.textContent = strings.title;
+			const body = document.createElement('p');
+			body.className = 'consent-banner__body';
+			body.textContent = strings.body;
+
+			const actions = document.createElement('div');
+			actions.className = 'consent-banner__actions';
+			[['denied', strings.decline], ['granted', strings.accept]].forEach(([value, label]) => {
+				const button = document.createElement('button');
+				button.type = 'button';
+				button.className = 'btn-pill';
+				button.textContent = label;
+				button.addEventListener('click', () => choose(value));
+				actions.appendChild(button);
+			});
+
+			banner.append(title, body, actions);
+			document.body.appendChild(banner);
+		};
+
+		const start = () => {
+			if (readChoice() === 'granted') loadGoogleAnalytics();
+			loadGoatCounter();
+		};
+
+		// Third-party analytics are delayed so they do not compete with first render.
+		if ('requestIdleCallback' in window) {
+			window.requestIdleCallback(start, { timeout: 3000 });
+		} else {
+			window.addEventListener('load', () => window.setTimeout(start, 1000), { once: true });
+		}
+
+		document.addEventListener('DOMContentLoaded', () => {
+			if (readChoice() === null) showBanner();
+		});
+		document.addEventListener('click', (event) => {
+			const trigger = event.target instanceof Element ? event.target.closest('[data-consent-open]') : null;
+			if (trigger) showBanner();
+		});
+	})();
+</script>

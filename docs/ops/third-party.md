@@ -10,8 +10,8 @@ Do not add document viewers, upload services, auth providers, payment scripts, o
 
 | Service | Domains | Purpose | Loaded from | Notes |
 | --- | --- | --- | --- | --- |
-| GoatCounter | `gc.zgo.at`, `hunbot.goatcounter.com`, `*.goatcounter.com` | Lightweight analytics | `src/components/BaseHead.astro` | Public analytics only; keep CSP explicit. |
-| Google Analytics | `www.googletagmanager.com`, `*.google-analytics.com`, `*.analytics.google.com`, `*.googletagmanager.com` | Traffic analytics | `src/components/BaseHead.astro` | Inline bootstrap still requires CSP `unsafe-inline`. |
+| GoatCounter | `gc.zgo.at`, `hunbot.goatcounter.com`, `*.goatcounter.com` | Lightweight analytics | `src/components/AnalyticsConsent.astro` | Cookie-free, so it loads without consent. Public analytics only; keep CSP explicit. |
+| Google Analytics | `www.googletagmanager.com`, `*.google-analytics.com`, `*.analytics.google.com`, `*.googletagmanager.com` | Traffic analytics | `src/components/AnalyticsConsent.astro` | Sets cookies, so it loads only after the reader allows it in the consent banner (`hunbot.analytics.consent` in localStorage); Google signals and ad personalization are off. Inline bootstrap still requires CSP `unsafe-inline`. |
 | Giscus | `giscus.app`, `api.github.com` | Blog comments | `src/components/GiscusComments.astro` | Renders only when required public config is present and valid-looking. |
 | Google Fonts | `fonts.googleapis.com`, `fonts.gstatic.com` | Language-specific web fonts | `src/components/BaseHead.astro` | Loaded per language. |
 | jsDelivr | `cdn.jsdelivr.net` | KaTeX stylesheet and fonts | `src/components/BaseHead.astro` | Route-scoped loading can be reviewed later. |

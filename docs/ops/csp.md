@@ -11,7 +11,7 @@ Third-party service reference: [`docs/third-party-services.md`](./third-party-se
 | File | Purpose | Routes | Paint Critical | Status |
 | --- | --- | --- | --- | --- |
 | `src/components/BaseHead.astro` | JSON-LD website/person metadata | All pages | No | Inline structured data, safe to keep until JSON-LD helper exists |
-| `src/components/BaseHead.astro` | Google Analytics bootstrap | All pages | No | Inline third-party bootstrap still requires `unsafe-inline` |
+| `src/components/AnalyticsConsent.astro` | Analytics loader + consent banner (GA after consent) | All pages | No | Inline third-party bootstrap still requires `unsafe-inline` |
 | `src/components/BaseHead.astro` | Theme bootstrap and toggle binding | All pages | Yes | Keep inline until a hash/nonce or pre-paint alternative is designed |
 | `src/components/Header.astro` + `public/scripts/header-menu.js` | Mobile menu toggle and outside-click close | All pages with header | No | Migrated to public module script |
 | `src/components/Header.astro` | Skip-link click handler (moves focus to `#main-content`) | All pages with header | No | Small inline script; candidate for extraction alongside `header-menu.js` |
