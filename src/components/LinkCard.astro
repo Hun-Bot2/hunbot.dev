@@ -1,0 +1,37 @@
+---
+// An inline card for MDX: `<LinkCard href="/ko/blog/devlog/..." />` shows the
+// same facts as the hover preview (kind · reading time, title, description, the
+// target's own image if it has one) with a "읽기 →". The target must be a
+// published on-site page; anything else fails the build, so a card can never
+// point at a draft or a dead path.
+import '../styles/link-preview.css';
+import { useTranslations, type UILanguage } from '../i18n/ui';
+import { lookupPreview, pickLocalized } from '../utils/link-previews';
+import { getLinkPreviewPayload } from '../utils/link-previews-load';
+
+interface Props {
+	href: string;
+}
+
+const { href } = Astro.props;
+const payload = await getLinkPreviewPayload();
+const pathname = new URL(href, 'https://hun-bot.dev').pathname;
+const preview = lookupPreview(payload.items, pathname);
+if (!preview) throw new Error(`LinkCard: "${href}" is not a published on-site page.`);
+
+const hrefLang = href.match(/^\/(ko|jp|en)\//)?.[1] as UILanguage | undefined;
+const lang = hrefLang ?? ((Astro.currentLocale as UILanguage | undefined) ?? 'ko');
+const t = useTranslations(lang);
+const meta = [pickLocalized(payload.kinds[preview.kind], lang)];
+if (preview.readMinutes) meta.push(pickLocalized(payload.minutes, lang).replace('{n}', String(preview.readMinutes)));
+// Ko-only targets (explainers, weekly notes, item notes) are Korean text on every page.
+const contentLang = preview.title[lang] ? undefined : 'ko';
+---
+
+<a class="link-card" href={href} lang={contentLang}>
+	<p class="link-card-meta">{meta.filter(Boolean).join(' · ')}</p>
+	<p class="link-card-title">{pickLocalized(preview.title, lang)}</p>
+	{pickLocalized(preview.description, lang) && <p class="link-card-desc">{pickLocalized(preview.description, lang)}</p>}
+	{preview.image && <img class="link-card-image" src={preview.image} alt="" loading="lazy" decoding="async" />}
+	<span class="link-card-read">{t('linkcard.read')}</span>
+</a>

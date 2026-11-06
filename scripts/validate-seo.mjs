@@ -23,7 +23,7 @@ assert.match(baseHead, /type="application\/rss\+xml"/);
 assert.match(baseHead, /\$\{currentLang\}\/rss\.xml/);
 assert.doesNotMatch(baseHead, /feed\.json/, 'BaseHead should not advertise a JSON feed route that does not exist.');
 
-assert.match(read('src/pages/[lang]/library/weekly/rss.xml.js'), /getPublishedWeeklyNotes/, 'The weekly feed must list published notes only.');
+assert.match(read('src/pages/[lang]/reading/weekly/rss.xml.js'), /getPublishedWeeklyNotes/, 'The weekly feed must list published notes only.');
 assert.match(languageRssRoute, /getStaticPaths/);
 assert.match(languageRssRoute, /SUPPORTED_LANGUAGES/);
 assert.match(languageRssRoute, /getBlogLanguageFromId/);
@@ -40,6 +40,9 @@ assert.match(sitemapRoute, /\/explore\//, 'sitemap should list /{lang}/explore/.
 // Explainers: only published ones, and only the canonical-language URL.
 assert.match(sitemapRoute, /getPublishedExplainers/, 'sitemap should list published explainers only.');
 assert.match(sitemapRoute, /getExplainerUrl/);
+// Item pages (Revision 2026-10-23b): only items with a published note, ko URL only.
+assert.match(sitemapRoute, /buildItemNoteIndex/, 'sitemap should list item pages for items with a note only.');
+assert.match(sitemapRoute, /getItemUrl\('ko'/, 'sitemap should list ko item URLs only.');
 // Signals, weekly notes and the view index pages (Revision 2026-10-23): published
 // only, ko URLs only.
 assert.match(sitemapRoute, /getPublishedSignals/, 'sitemap should list the signals view only while signals are published.');

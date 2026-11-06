@@ -33,6 +33,10 @@ const pagesWithHeader = [
 	// Pick section pages (docs/decisions/site-structure.md#3,5) — one route
 	// generated per src/data/librarySections.ts slug.
 	'src/pages/[lang]/library/[section].astro',
+	// Reading section (docs/decisions/site-structure.md, Revision 2026-10-23c).
+	'src/pages/[lang]/reading/index.astro',
+	'src/pages/[lang]/reading/signals/index.astro',
+	'src/layouts/ExplainerPost.astro',
 	'src/pages/[lang]/paths.astro',
 	'src/pages/[lang]/paths/[path].astro',
 	'src/pages/[lang]/research.astro',
@@ -55,6 +59,7 @@ for (const outputRoot of [join(root, 'dist/client'), join(root, '.vercel/output/
 		'ko/index.html',
 		'ko/blog/index.html',
 		'ko/library/index.html',
+		'ko/reading/index.html',
 		// Newer Research routes should get the same #main-content spot check
 		// as the older sample pages above, not just a source-level assert
 		// (docs/decisions/site-structure.md#2).

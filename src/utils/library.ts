@@ -3,6 +3,7 @@ import type { UILanguage } from '../i18n/ui';
 import { sortStable } from './ordering.ts';
 import { getPickSlug } from './picks.ts';
 import { getLibraryAreaId } from '../data/libraryAreas.ts';
+import type { ItemNote } from './item-notes.ts';
 import { getExplainerSlug, getExplainerUrl, getPublishedExplainers, type ExplainerEntry } from './explainers.ts';
 
 export type ResourceEntry = CollectionEntry<'resources'>;
@@ -196,6 +197,8 @@ export type LibraryItemImage =
 
 export interface LibraryItem {
 	id: string;
+	/** The item page id (`/{lang}/library/item/{pageId}/`): resource id or pick slug; unset on explainers. */
+	pageId?: string;
 	title: string;
 	url: string;
 	/** Filter facet: tool / repo / site / skill / reference. */
@@ -204,10 +207,18 @@ export interface LibraryItem {
 	area: string;
 	/** Filter facet: the resource's first tag, or the pick's section slug. */
 	topic: string;
+	/** Further topic labels shown on the card after `topic` (a resource's other tags). */
+	tags: string[];
 	date: string;
 	image: LibraryItemImage;
 	/** One-line summary in the requested language (resources only; '' when none). */
 	description: string;
+	/**
+	 * Set when the owner wrote a note about the item (docs/content/item-notes.md).
+	 * Every item has its page (`/{lang}/library/item/{pageId}/`); this only marks
+	 * that the page carries a note (the 노트 badge).
+	 */
+	note?: { pageId: string };
 	/**
 	 * Set on an explainer (kind `explainer`): `url` is then an on-site page, not
 	 * an external link, and the row renders as ExplainerRow.
@@ -241,31 +252,38 @@ export function getLibraryItems(
 	picks: PickEntry[],
 	lang: UILanguage = 'ko',
 	explainers: ExplainerEntry[] = [],
+	notes: ReadonlyMap<string, ItemNote> = new Map(),
 ): LibraryItem[] {
 	const fromResources = getApprovedResources(resources).map((resource): LibraryItem => ({
 		id: resource.data.id,
+		pageId: resource.data.id,
 		title: resource.data.title,
 		url: resource.data.url,
 		kind: resourceKinds[resource.data.type] ?? 'reference',
 		area: getLibraryAreaId([resource.data.category, ...resource.data.tags]),
 		topic: resource.data.category,
+		tags: resource.data.tags.filter((tag) => tag !== resource.data.category),
 		date: resource.data.publishedAt ?? resource.data.source.firstSeenAt,
 		image: resource.data.image ?? { kind: 'typographic', label: hostLabel(resource.data.url) },
 		description: getResourceSummary(resource, lang),
+		note: notes.has(resource.data.id) ? { pageId: resource.data.id } : undefined,
 	}));
 
 	const fromPicks = picks
 		.filter((pick) => pick.data.draft !== true)
 		.map((pick): LibraryItem => ({
 			id: `pick-${getPickSlug(pick.id)}`,
+			pageId: getPickSlug(pick.id),
 			title: pick.data.title,
 			url: pick.data.url,
 			kind: pick.data.kind,
 			area: getLibraryAreaId([pick.data.section]),
 			topic: pick.data.section,
+			tags: [],
 			date: String(pick.data.addedAt).slice(0, 10),
 			image: { kind: 'typographic', label: hostLabel(pick.data.url) },
 			description: '',
+			note: notes.has(getPickSlug(pick.id)) ? { pageId: getPickSlug(pick.id) } : undefined,
 		}));
 
 	// Explainers (docs/decisions/site-structure.md, Revision 2026-10-22): the same
@@ -279,6 +297,7 @@ export function getLibraryItems(
 		kind: 'explainer',
 		area: getLibraryAreaId(explainer.data.tags),
 		topic: explainer.data.tags[0] ?? 'explainer',
+		tags: explainer.data.tags.slice(1),
 		date: explainer.data.publishedAt,
 		image: explainer.data.image ?? { kind: 'typographic', label: explainer.data.source.name },
 		description: explainer.data.dek,

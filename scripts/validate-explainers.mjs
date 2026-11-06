@@ -246,6 +246,14 @@ function validateEntry(entry) {
 		}
 	}
 
+	// A link to #claim-n in the body is a chip for claim n of the ledger (the split
+	// reader's left pane); n must exist.
+	const claimCount = Array.isArray(data.claims) ? data.claims.length : 0;
+	for (const match of entry.body.matchAll(/\]\(#claim-(\d+)\)/g)) {
+		const n = Number(match[1]);
+		if (n < 1 || n > claimCount) errors.push(`${label} links to #claim-${n} but the claims ledger has ${claimCount} entr${claimCount === 1 ? 'y' : 'ies'}.`);
+	}
+
 	// tags: the existing short-slug taxonomy.
 	if (typeof data.tags !== 'undefined') {
 		if (!Array.isArray(data.tags) || !data.tags.every((tag) => typeof tag === 'string' && shortSlugPattern.test(tag))) {

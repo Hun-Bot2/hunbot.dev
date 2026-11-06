@@ -1,0 +1,97 @@
+/*
+  The preview card (src/scripts/link-preview.ts) and the LinkCard component:
+  kind · reading time in mono, a serif title no larger than a list title, a short
+  description, and the target's own image only when it has one. Tokens only.
+*/
+
+.link-preview {
+	position: fixed;
+	z-index: 120;
+	width: min(20rem, calc(100vw - 1.5rem));
+	padding: 0.85rem 1rem 0.9rem;
+	border: 1px solid var(--rule-strong);
+	background: var(--paper-light);
+	box-shadow: var(--lift-shadow);
+	pointer-events: none;
+}
+
+.link-preview[hidden] {
+	display: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.link-preview:not([hidden]) {
+		animation: link-preview-in var(--dur-2) var(--ease-standard);
+	}
+}
+
+@keyframes link-preview-in {
+	from {
+		opacity: 0;
+	}
+}
+
+.link-preview-meta,
+.link-card-meta {
+	margin: 0 0 0.3rem;
+	font: 400 0.6875rem/1.45 var(--font-mono);
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	color: var(--secondary);
+}
+
+.link-preview-title,
+.link-card-title {
+	margin: 0;
+	font: 400 1.0625rem/1.4 var(--font-serif);
+	color: var(--ink);
+	overflow-wrap: anywhere;
+}
+
+.link-preview-desc,
+.link-card-desc {
+	display: -webkit-box;
+	-webkit-line-clamp: 3;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+	margin: 0.35rem 0 0;
+	font: 400 0.8125rem/1.55 var(--font-sans);
+	color: var(--secondary);
+}
+
+.link-preview-image,
+.link-card-image {
+	display: block;
+	width: 100%;
+	max-height: 7rem;
+	margin-top: 0.6rem;
+	object-fit: cover;
+}
+
+/* LinkCard: the same facts as an inline card inside a post. */
+.link-card {
+	display: block;
+	margin: 1.5rem 0;
+	padding: 0.9rem 1.1rem 0.8rem;
+	border: 1px solid var(--rule-strong);
+	background: var(--paper-deep);
+	color: var(--ink);
+	text-decoration: none;
+}
+
+.link-card:hover .link-card-title,
+.link-card:focus-visible .link-card-title,
+.link-card:hover .link-card-read,
+.link-card:focus-visible .link-card-read {
+	color: var(--accent);
+}
+
+.link-card-read {
+	display: inline-block;
+	min-height: 2.5rem;
+	padding-top: 0.55rem;
+	font: 400 0.6875rem/1.4 var(--font-mono);
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	color: var(--secondary);
+}

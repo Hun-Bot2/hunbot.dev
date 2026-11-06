@@ -125,6 +125,6 @@ test('adjacent issues are found around an issue, and absent at the ends', () => 
 });
 
 test('weekly URLs follow the localized route convention', () => {
-	assert.equal(getWeeklyUrl('ko', 3), '/ko/library/weekly/3/');
-	assert.equal(getWeeklyRssUrl('ko'), '/ko/library/weekly/rss.xml');
+	assert.equal(getWeeklyUrl('ko', 3), '/ko/reading/weekly/3/');
+	assert.equal(getWeeklyRssUrl('ko'), '/ko/reading/weekly/rss.xml');
 });
