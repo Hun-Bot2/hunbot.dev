@@ -1,10 +1,14 @@
 # Site Structure: Writing, Research, Library
 
-Status: Decided by the repository owner, 2026-09-26. Implemented on `feat/site-structure-research-hub` (2026-09-26) — verification: `npm run build`, `content:validate`, `ui:validate`, `routes:validate`, `links:validate`, `seo:validate`, `csp:validate`, `product:validate`, `homepage:validate`, `blog:listing:validate`, `search:validate`, and `npm test` all pass; no sample or `TEMP:` string in `dist/client/**/index.html`; `/{lang}/research/` exists for ko/jp/en; zero topic pages generated (0 approved papers today, as expected). Revised by the repository owner, 2026-09-27 — see [Revision 2026-09-27](#revision-2026-09-27-research-is-own-content-library-is-curation), which supersedes the parts of this record it contradicts. Revised again 2026-10-04 ([one Library list](#revision-2026-10-04-one-library-list)) 2026-10-22 ([explainers join the Library](#revision-2026-10-22-explainers-join-the-library)) and 2026-10-23c ([a fourth surface, 읽을거리](#revision-2026-10-23c-reading-becomes-a-fourth-public-surface)).
+Status: Decided by the repository owner, 2026-09-26. Implemented on `feat/site-structure-research-hub` (2026-09-26) — verification: `npm run build`, `content:validate`, `ui:validate`, `routes:validate`, `links:validate`, `seo:validate`, `csp:validate`, `product:validate`, `homepage:validate`, `blog:listing:validate`, `search:validate`, and `npm test` all pass; no sample or `TEMP:` string in `dist/client/**/index.html`; `/{lang}/research/` exists for ko/jp/en; zero topic pages generated (0 approved papers today, as expected). Revised by the repository owner, 2026-09-27 — see [Revision 2026-09-27](#revision-2026-09-27-research-is-own-content-library-is-curation), which supersedes the parts of this record it contradicts. Revised again 2026-10-04 ([one Library list](#revision-2026-10-04-one-library-list)) 2026-10-22 ([explainers join the Library](#revision-2026-10-22-explainers-join-the-library)) 2026-10-23c ([a fourth surface, 읽을거리](#revision-2026-10-23c-reading-becomes-a-fourth-public-surface)) and 2026-11-06 ([AI Research Digest](#revision-2026-11-06-ai-research-digest-under-the-library)).
 
 Reviewed: 2026-09-27
 
 This record sets the public information architecture of `hun-bot.dev` so that the public site reflects the Research OS loop instead of running ahead of it. It amends [`discover-direction.md`](./discover-direction.md) on topic-page placement only (see [Amendments](#amendments)). It does not change any data contract in [`research-item-identity.md`](./research-item-identity.md) or [`research-os-data-contract.md`](./research-os-data-contract.md).
+
+## Revision 2026-11-06: AI Research Digest under the Library
+
+Model-drafted, author-approved explainers are a separate collection (`digests`), routed at `/ko/library/digest/`. They are never mixed into Research, which stays the author's own work, and never into the Human Editorial `blog` collection. See [`research-digest.md`](./research-digest.md).
 
 ## Revision 2026-10-23c: 읽을거리 becomes a fourth public surface
 
