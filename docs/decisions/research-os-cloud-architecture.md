@@ -78,6 +78,14 @@ Workers, D1, R2, and Queues are an excellent fit, and some Cloudflare free plans
 
 **DECISION: not selected for V1, and specifically not mixed in.** Introducing Cloudflare alongside AWS at the start doubles the operational surface for one user. **DECISION: no multi-cloud without measured evidence that AWS cannot satisfy a requirement.** Cloudflare is the first candidate if that evidence appears — most plausibly around static asset hosting or egress.
 
+**Amended 2026-11-06 — exception for the Research OS MCP only.** The read-only MCP server is hosted on Cloudflare Workers, with OAuth on the Worker, KV for grant state and R2 for a sanitised daily snapshot. This is the evidence the rule above asks for. The AWS design could not meet three requirements:
+
+1. **R6, fail closed.** A public Function URL protected only by reserved concurrency has no hard stop. The Workers free plan fails by quota.
+2. **R1, $0.** The snapshot store would have been S3, and this account has no S3 free tier.
+3. **Connector client registration.** Cognito offers neither DCR nor CIMD.
+
+**Scope of the exception.** Everything else stays on AWS (phone path, DynamoDB, Cognito) or in GitHub (collector, ledger). The blog stays on Vercel. Publishing has no Cloudflare component ([`research-digest.md`](./research-digest.md)).
+
 ### Oracle OCI
 
 Always Free compute is unusually generous and would comfortably run this.

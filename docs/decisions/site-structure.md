@@ -6,6 +6,10 @@ Reviewed: 2026-09-27
 
 This record sets the public information architecture of `hun-bot.dev` so that the public site reflects the Research OS loop instead of running ahead of it. It amends [`discover-direction.md`](./discover-direction.md) on topic-page placement only (see [Amendments](#amendments)). It does not change any data contract in [`research-item-identity.md`](./research-item-identity.md) or [`research-os-data-contract.md`](./research-os-data-contract.md).
 
+## Revision 2026-11-06: AI Research Digest under the Library
+
+Model-drafted, author-approved explainers are a separate collection (`digests`), routed at `/ko/library/digest/`. They are never mixed into Research, which stays the author's own work, and never into the Human Editorial `blog` collection. See [`research-digest.md`](./research-digest.md).
+
 ## Revision 2026-10-04: one Library list
 
 The repository owner made these decisions on 2026-10-04 ("라이브러리에 외부링크, 라이브러리에서 고른것 이런 애들이 정확하게 뭔지 모호함"; chose "탭 하나로 합치기"). They supersede #3 and #5 of the 2026-09-27 revision below.
