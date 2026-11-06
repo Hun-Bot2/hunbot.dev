@@ -18,15 +18,18 @@
 	margin-top: 1.25rem;
 }
 
+/* The title is the largest type on the page: its minimum (2rem) stays above the
+   .prose h2 maximum (2.125rem at 16px root, 1.75rem-clamp on phones), so the
+   hierarchy holds at every width. */
 .article-header {
-	padding: 1.25rem 0 1rem;
+	padding: 1.5rem 0 1rem;
 	border-bottom: 1px solid var(--rule-strong);
 }
 
 .article-title {
-	margin: 0 0 0.75rem;
-	font: 400 clamp(1.5rem, 2.4vw, 2rem) / 1.25 var(--font-serif);
-	letter-spacing: -0.02em;
+	margin: 0 0 1rem;
+	font: 400 clamp(2rem, 1.4rem + 2.6vw, 3rem) / 1.2 var(--font-serif);
+	letter-spacing: -0.015em;
 	overflow-wrap: anywhere;
 	text-wrap: balance;
 }
@@ -36,14 +39,27 @@ html:lang(ko) .article-title {
 	word-break: keep-all;
 }
 
+@media (min-width: 640px) {
+	.article-header {
+		padding-top: 2.5rem;
+	}
+}
+
 .article-lead {
-	margin: 0 0 1rem;
-	font: 400 1.0625rem / 1.6 var(--font-serif);
+	max-width: 40ch;
+	margin: 0 0 1.25rem;
+	font: 400 clamp(1.0625rem, 0.95rem + 0.6vw, 1.3rem) / 1.6 var(--font-serif);
 	color: var(--secondary);
 }
 
 html:lang(ko) .article-lead {
 	word-break: keep-all;
+}
+
+/* CJK characters are about twice as wide as the "0" that ch measures. */
+html:lang(ko) .article-lead,
+html:lang(jp) .article-lead {
+	max-width: 30em;
 }
 
 .article-meta {

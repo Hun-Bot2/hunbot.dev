@@ -5,11 +5,15 @@ import { SITE_URL, SUPPORTED_LANGUAGES } from '../consts';
 import { getBlogUrlFromId } from '../utils/blog-routing';
 import { getAcademicReviewUrlFromId, getPublishedAcademicReviews } from '../utils/academic-review-routing';
 import { librarySections as pickLibrarySections } from '../data/librarySections';
-import { getPickSectionCounts } from '../utils/picks';
+import { getPickSectionCounts, getPickSlug } from '../utils/picks';
 import { learningPaths } from '../data/learningPaths';
 import { getLearningPathUrl, getPublishedLearningPaths } from '../utils/learning-paths';
 import { decks } from '../data/decks';
 import { getTopicsWithLinkedPapers } from '../utils/research';
+import { buildItemNoteIndex, getItemUrl } from '../utils/item-notes';
+import { getExplainerSlug, getExplainerUrl, getExplainersIndexUrl, getPublishedExplainers } from '../utils/explainers';
+import { getPublishedSignals, getSignalsUrl } from '../utils/signals';
+import { getPublishedWeeklyNotes, getWeeklyIndexUrl, getWeeklyUrl } from '../utils/weekly';
 
 export const GET: APIRoute = async ({ site }) => {
   const siteUrl = site ?? new URL(SITE_URL);
@@ -72,6 +76,35 @@ export const GET: APIRoute = async ({ site }) => {
     ...(listedDeckCount > 0 ? [`/${lang}/research/decks/`] : []),
     ...topicsWithPapers.map(({ topic }) => `/${lang}/research/topics/${topic.data.id}/`),
   ]);
+  // Explainers (docs/features/explainers.md): published ones only, and only the
+  // canonical-language (ko) URL. The jp/en routes carry the same Korean text
+  // with a canonical link to the ko page, so advertising them would submit
+  // duplicates.
+  const publishedExplainers = getPublishedExplainers(await getCollection('explainers'));
+  const explainerPages = publishedExplainers.map((explainer) =>
+    getExplainerUrl(explainer.data.canonicalLanguage, getExplainerSlug(explainer)),
+  );
+  // The Reading section's views (docs/decisions/site-structure.md, Revision
+  // 2026-10-23c): ko URLs only (the jp/en pages are the same Korean text,
+  // noindex, canonical to ko), and a view is listed only while it has a
+  // published item, the same gate its route's getStaticPaths uses.
+  const publishedSignals = getPublishedSignals(await getCollection('signals'));
+  const publishedWeekly = getPublishedWeeklyNotes(await getCollection('weeklyNotes'));
+  // Item pages (Revision 2026-10-23c): every item has a page, but a page without a
+  // published note is thin and noindex, so only items WITH a published note are
+  // listed; ko URLs only, like the other Library pages.
+  const itemNoteIndex = buildItemNoteIndex({
+    notes: await getCollection('itemNotes'),
+    picks: await getCollection('picks'),
+    resources: await getCollection('resources'),
+    pickSlug: getPickSlug,
+  });
+  const itemPages = [...itemNoteIndex.keys()].sort().map((pageId) => getItemUrl('ko', pageId));
+  const readingPages = [
+    ...(publishedSignals.length > 0 ? [getSignalsUrl('ko')] : []),
+    ...(publishedExplainers.length > 0 ? [getExplainersIndexUrl('ko')] : []),
+    ...(publishedWeekly.length > 0 ? [getWeeklyIndexUrl('ko'), ...publishedWeekly.map((note) => getWeeklyUrl('ko', note.data.issue))] : []),
+  ];
   const staticPages = [
     '/',
     ...SUPPORTED_LANGUAGES.flatMap((lang) => [
@@ -86,6 +119,9 @@ export const GET: APIRoute = async ({ site }) => {
     ]),
     ...learningPathPages,
     ...researchPages,
+    ...explainerPages,
+    ...readingPages,
+    ...itemPages,
   ];
   
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
@@ -95,7 +131,7 @@ export const GET: APIRoute = async ({ site }) => {
   <url>
     <loc>${new URL(path, siteUrl).href}</loc>
     <lastmod>${listingLastmod}</lastmod>
-    <changefreq>${path.includes('/library/') || path.includes('/paths/') || path.includes('/research/') ? 'monthly' : 'weekly'}</changefreq>
+    <changefreq>${path.includes('/library/') || path.includes('/reading/') || path.includes('/paths/') || path.includes('/research/') ? 'monthly' : 'weekly'}</changefreq>
     <priority>${path === '/' ? '1.0' : path.endsWith('/blog/') ? '0.9' : '0.7'}</priority>
   </url>`).join('')}
   

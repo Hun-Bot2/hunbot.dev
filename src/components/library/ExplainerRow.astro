@@ -1,0 +1,140 @@
+---
+// One explainer in the Library list: commentary written here about an external
+// paper or article. It sits in the same .entry grid as LibraryRow so the list
+// stays one list, but it is an on-site link (no new tab, no ↗) and carries a
+// 2px accent rule on its left edge, so on-site rows and external rows tell
+// apart at a glance. Row styles: src/styles/entry-list.css.
+import { useTranslations, type UILanguage } from '../../i18n/ui';
+import type { LibraryItem } from '../../utils/library';
+import ProvenanceBadge from './ProvenanceBadge.astro';
+import ExplainerEyebrow from './ExplainerEyebrow.astro';
+
+interface Props {
+	item: LibraryItem;
+	lang: UILanguage;
+}
+
+const { item, lang } = Astro.props;
+const explainer = item.explainer!;
+const t = useTranslations(lang);
+const { image } = item;
+const hasImage = image.kind !== 'typographic';
+const isSmall = image.kind !== 'typographic' && image.width < 600;
+// The explainer text is Korean on every language's page; mark it so screen
+// readers and font stacks switch.
+const contentLang = explainer.contentLanguage !== lang ? explainer.contentLanguage : undefined;
+const reviewedAt = explainer.reviewedAt ? new Date(explainer.reviewedAt) : undefined;
+---
+
+<li id={item.id} data-post-card data-post-area={item.area} data-post-kind={item.kind} data-post-topic={item.topic}>
+	<a class="entry entry--item entry--explainer" href={item.url}>
+		<span class:list={['entry-thumb', { 'is-small': isSmall, 'is-typo': !hasImage, 'is-plate': !hasImage }]} aria-hidden="true">
+			{
+				hasImage ? (
+					<img src={image.src} width={image.width} height={image.height} alt="" loading="lazy" decoding="async" />
+				) : (
+					<Fragment>
+						<span class="entry-plate-glyph">{t('explainer.plate')}</span>
+						<span class="entry-plate-code">{explainer.sourceLanguage.toUpperCase()}</span>
+					</Fragment>
+				)
+			}
+		</span>
+		<span class="entry-body">
+			<span class="entry-eyebrow">
+				<ExplainerEyebrow sourceLanguage={explainer.sourceLanguage} sourceKind={explainer.sourceKind} lang={lang} />
+			</span>
+			<span class="entry-title" lang={contentLang}>{item.title}</span>
+			{item.description && <span class="entry-desc" lang={contentLang}>{item.description}</span>}
+			<span class="entry-meta">
+				<ProvenanceBadge
+					authorship={explainer.authorship}
+					humanReviewed={explainer.humanReviewed}
+					reviewedAt={reviewedAt}
+					lang={lang}
+					variant="compact"
+				/>
+				<span aria-hidden="true"> · </span>
+				<span class="entry-source">{explainer.sourceName}</span>
+				<span aria-hidden="true"> · </span>
+				<span class="entry-read">{t('explainer.read')} <span aria-hidden="true">→</span></span>
+			</span>
+		</span>
+	</a>
+</li>
+
+<style is:global>
+	/* On-site marker: a 2px accent rule hung in the gutter, so the thumbnail
+	   column stays aligned with the external rows above and below. */
+	.entry--explainer {
+		position: relative;
+	}
+
+	.entry--explainer::before {
+		content: '';
+		position: absolute;
+		left: -0.75rem;
+		top: 0.6rem;
+		bottom: 0.6rem;
+		width: 2px;
+		background: var(--accent);
+		transition: top 160ms ease, bottom 160ms ease;
+	}
+
+	.entry--explainer:hover::before,
+	.entry--explainer:focus-visible::before {
+		top: 0;
+		bottom: 0;
+	}
+
+	.entry-eyebrow {
+		display: block;
+		margin-bottom: 0.15rem;
+	}
+
+	.entry--explainer .entry-read {
+		color: var(--ink);
+	}
+
+	.entry--explainer:hover .entry-read,
+	.entry--explainer:focus-visible .entry-read {
+		color: var(--accent);
+	}
+
+	/* No image: a typographic plate. A large serif glyph on --paper-deep, the
+	   source language code in mono at the corner. */
+	.entry-thumb.is-plate {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--paper-deep);
+		background-image: none;
+		border: 1px solid var(--rule);
+	}
+
+	.entry-plate-glyph {
+		font: 400 1.6rem/1 var(--font-serif);
+		letter-spacing: -0.04em;
+		color: var(--ink);
+		word-break: keep-all;
+	}
+
+	.entry-plate-code {
+		position: absolute;
+		right: 0.3rem;
+		bottom: 0.2rem;
+		font: 500 0.5625rem/1 var(--font-mono);
+		letter-spacing: 0.08em;
+		color: var(--secondary);
+	}
+
+	@media (max-width: 639px) {
+		.entry--explainer::before {
+			left: -0.6rem;
+		}
+
+		.entry-plate-glyph {
+			font-size: 1.35rem;
+		}
+	}
+</style>

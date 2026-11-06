@@ -10,6 +10,17 @@ The site should feel like a research notebook on paper: quiet, technical, readab
 - Do not use UI copy for internal policy language. Every UI string lives in `src/i18n/ui.ts` (ko/jp/en).
 - Never render a stored id (venue, acceptance status, honor, topic) straight into the page; go through the display helpers.
 
+## Content First
+
+Adopted 2026-10-23 (owner decision), after a hero slider and a poster masthead were both built and removed. Design starts from the content a page actually has, and every page leads with it.
+
+1. **Content comes first.** On list and hub pages the order under the site header is: the page label (`.subpage-intro` with the `<h1>` as `.eyebrow`, as on `/research/`), the page's own navigation if it has any (tabs, filter), then content. No hero, masthead, poster, banner or intro section sits above the content.
+2. **Every visible element carries content**: an item, a fact about it (date, kind, source, state, count), or a way to reach it. Purely decorative layers are not added to list, hub or reading pages. Generated visuals are allowed only where they stand in for missing content (a thumbnail without an image).
+3. **The largest type is the thing being read**: an item title, a post title. Never a section name, a page label or chrome.
+4. **A view explains itself through its content.** Labels on items (a verdict stamp, a source-language chip) say what they mean. If a view needs a paragraph to be understood, redesign the view instead of adding the paragraph.
+5. **Empty is shown as empty**: one quiet line, never placeholder or sample content (see *Placeholder Content Is Unpublished* in `docs/decisions/site-structure.md`).
+6. **Chrome is small and the same everywhere.** Page labels, tabs and filters look and sit the same in every section, so moving between 글, 논문, 읽을거리, 라이브러리 and 탐색 changes the content, not the frame.
+
 ## Tokens
 
 All colours come from `src/styles/tokens.css`; fonts and `--content-max` live there too.
@@ -23,19 +34,26 @@ All colours come from `src/styles/tokens.css`; fonts and `--content-max` live th
 | `--rule`, `--rule-strong` | Row separators / section rules and input underlines |
 | `--accent` | Links on hover, active state, focus ring, blockquote bar. Light value is darkened for AA text contrast |
 | `--state-reviewed`, `--state-reading`, `--state-success`, `--state-error` | Status chips and form feedback |
+| `--stage`, `--stage-ink`, `--stage-muted` | The always-dark surface (deck frames) |
+| `--area-design`, `--area-code`, `--area-ai`, `--area-dataviz`, `--area-learning`, `--area-creative`, `--area-other` | Area tints: identity marks for the Library's 분야 (see below) |
+| `--lift-shadow` | The soft shadow of a lifted card (hover system below) |
 
 - Light values are on `:root`; dark values are on `html.dark`. Always key theme colours on `html.dark`, never on `body.light-theme` / `body.dark-theme` (those are added after first paint and flash the wrong theme).
 - Use tokens, not `dark:` variants: a token already follows the theme. Tailwind utilities map to the tokens (`text-ink`, `text-secondary`, `border-rule`, `bg-paper-deep`, `text-accent`).
 - No hard-coded hex/rgb colours and no Tailwind palette classes (`slate-*`, `orange-*`) in `.astro` or `.css`. Exceptions: the `theme-color` meta tags in `BaseHead` (cannot read CSS variables), KaTeX and Shiki's own output, and third-party widgets (Giscus, Pagefind, which we theme through their variables).
 
+## Area tints
+
+The Library's 분야 (design, code, AI engineering, data visualization, learning, creative, other) each have one muted, mid-saturation tint (`--area-*` in `tokens.css`, light on `:root`, dark on `html.dark`), every one at least 3:1 against `--paper` for non-text use. **They are identity marks only**: the tab icon of the area and the monogram tile on its cards and on an item page without an image (the tile is 20% of the tint mixed into the card with a 1px tint border; the letter stays `--ink`). Never use a tint for text, for state (reviewed, error, queue), or anywhere beyond those two marks; the accent stays the one accent and text stays ink or secondary. A new 분야 needs a `tint` in `src/data/libraryAreas.ts` and a token pair.
+
 ## Type Scale
 
 | Role | Font | Size |
 |---|---|---|
-| Article title (h1) | serif 400, line-height 1.25, `text-wrap: balance` (`keep-all` for ko) | `clamp(1.5rem, 2.4vw, 2rem)` |
+| Article title (h1) | serif 400, line-height 1.2, letter-spacing -0.015em, `text-wrap: balance` (`keep-all` for ko) | `clamp(2rem, 1.4rem + 2.6vw, 3rem)`; its minimum stays above the `.prose h2` maximum |
 | Section heading (`.column-heading h2`) | serif 400 | 28px |
 | List/card title | serif 400 | 19-23px |
-| Lead paragraph | serif | 22px, `--secondary` |
+| Lead paragraph (`.article-lead`) | serif, max 40ch (30em for ko/jp) | `clamp(1.0625rem, 0.95rem + 0.6vw, 1.3rem)`, `--secondary` |
 | Prose body | sans (Noto Sans KR/JP; Noto Sans for en) | 17px / 1.85 (ko, jp), 18px / 1.8 (en) |
 | Eyebrow, meta, chips | mono (IBM Plex Mono), uppercase, 0.09em tracking | **min 11px** |
 | Secondary description | sans | **min 13px** |
@@ -51,10 +69,32 @@ All colours come from `src/styles/tokens.css`; fonts and `--content-max` live th
 - Header bottom padding is 1rem and the gap to the body 1.5rem; keep it tight so the title block flows into the text.
 - Posts (`BlogPost.astro`) and academic reviews (`AcademicReviewPost.astro`) share this shell through `prose.css`; change both together.
 
+## Motion And Hover
+
+One easing family and one duration scale, defined in `tokens.css`. Use these and nothing else: no one-off `160ms ease`.
+
+| Token | Value | Use |
+|---|---|---|
+| `--ease-standard` | `cubic-bezier(.2, 0, 0, 1)` | Default: colour, opacity, fades, zooms |
+| `--ease-out` | `cubic-bezier(.16, 1, .3, 1)` | Long decelerations: reveals, rises |
+| `--ease-spring` | `cubic-bezier(.34, 1.4, .64, 1)` | Small overshoot: hover lifts, arrows, pills |
+| `--dur-1` | 120ms | Press |
+| `--dur-2` | 200ms | Hover colour, small state |
+| `--dur-3` | 360ms | Hover lift, popovers |
+| `--dur-4` | 700ms | Thumbnail zoom, long fades |
+| `--dur-5` | 1100ms | Long reveals |
+
+- The site does not move on its own (the home-page hero was removed on 2026-10-23, the Library hero the same day; only the footer cat moves unprompted, `docs/decisions/creative-direction.md`). Everything else moves because the reader did.
+- The global `prefers-reduced-motion: reduce` rule in `global.css` turns every transition and animation off. Write animated states so that "no animation" is the resting state (keyframes with only a `from`), and nothing may depend on `animationend` for correctness.
+- **Hover system** (`global.css`, "Hover system"; pointer devices only under `@media (hover: hover)`, keyboard `:focus-visible` gets the same treatment):
+  - Editorial rows (`.entry`, home post / brief / review rows): a `--paper-light` plate bleeds 0.75rem past the column (a pseudo-element, so the row's own rule keeps its width), the thumbnail zooms to 1.04 inside its frame, the title turns accent, a trailing `.entry-arrow` nudges 3px.
+  - Cards (`.knowledge-item`, `.library-card`, and the Library's `.resource-card`, which keeps its border at rest): lift `translateY(-2px)` with `--ease-spring`, border to `--rule-strong`, `--lift-shadow`; pressed `scale(.995)`. The padding and 1px border are reserved in every state (compensated by a negative margin), so nothing shifts.
+  - No hover effect may change layout or text wrapping.
+
 ## Lists, Not Cards
 
-- Present collections as **rule-separated rows** (`.rule-list`, `.writing-entry`, `.paper-reading-list` rows): 1px `--rule` between rows, no shadows, no rounded card surfaces. The title turns `--accent` on hover.
-- The one grid is the Library `.knowledge-item` grid (4 columns at 1100px+, 2 at 640px+, 1 below); items are still separated by rules, not boxed.
+- Present collections as **rule-separated rows** (`.rule-list`, `.writing-entry`, `.paper-reading-list` rows): 1px `--rule` between rows, no resting shadows, no rounded card surfaces. The title turns `--accent` on hover.
+- Grids: the pick-section `.knowledge-item` grid (4 columns at 1100px+, 2 at 640px+, 1 below; items sit unboxed at rest, the 1px border and `--lift-shadow` appear only on hover or keyboard focus) and the Library's `.resource-card` grid (3 / 2 / 1 columns at 820 / 560px, in the 980px frame; boxed at rest: `--paper-light`, 1px `--rule`, 6px radius; the same lift on hover; see `docs/features/library-page.md`).
 - Page headers use `.subpage-intro` (eyebrow + one line, 14px bottom padding; the blog index is the eyebrow alone); section heads use `.column-heading` (serif title, mono link on the right, `--rule-strong` underline). Empty sections either do not render or show a single `.empty-line`.
 - Shared Library/Research row, tab, and grid styles live in `LibraryPageStyles.astro`; list rows in `src/styles/lists.css`.
 

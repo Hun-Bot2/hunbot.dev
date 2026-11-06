@@ -17,6 +17,13 @@ const files = existsSync(blogRoot)
 // the posts about it.
 const paperIds = readPaperIds();
 // `informedBy` refs are blog slugs (path under the language folder, lowercased, no extension).
+// `signals` refs are Library signal ids (src/content/signals/<id>.md). Existence is
+// checked here; a ref to an unpublished signal is withheld at render time.
+const signalIds = new Set(
+	existsSync(join(root, 'src/content/signals'))
+		? readdirSync(join(root, 'src/content/signals')).filter((name) => /\.(md|mdx)$/.test(name)).map((name) => name.replace(/\.(md|mdx)$/, ''))
+		: [],
+);
 const blogSlugs = new Set(
 	files.map((filePath) => relative(blogRoot, filePath).split(sep).slice(1).join('/').replace(/\.(md|mdx)$/i, '').toLowerCase()),
 );
@@ -67,6 +74,15 @@ for (const filePath of files) {
 		for (const paperId of parseTagList(papersField)) {
 			if (!paperIds.has(paperId)) {
 				errors.push(`${label}.papers references unknown paper "${paperId}".`);
+			}
+		}
+	}
+
+	const signalsField = getField(frontmatter, 'signals');
+	if (signalsField) {
+		for (const ref of parseTagList(signalsField)) {
+			if (!signalIds.has(ref.trim())) {
+				errors.push(`${label}.signals references unknown signal "${ref}".`);
 			}
 		}
 	}

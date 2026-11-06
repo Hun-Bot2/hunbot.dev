@@ -8,6 +8,9 @@ import ReadingControls from '../components/ReadingControls.astro';
 import TableOfContents from '../components/TableOfContents.astro';
 import Breadcrumb from '../components/Breadcrumb.astro';
 import GiscusComments from '../components/GiscusComments.astro';
+import Backlinks from '../components/Backlinks.astro';
+import LinkPreview from '../components/LinkPreview.astro';
+import type { Backlink } from '../utils/backlinks';
 import FeedbackBox from '../components/FeedbackBox.astro';
 import LanguageSuggestion from '../components/LanguageSuggestion.astro';
 import ViewCounter from '../components/ViewCounter.astro';
@@ -28,6 +31,8 @@ type Props = CollectionEntry<'blog'>['data'] & {
 	seriesTotal?: number;
 	seriesPrev?: { title: string; url: string };
 	seriesNext?: { title: string; url: string };
+	/** The site's own writing that links to this post. */
+	backlinks?: Backlink[];
 };
 
 const {
@@ -47,6 +52,7 @@ const {
 	seriesTotal,
 	seriesPrev,
 	seriesNext,
+	backlinks = [],
 } = Astro.props as Props;
 
 const slug = postId ?? Astro.url.pathname;
@@ -223,12 +229,15 @@ const schema = {
 							</nav>
 						)}
 
+						<Backlinks links={backlinks} lang={lang} />
+
 						<GiscusComments lang={lang} />
 						<FeedbackBox slug={slug} lang={lang} />
 					</div>
 				</div>
 			</article>
 		</main>
+		<LinkPreview />
 		<script type="module" src="/scripts/feedback-box.js"></script>
 		<script type="module" src="/scripts/language-suggest.js"></script>
 	</body>

@@ -1,0 +1,152 @@
+---
+// The Library's category tabs (docs/decisions/site-structure.md, Revision
+// 2026-10-23c): 전체 plus one tab per 분야 with items, each a small tinted line
+// icon, the label, and a mono count. A tab is a button (aria-pressed) that
+// filters the card grid: public/scripts/blog-filters.js, facet `area` (URL
+// param `area`, localStorage). Without JavaScript the bar stays hidden and every
+// card shows (the script removes `hidden` from [data-js-only]). Active = ink +
+// a 2px accent underline over the tab; the row has one 1px rule under it and
+// scrolls sideways on narrow screens (snap, faded edges) instead of wrapping.
+import { useTranslations, type UILanguage } from '../../i18n/ui';
+import type { AreaTab } from '../../utils/library-area-tabs';
+import AreaIcon from './AreaIcon.astro';
+
+interface Props {
+	lang: UILanguage;
+	tabs: AreaTab[];
+	storageKey: string;
+}
+
+const { lang, tabs, storageKey } = Astro.props;
+const t = useTranslations(lang);
+---
+
+<div class="area-tabs page-frame" data-blog-filters data-js-only data-facets="area" data-storage-key={storageKey} role="group" aria-label={t('library.areas.label')} hidden>
+	<div class="area-tabs-scroll" data-tabs-scroll>
+		<ul class="area-tab-list">
+			{
+				tabs.map((tab) => (
+					<li>
+						<button
+							type="button"
+							class="area-tab"
+							data-facet="area"
+							data-value={tab.id}
+							aria-pressed={tab.id === 'all' ? 'true' : 'false'}
+							style={tab.tint ? `--tint: var(--area-${tab.tint})` : undefined}
+						>
+							<span class="area-tab-icon"><AreaIcon area={tab.id} /></span>
+							<span class="area-tab-label">{tab.label}</span>
+							<span class="area-tab-count">{tab.count}</span>
+						</button>
+					</li>
+				))
+			}
+		</ul>
+	</div>
+</div>
+
+<style>
+	.area-tabs {
+		border-bottom: 1px solid var(--rule);
+	}
+
+	.area-tabs[hidden] {
+		display: none;
+	}
+
+	/* Sideways scroll on narrow screens; the padding sits under the faded edges,
+	   so the first and last tab are clear of them at rest. */
+	.area-tabs-scroll {
+		overflow-x: auto;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+		scroll-snap-type: x proximity;
+		scroll-padding-inline: 1.5rem;
+		-webkit-mask-image: linear-gradient(90deg, transparent, var(--ink) 1.25rem, var(--ink) calc(100% - 1.25rem), transparent);
+		mask-image: linear-gradient(90deg, transparent, var(--ink) 1.25rem, var(--ink) calc(100% - 1.25rem), transparent);
+	}
+
+	.area-tabs-scroll::-webkit-scrollbar {
+		display: none;
+	}
+
+	.area-tab-list {
+		display: flex;
+		flex-wrap: nowrap;
+		gap: 0 1.5rem;
+		margin: 0;
+		padding: 0 1.25rem;
+		list-style: none;
+		width: max-content;
+		min-width: 100%;
+	}
+
+	.area-tab {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		min-height: 3rem;
+		padding: 0;
+		border: 0;
+		background: none;
+		color: var(--secondary);
+		white-space: nowrap;
+		cursor: pointer;
+		scroll-snap-align: start;
+		transition: color var(--dur-2) var(--ease-standard);
+	}
+
+	.area-tab-icon {
+		display: inline-flex;
+		color: var(--tint, var(--ink));
+	}
+
+	.area-tab-label {
+		font: 400 0.9375rem/1.4 var(--font-sans);
+	}
+
+	.area-tab-count {
+		font: 400 0.6875rem/1 var(--font-mono);
+		font-variant-numeric: tabular-nums;
+		letter-spacing: 0.04em;
+		color: var(--faint);
+	}
+
+	/* The 2px underline sits on the row's own bottom edge. */
+	.area-tab::after {
+		content: '';
+		position: absolute;
+		left: 0;
+		right: 100%;
+		bottom: -1px;
+		height: 2px;
+		background: var(--accent);
+		transition: right var(--dur-3) var(--ease-out);
+	}
+
+	.area-tab:hover,
+	.area-tab:focus-visible,
+	.area-tab[aria-pressed='true'] {
+		color: var(--ink);
+	}
+
+	.area-tab[aria-pressed='true']::after {
+		right: 0;
+	}
+
+	.area-tab[aria-pressed='true'] .area-tab-count {
+		color: var(--secondary);
+	}
+
+	.area-tab:focus-visible {
+		outline-offset: -2px;
+	}
+
+	@media (min-width: 1100px) {
+		.area-tab-list {
+			gap: 0 2rem;
+		}
+	}
+</style>

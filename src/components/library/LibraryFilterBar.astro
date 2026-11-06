@@ -1,0 +1,281 @@
+---
+// The Library's visible filter (docs/decisions/site-structure.md, Revision
+// 2026-10-23b): an inline bar directly under the tab bar on 자료 and 신호, in
+// place of the floating button the blog keeps. Rows of facet chips with counts;
+// a chip with a `parent` (a 주제 under its 분야) sits on a second line that
+// appears only once that parent is chosen; a `toggle` facet (노트 있음) is a
+// single chip. One line by default, so the list stays above the fold; no chip is
+// "전체": pressing the active chip clears it. Behaviour is public/scripts/blog-filters.js (the
+// same selection logic, URL params and localStorage the blog uses): it reads
+// `data-blog-filters`, `data-facets`, `data-storage-key`, `[data-facet]
+// [data-value]` chips, `[data-parent-line]` wrappers, `[data-filter-results]`,
+// `[data-filter-reset]`, `[data-filter-toggle]` and `[data-filter-count]`.
+// Below 640px the bar scrolls with the page and collapses behind "필터 · n".
+import { useTranslations, type UILanguage } from '../../i18n/ui';
+
+interface FacetOption {
+	value: string;
+	label: string;
+	count: number;
+	/** A topic under its area: shown grouped under that area. */
+	parent?: { facet: string; value: string; label: string };
+}
+
+interface FacetGroup {
+	facet: string;
+	label: string;
+	options: FacetOption[];
+	/** One chip, no 전체 chip: the facet is either on or off. */
+	toggle?: boolean;
+}
+
+interface Props {
+	lang: UILanguage;
+	groups: FacetGroup[];
+	storageKey: string;
+	/** Contains `{count}` and, optionally, `{total}`. */
+	resultsTemplate: string;
+	label: string;
+	totalCount: number;
+}
+
+const { lang, groups, storageKey, resultsTemplate, label, totalCount } = Astro.props;
+const t = useTranslations(lang);
+const visibleGroups = groups.filter((group) => group.options.length > 0);
+const facets = visibleGroups.map((group) => group.facet).join(',');
+const fill = (template: string) => template.replace('{count}', String(totalCount)).replace('{total}', String(totalCount));
+
+// One line of chips for the plain facets; a facet whose options have a parent (a
+// 주제 under its 분야) is a second line, shown only while its parent is chosen.
+const flatGroups = visibleGroups.filter((group) => !group.options.some((option) => option.parent));
+const subGroups = visibleGroups.filter((group) => group.options.some((option) => option.parent));
+---
+
+<section class="library-filter page-frame" aria-label={label} data-blog-filters data-facets={facets} data-storage-key={storageKey}>
+	<div class="lf-head">
+		<button type="button" class="lf-toggle" data-filter-toggle aria-expanded="false" aria-controls="library-filter-body">
+			{t('library.filter-open')}<span class="lf-toggle-count" data-filter-count hidden>0</span>
+		</button>
+		<p class="lf-status">
+			<span data-filter-results data-results-template={resultsTemplate} aria-live="polite">{fill(resultsTemplate)}</span>
+			<button type="button" class="lf-reset" data-filter-reset hidden>{t('library.filter-clear')}</button>
+		</p>
+	</div>
+
+	<div class="lf-body" id="library-filter-body">
+		<div class="lf-line">
+			{
+				flatGroups.map((group, index) => (
+					<Fragment>
+						{index > 0 && <span class="lf-divider" aria-hidden="true" />}
+						<div class="lf-chips" role="group" aria-label={group.label}>
+							{group.options.map((option) => (
+								<button type="button" class="lf-chip" data-facet={group.facet} data-value={option.value} aria-pressed="false">
+									{option.label}
+									{!group.toggle && <span class="lf-count">{option.count}</span>}
+								</button>
+							))}
+						</div>
+					</Fragment>
+				))
+			}
+		</div>
+		{
+			subGroups.map((group) => (
+				<div class="lf-line lf-line--sub" data-parent-line data-parent-facet={group.options[0].parent!.facet} hidden>
+					<div class="lf-chips" role="group" aria-label={group.label}>
+						{group.options.map((option) => (
+							<button
+								type="button"
+								class="lf-chip"
+								data-facet={group.facet}
+								data-value={option.value}
+								data-parent-facet={option.parent!.facet}
+								data-parent-value={option.parent!.value}
+								aria-pressed="false"
+							>
+								{option.label}
+								<span class="lf-count">{option.count}</span>
+							</button>
+						))}
+					</div>
+				</div>
+			))
+		}
+	</div>
+</section>
+
+<style>
+	.library-filter {
+		display: flex;
+		flex-direction: column;
+		padding: 0.5rem 0 0.25rem;
+	}
+
+	.lf-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem 1rem;
+	}
+
+	.lf-toggle,
+	.lf-reset {
+		min-height: 2.5rem;
+		padding: 0;
+		border: 0;
+		background: none;
+		font: 400 0.8125rem/1.4 var(--font-mono);
+		letter-spacing: 0.04em;
+		color: var(--ink);
+		cursor: pointer;
+	}
+
+	.lf-toggle-count::before {
+		content: ' · ';
+	}
+
+	.lf-reset {
+		margin-left: 0.9rem;
+		color: var(--secondary);
+		text-decoration: underline;
+		text-underline-offset: 0.2em;
+	}
+
+	.lf-reset:hover,
+	.lf-reset:focus-visible {
+		color: var(--accent);
+	}
+
+	.lf-reset[hidden],
+	.lf-toggle-count[hidden] {
+		display: none;
+	}
+
+	.lf-status {
+		margin: 0 0 0 auto;
+		font: 400 0.8125rem/1.4 var(--font-mono);
+		letter-spacing: 0.04em;
+		font-variant-numeric: tabular-nums;
+		color: var(--secondary);
+	}
+
+	.lf-body {
+		display: none;
+	}
+
+	.library-filter.is-open .lf-body {
+		display: block;
+	}
+
+	.lf-line {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.75rem 0.5rem;
+		padding: 0.25rem 0;
+	}
+
+	.lf-line--sub {
+		padding-top: 0.5rem;
+	}
+
+	.lf-line[hidden] {
+		display: none;
+	}
+
+	.lf-chips {
+		display: contents;
+	}
+
+	.lf-divider {
+		width: 1px;
+		height: 1rem;
+		margin: 0 0.4rem;
+		background: var(--rule-strong);
+	}
+
+	/* A 28px chip; the ::after widens the touch target to 40px without overlapping its neighbours. */
+	.lf-chip {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		min-height: 1.75rem;
+		padding: 0 0.6rem;
+		border: 1px solid var(--rule-strong);
+		background: none;
+		font: 400 0.8125rem/1.3 var(--font-mono);
+		letter-spacing: 0.02em;
+		white-space: nowrap;
+		color: var(--secondary);
+		cursor: pointer;
+		transition: color var(--dur-1) var(--ease-standard), border-color var(--dur-1) var(--ease-standard);
+	}
+
+	.lf-chip::after {
+		content: '';
+		position: absolute;
+		inset: -6px 0;
+	}
+
+	.lf-chip:hover {
+		color: var(--ink);
+	}
+
+	.lf-chip.is-active {
+		border-color: var(--ink);
+		color: var(--accent);
+	}
+
+	.lf-chip:focus-visible,
+	.lf-toggle:focus-visible,
+	.lf-reset:focus-visible {
+		outline: 2px solid var(--ink);
+		outline-offset: 2px;
+	}
+
+	.lf-chip[hidden] {
+		display: none;
+	}
+
+	.lf-count {
+		font-size: 0.6875rem;
+		font-variant-numeric: tabular-nums;
+		color: var(--faint);
+	}
+
+	.lf-chip.is-active .lf-count {
+		color: var(--secondary);
+	}
+
+	/* Desktop: the chips lead and the result count sits at the right end of the first line. */
+	@media (min-width: 640px) {
+		.library-filter {
+			flex-direction: row;
+			align-items: flex-start;
+			gap: 0 1rem;
+		}
+
+		.lf-toggle {
+			display: none;
+		}
+
+		.lf-body {
+			display: block;
+			flex: 1 1 auto;
+			min-width: 0;
+			order: 1;
+		}
+
+		.lf-head {
+			order: 2;
+			flex: 0 0 auto;
+			min-height: 2.25rem;
+		}
+
+		.lf-status {
+			white-space: nowrap;
+		}
+	}
+</style>

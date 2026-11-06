@@ -3,9 +3,11 @@ import { getLangFromUrl, languages, useTranslations } from '../i18n/ui';
 
 interface Props {
 	availableLangs?: string[];
+	/** On the Library views: rest below the sticky tab row (and the filter at its right end) instead of in it. */
+	belowTabs?: boolean;
 }
 
-const { availableLangs } = Astro.props as Props;
+const { availableLangs, belowTabs = false } = Astro.props as Props;
 const currentLang = Astro.currentLocale || 'ko';
 const t = useTranslations(getLangFromUrl(Astro.url));
 const currentPath = Astro.url.pathname;
@@ -36,7 +38,7 @@ const languageUrls = allowedLangs.reduce((acc, lang) => {
 }, {} as Record<string, string>);
 ---
 
-<div class="flp-wrap" id="floating-lang-wrap">
+<div class:list={['flp-wrap', { 'flp-wrap--tabs': belowTabs }]} id="floating-lang-wrap">
 	<button
 		type="button"
 		id="floating-lang-toggle"
@@ -120,6 +122,12 @@ const languageUrls = allowedLangs.reduce((acc, lang) => {
 		z-index: 90;
 	}
 
+	/* The Library's tab row is sticky just under the header (about 45px tall) with
+	   the filter at its right end: the globe rests below it, never on it. */
+	.flp-wrap.flp-wrap--tabs {
+		top: calc(var(--header-height) + 58px);
+	}
+
 	.flp-btn {
 		display: flex;
 		align-items: center;
@@ -196,6 +204,10 @@ const languageUrls = allowedLangs.reduce((acc, lang) => {
 		.flp-wrap {
 			top: calc(var(--header-height) + 8px);
 			right: 0.75rem;
+		}
+
+		.flp-wrap.flp-wrap--tabs {
+			top: calc(var(--header-height) + 52px);
 		}
 
 		.flp-btn {
