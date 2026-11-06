@@ -395,7 +395,7 @@ Translation strings for nav labels, button text, metadata labels, and page title
 | File | Role |
 |---|---|
 | `astro.config.mjs` | Integrations (MDX, Tailwind, Vercel, Sitemap, RSS), i18n config, image config, Remark/Rehype plugins |
-| `vercel.json` | Security headers (CSP, HSTS, X-Frame, Referrer-Policy), deployment config |
+| `vercel.json` | Security headers (CSP, HSTS, X-Frame, Referrer-Policy), redirects, deployment config (`git.deploymentEnabled`: only `main` deploys; branches get no Vercel preview) |
 | `tailwind.config.mjs` | Tailwind theme (content paths, custom tokens) |
 | `src/content.config.ts` | Content Collection schemas (Zod). **Always check here before adding frontmatter.** |
 | `src/consts.ts` | `SITE_TITLE`, `SITE_DESCRIPTION`, `SITE_URL`, `SUPPORTED_LANGUAGES` |

@@ -26,6 +26,12 @@ API: the five branch commits of 2026-09-15 and `cac8c4a` each produced `environm
 while only the `main` merges produced `Production`. There is no `git` block in `vercel.json`,
 so this is Vercel's default and nothing in this repository opts out of it.
 
+**Superseded 2026-11-06 (owner decision): only `main` deploys.** `vercel.json` now has
+`git.deploymentEnabled: { "*": false, "main": true }`, so a push to any other branch creates
+no Vercel deployment and no preview URL; merges to `main` still deploy to Production. Pull
+requests are checked by the GitHub Actions `verify` workflow (build + validators + tests),
+not by a Vercel preview. The paragraphs below describe the earlier behaviour and stay as history.
+
 **Preview deployments are not public.** A request to a preview URL returns `302` to
 `vercel.com/sso-api` together with `x-robots-tag: noindex`, so Deployment Protection
 (Vercel Authentication) is on: only account members can open one, and search engines
