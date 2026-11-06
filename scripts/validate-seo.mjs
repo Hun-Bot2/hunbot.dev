@@ -23,7 +23,7 @@ assert.match(baseHead, /type="application\/rss\+xml"/);
 assert.match(baseHead, /\$\{currentLang\}\/rss\.xml/);
 assert.doesNotMatch(baseHead, /feed\.json/, 'BaseHead should not advertise a JSON feed route that does not exist.');
 
-assert.match(read('src/pages/[lang]/library/weekly/rss.xml.js'), /getPublishedWeeklyNotes/, 'The weekly feed must list published notes only.');
+assert.match(read('src/pages/[lang]/reading/weekly/rss.xml.js'), /getPublishedWeeklyNotes/, 'The weekly feed must list published notes only.');
 assert.match(languageRssRoute, /getStaticPaths/);
 assert.match(languageRssRoute, /SUPPORTED_LANGUAGES/);
 assert.match(languageRssRoute, /getBlogLanguageFromId/);

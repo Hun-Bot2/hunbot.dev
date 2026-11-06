@@ -1,25 +1,24 @@
 # Signals and weekly notes
 
-Two kinds of record in the Library, both the owner's judgement layered on external material, both reviewed by a human before they are public. A **signal** is one item that passed the owner's filter, with a verdict and the one line on why it was kept. A **weekly note** is the owner's conclusions for one week, with last week's questions answered and the questions carried forward.
+Two kinds of record in the Reading section (읽을거리; they started in the Library and moved on 2026-10-23, [Revision 2026-10-23c](../decisions/site-structure.md#revision-2026-10-23c-reading-becomes-a-fourth-public-surface)), both the owner's judgement layered on external material, both reviewed by a human before they are public. A **signal** is one item that passed the owner's filter, with a verdict and the one line on why it was kept. A **weekly note** is the owner's conclusions for one week, with last week's questions answered and the questions carried forward.
 
-Decision record: [`docs/decisions/site-structure.md`](../decisions/site-structure.md#revision-2026-10-23-the-library-gets-four-views). This file is the schema and the behaviour; the record is the reasoning. Explainers are in [`explainers.md`](./explainers.md).
+Decision records: [`docs/decisions/site-structure.md`](../decisions/site-structure.md#revision-2026-10-23-the-library-gets-four-views) (the kinds) and [Revision 2026-10-23c](../decisions/site-structure.md#revision-2026-10-23c-reading-becomes-a-fourth-public-surface) (their move to `/{lang}/reading/`). This file is the schema and the behaviour; the record is the reasoning. Explainers are in [`explainers.md`](./explainers.md).
 
 The angle that separates this from a news site: **every item shows the owner's judgement and where it led**, not just the item.
 
-## The Library's four views
+## The Reading section's views
 
 | Tab | Route | Content | Shown when |
 |---|---|---|---|
-| 신호 | `/{lang}/library/signals/` | a dated ledger of signals, with a verdict filter | at least one signal is published |
-| 해설 | `/{lang}/library/explainers/` | published explainers | at least one explainer is published |
-| 주간 노트 | `/{lang}/library/weekly/` (+ `/{n}/`, `rss.xml`) | weekly notes, newest issue first | at least one note is published |
-| 자료 | `/{lang}/library/` | the page label, the tab bar, the curated resources and picks | always |
+| 해설 | `/{lang}/reading/` | published explainers (the section's front page) | always generated; the tab shows when at least one explainer is published |
+| 신호 | `/{lang}/reading/signals/` | a dated ledger of signals, with a verdict filter | at least one signal is published |
+| 주간 노트 | `/{lang}/reading/weekly/` (+ `/{n}/`, `rss.xml`) | weekly notes, newest issue first | at least one note is published |
 
-Order on every view: **page label** (`<section class="subpage-intro"><h1 class="eyebrow">라이브러리</h1></section>`, identical to Research; the per-view description is only the page's meta description; the weekly index adds its RSS link in the same row) → **tab bar** → content. A view with nothing published has no tab and no route (`getStaticPaths` returns no paths). The tab bar is `LibraryTabs.astro`: real links, `aria-current="page"`, mono 0.875rem labels (smaller than any item title, per Content First) with a small mono count, active = ink + 2px accent underline, inactive = `--secondary`, 40px targets, **sticky just under the site header** (paper ground, 1px rule below), and below 640px it scrolls sideways without a scrollbar; the tab list comes from `getLibraryTabs()` in `src/utils/library-tabs.ts`. The slugs `signals`, `explainers` and `weekly` are reserved: `scripts/validate-picks.mjs` fails if a pick section uses one.
+Order on every view: **page label** (`<section class="subpage-intro"><h1 class="eyebrow">읽을거리</h1></section>`, identical to Research; the per-view description is only the page's meta description; the weekly index adds its RSS link in the same row) → **tab bar** → content. A view with nothing published has no tab and (except the front page) no route (`getStaticPaths` returns no paths). `/{lang}/reading/` always exists so the nav item never 404s: with nothing published anywhere it is the page label and one empty line (`reading.empty`), `noindex` and not in the sitemap; the tab bar is omitted while nothing is published, and the view the reader stands on always stays in the bar. The tab bar is `src/components/SectionTabs.astro` (generic: real links, `aria-current="page"`, mono 0.875rem labels with a small mono count, active = ink + 2px accent underline, inactive = `--secondary`, 40px targets, **sticky just under the site header**, sideways scroll without a scrollbar below 640px); the tab list comes from `getReadingTabs()` in `src/utils/reading-tabs.ts`, and the page data from `getReadingViewData()` in `src/utils/reading-views.ts`. The old `/{lang}/library/{signals,explainers,weekly}...` URLs 301 to these routes (`vercel.json`); the three slugs stay reserved against pick sections (`reservedLibrarySlugs`, enforced by `scripts/validate-picks.mjs`).
 
 **Languages.** The text is Korean on every language's page, under that language's chrome. The `jp` and `en` pages of these views are `noindex, follow` and canonical to the `ko` page; the sitemap lists `ko` URLs only.
 
-**Delivery.** Web and RSS only (`/{lang}/library/weekly/rss.xml`, linked with `<link rel="alternate">` on the weekly pages). No email, no signup, no newsletter provider; `scripts/validate-product-boundaries.mjs` fails on a form or an email field under the Library pages and components.
+**Delivery.** Web and RSS only (`/{lang}/reading/weekly/rss.xml`, linked with `<link rel="alternate">` on the weekly pages). No email, no signup, no newsletter provider; `scripts/validate-product-boundaries.mjs` fails on a form or an email field under the Library and Reading pages and components.
 
 ## `signals`
 
@@ -63,7 +62,7 @@ A dated ledger, newest first, grouped by `keptAt` day with the date set in the l
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `issue` | positive integer | yes | unique; equals the file name; the route is `/library/weekly/{issue}/` |
+| `issue` | positive integer | yes | unique; equals the file name; the route is `/reading/weekly/{issue}/` |
 | `title` | string | yes | |
 | `dek` | string, at most 400 characters | yes | |
 | `weekOf` | `YYYY-MM-DD` | yes | **a Monday**; the week runs `weekOf` through `weekOf + 6` days |
@@ -80,15 +79,15 @@ The week's signals are **derived**: the published signals whose `keptAt` falls i
 
 - **Index**: a column of issues, each led by a large serif issue numeral ("No. 3"), with title, dek, the week range in mono, and counts (신호 n · 해결 n · 열린 질문 n). The whole issue is the link.
 - **Detail**: above, a "지난 질문" strip (each `resolved` item, question then outcome). Then a **two-page notebook spread**: the left page 들어온 것 is the week's signals (compact stamps and titles), the right page 결론 is the body; a hairline gutter with a soft shade; one column below 900px (left page first). Below the spread, "다음 주로" lists `openQuestions`. Previous and next issue links close the page.
-- **RSS**: `/{lang}/library/weekly/rss.xml`, one item per published note (issue, title, dek, `publishedAt`).
+- **RSS**: `/{lang}/reading/weekly/rss.xml`, one item per published note (issue, title, dek, `publishedAt`).
 
 ## Filter and floating controls
 
-신호 and 자료 use the visible `LibraryFilterBar` directly under the tab bar (the blog keeps its floating filter). 신호 filters by 판단, 출처 언어 and 출처 종류; the bar is not sticky (a sticky bar would take screen height from the list), and below 640px it collapses behind `필터 · n`. The language globe (`FloatingLanguagePicker belowTabs`) rests just below the tab row. Each signal row has an anchor (`#signal-<id>`) so a backlink can point at it.
+신호 uses the visible `LibraryFilterBar` directly under the tab bar (the blog keeps its floating filter; the Library itself now filters with its category tabs, not this bar). 신호 filters by 판단, 출처 언어 and 출처 종류; the bar is not sticky (a sticky bar would take screen height from the list), and below 640px it collapses behind `필터 · n`. The language globe (`FloatingLanguagePicker belowTabs`) rests just below the tab row when the bar shows. Each signal row has an anchor (`#signal-<id>`) so a backlink can point at it.
 
 ## Fixtures
 
-Draft fixtures show the design and render nowhere: `src/content/signals/fixture-ja-doubt.md` (a Japanese article, verdict doubt), `fixture-en-try.md` (an English paper, verdict try, referenced from the explainer fixture through `signals`), `src/content/weekly-notes/1.md` (issue 1: two resolved questions, two open ones, `weekOf` 2026-10-19 covering both signals' `keptAt`), and the explainer fixture `fixture-en-paper.md` now carries three `claims`. Each is `review.status: "draft"` with a `TEMP:` title, so no fixture string reaches `dist/client/**/index.html`, a feed or the sitemap.
+Draft fixtures show the design and render nowhere: `src/content/signals/fixture-ja-doubt.md` (a Japanese article, verdict doubt), `fixture-en-try.md` (an English paper, verdict try, referenced from the explainer fixture through `signals`), `src/content/weekly-notes/1.md` (issue 1: two resolved questions, two open ones, `weekOf` 2026-10-19 covering both signals' `keptAt`), and the explainer fixture `fixture-en-paper.md` carries three `claims`, with body links to `#claim-1` and `#claim-2`. Each is `review.status: "draft"` with a `TEMP:` title, and nothing in the Reading section is published, so `/{lang}/reading/` shows only its empty line, so no fixture string reaches `dist/client/**/index.html`, a feed or the sitemap.
 
 To preview them locally, change `review.status` from `"draft"` to `"approved"` in all five files (the only field to flip; `review.humanReviewed` is already `true`) and revert afterwards. `content:validate` fails on an approved `TEMP:` title as a reminder.
 

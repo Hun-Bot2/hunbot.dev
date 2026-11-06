@@ -23,12 +23,12 @@ export function getPublishedExplainers<T extends Pick<ExplainerEntry, 'data'>>(e
 
 /** Detail page of an explainer. Same convention as every other localized route. */
 export function getExplainerUrl(lang: UILanguage, id: string): string {
-	return `/${lang}/library/explainers/${id}/`;
+	return `/${lang}/reading/explainers/${id}/`;
 }
 
 /** The 해설 view (the Library tab). */
 export function getExplainersIndexUrl(lang: UILanguage): string {
-	return `/${lang}/library/explainers/`;
+	return `/${lang}/reading/`;
 }
 
 /** An entry's slug is its frontmatter `id` (validated to equal the file name). */

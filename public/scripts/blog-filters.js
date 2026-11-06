@@ -24,6 +24,12 @@ if (filterBar && postList) {
 
 	const state = Object.fromEntries(FACETS.map((facet) => [facet, 'all']));
 
+	// Controls that only work with this script (the Library's category tabs) are
+	// `hidden` in the markup, so without JavaScript every card simply shows.
+	document.querySelectorAll('[data-js-only]').forEach((el) => {
+		el.hidden = false;
+	});
+
 	function readStored() {
 		try {
 			const raw = window.localStorage.getItem(FILTER_STORAGE_KEY);
@@ -71,6 +77,13 @@ if (filterBar && postList) {
 			const active = state[chip.dataset.facet] === chip.dataset.value;
 			chip.classList.toggle('is-active', active);
 			chip.setAttribute('aria-pressed', active ? 'true' : 'false');
+			// A sideways-scrolling tab row (the Library's, on narrow screens) keeps the
+			// active tab in view; scrollLeft only, so the page itself never jumps.
+			const scroller = active ? chip.closest('[data-tabs-scroll]') : null;
+			if (scroller && scroller.scrollWidth > scroller.clientWidth) {
+				const left = chip.getBoundingClientRect().left - scroller.getBoundingClientRect().left + scroller.scrollLeft;
+				scroller.scrollLeft = Math.max(0, left - 24);
+			}
 		});
 	}
 

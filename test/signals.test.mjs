@@ -11,8 +11,9 @@ import {
 	groupSignalsByDay,
 	isPublishedRecord,
 	sortSignals,
+	getSignalsUrl,
 } from '../src/utils/signals.ts';
-import { getLibraryTabs, getLibraryTabUrl, reservedLibrarySlugs } from '../src/utils/library-tabs.ts';
+import { getReadingTabs, getReadingTabUrl, reservedLibrarySlugs } from '../src/utils/reading-tabs.ts';
 import { assertValidatorAccepts, assertValidatorRejects } from './helpers/validator-harness.mjs';
 
 const script = 'scripts/validate-signals.mjs';
@@ -169,22 +170,27 @@ test('validate-explainers and blog content reject a signals reference to a missi
 	}
 });
 
-test('library tabs: a view with nothing published is omitted, 자료 always stays', () => {
-	assert.deepEqual(getLibraryTabs('ko', { signals: 0, explainers: 0, weekly: 0, resources: 0 }).map((t) => t.id), ['resources']);
-	assert.deepEqual(getLibraryTabs('ko', { signals: 3, explainers: 0, weekly: 1, resources: 40 }).map((t) => t.id), ['signals', 'weekly', 'resources']);
-	assert.deepEqual(getLibraryTabs('en', { signals: 1, explainers: 2, weekly: 3, resources: 4 }).map((t) => [t.id, t.href, t.count]), [
-		['signals', '/en/library/signals/', 1],
-		['explainers', '/en/library/explainers/', 2],
-		['weekly', '/en/library/weekly/', 3],
-		['resources', '/en/library/', 4],
+test('reading tabs: a view with nothing published is omitted; nothing at all means no bar', () => {
+	assert.deepEqual(getReadingTabs('ko', { explainers: 0, signals: 0, weekly: 0 }, 'explainers'), []);
+	assert.deepEqual(getReadingTabs('ko', { explainers: 3, signals: 0, weekly: 1 }).map((t) => t.id), ['explainers', 'weekly']);
+	// The view the reader stands on stays in the bar even when it is empty.
+	assert.deepEqual(getReadingTabs('ko', { explainers: 0, signals: 2, weekly: 0 }, 'explainers').map((t) => t.id), ['explainers', 'signals']);
+	assert.deepEqual(getReadingTabs('en', { explainers: 2, signals: 1, weekly: 3 }).map((t) => [t.id, t.href, t.label, t.count]), [
+		['explainers', '/en/reading/', 'Explainers', 2],
+		['signals', '/en/reading/signals/', 'Signals', 1],
+		['weekly', '/en/reading/weekly/', 'Weekly notes', 3],
 	]);
-	assert.equal(getLibraryTabUrl('jp', 'resources'), '/jp/library/');
+	assert.equal(getReadingTabUrl('jp', 'weekly'), '/jp/reading/weekly/');
+});
+
+test('the signals view lives under /reading/', () => {
+	assert.equal(getSignalsUrl('ko'), '/ko/reading/signals/');
 });
 
 test('the tab route slugs are reserved against pick sections', async () => {
 	assert.deepEqual([...reservedLibrarySlugs].sort(), ['explainers', 'item', 'signals', 'weekly']);
 	const { librarySections } = await import('../src/data/librarySections.ts');
-	for (const section of librarySections) assert.ok(!reservedLibrarySlugs.includes(section.slug), `${section.slug} collides with a tab route`);
+	for (const section of librarySections) assert.ok(!reservedLibrarySlugs.includes(section.slug), `${section.slug} collides with a reserved Library path`);
 });
 
 import { readFileSync } from 'node:fs';

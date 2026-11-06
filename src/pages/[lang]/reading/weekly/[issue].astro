@@ -1,5 +1,5 @@
 ---
-// /{lang}/library/weekly/{issue}/ — one weekly note (docs/decisions/site-structure.md,
+// /{lang}/reading/weekly/{issue}/ — one weekly note (docs/decisions/site-structure.md,
 // Revision 2026-10-23; docs/features/signals-and-weekly.md). Above: last week's
 // questions answered ("지난 질문"). Then a two-page notebook spread: the left
 // page is what came in that week (its signals, derived from their keptAt dates),
@@ -19,7 +19,7 @@ import SignalRow from '../../../../components/library/SignalRow.astro';
 import { useTranslations, type UILanguage } from '../../../../i18n/ui';
 import { getBacklinksFor } from '../../../../utils/backlinks-sources';
 import { formatPostDate } from '../../../../utils/display';
-import { getLibraryViewData } from '../../../../utils/library-views';
+import { getReadingViewData } from '../../../../utils/reading-views';
 import { getSignalLineage, getSignalSlug } from '../../../../utils/signals';
 import {
 	formatWeekRange,
@@ -45,7 +45,7 @@ const { entry } = Astro.props as Props;
 const t = useTranslations(lang);
 const { data } = entry;
 const { Content } = await render(entry);
-const view = await getLibraryViewData(lang);
+const view = await getReadingViewData(lang);
 
 const isCanonical = lang === 'ko';
 const contentLangAttr = isCanonical ? undefined : 'ko';
@@ -70,7 +70,7 @@ const backlinks = await getBacklinksFor({ selfKey: `weekly:${data.issue}`, paths
 		<meta data-pagefind-meta="title[content]" content={`${issueLabel} ${data.title}`} />
 		<meta data-pagefind-meta="description[content]" content={data.dek} />
 		<meta data-pagefind-filter="language[content]" content="ko" />
-		<meta data-pagefind-filter="section[content]" content="library" />
+		<meta data-pagefind-filter="section[content]" content="reading" />
 	</head>
 	<body>
 		<Header />
@@ -80,7 +80,7 @@ const backlinks = await getBacklinksFor({ selfKey: `weekly:${data.issue}`, paths
 				<header class="article-header weekly-header page-frame">
 					<Breadcrumb
 						items={[
-							{ name: t('library.title'), href: `/${lang}/library/` },
+							{ name: t('reading.title'), href: `/${lang}/reading/` },
 							{ name: t('weekly.title'), href: getWeeklyIndexUrl(lang) },
 						]}
 					/>

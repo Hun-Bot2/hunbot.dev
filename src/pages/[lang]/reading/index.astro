@@ -1,0 +1,82 @@
+---
+// /{lang}/reading/ — the Reading section's front page and its 해설 view
+// (docs/decisions/site-structure.md, Revision 2026-10-23c; docs/features/
+// explainers.md): published explainers, newest first, each an ExplainerRow.
+// Always generated, so the nav item never 404s: with nothing published in any
+// view the page is the label and one empty line. While no explainer is
+// published it is noindex and out of the sitemap. The text is Korean on every language's page: jp/en are the same
+// list under that language's chrome, noindex, canonical to ko.
+import BaseHead from '../../../components/BaseHead.astro';
+import Header from '../../../components/Header.astro';
+import FloatingLanguagePicker from '../../../components/FloatingLanguagePicker.astro';
+import SectionTabs from '../../../components/SectionTabs.astro';
+import ExplainerRow from '../../../components/library/ExplainerRow.astro';
+import { useTranslations, type UILanguage } from '../../../i18n/ui';
+import { getExplainersIndexUrl } from '../../../utils/explainers';
+import { getLibraryItems } from '../../../utils/library';
+import { getReadingViewData } from '../../../utils/reading-views';
+import '../../../styles/lists.css';
+import '../../../styles/entry-list.css';
+
+export function getStaticPaths() {
+	return [{ params: { lang: 'ko' } }, { params: { lang: 'jp' } }, { params: { lang: 'en' } }];
+}
+
+const lang = (Astro.params.lang ?? 'ko') as UILanguage;
+const t = useTranslations(lang);
+const view = await getReadingViewData(lang, 'explainers');
+const isCanonical = lang === 'ko';
+const canonicalURL = new URL(getExplainersIndexUrl('ko'), Astro.site);
+const title = `${t('reading.title')} - Hun-Bot Blog`;
+const description = t('reading.description');
+// Only the explainer rows: getLibraryItems builds the same items the row expects.
+const items = getLibraryItems([], [], lang, view.explainers);
+const indexable = isCanonical && view.explainers.length > 0;
+---
+
+<!doctype html>
+<html lang={lang}>
+	<head>
+		<BaseHead title={title} description={description} canonicalURL={canonicalURL.href} lang={lang} availableLangs={['ko']} />
+		{!indexable && <meta name="robots" content="noindex, follow" />}
+		<meta data-pagefind-meta="title[content]" content={t('reading.title')} />
+		<meta data-pagefind-meta="description[content]" content={description} />
+		<meta data-pagefind-filter="language[content]" content="ko" />
+		<meta data-pagefind-filter="section[content]" content="reading" />
+	</head>
+	<body>
+		<Header />
+		<FloatingLanguagePicker belowTabs={view.tabs.length > 0} />
+		<main id="main-content" class="atelier-page" data-pagefind-body={indexable ? true : undefined}>
+			<section class="subpage-intro subpage-intro--flush">
+				<h1 class="eyebrow">{t('reading.title')}</h1>
+			</section>
+			<SectionTabs label={t('reading.tabs.label')} tabs={view.tabs} current="explainers" />
+
+			{
+				view.isEmpty ? (
+					<p class="page-frame reading-empty">{t('reading.empty')}</p>
+				) : items.length === 0 ? (
+					<p class="page-frame reading-empty">{t('reading.empty-view')}</p>
+				) : (
+					<div class="page-frame reading-archive">
+						<ul class="entry-list">
+							{items.map((item) => <ExplainerRow item={item} lang={lang} />)}
+						</ul>
+					</div>
+				)
+			}
+		</main>
+	</body>
+</html>
+
+<style>
+	.reading-archive {
+		padding: 0.5rem 0 4rem;
+	}
+
+	.reading-empty {
+		margin-block: 1rem 4rem;
+		color: var(--secondary);
+	}
+</style>

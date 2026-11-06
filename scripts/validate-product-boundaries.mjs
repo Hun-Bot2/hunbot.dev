@@ -123,8 +123,9 @@ for (const sourceFile of runtimeSourceFiles) {
 }
 
 // Weekly notes are delivered on the web and in RSS only (docs/decisions/site-structure.md,
-// Revision 2026-10-23): no form, no email field, no signup, anywhere on the Library views.
-for (const weeklyFile of listFiles('src/pages/[lang]/library').concat(listFiles('src/components/library'))) {
+// Revisions 2026-10-23 and 2026-10-23c): no form, no email field, no signup, anywhere on the
+// Library and Reading views.
+for (const weeklyFile of listFiles('src/pages/[lang]/library').concat(listFiles('src/pages/[lang]/reading'), listFiles('src/components/library'))) {
 	const source = readFileSync(weeklyFile, 'utf8');
 	assert.doesNotMatch(source, /<form\b/i, `${relative(root, weeklyFile)} must not add a form (weekly notes are web and RSS only).`);
 	assert.doesNotMatch(source, /type=["']email["']/i, `${relative(root, weeklyFile)} must not collect email addresses.`);

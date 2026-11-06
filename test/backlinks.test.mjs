@@ -37,10 +37,10 @@ test('excerptAround returns the plain-text paragraph, cut to about 140 character
 
 test('a post that links to an on-site page is a backlink of it; unpublished sources are simply not passed', () => {
 	const index = buildBacklinkIndex([
-		source({ body: 'Read [the weekly note](/ko/library/weekly/3/) first.' }),
-		source({ key: 'post:ko/b', title: 'Post B', date: '2026-10-05', body: 'Also <a href="/ko/library/weekly/3/">it</a>.' }),
+		source({ body: 'Read [the weekly note](/ko/reading/weekly/3/) first.' }),
+		source({ key: 'post:ko/b', title: 'Post B', date: '2026-10-05', body: 'Also <a href="/ko/reading/weekly/3/">it</a>.' }),
 	]);
-	const links = getBacklinks(index, { paths: ['/ko/library/weekly/3/'] }, 'ko');
+	const links = getBacklinks(index, { paths: ['/ko/reading/weekly/3/'] }, 'ko');
 	assert.deepEqual(links.map((link) => link.title), ['Post B', 'Post A']);
 	assert.equal(links[1].url, '/ko/blog/devlog/a/');
 });
@@ -69,10 +69,10 @@ test('a page never lists itself, and a source counts once however often it links
 test('a blog post of another language is not listed; ko-only writing is, under the page language', () => {
 	const index = buildBacklinkIndex([
 		source({ lang: 'en', key: 'post:en/a', url: '/en/blog/devlog/a/', body: '[x](/en/library/item/x/)' }),
-		source({ kind: 'explainer', key: 'explainer:e', url: '/{lang}/library/explainers/e/', lang: undefined, body: '[x](/ko/library/item/x/)' }),
+		source({ kind: 'explainer', key: 'explainer:e', url: '/{lang}/reading/explainers/e/', lang: undefined, body: '[x](/ko/library/item/x/)' }),
 	]);
 	const forJp = getBacklinks(index, { paths: ['/jp/library/item/x/'] }, 'jp');
-	assert.deepEqual(forJp.map((link) => link.url), ['/jp/library/explainers/e/']);
+	assert.deepEqual(forJp.map((link) => link.url), ['/jp/reading/explainers/e/']);
 	assert.equal(getBacklinks(index, { paths: ['/en/library/item/x/'] }, 'en').length, 2);
 });
 

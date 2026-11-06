@@ -66,14 +66,15 @@ async function build(): Promise<LinkPreviewPayload> {
 		};
 	}
 
-	// Item pages: the delivered one-line summary; never an image (license rule).
+	// Item pages (every published item has one): the delivered one-line summary;
+	// never an image (license rule). The reading time only when a note exists.
 	const noteIndex = buildItemNoteIndex({ notes, picks, resources, pickSlug: getPickSlug });
-	for (const note of noteIndex.values()) {
-		const item = getLibraryItems(resources, picks, 'ko', [], noteIndex).find((candidate) => candidate.note?.pageId === note.pageId);
-		if (!item) continue;
-		items[normalizeSitePath(getItemUrl('ko', note.pageId))] = {
+	for (const item of getLibraryItems(resources, picks, 'ko', [], noteIndex)) {
+		if (!item.pageId) continue;
+		const note = noteIndex.get(item.pageId);
+		items[normalizeSitePath(getItemUrl('ko', item.pageId))] = {
 			kind: 'item',
-			readMinutes: minutes(estimateWordCount(note.body)),
+			...(note ? { readMinutes: minutes(estimateWordCount(note.body)) } : {}),
 			title: { ko: item.title },
 			description: { ko: item.description },
 		};

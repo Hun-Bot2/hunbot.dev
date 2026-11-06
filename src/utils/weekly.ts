@@ -19,15 +19,15 @@ export function getPublishedWeeklyNotes<T extends PublishedLike & { data: { issu
 }
 
 export function getWeeklyUrl(lang: UILanguage, issue: number): string {
-	return `/${lang}/library/weekly/${issue}/`;
+	return `/${lang}/reading/weekly/${issue}/`;
 }
 
 export function getWeeklyIndexUrl(lang: UILanguage): string {
-	return `/${lang}/library/weekly/`;
+	return `/${lang}/reading/weekly/`;
 }
 
 export function getWeeklyRssUrl(lang: UILanguage): string {
-	return `/${lang}/library/weekly/rss.xml`;
+	return `/${lang}/reading/weekly/rss.xml`;
 }
 
 function toUtcDays(day: string): number {

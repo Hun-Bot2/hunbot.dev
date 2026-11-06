@@ -1,16 +1,17 @@
 ---
-// /{lang}/library/item/{id}/ — the owner's note about one 자료 item. Generated
-// only for items that have a note (src/utils/item-notes.ts: a published
-// `itemNotes` entry, or a pick whose Markdown body is its own note); an item
-// without one has no page and keeps opening the original. The note is Korean;
-// the ja and en routes show it under that language's chrome, noindex, canonical
-// to the Korean page (docs/decisions/site-structure.md, Revision 2026-10-23b).
+// /{lang}/library/item/{id}/ — the page of one 자료 item. EVERY published item
+// (an approved resource, a non-draft pick) has one (docs/decisions/site-structure.md,
+// Revision 2026-10-23c); the owner's note fills it when it exists (src/utils/
+// item-notes.ts: a published `itemNotes` entry, or a pick whose Markdown body is
+// its own note). Without a note the page is the item's facts and one quiet line,
+// noindex and out of the sitemap. The note is Korean; the ja and en routes show
+// it under that language's chrome, noindex, canonical to the Korean page.
 import { getCollection, render, type CollectionEntry } from 'astro:content';
 import LibraryItemPost from '../../../../layouts/LibraryItemPost.astro';
 import type { UILanguage } from '../../../../i18n/ui';
 import { getBacklinksFor } from '../../../../utils/backlinks-sources';
 import { estimateReadTime, estimateWordCount } from '../../../../utils/blog';
-import { buildItemNoteIndex, getItemUrl, type ItemNote } from '../../../../utils/item-notes';
+import { buildItemNoteIndex, getItemUrl, getPublishedItemPageIds } from '../../../../utils/item-notes';
 import { getLibraryItems } from '../../../../utils/library';
 import { getPickSlug } from '../../../../utils/picks';
 
@@ -23,48 +24,53 @@ export async function getStaticPaths() {
 			? picks.find((pick) => getPickSlug(pick.id) === pageId)!
 			: notes.find((note) => note.data.about.endsWith(`:${pageId}`) && note.data.draft !== true)!;
 
+	const pageIds = getPublishedItemPageIds({ picks, resources, pickSlug: getPickSlug });
 	return langs.flatMap((lang) =>
-		[...index.values()].map((note) => ({
-			params: { lang, id: note.pageId },
-			props: { entry: entryFor(note.pageId, note.origin), note },
-		})),
+		pageIds.map((pageId) => {
+			const note = index.get(pageId) ?? null;
+			return { params: { lang, id: pageId }, props: { pageId, note, entry: note ? entryFor(pageId, note.origin) : null } };
+		}),
 	);
 }
 
 const lang = (Astro.params.lang ?? 'ko') as UILanguage;
-const { entry, note } = Astro.props as {
-	entry: CollectionEntry<'itemNotes'> | CollectionEntry<'picks'>;
-	note: ItemNote;
+const { pageId, note, entry } = Astro.props as {
+	pageId: string;
+	note: import('../../../../utils/item-notes').ItemNote | null;
+	entry: CollectionEntry<'itemNotes'> | CollectionEntry<'picks'> | null;
 };
-const { Content } = await render(entry);
+const Content = entry ? (await render(entry)).Content : null;
 
 const [resources, picks] = await Promise.all([getCollection('resources'), getCollection('picks')]);
-const item = getLibraryItems(resources, picks, lang, [], new Map([[note.pageId, note]])).find((candidate) => candidate.note?.pageId === note.pageId)!;
-const resource = note.ref.kind === 'resource' ? resources.find((candidate) => candidate.data.id === note.pageId) : undefined;
-// An image on the item page only when the license allows republishing it.
-const image = resource?.data.license.canRepublishAssets && item.image.kind !== 'typographic' ? item.image : null;
+const item = getLibraryItems(resources, picks, lang).find((candidate) => candidate.pageId === pageId)!;
+// The item's own preview image, as shown in the list (owner decision 2026-10-25).
+const image = item.image.kind !== 'typographic' ? item.image : null;
 
 const backlinks = await getBacklinksFor(
-	{ selfKey: `note:${note.pageId}`, paths: [getItemUrl('ko', note.pageId)], externalUrl: item.url },
+	{ selfKey: `note:${pageId}`, paths: [getItemUrl('ko', pageId)], externalUrl: item.url },
 	lang,
 );
 ---
 
 <LibraryItemPost
 	lang={lang}
-	pageId={note.pageId}
+	pageId={pageId}
 	title={item.title}
 	url={item.url}
 	kind={item.kind}
 	area={item.area}
 	topic={item.topic}
 	description={item.description}
-	writtenAt={note.writtenAt}
-	updatedAt={note.updatedAt}
-	readMinutes={estimateReadTime(estimateWordCount(note.body))}
-	tags={note.tags}
+	hasNote={note !== null}
+	writtenAt={note?.writtenAt ?? null}
+	updatedAt={note?.updatedAt ?? null}
+	readMinutes={note ? estimateReadTime(estimateWordCount(note.body)) : 0}
+	tags={note?.tags ?? []}
+	authorship={note?.authorship ?? 'owner'}
+	sources={note?.sources ?? []}
+	reviewedAt={note?.reviewedAt ?? null}
 	image={image}
 	backlinks={backlinks}
 >
-	<Content />
+	{Content && <Content />}
 </LibraryItemPost>

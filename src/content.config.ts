@@ -635,6 +635,17 @@ const itemNotes = defineCollection({
 		updatedAt: yamlDateString.optional(),
 		draft: z.boolean().default(false),
 		tags: z.array(shortSlugString).default([]),
+		// 'bot': a draft written from the item's docs and public sources, not the owner's words.
+		authorship: z.enum(['owner', 'bot']).default('owner'),
+		sources: z.array(httpUrl).max(8).default([]),
+		reviewedAt: yamlDateString.optional(),
+	}).superRefine((note, ctx) => {
+		if (note.authorship === 'bot' && note.sources.length === 0) {
+			ctx.addIssue({ code: 'custom', path: ['sources'], message: 'A bot note must list the sources it was written from.' });
+		}
+		if (note.authorship === 'bot' && !note.draft && !note.reviewedAt) {
+			ctx.addIssue({ code: 'custom', path: ['reviewedAt'], message: 'A published bot note needs reviewedAt (the owner\'s review date).' });
+		}
 	}),
 });
 

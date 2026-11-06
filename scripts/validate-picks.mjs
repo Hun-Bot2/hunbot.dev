@@ -7,7 +7,7 @@ import { extname, join, relative } from 'node:path';
 import yaml from 'js-yaml';
 
 import { isLibrarySectionSlug, librarySections } from '../src/data/librarySections.ts';
-import { reservedLibrarySlugs } from '../src/utils/library-tabs.ts';
+import { reservedLibrarySlugs } from '../src/utils/reading-tabs.ts';
 import { isPickKind, isPickTierId } from '../src/data/libraryPolicy.ts';
 import { getPickSlug, normalizePickUrl } from '../src/utils/picks.ts';
 
@@ -27,7 +27,7 @@ errors.push(...validateUniqueSlugs(picks));
 // routes (signals, explainers, weekly) live at the same level and must not collide.
 for (const section of librarySections) {
 	if (reservedLibrarySlugs.includes(section.slug)) {
-		errors.push(`src/data/librarySections.ts section "${section.slug}" collides with a Library tab route (${reservedLibrarySlugs.join(", ")} are reserved).`);
+		errors.push(`src/data/librarySections.ts section "${section.slug}" collides with a reserved Library path (${reservedLibrarySlugs.join(", ")} are reserved).`);
 	}
 }
 

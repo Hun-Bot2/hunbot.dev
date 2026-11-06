@@ -19,7 +19,7 @@ Adopted 2026-10-23 (owner decision), after a hero slider and a poster masthead w
 3. **The largest type is the thing being read**: an item title, a post title. Never a section name, a page label or chrome.
 4. **A view explains itself through its content.** Labels on items (a verdict stamp, a source-language chip) say what they mean. If a view needs a paragraph to be understood, redesign the view instead of adding the paragraph.
 5. **Empty is shown as empty**: one quiet line, never placeholder or sample content (see *Placeholder Content Is Unpublished* in `docs/decisions/site-structure.md`).
-6. **Chrome is small and the same everywhere.** Page labels, tabs and filters look and sit the same in every section, so moving between 글, 연구, 라이브러리 and 탐색 changes the content, not the frame.
+6. **Chrome is small and the same everywhere.** Page labels, tabs and filters look and sit the same in every section, so moving between 글, 논문, 읽을거리, 라이브러리 and 탐색 changes the content, not the frame.
 
 ## Tokens
 
@@ -35,11 +35,16 @@ All colours come from `src/styles/tokens.css`; fonts and `--content-max` live th
 | `--accent` | Links on hover, active state, focus ring, blockquote bar. Light value is darkened for AA text contrast |
 | `--state-reviewed`, `--state-reading`, `--state-success`, `--state-error` | Status chips and form feedback |
 | `--stage`, `--stage-ink`, `--stage-muted` | The always-dark surface (deck frames) |
+| `--area-design`, `--area-code`, `--area-ai`, `--area-dataviz`, `--area-learning`, `--area-creative`, `--area-other` | Area tints: identity marks for the Library's 분야 (see below) |
 | `--lift-shadow` | The soft shadow of a lifted card (hover system below) |
 
 - Light values are on `:root`; dark values are on `html.dark`. Always key theme colours on `html.dark`, never on `body.light-theme` / `body.dark-theme` (those are added after first paint and flash the wrong theme).
 - Use tokens, not `dark:` variants: a token already follows the theme. Tailwind utilities map to the tokens (`text-ink`, `text-secondary`, `border-rule`, `bg-paper-deep`, `text-accent`).
 - No hard-coded hex/rgb colours and no Tailwind palette classes (`slate-*`, `orange-*`) in `.astro` or `.css`. Exceptions: the `theme-color` meta tags in `BaseHead` (cannot read CSS variables), KaTeX and Shiki's own output, and third-party widgets (Giscus, Pagefind, which we theme through their variables).
+
+## Area tints
+
+The Library's 분야 (design, code, AI engineering, data visualization, learning, creative, other) each have one muted, mid-saturation tint (`--area-*` in `tokens.css`, light on `:root`, dark on `html.dark`), every one at least 3:1 against `--paper` for non-text use. **They are identity marks only**: the tab icon of the area and the monogram tile on its cards and on an item page without an image (the tile is 20% of the tint mixed into the card with a 1px tint border; the letter stays `--ink`). Never use a tint for text, for state (reviewed, error, queue), or anywhere beyond those two marks; the accent stays the one accent and text stays ink or secondary. A new 분야 needs a `tint` in `src/data/libraryAreas.ts` and a token pair.
 
 ## Type Scale
 
@@ -83,13 +88,13 @@ One easing family and one duration scale, defined in `tokens.css`. Use these and
 - The global `prefers-reduced-motion: reduce` rule in `global.css` turns every transition and animation off. Write animated states so that "no animation" is the resting state (keyframes with only a `from`), and nothing may depend on `animationend` for correctness.
 - **Hover system** (`global.css`, "Hover system"; pointer devices only under `@media (hover: hover)`, keyboard `:focus-visible` gets the same treatment):
   - Editorial rows (`.entry`, home post / brief / review rows): a `--paper-light` plate bleeds 0.75rem past the column (a pseudo-element, so the row's own rule keeps its width), the thumbnail zooms to 1.04 inside its frame, the title turns accent, a trailing `.entry-arrow` nudges 3px.
-  - Cards (`.knowledge-item`, `.library-card`): lift `translateY(-2px)` with `--ease-spring`, border to `--rule-strong`, `--lift-shadow`; pressed `scale(.995)`. The padding and 1px border are reserved in every state (compensated by a negative margin), so nothing shifts.
+  - Cards (`.knowledge-item`, `.library-card`, and the Library's `.resource-card`, which keeps its border at rest): lift `translateY(-2px)` with `--ease-spring`, border to `--rule-strong`, `--lift-shadow`; pressed `scale(.995)`. The padding and 1px border are reserved in every state (compensated by a negative margin), so nothing shifts.
   - No hover effect may change layout or text wrapping.
 
 ## Lists, Not Cards
 
 - Present collections as **rule-separated rows** (`.rule-list`, `.writing-entry`, `.paper-reading-list` rows): 1px `--rule` between rows, no resting shadows, no rounded card surfaces. The title turns `--accent` on hover.
-- The one grid is the Library `.knowledge-item` grid (4 columns at 1100px+, 2 at 640px+, 1 below); items sit unboxed at rest; the 1px border and `--lift-shadow` appear only on hover or keyboard focus (Motion And Hover).
+- Grids: the pick-section `.knowledge-item` grid (4 columns at 1100px+, 2 at 640px+, 1 below; items sit unboxed at rest, the 1px border and `--lift-shadow` appear only on hover or keyboard focus) and the Library's `.resource-card` grid (3 / 2 / 1 columns at 820 / 560px, in the 980px frame; boxed at rest: `--paper-light`, 1px `--rule`, 6px radius; the same lift on hover; see `docs/features/library-page.md`).
 - Page headers use `.subpage-intro` (eyebrow + one line, 14px bottom padding; the blog index is the eyebrow alone); section heads use `.column-heading` (serif title, mono link on the right, `--rule-strong` underline). Empty sections either do not render or show a single `.empty-line`.
 - Shared Library/Research row, tab, and grid styles live in `LibraryPageStyles.astro`; list rows in `src/styles/lists.css`.
 

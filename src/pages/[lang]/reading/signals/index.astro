@@ -1,5 +1,5 @@
 ---
-// /{lang}/library/signals/ — the 신호 view (docs/decisions/site-structure.md,
+// /{lang}/reading/signals/ — the 신호 view (docs/decisions/site-structure.md,
 // Revision 2026-10-23; docs/features/signals-and-weekly.md): a dated ledger of
 // what passed the owner's filter, newest first, grouped by the day it was kept
 // with the date in the left margin like a notebook note. Each row shows the
@@ -12,11 +12,11 @@ import BaseHead from '../../../../components/BaseHead.astro';
 import Header from '../../../../components/Header.astro';
 import FloatingLanguagePicker from '../../../../components/FloatingLanguagePicker.astro';
 import LibraryFilterBar from '../../../../components/library/LibraryFilterBar.astro';
-import LibraryTabs from '../../../../components/library/LibraryTabs.astro';
+import SectionTabs from '../../../../components/SectionTabs.astro';
 import SignalRow from '../../../../components/library/SignalRow.astro';
 import { getCollection } from 'astro:content';
 import { useTranslations, type UILanguage } from '../../../../i18n/ui';
-import { getLibraryViewData } from '../../../../utils/library-views';
+import { getReadingViewData } from '../../../../utils/reading-views';
 import { getPublishedSignals, getSignalLineage, getSignalSlug, getSignalsUrl, groupSignalsByDay, signalVerdicts } from '../../../../utils/signals';
 import '../../../../styles/lists.css';
 
@@ -30,10 +30,10 @@ const lang = (Astro.params.lang ?? 'ko') as UILanguage;
 const t = useTranslations(lang);
 // A dynamic UI key; kept out of the template, where `as` casts do not parse.
 const tk = (key: string) => t(key as Parameters<typeof t>[0]);
-const view = await getLibraryViewData(lang);
+const view = await getReadingViewData(lang, 'signals');
 const isCanonical = lang === 'ko';
 const canonicalURL = new URL(getSignalsUrl('ko'), Astro.site);
-const title = `${t('signals.title')} - ${t('library.title')} - Hun-Bot Blog`;
+const title = `${t('signals.title')} - ${t('reading.title')} - Hun-Bot Blog`;
 const description = t('signals.description');
 
 const days = groupSignalsByDay(view.signals);
@@ -62,16 +62,16 @@ const dayLabel = (day: string) => day.replaceAll('-', '.');
 		<meta data-pagefind-meta="title[content]" content={t('signals.title')} />
 		<meta data-pagefind-meta="description[content]" content={description} />
 		<meta data-pagefind-filter="language[content]" content="ko" />
-		<meta data-pagefind-filter="section[content]" content="library" />
+		<meta data-pagefind-filter="section[content]" content="reading" />
 	</head>
 	<body>
 		<Header />
 		<FloatingLanguagePicker belowTabs />
 		<main id="main-content" class="atelier-page" data-pagefind-body={isCanonical ? true : undefined}>
 			<section class="subpage-intro subpage-intro--flush">
-				<h1 class="eyebrow">{t('library.title')}</h1>
+				<h1 class="eyebrow">{t('reading.title')}</h1>
 			</section>
-			<LibraryTabs lang={lang} tabs={view.tabs} current="signals" />
+			<SectionTabs label={t('reading.tabs.label')} tabs={view.tabs} current="signals" />
 
 			<LibraryFilterBar
 				lang={lang}
