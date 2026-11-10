@@ -44,6 +44,7 @@ Measured on a clean worktree of HEAD and on my working tree.
 | `npx astro check` (not in CI) | 6 errors, 22 hints | not run |
 | `npm run build` + listing/routes/SEO/search/links validators | pass | not run |
 
+- `study/rag01.mdx` also fails MDX parsing (`Could not parse expression with acorn`, an unescaped `{` or similar), found by the Phase 0 tool on 2026-11-10.
 - Working-tree failures come from uncommitted notes without frontmatter: `study/NLP_LoRA.mdx`, `study/Week10-RL.mdx`, `study/ai01.md`, `study/rag01.mdx`, `devlog/Orven/01.mdx`. **Pushing them as-is fails CI.** The 3 test failures read real content and likely share this cause (inferred).
 - The 6 `astro check` errors predate this work: `PickCard.astro:38`, `academic-review-routing.ts:82`, `blog-routing.ts:76`, `research.ts:71,116`, one test fixture.
 

@@ -1,6 +1,6 @@
 # Decisions
 
-Each entry is the **current** decision. Other documents must agree with this file; if they disagree, this file wins and the other document is fixed. "Changed" lines record what an entry replaced, so the history is visible without keeping outdated text elsewhere.
+Each entry is the **current** decision (D1–D14). Other documents must agree with this file; if they disagree, this file wins and the other document is fixed. "Changed" lines record what an entry replaced, so the history is visible without keeping outdated text elsewhere.
 
 ## D1. Local command, LLM behind a swappable provider (2026-11-09)
 
@@ -46,8 +46,8 @@ Rejected: writing `<|END|>`-style markers in MDX. `@mdx-js/mdx` 3.1.1 fails on `
 
 | Track | What | Card types | Anki note type |
 | --- | --- | --- | --- |
-| memorize | Definitions, formulas, notation (e.g. the softmax formula, log rules) | `definition`, `formula` | `StudyEngine Basic v1` |
-| understand | Relations, reasons, trade-offs (e.g. why high bias / low variance trade off and how to control it) | `why`, `how`, `compare` | `StudyEngine Explain v1` |
+| memorize | Definitions, formulas, notation (e.g. the softmax formula, log rules) | `definition`, `formula` (slots, D13) | `StudyEngine Basic v1`, `StudyEngine Formula v1` |
+| understand | Relations, reasons, trade-offs (e.g. why high bias / low variance trade off and how to control it) | `principle`, `compare`, `limitation` (slots, D13) | `StudyEngine Explain v1` |
 
 - The track follows from the card type. Rule-extracted definitions and block math are always memorize.
 - Understand cards: explain aloud or on paper, flip, compare with the key points (my sentences), grade with Again/Hard/Good.
@@ -84,3 +84,45 @@ The small model is a learning goal, not a cost or privacy necessity (Gemini is c
 3. Compare with Gemini on the same eval set and publish the numbers in a devlog.
 
 I checked the Gemini API terms for personal use of outputs as training data (2026-11-10).
+
+## D11. Sources are study notes only (2026-11-10)
+
+Only notes under `src/content/blog/<lang>/study/` become cards. Devlogs record my development flow and are not worth memorizing; technical details worth keeping are studied again and rewritten as study notes. Other folders (`devlog/`, `technical_note/`, `paper-review/`, …) are skipped even if they carry an `anki` block. Within `study/`, `anki.enabled: false` still excludes a note.
+
+- The engine's default input is `src/content/blog/ko/study`; paths outside `<lang>/study/` are reported as skipped.
+- Consequence for Phase 0: the sample must come from `study/`, which currently has few long notes (see [evaluation.md](evaluation.md) §2).
+- Changed: replaces "`anki.enabled` may opt in notes from any folder".
+
+## D12. Principle + formula cards per concept (2026-11-10) — superseded by D13
+
+First version of the per-concept idea: a principle card plus the formula in both directions. D13 keeps the principle card, replaces the two formula cards with one recognition card, and adds compare and limitation slots.
+
+## D13. Concept schema: five slots grounded in how I study (2026-11-10)
+
+Gemini does not choose cards. It fills a fixed per-concept schema with sentence numbers; the engine turns each filled slot into cards from templates. The schema is the way I actually study:
+
+| Slot | Meaning | Card | Track |
+| --- | --- | --- | --- |
+| `definition` | The concept itself: what it is | `X란?` → definition sentences | memorize |
+| `principle` | What needs explaining: how or why it works | `X는 …? 설명하라.` → key sentences | understand |
+| `formula` | I do not write formulas or code by hand, so I **recognize** them: display math, or a code pattern I tend to forget (`Promise`, `async/await`) | Formula or code + choices `①–④` → technique name + symbol meanings / key points | memorize |
+| `compare` | Trade-offs and always-compared pairs (bias ↔ variance, dense ↔ sparse) | `A와 B: {axis}의 trade-off를 설명하라.` → key sentences | understand |
+| `limitation` | The limit of a technique and the technique that came out of it — the backbone that links concepts into lineages (RNN → LSTM → Transformer) | `X의 한계는? 그 한계에서 나온 기술은?` → limit sentences + `→ Y` | understand |
+
+- Formula choices: distractors are other concepts of the same kind (math with math, code with code) from my own notes in the same run (deterministic order); if there are fewer than three, names the model listed as easily confused fill the gap. With fewer than two options, the card asks `이 식은 무엇인가?` without choices.
+- Rules map onto the same slots: definition lists and `<Term>` → `definition`; `X의 식:` + `$$` + symbol list, or `X 사용법:` / `X의 코드:` / `X 예시:` + a code block + key points → `formula`; question headings → `principle`.
+- Card keys use the concept name (`def:rrf`, `formula:rrf`, `compare:bias|variance`, …), so a regenerated note continues the same cards, and rule and LLM cards for one concept deduplicate.
+- Reference points use the same schema: I list concept names and tick the slots I need; scoring is coverage of (concept, slot).
+- Changed: replaces the LLM card types `why`/`how`/`compare` from D2/D6 and the forward + reverse formula cards from D12.
+
+### Application problems are made weekly by a frontier model, not by the pipeline
+
+New-situation problems (transfer) are not generated by the Gemini pipeline. After a week of study I give that week's material (concepts studied, their notes, cards I keep failing) to a current frontier model (Claude, Codex) in a chat, and import what it writes as cards after `review`. The pipeline's job is to export that weekly pack and import the result in a fixed format (Phase 4).
+
+## D14. No AI-written explanations; I complete my own notes (2026-11-10)
+
+Gemini does not add supplementary explanations, neither on cards nor as a separate gap report. When a note is thin (e.g. QAT in one line), I fill it in my own words while organizing the note; the `todo` lines in `references.yaml` serve as the checklist.
+
+- Why: unverifiable AI text on a card would be memorized by repetition; writing the gap myself is the better learning step; MDX stays the only source of content.
+- Cost: the model returns only names, short question fragments and unit numbers. In the first run (2026-11-10, three notes) output was 85–417 tokens per note against 585–11,425 input tokens; one or two supplementary sentences per concept would multiply the output several times for no checked content.
+- The instructions and the note are sent separately (system instruction vs user message, prompt `v4-system`).

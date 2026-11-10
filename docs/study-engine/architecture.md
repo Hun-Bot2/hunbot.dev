@@ -1,6 +1,6 @@
 # Architecture
 
-Status: design. Nothing here is implemented yet. Decisions referenced as D1–D10 are in [decisions.md](decisions.md).
+Status: design. Phase 0 parts (parser, rules, payload, Gemini adapter, validation) exist in `tools/study-engine/`; everything else is not implemented yet. Decisions referenced as D1–D13 are in [decisions.md](decisions.md).
 
 ## Ownership
 
@@ -23,9 +23,9 @@ Status: design. Nothing here is implemented yet. Decisions referenced as D1–D1
 
 ```text
 MDX ──parsers──▶ layer 1–2 cards (rules, no AI)
-   └──payload──▶ sent copy with [S1] [C1] [M1] ──provider──▶ {type, slots, back:[S..]}
-                                                             └──cards──▶ front = template + slots
-                                                                         back  = original S..
+   └──payload──▶ sent copy with [S1] [C1] [M1] ──provider──▶ concepts {definition, principle, formula, compare, limitation}
+                                                             └──cards──▶ one card per filled slot: front = template
+                                                                         back  = original S.. / M..
 cards ──review (optional QA)──▶ broken ones excluded
       ──export──▶ cards.json ──genanki──▶ study.apkg ──open / importPackage──▶ Anki
 ```
@@ -36,7 +36,7 @@ cards ──review (optional QA)──▶ broken ones excluded
 | `parsers` | Frontmatter, AST, sections, positions, layer 1 (definitions, `<Term>`, block math), layer 2 (comment cards) |
 | `payload` | The sent copy: numbering of sentences/code/math and mapping back to source spans |
 | `providers` | `gemini`, `local`, `remote` adapters; response validation; usage; retry classification |
-| `cards` | Card-type templates, track assignment, front assembly, back assembly from numbers, machine checks |
+| `cards` | Concept slots (D13), front templates and particles, back assembly from numbers, formula choices, machine checks |
 | `review` | Local preview with the real Anki templates, automatic warnings, `broken` marks |
 | `export` | `cards.json`, genanki call, import |
 | `storage` | SQLite migrations, caches, IDs |
@@ -70,7 +70,7 @@ Generation cache key = SHA-256 of `source_id + document_hash + payload_hash + pa
 
 Requirements, not verified behavior (verified in Phase 3):
 
-1. `build` writes every `current`, `valid`, not-`broken` card to `cards.json`. Memorize cards use `StudyEngine Basic v1`, understand cards `StudyEngine Explain v1`.
+1. `build` writes every `current`, `valid`, not-`broken` card to `cards.json`. Definitions and comment cards use `StudyEngine Basic v1`, formulas `StudyEngine Formula v1` (recognition with choices, D13), principle/compare/limitation cards `StudyEngine Explain v1`.
 2. No deck options are written; decks use my default preset (D7). genanki writes `.study-engine/exports/study-<date>.apkg` with constant note-type and deck IDs and GUIDs derived from `stable_id`.
 3. Every build contains **all** cards (not a delta). Same GUIDs, so re-import does not duplicate.
 4. Import with `open` by default; with `--import` and Anki + AnkiConnect running, call `importPackage` on `127.0.0.1` only. If Anki is closed, leave the file and say so.
