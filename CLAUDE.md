@@ -519,6 +519,7 @@ docs/
 │   └── design-tokens-and-images.md  Token architecture + image pipeline proposals (staged)
 ├── content/
 │   ├── workflow.md          Content review and publishing workflow
+│   ├── snippets.md          VS Code snippets per content folder (.vscode/hunbot.code-snippets)
 │   ├── item-notes.md        Owner notes on 자료 items: frontmatter, guardrails (own words, images, grounded criticism, always link the original), backlinks
 │   └── public-images.md     Image size/format/naming guidelines
 ├── decisions/
