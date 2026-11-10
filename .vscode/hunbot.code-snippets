@@ -247,6 +247,70 @@
 		"body": ["\\$\\$", "${1:x}", "\\$\\$"]
 	},
 
+	"Formula with meaning (two memorize cards)": {
+		"scope": "mdx,markdown",
+		"prefix": "formula",
+		"description": "Concept sentence + display math + symbol list. Study Engine makes concept → formula and formula → concept/symbols cards (D12). Keep symbol lines without bold so they are not read as definitions.",
+		"body": [
+			"${1:개념}의 식:",
+			"",
+			"\\$\\$",
+			"${2:수식}",
+			"\\$\\$",
+			"",
+			"- ${3:기호}: ${4:의미}",
+			"$0"
+		]
+	},
+
+	"Code pattern card": {
+		"scope": "mdx,markdown",
+		"prefix": "codecard",
+		"description": "`X 사용법:` + a code block + key points. Study Engine makes a recognition card: code + choices → X (D13). Keep the points without bold.",
+		"body": [
+			"${1:Promise} 사용법:",
+			"",
+			"```${2|js,ts,python,bash|}",
+			"${3:코드}",
+			"```",
+			"",
+			"- ${4:핵심}: ${5:무엇을 하는지}",
+			"$0"
+		]
+	},
+
+	"Concept set (five slots)": {
+		"scope": "mdx,markdown",
+		"prefix": "concept",
+		"description": "One concept in the five slots of D13: definition, principle, formula (recognition), compare (trade-off), limitation → next technique.",
+		"body": [
+			"## ${1:개념}",
+			"",
+			"- **${1}:** ${2:정의를 내 말로 한 문장}",
+			"",
+			"### ${1}은(는) 왜 ${3:이렇게 동작하는가}?",
+			"",
+			"${4:원리를 내 말로 2–4문장.}",
+			"",
+			"${1}의 식:",
+			"",
+			"\\$\\$",
+			"${5:수식}",
+			"\\$\\$",
+			"",
+			"- ${6:기호}: ${7:의미}",
+			"",
+			"### ${1} vs ${8:비교 대상}",
+			"",
+			"${9:무엇을 얻고 무엇을 잃는지 (trade-off).}",
+			"",
+			"### ${1}의 한계",
+			"",
+			"${10:한계}. 그래서 ${11:다음 기술}이 나왔다.",
+			"$0"
+		]
+	},
+
 	// ───────────── Shared components ─────────────
 
 	"Term (margin glossary)": {
