@@ -38,7 +38,19 @@ node tools/study-engine/src/run.ts sheet
 
 # 5. Score A vs B against your references
 node tools/study-engine/src/run.ts score
+
+# 6. Build the .apkg from every valid card (rules.json + llm.json) and open it in Anki
+node tools/study-engine/src/run.ts build [--import]
 ```
+
+`build` needs the official Anki package once (same version as the desktop app):
+
+```sh
+python3 -m venv tools/study-engine/apkg/.venv
+tools/study-engine/apkg/.venv/bin/pip install anki==26.9.4
+```
+
+It keeps a persistent build collection in `.study-engine/anki/` (back it up; losing it makes the next import create new note types) and writes `.study-engine/exports/study-<time>.apkg`. Decks come from `decks.yaml` (D15).
 
 - `llm` refuses to send unless `--confirm` matches the digest of the current notes, model, prompt version and card limit. Any change to a note or setting changes the digest.
 - Responses are cached in `.study-engine/cache/` by note hash + payload hash + prompt/schema version + model; re-running makes no API call.
@@ -71,7 +83,10 @@ In `labels.tsv` fill `label` (`keep` / `fix` / `drop`); fix the prefilled `conce
 | `src/llm.ts` | 2 | Prompt v1, response schema, output validation |
 | `src/gemini.ts` | 2 | REST adapter with bounded retry; no raw error bodies |
 | `src/cards.ts` | 2–3 | Card types, tracks, front templates, back assembly, keys |
-| `src/run.ts` | 3 | CLI: rules, preview, llm, sheet, score; cache and usage log |
+| `src/run.ts` | 3 | CLI: rules, preview, llm, sheet, score, build; cache and usage log |
+| `src/decks.ts`, `decks.yaml` | 3 | Deck per note (folder mapping) and subject tags |
+| `src/render.ts`, `src/export.ts` | 3 | Card Markdown → safe HTML (MathJax, escaped code), `cards.json` with GUIDs |
+| `apkg/build_apkg.py` | 3 | Official `anki` package: persistent build collection → `.apkg` |
 | `tests/` | — | `node --test tests/*.test.ts` (synthetic fixture only) |
 
 ## Known limits (Phase 0)

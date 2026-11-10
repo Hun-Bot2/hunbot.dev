@@ -67,9 +67,9 @@ const CIRCLED = ['①', '②', '③', '④'];
 export function formulaFront(formula: string, choices: string[] | null, kind: 'math' | 'code' = 'math', lang = ''): string {
 	const shown = kind === 'code' ? '```' + lang + '\n' + formula + '\n```' : `$$\n${formula}\n$$`;
 	const what = kind === 'code' ? '이 코드는' : '이 식은';
-	if (!choices || choices.length < 2) return `${shown}\n${what} 무엇인가?`;
+	if (!choices || choices.length < 2) return `${shown}\n\n${what} 무엇인가?`;
 	const options = choices.slice(0, 4).map((c, i) => `${CIRCLED[i]} ${c}`).join('  ');
-	return `${shown}\n${what} 어떤 기법인가?\n${options}`;
+	return `${shown}\n\n${what} 어떤 기법인가?\n\n${options}`;
 }
 
 export function formulaBack(concept: string, symbolLines: string[]): string {

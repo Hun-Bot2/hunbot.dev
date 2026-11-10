@@ -12,6 +12,10 @@ import { PROMPT_VERSION, SCHEMA_VERSION, buildPrompt, responseSchema, validateOu
 import { generateJson } from './gemini.ts';
 import { SLOT_TYPES, attachFormulaChoices, conceptKey, type Card, type CardType } from './cards.ts';
 import { sha256 } from './text.ts';
+import { loadDeckMap, noteTags, resolveDeck } from './decks.ts';
+import { toExportNote, type ExportFile } from './export.ts';
+import { spawnSync } from 'node:child_process';
+import { ENGINE_DIR } from './env.ts';
 
 const PHASE0 = path.join(STATE_DIR, 'phase0');
 const CACHE = path.join(STATE_DIR, 'cache');
@@ -65,11 +69,25 @@ function planDigest(items: Prepared[], model: string, max: number): string {
 function cmdRules(paths: string[], env: Record<string, string>): void {
 	const items = prepare(paths, maxCards(env));
 	for (const p of items.filter((x) => x.skip?.startsWith('not a study note'))) console.log(`SKIP ${p.note.relPath}: ${p.skip}`);
-	const notes = items.filter((p) => !p.skip?.startsWith('not a study note')).map((p) => ({ relPath: p.note.relPath, sourceId: p.note.sourceId, documentHash: p.note.documentHash, parseError: p.note.parseError, units: p.note.units.size, cards: p.rules.cards, issues: p.rules.issues }));
+	const deckMap = loadDeckMap();
+	const notes = items
+		.filter((p) => !p.skip?.startsWith('not a study note'))
+		.map((p) => ({
+			relPath: p.note.relPath,
+			sourceId: p.note.sourceId,
+			documentHash: p.note.documentHash,
+			title: p.note.title,
+			deck: resolveDeck(p.note.relPath, p.note.frontmatter, deckMap),
+			tags: noteTags(p.note.relPath, p.note.frontmatter),
+			parseError: p.note.parseError,
+			units: p.note.units.size,
+			cards: p.rules.cards,
+			issues: p.rules.issues,
+		}));
 	writeJson(path.join(PHASE0, 'rules.json'), { createdAt: new Date().toISOString(), notes });
 	for (const n of notes) {
 		const byOrigin = n.cards.reduce<Record<string, number>>((m, c) => ((m[c.origin] = (m[c.origin] ?? 0) + 1), m), {});
-		console.log(`${n.relPath}\n  ${n.parseError ? 'PARSE ERROR: ' + n.parseError : `units ${n.units}, cards ${n.cards.length} ${JSON.stringify(byOrigin)}`}${n.issues.length ? `, issues ${n.issues.length}` : ''}`);
+		console.log(`${n.relPath} → ${n.deck}\n  ${n.parseError ? 'PARSE ERROR: ' + n.parseError : `units ${n.units}, cards ${n.cards.length} ${JSON.stringify(byOrigin)}`}${n.issues.length ? `, issues ${n.issues.length}` : ''}`);
 	}
 	console.log(`\nwrote ${path.relative(REPO_ROOT, path.join(PHASE0, 'rules.json'))}`);
 }
@@ -234,6 +252,51 @@ function cmdScore(): void {
 	console.log(text);
 }
 
+const ANKI_DIR = path.join(STATE_DIR, 'anki');
+const EXPORTS = path.join(STATE_DIR, 'exports');
+
+/** D16: every valid card → cards.json → apkg/build_apkg.py (official anki package) → .apkg. */
+function cmdBuild(withImport: boolean): void {
+	type RulesNote = { relPath: string; sourceId: string; title: string; deck: string; tags: string[]; parseError: string | null; cards: Card[] };
+	const rules = readJson<{ notes: RulesNote[] }>(path.join(PHASE0, 'rules.json'));
+	const llmFile = path.join(PHASE0, 'llm.json');
+	const llm = fs.existsSync(llmFile) ? readJson<{ notes: Array<{ relPath: string; cards: Card[] }> }>(llmFile) : { notes: [] };
+	const notes = rules.notes.filter((n) => !n.parseError);
+	const all = notes.flatMap((n) => [...n.cards, ...(llm.notes.find((x) => x.relPath === n.relPath)?.cards ?? [])].map((card) => ({ n, card })));
+	attachFormulaChoices(all.map((x) => x.card));
+	const seen = new Set<string>();
+	const exportNotes = all
+		.map(({ n, card }) => toExportNote(card, { deck: n.deck, tags: n.tags, title: n.title }))
+		.filter((note) => (seen.has(note.guid) ? false : (seen.add(note.guid), true)));
+	const file: ExportFile = { version: 1, createdAt: new Date().toISOString(), sources: notes.map((n) => n.sourceId), notes: exportNotes };
+	const cardsJson = path.join(ANKI_DIR, 'cards.json');
+	writeJson(cardsJson, file);
+	const python = path.join(ENGINE_DIR, 'apkg', '.venv', 'bin', 'python');
+	if (!fs.existsSync(python)) throw new Error('missing apkg/.venv: python3 -m venv tools/study-engine/apkg/.venv && tools/study-engine/apkg/.venv/bin/pip install anki==26.9.4');
+	const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\..+/, '').replace('T', '-');
+	const out = path.join(EXPORTS, `study-${stamp}.apkg`);
+	fs.mkdirSync(EXPORTS, { recursive: true, mode: 0o700 });
+	const res = spawnSync(python, [path.join(ENGINE_DIR, 'apkg', 'build_apkg.py'), '--cards', cardsJson, '--collection', path.join(ANKI_DIR, 'build.anki2'), '--out', out], { encoding: 'utf8' });
+	if (res.status !== 0) {
+		console.error((res.stderr || res.stdout).trim().split('\n').slice(-5).join('\n'));
+		process.exitCode = 1;
+		return;
+	}
+	const summary = JSON.parse(res.stdout.trim().split('\n').at(-1) as string) as Record<string, unknown>;
+	const byDeck = exportNotes.reduce<Record<string, number>>((m, x) => ((m[x.deck] = (m[x.deck] ?? 0) + 1), m), {});
+	const byType = exportNotes.reduce<Record<string, number>>((m, x) => ((m[x.noteType] = (m[x.noteType] ?? 0) + 1), m), {});
+	console.log(`${exportNotes.length} notes → ${path.relative(REPO_ROOT, out)}`);
+	console.log(`  build collection: ${JSON.stringify(summary)}`);
+	console.log(`  by deck: ${JSON.stringify(byDeck)}`);
+	console.log(`  by note type: ${JSON.stringify(byType)}`);
+	if (withImport) {
+		spawnSync('open', [out]);
+		console.log('Opened in Anki. The engine cannot confirm the import; check the import summary in Anki.');
+	} else {
+		console.log(`Import: open "${path.relative(REPO_ROOT, out)}"   (or run build --import)`);
+	}
+}
+
 async function main(): Promise<void> {
 	const { command, paths, confirm } = args();
 	const env = loadEngineEnv();
@@ -248,8 +311,10 @@ async function main(): Promise<void> {
 			return cmdSheet();
 		case 'score':
 			return cmdScore();
+		case 'build':
+			return cmdBuild(process.argv.includes('--import'));
 		default:
-			console.log('commands: rules <paths> | preview <paths> | llm <paths> --confirm <digest> | sheet | score');
+			console.log('commands: rules <paths> | preview <paths> | llm <paths> --confirm <digest> | sheet | score | build [--import]');
 	}
 }
 

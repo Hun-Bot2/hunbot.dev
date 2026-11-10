@@ -142,5 +142,7 @@ function addPrincipleFromHeading(note: Note, section: Section, push: (card: Card
 	if (!units.length) return;
 	const back = units.map((id) => `- ${note.units.get(id)?.text ?? ''}`).join('\n');
 	const concept = headingSubject(section.heading);
-	push({ cardKey: cardKey('principle', concept, sha256(normalizeForKey(section.heading)).slice(0, 8)), sourceId: note.sourceId, origin: 'heading-baseline', type: 'principle', track: 'understand', concept, front: section.heading, back, units, section: section.index, heading: section.heading });
+	// Section numbers ("2.1 …") are dropped from the front; left in, Markdown would read "1. …" as a list.
+	const front = section.heading.replace(/^\d+(?:\.\d+)*\.?\s+/u, '');
+	push({ cardKey: cardKey('principle', concept, sha256(normalizeForKey(section.heading)).slice(0, 8)), sourceId: note.sourceId, origin: 'heading-baseline', type: 'principle', track: 'understand', concept, front, back, units, section: section.index, heading: section.heading });
 }

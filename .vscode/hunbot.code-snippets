@@ -24,7 +24,7 @@
 			"# informedBy: ['devlog/...']   # blog slugs this note grew out of",
 			"anki:",
 			"  enabled: true",
-			"  deck: '${7:Study}'",
+			"  # deck: 'Study::AI'   # optional; by default tools/study-engine/decks.yaml picks the deck from the folder",
 			"  send: ${8|true,false|}        # false = never send this note to an external LLM",
 			"---",
 			"",

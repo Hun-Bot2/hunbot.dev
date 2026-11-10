@@ -149,7 +149,7 @@ test('formula choices use other formula concepts first, then confusables', () =>
 	const many = ['RRF', 'BM25', 'softmax', 'cross-entropy'].map((c) => make(c));
 	attachFormulaChoices(many);
 	for (const card of many) {
-		assert.match(card.front, /이 식은 어떤 기법인가\?\n① /);
+		assert.match(card.front, /이 식은 어떤 기법인가\?\n\n① /);
 		assert.ok(card.front.includes(card.concept));
 		assert.equal((card.front.match(/[①②③④]/g) ?? []).length, 4);
 	}
@@ -196,10 +196,10 @@ test('code patterns become recognition cards from rules (X 사용법: / X의 코
 	const code = cards.filter((c) => c.type === 'formula');
 	assert.deepEqual(code.map((c) => c.concept), ['Promise', 'async/await']);
 	assert.equal(code[0].formulaKind, 'code');
-	assert.match(code[0].front, /^```js\nconst p = new Promise[\s\S]*```\n이 코드는 무엇인가\?$/);
+	assert.match(code[0].front, /^```js\nconst p = new Promise[\s\S]*```\n\n이 코드는 무엇인가\?$/);
 	assert.equal(code[0].back, '**Promise**\n- resolve: 성공 값을 넘기며 이행 상태로 바꾼다\n- reject: 실패 이유를 넘기며 거부 상태로 바꾼다');
 	attachFormulaChoices(code);
-	assert.match(code[0].front, /이 코드는 어떤 기법인가\?\n[①②] (Promise|async\/await) {2}[①②] /);
+	assert.match(code[0].front, /이 코드는 어떤 기법인가\?\n\n[①②] (Promise|async\/await) {2}[①②] /);
 });
 
 test('table rows become header: value units', () => {
@@ -234,4 +234,34 @@ test('instructions live in the system instruction; the user message holds only t
 	assert.ok(prompt.user.startsWith(`source_id: ${note.sourceId}\n<note>\n`));
 	assert.ok(prompt.user.endsWith('</note>'));
 	assert.ok(!/schema|Return only|instructions/i.test(prompt.user.replace(payload.text.trimEnd(), '')));
+});
+
+test('decks follow decks.yaml by folder; snippet leftovers are ignored (D15)', async () => {
+	const { resolveDeck, noteTags, loadDeckMap } = await import('../src/decks.ts');
+	const map = loadDeckMap();
+	assert.equal(resolveDeck('src/content/blog/ko/study/RAG/Search.mdx', { anki: { deck: 'Study' } }, map), 'Study::AI');
+	assert.equal(resolveDeck('src/content/blog/ko/study/Training/lora.mdx', null, map), 'Study::AI');
+	assert.equal(resolveDeck('src/content/blog/ko/study/Linear-Algebra/eigen.mdx', null, map), 'Study::Math');
+	assert.equal(resolveDeck('src/content/blog/ko/study/Statistics/mle.mdx', null, map), 'Study::Math');
+	assert.equal(resolveDeck('src/content/blog/ko/study/linux/secure-boot.mdx', null, map), 'Study::CS');
+	assert.equal(resolveDeck('src/content/blog/ko/study/ai01.md', null, map), 'Study::AI');
+	assert.equal(resolveDeck('src/content/blog/ko/study/unknown/x.mdx', null, map), 'Study::Inbox');
+	assert.equal(resolveDeck('src/content/blog/ko/study/RAG/x.mdx', { anki: { deck: 'Study::Custom' } }, map), 'Study::Custom');
+	assert.deepEqual(noteTags('src/content/blog/ko/study/RAG/Search.mdx', { tags: ['tag', 'rag'] }), ['subject::rag', 'rag']);
+});
+
+test('card HTML: math becomes MathJax delimiters, code is escaped, raw HTML is dropped', async () => {
+	const { markdownToHtml } = await import('../src/render.ts');
+	assert.equal(markdownToHtml('$$\nx<1\n$$'), '<div class="math">\\[x&#x3C;1\\]</div>');
+	assert.match(markdownToHtml('값 $k$'), /\\\(k\\\)/);
+	assert.match(markdownToHtml('```js\na < b\n```'), /<pre><code class="language-js">a &#x3C; b/);
+	assert.ok(!markdownToHtml('<script>alert(1)</script>').includes('<script'));
+});
+
+test('numbered question headings lose their section number on the front', () => {
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'se-'));
+	const file = path.join(dir, 'n.mdx');
+	fs.writeFileSync(file, '---\ntitle: "t"\n---\n\n## 2.1 왜 reranker가 효과적이었나\n\n순위가 문제였습니다.\n');
+	const card = extractRules(readNote(file, dir), { headingBaseline: true }).cards[0];
+	assert.equal(card.front, '왜 reranker가 효과적이었나');
 });
