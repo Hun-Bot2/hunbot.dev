@@ -1,6 +1,6 @@
 # Roadmap
 
-Status: not started. Each phase needs the previous phase's result. Decisions D1–D10 are in [decisions.md](decisions.md).
+Status: Phase 0 tooling implemented 2026-11-10; the run waits for completed sample notes (D12) ([tools/study-engine/README.md](../../tools/study-engine/README.md)); the Gemini run, labelling and decision are pending. Each phase needs the previous phase's result. Decisions D1–D13 are in [decisions.md](decisions.md).
 
 | Phase | Builds | Main skill learned |
 | --- | --- | --- |
@@ -16,12 +16,22 @@ Status: not started. Each phase needs the previous phase's result. Decisions D1�
 ## Phase 0 — baseline and eval
 
 1. Verify model ID, tier and quotas ([evaluation.md](evaluation.md) §1).
-2. Pick 5 notes and write reference points first.
+2. Pick 5 study notes (D11) and write reference points first.
 3. Minimal script in `tools/study-engine/`: section split, layer-1 rules, numbered copy, prompt v1, JSON check, back assembly, usage log. No Anki writes.
 4. Run rules only vs rules + Gemini (optionally a local model) and decide.
 5. Set up eval tooling once: promptfoo (or a plain test script) over the 5 notes; traces to Langfuse free tier or OpenTelemetry to a file.
 
 Done when: reference points, result table, call log and a recorded decision exist.
+
+Implementation was split by difficulty:
+
+| Tier | Scope | Status |
+| --- | --- | --- |
+| 1 | Engine-only `.env`, note loading (frontmatter, MDX/Markdown AST, sections, numbered units, `card-break`), layer 1–2 rules, heading baseline | Done, offline |
+| 2 | Numbered sent copy, prompt v1, Gemini response schema, REST adapter with bounded retry, output validation (types, slots, unit IDs, same section, heading) | Done; not yet called |
+| 3 | CLI (`rules`, `preview`, `llm --confirm <digest>`, `sheet`, `score`), response cache, usage log, blind labelling sheet, A/B metrics | Done |
+
+First offline run (7 candidate notes, before D11 limited sources to `study/`): rules produced cards for 5; two free-form technical notes produced none (no definition lists or question headings). `study/rag01.mdx` fails to parse as MDX, so the blog cannot build it either. In `study/ai01.md`, bold-label summary bullets (`**생성 모델:** …`) match the definition rule but are not definitions — a known rule false positive to measure in labelling.
 
 ## Phase 1 — parser and rule cards
 
@@ -45,7 +55,7 @@ Acceptance: unchanged input → 0 calls and 0 duplicate cards; unknown or cross-
 
 - `study review` with real templates, MathJax and automatic warnings; `broken` marks → excluded from build → logged as fixtures.
 - Two note types, track tags, GUIDs from `stable_id`, no deck options.
-- genanki build; `open` / AnkiConnect `importPackage`.
+- Build with the official `anki` package and a persistent build collection (D16); `open` / AnkiConnect `importPackage`. **Done 2026-11-10**: `build [--import]`, decks per D15, verified with the 26.9.4 importer; the `review` preview is still to do.
 
 Prerequisite: a **test Anki profile**; never test on my real collection.
 
@@ -67,7 +77,7 @@ Keep before/after evidence (note/card IDs, review log, scheduling) locally.
 
 ## Phase 4 — two weeks of real use
 
-Run manually after each lecture. Collect the measures in [evaluation.md](evaluation.md) §4. Test DB backup/restore and recovery of `stable_id` from Anki. Only then add automation (git hook, launchd or Actions) for `scan` and preview preparation.
+Run manually after each lecture. Collect the measures in [evaluation.md](evaluation.md) §4. Add the weekly application-problem loop (D13): `study pack --since 7d` exports the week's concepts, their note text and the cards I keep failing as one Markdown file; I give it to a frontier model (Claude, Codex) in a chat; the answer comes back in a fixed YAML format that `study import` turns into cards, which go through `review` before `build`. Test DB backup/restore and recovery of `stable_id` from Anki. Only then add automation (git hook, launchd or Actions) for `scan` and preview preparation.
 
 Done when: daily records, the A/B comparison with limits stated, and failure-recovery notes exist.
 
@@ -110,7 +120,7 @@ Only after repeated personal benefit. Generic "notes → flashcards" is already 
 ```text
 tools/study-engine/
 ├── src/{cli,parsers,payload,providers,cards,review,export,storage,mcp}/
-├── apkg/build_apkg.py         # genanki; Python deps stay here
+├── apkg/build_apkg.py         # official anki package (venv in apkg/.venv); Python deps stay here
 └── tests/{fixtures,integration}/
 ```
 

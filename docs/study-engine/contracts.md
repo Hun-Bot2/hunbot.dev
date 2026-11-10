@@ -1,6 +1,6 @@
 # Data contracts
 
-Status: v0.3 (2026-11-10). Examples are synthetic. Decisions referenced as D1–D10 are in [decisions.md](decisions.md).
+Status: v0.3 (2026-11-10). Examples are synthetic. Decisions referenced as D1–D13 are in [decisions.md](decisions.md).
 
 ## Note frontmatter
 
@@ -34,7 +34,7 @@ A: The negative gradient of the loss.
 
 | Key | Default | Meaning |
 | --- | --- | --- |
-| `anki.enabled` | `true` under `study/`, else `false` | Whether the note is a source. `false` stops new cards; it does not delete existing Anki notes |
+| `anki.enabled` | `true` | Only read for notes under `<lang>/study/`, the only sources (D11). `false` excludes the note; it does not delete existing Anki notes |
 | `anki.deck` | `series`, then `Study` | Target deck |
 | `anki.tags` | `[]` | Extra tags merged with the note's `tags` |
 | `anki.send` | `true` | Whether layer 3 may send this note to an external provider. `false` = rules only (or a local provider) |
@@ -43,23 +43,28 @@ A: The negative gradient of the loss.
 
 | Layer | Source | Card | AI |
 | --- | --- | --- | --- |
-| 1. Rules | Root list items `- **term:** text` / `- **term**: text`, `<Term term title>`, block math with a preceding sentence | `definition`, `formula` | No |
+| 1. Rules | Root list items `- **term:** text` / `- **term**: text`, `<Term term title>`, block math with a preceding `X의 식:` sentence (the following list or paragraph = symbol meanings) | `definition`, `formula`, `principle` (question headings) | No |
 | 2. Comment cards | `{/* anki ... */}` | As written | No |
-| 3. LLM | `##`–`####` sections not used by layers 1–2 | One of the card types below | Chooses type, fills slots, picks back numbers |
+| 3. LLM | `##`–`####` sections not used by layers 1–2 | Any of the five slots | Names concepts and fills their slots with unit numbers |
 
 Sentences used by layers 1–2 are removed from the layer-3 copy. A section with nothing worth remembering returns an empty list; that is a valid result.
 
-## Card types and tracks
+## Concept slots and cards (D13)
 
-| `type` | Track | Front template | Back |
+Every card belongs to a concept and fills one of five slots:
+
+| Slot (`type`) | Track | Front | Back |
 | --- | --- | --- | --- |
-| `definition` | memorize | `{term}란?` | Source sentence(s) |
-| `formula` | memorize | `{concept}의 식은?` | The source math node, unchanged |
-| `why` | understand | `{subject}은(는) 왜 {phenomenon}? 설명하라.` | Key points = source sentences |
-| `how` | understand | `{task}은(는) 어떻게 하나? 설명하라.` | Key points = source sentences |
-| `compare` | understand | `{a}와(과) {b}의 관계·차이를 설명하라.` | Key points = source sentences |
+| `definition` | memorize | `{concept}란?` | Definition sentence(s) |
+| `principle` | understand | `{concept}은(는) {question}? 설명하라.` (or the question heading verbatim) | Key points = source sentences |
+| `formula` | memorize | The formula or code + `이 식은 / 이 코드는 어떤 기법인가?` + choices `①–④` | `**{concept}**` + symbol meanings or key points |
+| `compare` | understand | `{a}와(과) {b}: {axis}의 trade-off를 설명하라.` (no axis: `…의 관계·차이를 설명하라.`) | Key points |
+| `limitation` | understand | `{concept}의 한계는? 그 한계에서 나온 기술은?` (no successor: `{concept}의 한계는?`) | Limit sentences + `→ **{successor}**` |
 
-Templates are Korean because the notes are Korean; the engine picks the particle (은/는, 와/과) from the final consonant. A heading ending in `?` may be used verbatim as the front (`front_from_heading: true`). Example: the softmax formula is `formula` (memorize); the bias–variance trade-off is `why`/`compare` (understand).
+- Particles follow how the last character is read in Korean: Hangul batchim; acronyms letter by letter (`RRF는`, `LSTM은`); words by their usual ending (`token이란`, `dense와`); digits (`3이란`).
+- Formula choices: up to three other concepts of the same kind (math or code) from the same run in a stable hash order, then the concept's `confusables`; with fewer than two options the front asks `이 식은 / 이 코드는 무엇인가?`.
+- Rules fill the same slots: definition lists and `<Term>` → `definition`; `X의 식:` + `$$`, or `X 사용법:` / `X의 코드:` / `X 예시:` + a code block, with the following list or paragraph → `formula`; question headings → `principle` (concept = the heading's subject, `RRF는 왜 …?` → `RRF`).
+- Application problems are not a slot: they are written weekly by a frontier model outside the pipeline (D13).
 
 ## Comment cards
 
@@ -83,7 +88,7 @@ mokutil --sb-state
 ```
 ~~~
 
-- Units: sentence `S`, code block `C`, block math `M`. A list item or table row is one unit.
+- Units: sentence `S`, code block `C`, block math `M`. A list item is one unit; a table body row is one unit written as `header: value · header: value`. Parsing enables GFM like Astro does.
 - Sentences are split only inside text nodes; never inside code, math or inline code.
 - Each unit maps to a source span. Images, JSX, imports and link targets are omitted (link text is kept).
 - Markers are `[S12]`-style; tokenizer-reserved forms (`<|...|>`) are never used.
@@ -103,34 +108,37 @@ Offsets are UTF-16 code units; lines and columns are 1-based; positions include 
 
 ## LLM output
 
+The model returns concepts, not cards (`schema_version` 3.0, prompt `v4-system`: all instructions are sent as Gemini's system instruction and the user message holds only `source_id` and the numbered note; it is told to pick core techniques, mechanisms, APIs and trade-offs before metric names or table entries, and to phrase principle questions in its own words):
+
 ```json
 {
-  "schema_version": "2.0",
-  "source_id": "00000000-0000-4000-8000-000000000001",
-  "cards": [
+  "schema_version": "3.0",
+  "source_id": "src-6d7d1a8df14b65ad",
+  "concepts": [
     {
-      "type": "why",
-      "slots": { "subject": "shim", "phenomenon": "GRUB보다 먼저 실행되나" },
-      "front_from_heading": false,
-      "back": ["S2", "S3"],
-      "heading": "Secure Boot가 하는 일"
+      "name": "RRF",
+      "definition": ["S3"],
+      "principle": { "question": "왜 점수 대신 순위를 합치는가", "units": ["S3", "S4"] },
+      "formula": { "unit": "M1", "symbols": ["S6", "S7"], "confusables": ["CombSUM"] },
+      "compare": [{ "with": "weighted sum", "axis": "척도 의존성", "units": ["S5"] }],
+      "limitation": [{ "units": ["S8"], "led_to": "learned fusion" }]
     }
   ]
 }
 ```
 
-- `type` is one of the five types; `slots` keys must match that type exactly.
-- `back`: 1–4 unit IDs that exist in the sent copy and belong to the same section.
-- Slot values are plain text with a length limit. `heading` must equal a real AST heading.
-- `schema_version` and `source_id` must echo the request. Unknown fields are rejected. At most `STUDY_MAX_CARDS` (default 5) cards per note.
-- JSON wrapped in a code fence is not repaired into success. A model without structured output is not silently used in free-form mode.
-- Zod is the final runtime check; the provider JSON Schema and Zod schema are tested for consistency.
+- At most `STUDY_MAX_CARDS` (default 5) concepts per note; every slot is optional.
+- Each slot's units must exist in the sent copy and stay in one section; `formula.unit` must be an `[M#]` or `[C#]` unit. Two slots of one concept may not use the same sentences (the later one is rejected).
+- Names, questions, `with`, `axis`, `led_to` and confusables are plain text (≤ 40–60 chars, no markup).
+- A bad slot is dropped with a reason; the rest of the concept survives. A bad envelope (schema, `source_id`) fails the response.
+- An LLM card whose key equals a rule card's key is skipped (rules win).
+- JSON wrapped in a code fence is not repaired. A model without structured output is not silently used in free-form mode. Zod is the final runtime check.
 
 ## Identifiers
 
 | ID | Assigned / kept |
 | --- | --- |
-| `card_key` | Layer 1: `def:{normalized term}` or `math:{hash}`; layer 2: `note:{id}`; layer 3: `{type}:{hash(normalized back sentences)}` |
+| `card_key` | From the concept name: `def:{concept}`, `formula:{concept}`, `principle:{concept}:{hash(question)}`, `compare:{a}|{b}` (sorted), `limitation:{concept}:{hash(units)}`; comment cards `note:{id}` |
 | `stable_id` | UUID assigned when `(source_id, card_key)` is first generated; never changes |
 | `anki_guid` | Derived deterministically from `stable_id` |
 | `revision_id` | New when front, back, deck or tags change |
@@ -154,7 +162,7 @@ If the DB is lost, `stable_id` is recoverable from each Anki note's `StableId` f
 
 | Item | Value |
 | --- | --- |
-| Note types | `StudyEngine Basic v1` (memorize), `StudyEngine Explain v1` (understand); one template each; IDs are code constants |
+| Note types | `StudyEngine Basic v1` (definition, comment cards), `StudyEngine Formula v1` (recognition with choices), `StudyEngine Explain v1` (principle, compare, limitation); IDs are code constants |
 | Fields | `StableId`, `Front`, `Back`, `Source` |
 | Explain template | Front shows the task and "explain first, then flip"; Back shows the key points as a list plus the source |
 | Deck | ID derived deterministically from the deck name; no deck options written (D7) |
