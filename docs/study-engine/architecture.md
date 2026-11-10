@@ -13,7 +13,7 @@ Status: design. Phase 0 parts (parser, rules, payload, Gemini adapter, validatio
 
 ## Runtime
 
-- macOS, run on demand (D1). Node.js 24 + TypeScript for parsing, extraction, LLM calls. Python + genanki for the `.apkg` (D4). The two exchange only `cards.json`.
+- macOS, run on demand (D1). Node.js 24 + TypeScript for parsing, extraction, LLM calls. Python + the official `anki` package for the `.apkg` (D4, D16). The two exchange only `cards.json`.
 - MDX parsing uses unified/remark/MDX AST; boundary data is validated with Zod. The AST is parsed, never executed (no imports, expressions or components run).
 - SQLite: Node's built-in `node:sqlite` if it holds up in Phase 1; no native dependency added up front.
 - Tests: `node --test` or Vitest with synthetic fixtures.
@@ -27,7 +27,7 @@ MDX ──parsers──▶ layer 1–2 cards (rules, no AI)
                                                              └──cards──▶ one card per filled slot: front = template
                                                                          back  = original S.. / M..
 cards ──review (optional QA)──▶ broken ones excluded
-      ──export──▶ cards.json ──genanki──▶ study.apkg ──open / importPackage──▶ Anki
+      ──export──▶ cards.json ──anki (build collection)──▶ study.apkg ──open / importPackage──▶ Anki
 ```
 
 | Module | Responsibility |
@@ -38,7 +38,7 @@ cards ──review (optional QA)──▶ broken ones excluded
 | `providers` | `gemini`, `local`, `remote` adapters; response validation; usage; retry classification |
 | `cards` | Concept slots (D13), front templates and particles, back assembly from numbers, formula choices, machine checks |
 | `review` | Local preview with the real Anki templates, automatic warnings, `broken` marks |
-| `export` | `cards.json`, genanki call, import |
+| `export` | `cards.json` (HTML fields, deck, tags, GUID), the `apkg/build_apkg.py` call, import |
 | `storage` | SQLite migrations, caches, IDs |
 | `mcp` (Phase 6) | Exposes `scan` / `make_cards` / `build` as MCP tools |
 
@@ -71,13 +71,13 @@ Generation cache key = SHA-256 of `source_id + document_hash + payload_hash + pa
 Requirements, not verified behavior (verified in Phase 3):
 
 1. `build` writes every `current`, `valid`, not-`broken` card to `cards.json`. Definitions and comment cards use `StudyEngine Basic v1`, formulas `StudyEngine Formula v1` (recognition with choices, D13), principle/compare/limitation cards `StudyEngine Explain v1`.
-2. No deck options are written; decks use my default preset (D7). genanki writes `.study-engine/exports/study-<date>.apkg` with constant note-type and deck IDs and GUIDs derived from `stable_id`.
+2. No deck options are written; decks use my default preset (D7). `apkg/build_apkg.py` updates the persistent build collection by GUID and exports it to `.study-engine/exports/study-<time>.apkg` (D16).
 3. Every build contains **all** cards (not a delta). Same GUIDs, so re-import does not duplicate.
 4. Import with `open` by default; with `--import` and Anki + AnkiConnect running, call `importPackage` on `127.0.0.1` only. If Anki is closed, leave the file and say so.
 5. Import never deletes. Cards gone from MDX are exported once more with `study-engine::removed`.
 6. Managed fields edited in Anki are overwritten on the next import. Fixes go to MDX or the extractor.
 
-To verify in Phase 3: note/card IDs, review history and **suspend state** survive re-import; Anki's update condition (modification time); behavior after a note-type version change; behavior with the note open in the Anki browser; decks attach to the Default preset.
+Verified 2026-11-10 with the official 26.9.4 importer (D16): no duplicates on re-import, scheduling/card IDs/suspension kept, unchanged notes untouched, Default preset. Still to check in the desktop app: the import dialog's default options, a note-type version change, and a note open in the browser during import.
 
 ## Rendering
 

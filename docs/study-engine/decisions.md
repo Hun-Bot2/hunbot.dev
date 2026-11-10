@@ -1,6 +1,6 @@
 # Decisions
 
-Each entry is the **current** decision (D1–D14). Other documents must agree with this file; if they disagree, this file wins and the other document is fixed. "Changed" lines record what an entry replaced, so the history is visible without keeping outdated text elsewhere.
+Each entry is the **current** decision (D1–D16). Other documents must agree with this file; if they disagree, this file wins and the other document is fixed. "Changed" lines record what an entry replaced, so the history is visible without keeping outdated text elsewhere.
 
 ## D1. Local command, LLM behind a swappable provider (2026-11-09)
 
@@ -29,7 +29,7 @@ Rejected: writing `<|END|>`-style markers in MDX. `@mdx-js/mdx` 3.1.1 fails on `
 
 ## D4. Anki import is a generated `.apkg` with stable GUIDs (2026-11-09)
 
-- Node does parsing, extraction and LLM calls and writes `cards.json`; Python **genanki** writes the `.apkg`.
+- Node does parsing, extraction and LLM calls and writes `cards.json`; Python with the official **`anki`** package writes the `.apkg` (D16; genanki was replaced).
 - Each note's GUID derives from its `stable_id`, so re-importing updates notes instead of duplicating them. Note-type and deck IDs are constants; a template change bumps the note-type version.
 - Import: macOS `open file.apkg`, or AnkiConnect `importPackage` when Anki is running.
 - Import never deletes notes. Cards that disappear from MDX get the tag `study-engine::removed`.
@@ -60,7 +60,7 @@ Rejected: writing `<|END|>`-style markers in MDX. `@mdx-js/mdx` 3.1.1 fails on `
 
 ## D7. My Anki defaults; `review` is a QA tool, not an approval gate (2026-11-10)
 
-- The engine never sets scheduling. The `.apkg` carries no deck options, so imported decks use my default preset (button intervals today: Again 10 min, Hard 15 min, Good 1 day, Easy 2 days). Whether genanki decks attach to the Default preset is verified in Phase 3.
+- The engine never sets scheduling. The `.apkg` carries no deck options, so imported decks use my default preset (button intervals today: Again 10 min, Hard 15 min, Good 1 day, Easy 2 days). Verified 2026-11-10 with the official importer: imported decks attach to the `Default` preset (D16).
 - `study review` renders new/changed cards with the real Anki templates and MathJax and shows automatic warnings. I mark broken cards (`broken` + reason). Only those are excluded from `build`; the reasons become test cases for fixing the extractor. Once extraction is stable, `review` is used for new card types or new subjects.
 
 ## D8. The blog practice page is for application tasks only, later (2026-11-10)
@@ -126,3 +126,26 @@ Gemini does not add supplementary explanations, neither on cards nor as a separa
 - Why: unverifiable AI text on a card would be memorized by repetition; writing the gap myself is the better learning step; MDX stays the only source of content.
 - Cost: the model returns only names, short question fragments and unit numbers. In the first run (2026-11-10, three notes) output was 85–417 tokens per note against 585–11,425 input tokens; one or two supplementary sentences per concept would multiply the output several times for no checked content.
 - The instructions and the note are sent separately (system instruction vs user message, prompt `v4-system`).
+
+## D15. Decks are broad areas; subjects are tags (2026-11-10)
+
+| Deck | Folders under `study/` (examples) |
+| --- | --- |
+| `Study::CS` | `linux`, `threejs` |
+| `Study::AI` | `RAG`, `Training`, `NLP`, `RL`, `LLM`, and root notes such as `ai01.md`, `rag01.mdx` |
+| `Study::Math` | `Math`, `Statistics`, `LinearAlgebra`, `Calculus`, `Probability` |
+| `Study::EE` | `EE` |
+| `Study::HCI` | `HCI` |
+| `Study::Neuroscience` | `NeuroScience` |
+
+- The mapping lives in `tools/study-engine/decks.yaml`. Resolution: the note's `anki.deck` > the first matching folder > the file list > `Study::Inbox` (unmapped notes are visible there).
+- Folders are matched case-insensitively ignoring `-`, `_` and spaces. Folders are not reorganized into `study/CS/...`, because that would change published post URLs.
+- Each folder becomes a tag `subject::<folder>`; the note's own tags are added. The blog's placeholder tags (`tag`, `tag1`, `tag2`) and an `anki.deck` of plain `Study` (the old snippet default) are ignored.
+
+## D16. The `.apkg` is built with the official `anki` package and a persistent build collection (2026-11-10)
+
+- genanki's last release is 0.13.1 (2023-11-12). The official `anki` package 26.9.4 (2026-11-04) is the same version as my Anki desktop, so packages are written by the same code that imports them. It lives in `tools/study-engine/apkg/.venv` (Git-ignored); upgrade it together with the desktop.
+- Note types cannot be given fixed IDs through the API, and a note type rebuilt from scratch is treated as a different note type on import (tested: a second note type appeared and every note conflicted). So the engine keeps one **persistent build collection** (`.study-engine/anki/build.anki2`, backed up before every build, last 10 kept): note types are created once and never modified; notes are added or updated in place by GUID; the whole collection is exported without scheduling or deck options.
+- Verified with the 26.9.4 importer: first import adds notes; after an edit only that note updates; scheduling (interval, reps), card ID and suspension survive; the same file again changes nothing; a note deleted in Anki comes back on the next import; decks use the `Default` preset.
+- If the build collection is lost, the next import creates new note types; restore it from `.study-engine/anki/backups/`.
+- Changing a note type's fields or templates is a schema change (Anki then asks for a one-way full sync); do it as a new versioned note type, in a test profile first.

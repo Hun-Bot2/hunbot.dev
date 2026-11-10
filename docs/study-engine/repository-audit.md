@@ -74,7 +74,7 @@ These compile checks ran on Node 26, not Node 24, and are not a full Astro build
 
 - Gemini model ID, tier, quotas, structured-output support ([evaluation.md](evaluation.md) §1).
 - The five Phase 0 notes and their reference points.
-- genanki `.apkg` behavior in real Anki: re-import, suspend state, Default preset, note-type change.
+- `.apkg` behavior in the desktop app: the import dialog's defaults and a note-type version change (re-import, suspend and Default preset were verified with the 26.9.4 importer, D16).
 - MathJax and code rendering in Anki and AnkiWeb.
 - `node:sqlite` suitability and backup.
 - Node 24 run of parser tests.

@@ -55,7 +55,7 @@ Acceptance: unchanged input → 0 calls and 0 duplicate cards; unknown or cross-
 
 - `study review` with real templates, MathJax and automatic warnings; `broken` marks → excluded from build → logged as fixtures.
 - Two note types, track tags, GUIDs from `stable_id`, no deck options.
-- genanki build; `open` / AnkiConnect `importPackage`.
+- Build with the official `anki` package and a persistent build collection (D16); `open` / AnkiConnect `importPackage`. **Done 2026-11-10**: `build [--import]`, decks per D15, verified with the 26.9.4 importer; the `review` preview is still to do.
 
 Prerequisite: a **test Anki profile**; never test on my real collection.
 
@@ -120,7 +120,7 @@ Only after repeated personal benefit. Generic "notes → flashcards" is already 
 ```text
 tools/study-engine/
 ├── src/{cli,parsers,payload,providers,cards,review,export,storage,mcp}/
-├── apkg/build_apkg.py         # genanki; Python deps stay here
+├── apkg/build_apkg.py         # official anki package (venv in apkg/.venv); Python deps stay here
 └── tests/{fixtures,integration}/
 ```
 
