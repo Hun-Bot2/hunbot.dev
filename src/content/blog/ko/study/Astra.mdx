@@ -1,0 +1,407 @@
+---
+draft: false
+title: 'Rethinking skills and prompts for GPT-6 Astra'
+description: 'OpenAI 공식 블로그 : GPT-6 Astra에 대한 기존 스킬과 프롬프트의 재고'
+pubDate: '2026-11-17'
+tags: ['coding-agent', 'agent-skills', 'prompt-engineering']
+category: '공부'
+editorial:
+  motif: disclosure
+  relatedPosts: [devlog/status_arc/statusarc_develop_01]
+  references:
+    - title: 'Rethinking skills and prompts for GPT-6 Astra'
+      url: 'https://developers.openai.com/blog/rethinking-skills-and-prompts-for-gpt-6-astra'
+      relation: '이 글의 원문 · OpenAI'
+      description: '이 글에서 읽고 정리한 원문. Skill과 지침을 다시 검토하는 배경을 함께 읽을 수 있습니다.'
+    - title: 'Testing Agent Skills Systematically with Evals'
+      url: 'https://developers.openai.com/blog/eval-skills'
+      relation: '본문 참고 자료 · OpenAI'
+      description: '이 글의 참고 자료에 포함된 Skill 평가 문서입니다.'
+anki:
+  enabled: true
+  # deck: 'Study::AI'   # optional; by default tools/study-engine/decks.yaml picks the deck from the folder
+  send: true        # false = never send this note to an external LLM
+---
+
+
+# Coding Agent에게 더 많은 지침이 필요할까? — GPT-6 Astra의 Skill 설계 원칙
+
+**참고:** [Rethinking skills and prompts for GPT-6 Astra](https://developers.openai.com/blog/rethinking-skills-and-prompts-for-gpt-6-astra) — OpenAI, Eric Provencher, 2026.09.11
+
+## 핵심 요약
+
+Coding Agent의 성능을 개선하기 위해 반드시 더 많은 프롬프트와 Skill을 추가해야 하는 것은 아니다,
+오히려 모델의 능력이 향상되면서 과거에 작성한 세밀한 지침들이 오히려, 모델에게 제약이 될 수 있으며 컨텍스트 낭비를 유발할 수 있다는 내용이다.
+
+OpenAI는 GPT-6 Astra를 기준으로 다음 세 가지를 재검토할 것을 권장한다.
+
+1. **Skill:** 언제 사용해야 하는지 명확하게 정의하고, 필요한 정보만 단계적으로 제공한다.
+2. **AGENTS.md:** 모든 작업에 일괄 적용되는 지침을 최소화하고, 작업에 따라 필요한 문서를 선택하게 한다.
+3. **Task Prompt:** 모델의 자율성을 불필요하게 제한하지 않으면서 완료 조건과 승인 경계를 명시한다.
+
+OpenAI의 글은 Astra를 중심으로 작성되었다. 따라서, 이러한 원칙을 내가 주로 사용하는 Sol이나 Terra에도 동일하게 적용했을 때 어떤 결과가 나타나는지는 별도의 검증이 필요하고,
+앞으로 AI를 사용하면서 실험해 볼 계획이다. 물론, 이것도 또 새로운 모델이 나오면 다시 검토해야 할 가능성이 높긴 하다..
+
+---
+
+## 1. 왜 기존 프롬프트를 다시 검토해야 하는가?
+
+원문은 Coding Agent가 발전하면서 과거에 필요했던 *handholding*과 *scaffolding*의 상당 부분이 더 이상 필수적이지 않게 되었다고 설명한다.
+
+### 글을 읽으며 정리한 표현
+
+**Bloated — 불필요하게 비대해진**
+
+단순히 분량이 많다는 뜻을 넘어, 지침이나 기능이 계속 누적되어 필요 이상으로 복잡해진 상태를 나타낸다.
+이 글에서는 프롬프트와 컨텍스트가 불필요하게 커지는 현상을 이해하는 데 적합하다.
+
+**Handholding — 세세한 단계까지 안내하는 것**
+
+개발자가 Agent에게 모든 행동을 구체적으로 지시하는 상황을 떠올리면 된다.
+어떤 파일을 읽고, 무엇을 검사하고, 어떤 순서로 실행해야 하는지까지 모두 명령하는 방식이다.
+
+**Scaffolding — 비계 (마인크래프트를 생각하면 된다)**
+
+건설 현장에서 작업을 돕는 임시 구조물인 비계에서 유래한 표현이다. 교육학에서는 학습자가 스스로 문제를 해결할 수 있도록 일시적으로 제공하는 지원을 의미한다.
+즉, Agent가 스스로 판단할 수 있는 능력이 부족할 때, 임시로 제공하는 지침이나 도구를 의미한다고 생각한다.
+
+과거 모델의 부족한 능력을 보완하기 위해 작성했던 프롬프트가 더 강력한 모델에서는 오히려 독립적인 판단을 제한할 수 있다는 점이 핵심이고, 그래서 해당 블로그에도 나타나 있듯이,
+
+지금 모델(Gpt-6 Astra)에 맞춰 효과적으로 Skill과 프롬프트를 재설계할 필요가 있다는 것이다.
+
+---
+
+## 2. 효과적인 Skill을 설계하려면
+
+Skill은 기본적으로 Markdown으로 작성한 재사용 가능한 작업 지침이다. 필요한 경우 참조 문서, 실행 스크립트, 템플릿 등도 함께 패키징할 수 있다.
+
+Codex에서는 `$skill-creator`를 사용해 Skill 생성을 지원받을 수 있다.
+
+### 2.1. 언제 사용해야 하는지 명확하게 설명하라
+
+원문에서는 PostgreSQL 마이그레이션 Skill을 예시로 사용한다.
+
+<Compare labelA="나쁜 예시 · 넓은 호출 조건" labelB="개선된 예시 · 좁힌 작업 범위">
+  <p slot="a">PostgreSQL 스키마 마이그레이션을 작성하고 검증한다. 데이터베이스, 쿼리, 모델 또는 데이터 영속성 관련 작업에 사용한다.</p>
+  <p slot="b">PostgreSQL 스키마 마이그레이션을 작성하고 검증한다. 마이그레이션을 추가·변경하거나 배포 절차를 검토할 때 사용한다.</p>
+</Compare>
+
+이 설명의 문제는 호출 조건이 지나치게 넓다는 것이다. -> 단순 SQL 조회, 실행 계획 분석, ORM 모델 조회에서도 해당 Skill이 호출될 수 있다는 문제가 있다.
+
+보면, "마이그레이션"에서만 호출되도록 범위를 좁혔다. 또한, OpenAI 글에서는 이런식으로 SKILL은 짧고 명확하게 작성할 것을 권장하고 있다.
+
+즉, SKILL 문서를 작성할 때 범위를 정의하고, 호출 조건을 명확히 해야 한다는 것이다.
+
+---
+
+<Example label="나쁜 예시 · 모호한 검증 범위" tone="a">
+  <p>추천 엔진에 관한 작업을 할 때, 그에 맞는 수학적 방법으로 성능을 검증한다.</p>
+</Example>
+
+첫째, 추천 엔진 관련 작업의 범위가 너무 넓다. API 수정, 임베딩 변경, 추천 모델 학습, 응답 속도 개선은 서로 다른 작업이다.
+
+둘째, '그에 맞는 수학적 방법'이 무엇을 의미하는지 불분명하다. 물론, AI의 추론 능력을 믿고 갈 수는 있지만, SKILL로써는 탈락이다.
+
+예를 들어 추천 모델의 응답 시간이 800ms에서 200ms로 감소했다면 직접적으로 개선된 지표는 Latency다.
+
+그렇다면 Skill은 `추천 모델의 응답 시간을 검증할 때, Latency를 측정하고 개선 여부를 판단한다.` -> Latency의 종류가 여러 가지가 있다. (OWD, RTT, P95, P99 등) 그렇다면, 어떻게 작성하는게 좋은 방법일까??
+
+<Example label="개선된 예시 · 응답 성능 검증" tone="b">
+  <p>추천 시스템의 응답 성능 변경을 검증할 때 사용합니다. 변경 전후의 지연 시간 분포를 비교하고 성능 개선 및 회귀 여부를 평가합니다.</p>
+</Example>
+
+정도로 작성하는게 좋을 것 같다고 생각한다. (필자도 공부 중인 입장이기에 틀릴 수도 있다.)
+
+
+---
+
+## 3. Progressive Disclosure — 필요한 정보를 단계적으로
+
+이 글을 읽으며 가장 중요하게 느낀 개념이다.
+
+Skill을 읽으면 그 내용이 모델의 Context Window를 차지한다. 불필요한 문서를 읽게 되면 토큰을 소비할 뿐 아니라 현재 작업과 관계없는 지침이 판단에 영향을 미칠 수 있다고 한다.
+
+OpenAI는 여러 워크플로를 포함하는 Skill의 최상위 문서를 최소한의 라우터로 사용하고, 필요한 세부 문서와 스크립트만 선택적으로 읽는 방식을 권장한다.
+
+<WideFigure caption="하나의 지침을 필요한 문서로 나누어 펼친 구성. 표지와 같은 도형과 색으로 단계적 공개를 표현했다.">
+  <GeometricCover motif="disclosure" stage="parts" />
+</WideFigure>
+
+### 3.1. 개인 프로젝트를 이용한 예시
+
+다음 세 가지 문서가 있다고 가정하자.
+
+| 문서 | 분량 |
+|---|---:|
+| recommendation.md | 3,000줄 |
+| database.md | 2,000줄 |
+| evaluation.md | 1,500줄 |
+
+내가 Agent에게 NDCG@K 계산을 검증하라고 요청한다면, 모든 문서 6,500줄을 읽을 필요가 있을까?
+
+그럴 필요 없이 -> 직접적인 관련성이 가장 높은 문서인 `evaluation.md`를 찾아가면 된다.
+
+따라서 처음에는 문서의 목적과 위치만 안내하고, Agent가 필요에 따라 해당 문서를 읽는 구조가 더 합리적이며, 이후 추가 정보가 필요하면 다른 문서를 참조하도록 구성하면 된다.
+
+### 3.2. Skill의 디렉터리 구조
+
+추천 모델 평가 Skill을 만든다면 다음과 같은 구조를 고려할 수 있다. [AI의 의견이다]
+
+<FolderTree label="추천 모델 평가 Skill의 디렉터리 구조" nodes={[
+  { name: 'recommendation-evaluator/', children: [
+    { name: 'SKILL.md' },
+    { name: 'references/', children: [
+      { name: 'metrics.md' },
+      { name: 'statistical-tests.md' },
+      { name: 'experimental-design.md' },
+    ] },
+    { name: 'scripts/', children: [{ name: 'evaluate.py' }] },
+  ] },
+]} />
+
+`SKILL.md`는 어떤 평가 작업에 어떤 문서를 사용해야 하는지 안내한다.
+
+예를 들어 추천 순위 평가에는 `metrics.md`를, 실험 결과의 통계적 비교가 필요할 때는 `statistical-tests.md`를 참조할 수 있다.
+
+---
+
+## 4. Agent의 자율성과 작업 완료 기준
+
+OpenAI는 Skill뿐 아니라 `AGENTS.md`와 작업 프롬프트에 작성한 지침도 재검토할 것을 권장한다.
+
+모델의 능력이 향상되면서 과거에는 필요했던 세부적인 지침이 오히려 작업을 제한하거나 불필요한 실행을 유발할 수 있기 때문이다.
+
+### 4.1. AGENTS.md의 불필요한 지침
+
+`AGENTS.md`는 Agent가 Repository에서 작업할 때 참고하는 기본 지침이다.
+
+따라서 모든 작업에 적용할 필요가 없는 규칙을 무조건 실행하도록 작성하면 비효율적일 수 있다.
+
+<Compare title="AGENTS.md 문서 읽기 지침 비교" labelA="나쁜 예시 · 모든 문서 읽기" labelB="좋은 예시 · 필요한 문서 선택">
+  <p slot="a">모든 코드 수정 전에 architecture.md, database.md, deployment.md를 읽어라.</p>
+  <p slot="b">서비스 간 경계를 검토할 때 architecture.md, 스키마 변경 시 database.md, 배포 준비 시 deployment.md를 참고하라.</p>
+</Compare>
+
+간단한 오타 수정에도 세 문서를 모두 읽게 된다.
+
+원문에서 강조하는 것은 문서 자체를 제거하는 것이 아니라, **현재 작업에 필요한 문서만 선택하도록 지침을 구성하는 것**이다.
+
+또한 Astra는 기존 모델보다 자체적으로 테스트와 검증을 수행하는 능력이 향상되었기 때문에, 과도한 테스트 지침이 중복 실행으로 이어질 수 있다고 설명한다.
+
+### 4.2. Decision Boundaries — 승인 경계
+
+과거에는 Agent가 사용자의 의도보다 더 많은 작업을 수행하는 문제를 방지하기 위해, 매 단계 승인을 요구하는 지침을 추가하기도 했다.
+
+그러나 Astra에서는 이러한 지침이 과적용되어 불필요하게 작업이 중단될 수 있다.
+
+원문은 실제 운영 환경에 접근하지 않는 일회성 테스트 데이터를 사용하는 경우, Agent가 로컬 테스트를 실행하고 오류를 수정한 후 재검증하도록 허용하는 예시를 제시한다.
+
+보다 쉬운 작업이거나, 사람이 검수를 할 필요 없는 간단한 테스팅이라던 CI 작업이라면 따로 승인 없이 Agent가 자체적으로 검증하고 진행하도록 허용할 수 있다.
+
+그러나, 결제, 데이터 삭제, 배포 등 위험도가 높은 작업은 무조건적인 승인을 요구하는 것이 안전하다.
+
+즉, 작업 전체에 일괄적인 승인 규칙을 적용하기보다 **작업의 위험도와 실행 환경을 고려해 승인 범위를 구분해야 한다.**
+
+### 4.3. Persistence — 작업을 어디까지 수행할 것인가?
+
+원문에서는 GPT-5.6 Sol과 비교하여 Astra가 초기 구현 이후 사용자 검토를 요청하며 작업을 일찍 중단하는 경우가 있다고 설명한다.
+
+이를 보완하기 위해 작업을 시작하기 전에 완료 조건을 명확하게 정의할 것을 권장한다.
+
+예를 들어 다음 두 요청을 비교해 볼 수 있다.
+
+<Compare title="작업 완료 조건의 명확성 비교" labelA="모호한 요청" labelB="완료 조건이 포함된 요청">
+  <p slot="a">추천 API의 응답 속도를 개선하라.</p>
+  <p slot="b">추천 API의 응답 속도를 개선하고, 동일한 테스트 조건에서 변경 전후의 P95 Latency를 비교하라. 관련 테스트를 실행하여 변경으로 인한 회귀가 없는지 확인하고 결과를 보고하라.</p>
+</Compare>
+
+두 번째 요청은 작업의 목표와 검증 범위를 함께 정의한다.
+
+단, P95의 측정 구간과 테스트 조건 등 구체적인 평가 기준은 실제 시스템에 맞춰 설정해야 한다.
+
+여기서 중요한 것은 Agent에게 모든 구현 단계를 지시하는 것이 아니라, **어떤 상태가 되어야 작업이 완료된 것으로 판단할 수 있는지 정의하는 것**이다.
+
+---
+
+## 5. 실제 엔지니어들은 Skill을 어떻게 설계하고 사용할까?
+
+이번에는 이론적인 Skill 설계 원칙에서 벗어나, 실제 엔지니어들이 공개한 Skill 저장소를 분석해 보았다.
+
+대표적인 사례는 TypeScript 교육자로 알려진 Matt Pocock의 [Skills for Real Engineers](https://github.com/mattpocock/skills)다.
+
+이 저장소는 2026년 11월 기준 GitHub에서 32만 개 이상의 Star를 기록하고 있으며, 27개의 정식 Skill을 제공한다.
+
+특히 Thoughtworks가 2026년 11월 발표한 Technology Radar Vol.35에서 이 저장소를 **Trial** 단계로 평가했다는 점이 흥미로웠다.
+
+Thoughtworks는 실제 소프트웨어 엔지니어링 관행과 요구사항 분석에 도움이 되는 사례로 소개하면서도, 전체 Skill 라이브러리를 검증 없이 도입하는 것은 권장하지 않는다고 말했다.
+
+### 5.1. 작은 Skill을 조합하여 개발 프로세스를 구성한다
+
+이 저장소의 특징은 개발 절차 전체를 하나의 거대한 Skill에 작성하지 않는다는 것이다.
+
+대신 작업을 담당하는 Skill을 분리하고, 필요한 경우 다른 Skill을 호출하도록 구성했다.
+
+대표적인 흐름은 다음과 같다.
+
+<Workflow label="Skill을 조합한 개발 흐름" stages={[
+  { name: 'grill-with-docs', skills: ['grilling', 'domain-modeling'] },
+  { name: 'to-spec' },
+  { name: 'to-tickets' },
+  { name: 'implement / implement-spec', skills: ['tdd', 'code-review'] },
+  { name: 'retro' },
+]} />
+
+상위 단계는 대부분 사용자가 직접 호출하며, 실행 단계에서 재사용하는 Skill은 Agent가 호출할 수 있도록 분리한다.
+
+예를 들어 `grill-with-docs`는 사용자에게 질문하며 요구사항을 구체화하고, 그 과정에서 `grilling`과 `domain-modeling`을 활용한다.
+
+이후 `to-spec`은 결정된 내용을 명세로 정리하고, `to-tickets`는 작업을 독립적으로 검증 가능한 단위로 분해한다.
+
+`implement`는 이러한 작업을 구현할 때 `tdd`와 `code-review`를 재사용한다.
+
+이를 통해 하나의 Skill에 모든 개발 규칙을 중복해서 작성하지 않고, 작업별 책임을 분리할 수 있다.
+
+### 5.2. User-invoked와 Model-invoked의 구분
+
+이 저장소는 Skill의 호출 방식을 두 가지로 구분한다.
+
+<Compare title="Skill 호출 방식 비교" labelA="User-invoked" labelB="Model-invoked">
+  <p slot="a">개발자가 명시적으로 호출하는 Skill이다. 전체 작업의 흐름이나 사용자 의사결정이 필요한 절차에 사용한다.</p>
+  <p slot="b">개발자가 직접 호출할 수도 있지만, Agent가 현재 작업에 필요하다고 판단하면 자동으로 호출할 수 있다.</p>
+</Compare>
+
+특히 User-invoked Skill이 다른 Model-invoked Skill을 호출하도록 구성하는 방식은 사용자의 통제권과 재사용성을 동시에 고려한 설계라고 생각한다.
+
+### 5.3. SKILL.md와 참조 문서의 역할 분리
+
+대표적으로 `tdd` Skill은 테스트 주도 개발의 핵심 절차와 규칙을 `SKILL.md`에 작성한다.
+
+반면 좋은 테스트와 나쁜 테스트의 실제 예시는 `tests.md`, Mocking 관련 기준은 `mocking.md`에 분리되어 있다.
+
+따라서 핵심적인 작업 절차를 한 파일에 유지하면서도 필요에 따라 세부적인 참조 자료를 읽도록 구성할 수 있다.
+
+또한 Agent용 `SKILL.md`와 별도로 사람이 읽는 문서를 `docs/engineering/`에 작성한다.
+
+이는 앞서 살펴본 **Progressive Disclosure와 Information Hierarchy**의 실제 적용 사례로 볼 수 있다.
+
+### 5.4. Skill은 실제 성능을 개선할까?
+
+설계가 체계적이라고 해서 실제 성능 향상이 입증되는 것은 아니다.
+
+독립적인 [skill-placebo](https://github.com/simonether/skill-placebo) 실험에서는 Matt Pocock의 Skill 패키지와 동일한 길이의 중립적인 지침을 비교했다.
+
+2026년 9월 30일, Claude Code와 Claude Opus 5.5를 사용한 실험 결과는 다음과 같다.
+
+| 측정 항목 | Skill | Placebo |
+|---|---:|---:|
+| 작업 통과율 | 83% | 87% |
+| 상대적인 실행 비용 | 1.05배 | 1.00배 |
+
+연구자는 Matt Pocock 패키지가 Placebo보다 우수하다는 통계적 근거를 발견하지 못했다.
+그러나, 이는 15개의 짧은 공개 작업을 사용한 실험이기 때문에 장기간의 아키텍처 설계나 대규모 개발에서의 효과까지 판단할 수는 없다고 생각한다.
+
+또 다른 [SWE-Skills-Bench](https://arxiv.org/abs/2603.15401) 연구는 49개의 Skill 중 39개에서 작업 통과율 개선이 나타나지 않았다고 보고했다.
+
+그러나, 해당 연구는 현재 arXiv 프리프린트로 공개된 상태이며, 주요 학회의 동료 심사를 통과한 결과로 확인되지 않았기에 그냥 그렇구나 하고 참고하는 정도로만 생각하는 것이 좋을 것 같다.
+
+이 연구는 Matt Pocock 저장소에 대한 직접 평가가 아니라 Skill 전반의 효과를 분석한 연구다.
+
+### 5.5. 개인적인 결론
+
+이 저장소에서 가장 배울 만한 부분은 Skill의 개수가 아니라 **하나의 전문적인 작업 절차를 여러 워크플로에서 재사용하도록 만든 구조**라고 생각한다.
+
+그러나 같은 Skill이라도 작업의 복잡도, 사용하는 모델, 기존 Repository의 구조에 따라 실제 효과가 달라질 수 있다.
+
+따라서 이미 작성된 Skill을 무조건 설치하기보다, 필요한 설계 원칙을 참고하고 자신의 프로젝트에 맞춰 수정하는 것이 더 합리적일 것이라고 생각한다.
+
+## 6. Skill 없이 어떻게 개발해 왔을까?
+
+지금까지 개인 프로젝트를 개발하면서 Skill을 적극적으로 활용하지 않았고, Markdown 문서를 통해 프로젝트의 개발 맥락을 관리하는 방식을 선호했다.
+
+예를 들어 하루 동안 진행한 작업과 남은 과제를 `seed` 문서로 기록하거나, 중요한 아키텍처 결정이 발생하면 ADR(Architecture Decision Record)을 작성했다.
+
+또한 프로젝트의 전체 구조와 주요 문서의 위치를 `AGENTS.md`에 기록하여, 새로운 Agent 세션에서도 필요한 맥락을 찾아볼 수 있도록 구성했다.
+
+이러한 방식은 하나의 정식 방법론이라기보다 **Docs-as-Code, Architecture Decision Records, Context Engineering**을 결합한 접근법이라고 볼 수 있다고 한다.(AI 왈)
+
+### 6.1. Architecture Decision Records — 왜 그렇게 설계했는가?
+
+ADR은 소프트웨어 아키텍처에서 중요한 의사결정과 그 이유를 기록하는 방법이다.
+
+Michael Nygard가 2011년 발표한 [Documenting Architecture Decisions](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions)에서 제안한 기록 방식으로, 이후 Google Cloud와 Martin Fowler 등에서도 소개되었다.
+
+ADR의 핵심은 선택한 기술 자체보다 **그 기술을 선택하게 된 배경과 Trade-off를 남기는 것**이다.
+
+일반적으로 다음 내용을 포함한다.
+
+- Context: 어떤 문제와 제약조건이 있었는가?
+- Decision: 어떤 대안을 선택했는가?
+- Status: 해당 결정은 제안, 채택, 대체 중 어떤 상태인가?
+- Consequences: 선택에 따른 긍정적·부정적 영향은 무엇인가?
+
+이를 통해 시간이 지난 뒤에도 당시의 설계 의도를 이해할 수 있다.
+
+AI Agent를 활용한 개발에서도 이러한 기록은 유용하며, 내가 개발을 하면서 중간 중간 의사결정을 바꿀 떄마다 이를 추적할 수 있는 근거가 된다고 생각해기에 사용하고 있었다.
+
+### 6.2. Session Handoff — 개발 맥락을 다음 세션에 전달하기
+
+프로젝트를 여러 날에 걸쳐 개발하면 Agent의 대화 세션이 변경되거나 컨텍스트가 초기화되는 상황이 발생한다.
+
+나는 이를 보완하기 위해 작업 내용을 `seed`라는 이름의 문서로 남기는 방식을 사용해 왔다.
+
+이 문서는 오늘 수정한 내용, 현재 구현 상태, 해결하지 못한 문제, 다음 작업 등을 기록하기 위한 것이다.
+
+일반적으로 이러한 목적의 기록은 Session Handoff 또는 Engineering Log와 관련된다.
+
+다만 `seed` 자체는 정해진 표준 문서 형식이 아니므로, 내가 사용하는 프로젝트별 기록 관례로 구분할 필요가 있다.
+
+ADR과 차이가 있다면, ADR은 장기적으로 유지해야 하는 설계 결정의 근거를 기록하지만 Session Handoff는 **다음 작업을 이어가는 데 필요한 일시적인 실행 맥락**을 전달한다는 점이다.
+
+### 6.3. Docs-as-Code와 Context Engineering
+
+[Google의 Documentation Best Practices](https://google.github.io/styleguide/docguide/best_practices.html)에서는 문서를 코드 변경과 함께 갱신하고, 오래되거나 중복된 문서를 정리할 것을 권장한다.
+
+문서를 Markdown으로 작성하여 Git에서 코드와 함께 관리하는 방식은 Docs-as-Code의 일반적인 활용 사례다.
+
+여기에 AI Agent가 필요한 문서의 위치를 찾고, 현재 작업에 관련된 내용만 읽도록 구성한다면 Context Engineering의 관점으로도 설명할 수 있다.
+
+예를 들어 다음과 같이 역할을 구분할 수 있다.
+
+| 문서 | 핵심 역할 |
+|---|---|
+| AGENTS.md | 기본 지침과 문서 탐색 기준 |
+| ADR | 아키텍처 의사결정의 이유와 결과 |
+| Session Handoff / seed | 현재 작업 상태와 다음 작업 |
+| Architecture 문서 | 현재 시스템의 전체 구조 |
+| Skill | 반복적으로 수행할 전문적인 작업 절차 |
+
+### 6.4. 그렇다면 Skill을 추가해야 할까?
+
+이번 OpenAI 글과 Matt Pocock의 저장소를 분석하면서, 기존의 문서 기반 개발 방식을 전부 Skill로 변경할 필요는 없다고 판단했다.
+
+<Compare title="문서와 Skill의 역할 비교" labelA="문서 · 구조와 맥락" labelB="Skill · 반복 작업 절차">
+  <p slot="a">문서는 프로젝트가 <strong>어떤 구조이며, 왜 그렇게 설계되었고, 현재 어떤 상태인지</strong>를 설명한다.</p>
+  <p slot="b">반면 Skill은 특정 조건에서 <strong>어떤 작업 절차를 반복적으로 수행해야 하는지</strong>를 정의하는 데 적합하다.</p>
+</Compare>
+
+예를 들어 ALDY에서 추천 모델의 실험 결과와 설계 근거는 문서로 관리하되, 반복되는 추천 품질 평가 절차는 Skill로 분리하는 방식을 고려할 수 있다.
+
+물론 문서와 Skill의 역할이 완전히 분리되는 것은 아니다. Skill 자체도 Markdown 문서이며 다른 문서를 참조할 수 있다.
+
+중요한 것은 저장 형식이 아니라 **정보를 기록하는 목적과 Agent가 해당 정보를 사용하는 시점**이라고 생각한다.
+
+앞으로도 기본적인 문서 중심의 개발 방식을 유지하면서, 반복되는 전문 작업 중 실제로 효과가 확인되는 부분부터 Skill을 도입해 보려고 한다.
+
+이후, Skill을 사용하지 않은 경우와 비교하여 작업 성공률, 실행 시간, 토큰 사용량, 불필요한 호출 여부를 검증해 보려고 한다.
+
+### 참고 자료
+
+- [Rethinking skills and prompts for GPT-6 Astra](https://developers.openai.com/blog/rethinking-skills-and-prompts-for-gpt-6-astra) — OpenAI, 2026
+- [Testing Agent Skills Systematically with Evals](https://developers.openai.com/blog/eval-skills) — OpenAI
+- [Using GPT-6 — Official Model Guide](https://developers.openai.com/api/docs/guides/latest-model?model=gpt-6.1-sol) — OpenAI
+- [Build Skills — Official Documentation](https://learn.chatgpt.com/docs/build-skills) — OpenAI
+
+- [Matt Pocock — Skills for Real Engineers](https://github.com/mattpocock/skills)
+- [Thoughtworks Technology Radar Vol.35 — mattpocock/skills](https://www.thoughtworks.com/radar/tools/mattpocock-skills)
+- [skill-placebo — Placebo-controlled benchmark](https://github.com/simonether/skill-placebo)
+- [SWE-Skills-Bench: Do Agent Skills Actually Help in Real-World Software Engineering?](https://arxiv.org/abs/2603.15401)
