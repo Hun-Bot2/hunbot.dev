@@ -1,0 +1,50 @@
+---
+import { readDraftSources } from './draft-sources';
+import '../styles/tokens.css';
+import '../styles/global.css';
+import '../styles/prose.css';
+import '../styles/editorial.css';
+import { resolveCoverMotif } from '../utils/editorial-covers';
+import GeometricCover from '../components/editorial/GeometricCover.astro';
+import ReadingSidebar from '../components/editorial/ReadingSidebar.astro';
+
+// This entry point is only injected by astro dev.
+export const prerender = false;
+const post = readDraftSources().find(entry => entry.id === Astro.params.id);
+if (!post) return new Response(null, { status: 404 });
+const { Content } = await post.load();
+const { editorial, heroImage, series, seriesOrder } = post.data;
+const lang = post.locale;
+const usableSeries = series === 'series 이름' || series === 'series name' ? undefined : series;
+---
+<html lang={lang === 'jp' ? 'ja' : lang}>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="robots" content="noindex, nofollow" />
+		<title>{post.title} · 초안 미리보기</title>
+		<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" />
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
+	</head>
+	<body>
+		<main class="draft-page editorial-surface">
+			<header class="article-header">
+				<p class="draft-nav"><a href="/__drafts/">← 작성 중인 글</a> · 로컬 미리보기</p>
+				<h1 class="article-title">{post.title}</h1>
+				<p class="article-lead">{post.data.description}</p>
+			</header>
+			<figure class="editorial-cover">
+				{heroImage ? <img src={heroImage} alt={post.title} /> : <GeometricCover motif={resolveCoverMotif(post.id, editorial?.motif)} variant={(seriesOrder ?? 0) % 4} />}
+			</figure>
+			<div class="editorial-grid">
+				<div class="article-main"><article class="prose"><Content /></article></div>
+				<ReadingSidebar relatedPosts={editorial?.relatedPosts} references={editorial?.references} selfId={post.id} series={usableSeries} seriesOrder={seriesOrder} lang={lang} />
+			</div>
+		</main>
+	</body>
+</html>
+<style>
+	.draft-page { padding-block:2rem 5rem; }
+	.editorial-cover > img { display:block; width:100%; max-height:70vh; object-fit:contain; }
+	.draft-nav { font:400 .75rem/1.7 var(--font-sans); color:var(--secondary); margin-bottom:1rem; }
+</style>

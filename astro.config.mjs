@@ -7,6 +7,7 @@ import remarkCjkFriendly from 'remark-cjk-friendly';
 import rehypeKatex from 'rehype-katex';
 import vercel from '@astrojs/vercel';
 import remarkLocalizedBlogLinks from './src/utils/remark-localized-blog-links.mjs';
+import remarkEditorialComponents from './src/utils/remark-editorial-components.mjs';
 import rehypeExternalLinks from './src/utils/rehype-external-links.mjs';
 
 const remarkPlugins = [remarkLocalizedBlogLinks, remarkCjkFriendly, remarkMath];
@@ -29,8 +30,19 @@ export default defineConfig({
     },
   },
   integrations: [
+    {
+      name: 'local-draft-preview',
+      hooks: {
+        'astro:config:setup': ({ command, injectRoute }) => {
+          if (command !== 'dev') return;
+          injectRoute({ pattern: '/__drafts/editorial', entrypoint: './src/dev/editorial-demo.astro' });
+          injectRoute({ pattern: '/__drafts', entrypoint: './src/dev/draft-index.astro' });
+          injectRoute({ pattern: '/__drafts/[...id]', entrypoint: './src/dev/draft-post.astro' });
+        },
+      },
+    },
     mdx({
-      remarkPlugins,
+      remarkPlugins: [...remarkPlugins, remarkEditorialComponents],
       rehypePlugins,
       drafts: true,
     }),

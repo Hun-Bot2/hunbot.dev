@@ -34,6 +34,9 @@ These shape a note so Study Engine can extract cards without an LLM ([docs/study
 | `study-skeleton` | `## 용어 정리` with a definition item, `## 공식` with a sentence and block math, a question heading | Memorize cards (definitions, formula) and an understand card from the question heading |
 | `def` | `- **용어:** 정의` | A memorize `definition` card |
 | `mathblock` | `$$ … $$` | A memorize `formula` card when a sentence precedes it |
+| `formula` | `X의 식:` + `$$ … $$` + `- 기호: 의미` | A formula recognition card: formula + choices → concept + symbols (D13) |
+| `codecard` | `X 사용법:` + a code block + `- 핵심: 설명` | A code recognition card: code + choices → X (D13) |
+| `concept` | One concept laid out in the five slots: definition, principle question, formula, comparison, limitation | Up to five cards, one per slot (D13) |
 | `anki-card` | `{/* anki id="…" Q: … A: … */}` | A card exactly as written; hidden on the blog |
 | `card-break` | `{/* card-break */}` | A forced section boundary for the LLM layer; hidden on the blog |
 

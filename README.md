@@ -47,6 +47,8 @@ npm run content:validate && npm test && npm run build && npm run routes:validate
 
 ## Writing content
 
+See the [documentation index](docs/README.md) and the [blog writing guide](docs/content/writing/README.md). Run `npm run post:new -- ko study/my-post` to create a local draft.
+
 - **Post**: add `src/content/blog/{ko|jp|en}/{category}/{slug}.mdx` with `title`, `description`, `pubDate`. Remove `draft: true` to publish.
 - **Library note**: `npm run note:new -- <item-id>` creates a draft in `src/content/item-notes/`. Write it, then set `draft: false`. A note drafted from an item's docs is marked `authorship: bot` and shows an "AI 초안" label; publishing it also needs `reviewedAt`. Rules: [`docs/content/item-notes.md`](docs/content/item-notes.md).
 - **Translations**: Japanese and English posts are translations of the Korean ones, produced by a local translation pipeline and checked before publishing.

@@ -1,0 +1,16 @@
+---
+interface Props { label: string; tone: 'a' | 'b'; }
+const { label, tone } = Astro.props;
+---
+<section class:list={['editorial-example', `example-${tone}`]} aria-label={label}>
+ <p class="example-label"><span aria-hidden="true">{tone.toUpperCase()}</span>{label}</p>
+ <slot />
+</section>
+<style>
+.editorial-example { margin-block:1.5rem; padding:1.5rem; border-top:3px solid var(--example-edge); background:var(--example-bg); }
+.example-a { --example-bg:color-mix(in srgb,var(--paper) 88%,#b97648); --example-edge:#98643e; }
+.example-b { --example-bg:color-mix(in srgb,var(--paper) 88%,#478280); --example-edge:#477c74; }
+.example-label { display:flex; align-items:center; gap:.7rem; font:500 .85rem/1.5 var(--font-sans); margin:0 0 1rem; }
+.example-label span { display:grid; place-items:center; width:1.7rem; height:1.7rem; border:1px solid var(--example-edge); font-family:var(--font-mono); flex-shrink:0; }
+.editorial-example :global(p:last-child) { margin-bottom:0; }
+</style>

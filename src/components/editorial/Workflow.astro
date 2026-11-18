@@ -1,0 +1,23 @@
+---
+interface Props { label: string; stages: { name: string; skills?: string[] }[]; }
+const { label, stages } = Astro.props;
+---
+<section class="editorial-workflow" aria-label={label}>
+	<ol>{stages.map((stage, index) => <li>
+		<span class="step-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+		<div><code class="stage-name">{stage.name}</code>
+			{stage.skills?.length && <ul aria-label="재사용하는 Skill">{stage.skills.map(skill => <li><code>{skill}</code></li>)}</ul>}
+		</div>
+	</li>)}</ol>
+</section>
+<style>
+.editorial-workflow { margin-block:2rem; padding:1.25rem; border:1px solid var(--rule); background:var(--paper-light); }
+.editorial-workflow>ol { list-style:none; margin:0; padding:0; }
+.editorial-workflow>ol>li { display:grid; grid-template-columns:2rem minmax(0,1fr); gap:1rem; position:relative; margin:0; padding-bottom:1.75rem; }
+.editorial-workflow>ol>li:last-child { padding-bottom:0; }
+.editorial-workflow>ol>li:not(:last-child)::after { content:''; position:absolute; left:.95rem; top:2rem; bottom:0; border-left:1px solid var(--rule-strong); }
+.step-number { display:grid; place-items:center; height:2rem; border:1px solid var(--rule-strong); border-radius:50%; font:400 .7rem/1 var(--font-mono); color:var(--accent); }
+.stage-name { display:block; padding:.25rem 0; font:500 .9rem/1.7 var(--font-mono); background:none; overflow-wrap:anywhere; }
+.editorial-workflow ul { display:flex; flex-wrap:wrap; gap:.5rem; list-style:none; padding:0; margin:.5rem 0 0; }
+.editorial-workflow ul li { margin:0; padding:.25rem .5rem; background:var(--paper-deep); font-size:.8rem; }
+</style>

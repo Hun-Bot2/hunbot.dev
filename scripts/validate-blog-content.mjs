@@ -31,6 +31,7 @@ const blogSlugs = new Set(
 // Frontmatter records for the placeholder/duplicate report below, gathered
 // alongside the per-file checks so we don't re-read every file.
 const frontmatterRecords = [];
+const localDrafts = [];
 
 for (const filePath of files) {
 	const label = relative(root, filePath);
@@ -41,7 +42,11 @@ for (const filePath of files) {
 	}
 
 	const source = readFileSync(filePath, 'utf8');
-	const frontmatterMatch = source.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+	if (!/^\uFEFF?---\r?\n/.test(source)) {
+		localDrafts.push(label);
+		continue;
+	}
+	const frontmatterMatch = source.match(/^\uFEFF?---\r?\n([\s\S]*?)\r?\n---/);
 
 	if (!frontmatterMatch) {
 		errors.push(`${label} is missing frontmatter.`);
@@ -235,7 +240,7 @@ if (warnings.length > 0) {
 	console.warn(`Blog content warnings:\n- ${warnings.join('\n- ')}`);
 }
 
-console.log(`Validated blog content frontmatter: ${files.length} files.`);
+console.log(`Validated blog content frontmatter: ${files.length - localDrafts.length} files. ${localDrafts.length} metadata-free local drafts excluded.`);
 
 function walk(directory) {
 	return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {

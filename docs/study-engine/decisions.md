@@ -1,6 +1,6 @@
 # Decisions
 
-Each entry is the **current** decision. Other documents must agree with this file; if they disagree, this file wins and the other document is fixed. "Changed" lines record what an entry replaced, so the history is visible without keeping outdated text elsewhere.
+Each entry is the **current** decision (D1–D16). Other documents must agree with this file; if they disagree, this file wins and the other document is fixed. "Changed" lines record what an entry replaced, so the history is visible without keeping outdated text elsewhere.
 
 ## D1. Local command, LLM behind a swappable provider (2026-11-09)
 
@@ -29,7 +29,7 @@ Rejected: writing `<|END|>`-style markers in MDX. `@mdx-js/mdx` 3.1.1 fails on `
 
 ## D4. Anki import is a generated `.apkg` with stable GUIDs (2026-11-09)
 
-- Node does parsing, extraction and LLM calls and writes `cards.json`; Python **genanki** writes the `.apkg`.
+- Node does parsing, extraction and LLM calls and writes `cards.json`; Python with the official **`anki`** package writes the `.apkg` (D16; genanki was replaced).
 - Each note's GUID derives from its `stable_id`, so re-importing updates notes instead of duplicating them. Note-type and deck IDs are constants; a template change bumps the note-type version.
 - Import: macOS `open file.apkg`, or AnkiConnect `importPackage` when Anki is running.
 - Import never deletes notes. Cards that disappear from MDX get the tag `study-engine::removed`.
@@ -46,8 +46,8 @@ Rejected: writing `<|END|>`-style markers in MDX. `@mdx-js/mdx` 3.1.1 fails on `
 
 | Track | What | Card types | Anki note type |
 | --- | --- | --- | --- |
-| memorize | Definitions, formulas, notation (e.g. the softmax formula, log rules) | `definition`, `formula` | `StudyEngine Basic v1` |
-| understand | Relations, reasons, trade-offs (e.g. why high bias / low variance trade off and how to control it) | `why`, `how`, `compare` | `StudyEngine Explain v1` |
+| memorize | Definitions, formulas, notation (e.g. the softmax formula, log rules) | `definition`, `formula` (slots, D13) | `StudyEngine Basic v1`, `StudyEngine Formula v1` |
+| understand | Relations, reasons, trade-offs (e.g. why high bias / low variance trade off and how to control it) | `principle`, `compare`, `limitation` (slots, D13) | `StudyEngine Explain v1` |
 
 - The track follows from the card type. Rule-extracted definitions and block math are always memorize.
 - Understand cards: explain aloud or on paper, flip, compare with the key points (my sentences), grade with Again/Hard/Good.
@@ -60,7 +60,7 @@ Rejected: writing `<|END|>`-style markers in MDX. `@mdx-js/mdx` 3.1.1 fails on `
 
 ## D7. My Anki defaults; `review` is a QA tool, not an approval gate (2026-11-10)
 
-- The engine never sets scheduling. The `.apkg` carries no deck options, so imported decks use my default preset (button intervals today: Again 10 min, Hard 15 min, Good 1 day, Easy 2 days). Whether genanki decks attach to the Default preset is verified in Phase 3.
+- The engine never sets scheduling. The `.apkg` carries no deck options, so imported decks use my default preset (button intervals today: Again 10 min, Hard 15 min, Good 1 day, Easy 2 days). Verified 2026-11-10 with the official importer: imported decks attach to the `Default` preset (D16).
 - `study review` renders new/changed cards with the real Anki templates and MathJax and shows automatic warnings. I mark broken cards (`broken` + reason). Only those are excluded from `build`; the reasons become test cases for fixing the extractor. Once extraction is stable, `review` is used for new card types or new subjects.
 
 ## D8. The blog practice page is for application tasks only, later (2026-11-10)
@@ -84,3 +84,68 @@ The small model is a learning goal, not a cost or privacy necessity (Gemini is c
 3. Compare with Gemini on the same eval set and publish the numbers in a devlog.
 
 I checked the Gemini API terms for personal use of outputs as training data (2026-11-10).
+
+## D11. Sources are study notes only (2026-11-10)
+
+Only notes under `src/content/blog/<lang>/study/` become cards. Devlogs record my development flow and are not worth memorizing; technical details worth keeping are studied again and rewritten as study notes. Other folders (`devlog/`, `technical_note/`, `paper-review/`, …) are skipped even if they carry an `anki` block. Within `study/`, `anki.enabled: false` still excludes a note.
+
+- The engine's default input is `src/content/blog/ko/study`; paths outside `<lang>/study/` are reported as skipped.
+- Consequence for Phase 0: the sample must come from `study/`, which currently has few long notes (see [evaluation.md](evaluation.md) §2).
+- Changed: replaces "`anki.enabled` may opt in notes from any folder".
+
+## D12. Principle + formula cards per concept (2026-11-10) — superseded by D13
+
+First version of the per-concept idea: a principle card plus the formula in both directions. D13 keeps the principle card, replaces the two formula cards with one recognition card, and adds compare and limitation slots.
+
+## D13. Concept schema: five slots grounded in how I study (2026-11-10)
+
+Gemini does not choose cards. It fills a fixed per-concept schema with sentence numbers; the engine turns each filled slot into cards from templates. The schema is the way I actually study:
+
+| Slot | Meaning | Card | Track |
+| --- | --- | --- | --- |
+| `definition` | The concept itself: what it is | `X란?` → definition sentences | memorize |
+| `principle` | What needs explaining: how or why it works | `X는 …? 설명하라.` → key sentences | understand |
+| `formula` | I do not write formulas or code by hand, so I **recognize** them: display math, or a code pattern I tend to forget (`Promise`, `async/await`) | Formula or code + choices `①–④` → technique name + symbol meanings / key points | memorize |
+| `compare` | Trade-offs and always-compared pairs (bias ↔ variance, dense ↔ sparse) | `A와 B: {axis}의 trade-off를 설명하라.` → key sentences | understand |
+| `limitation` | The limit of a technique and the technique that came out of it — the backbone that links concepts into lineages (RNN → LSTM → Transformer) | `X의 한계는? 그 한계에서 나온 기술은?` → limit sentences + `→ Y` | understand |
+
+- Formula choices: distractors are other concepts of the same kind (math with math, code with code) from my own notes in the same run (deterministic order); if there are fewer than three, names the model listed as easily confused fill the gap. With fewer than two options, the card asks `이 식은 무엇인가?` without choices.
+- Rules map onto the same slots: definition lists and `<Term>` → `definition`; `X의 식:` + `$$` + symbol list, or `X 사용법:` / `X의 코드:` / `X 예시:` + a code block + key points → `formula`; question headings → `principle`.
+- Card keys use the concept name (`def:rrf`, `formula:rrf`, `compare:bias|variance`, …), so a regenerated note continues the same cards, and rule and LLM cards for one concept deduplicate.
+- Reference points use the same schema: I list concept names and tick the slots I need; scoring is coverage of (concept, slot).
+- Changed: replaces the LLM card types `why`/`how`/`compare` from D2/D6 and the forward + reverse formula cards from D12.
+
+### Application problems are made weekly by a frontier model, not by the pipeline
+
+New-situation problems (transfer) are not generated by the Gemini pipeline. After a week of study I give that week's material (concepts studied, their notes, cards I keep failing) to a current frontier model (Claude, Codex) in a chat, and import what it writes as cards after `review`. The pipeline's job is to export that weekly pack and import the result in a fixed format (Phase 4).
+
+## D14. No AI-written explanations; I complete my own notes (2026-11-10)
+
+Gemini does not add supplementary explanations, neither on cards nor as a separate gap report. When a note is thin (e.g. QAT in one line), I fill it in my own words while organizing the note; the `todo` lines in `references.yaml` serve as the checklist.
+
+- Why: unverifiable AI text on a card would be memorized by repetition; writing the gap myself is the better learning step; MDX stays the only source of content.
+- Cost: the model returns only names, short question fragments and unit numbers. In the first run (2026-11-10, three notes) output was 85–417 tokens per note against 585–11,425 input tokens; one or two supplementary sentences per concept would multiply the output several times for no checked content.
+- The instructions and the note are sent separately (system instruction vs user message, prompt `v4-system`).
+
+## D15. Decks are broad areas; subjects are tags (2026-11-10)
+
+| Deck | Folders under `study/` (examples) |
+| --- | --- |
+| `Study::CS` | `linux`, `threejs` |
+| `Study::AI` | `RAG`, `Training`, `NLP`, `RL`, `LLM`, and root notes such as `ai01.md`, `rag01.mdx` |
+| `Study::Math` | `Math`, `Statistics`, `LinearAlgebra`, `Calculus`, `Probability` |
+| `Study::EE` | `EE` |
+| `Study::HCI` | `HCI` |
+| `Study::Neuroscience` | `NeuroScience` |
+
+- The mapping lives in `tools/study-engine/decks.yaml`. Resolution: the note's `anki.deck` > the first matching folder > the file list > `Study::Inbox` (unmapped notes are visible there).
+- Folders are matched case-insensitively ignoring `-`, `_` and spaces. Folders are not reorganized into `study/CS/...`, because that would change published post URLs.
+- Each folder becomes a tag `subject::<folder>`; the note's own tags are added. The blog's placeholder tags (`tag`, `tag1`, `tag2`) and an `anki.deck` of plain `Study` (the old snippet default) are ignored.
+
+## D16. The `.apkg` is built with the official `anki` package and a persistent build collection (2026-11-10)
+
+- genanki's last release is 0.13.1 (2023-11-12). The official `anki` package 26.9.4 (2026-11-04) is the same version as my Anki desktop, so packages are written by the same code that imports them. It lives in `tools/study-engine/apkg/.venv` (Git-ignored); upgrade it together with the desktop.
+- Note types cannot be given fixed IDs through the API, and a note type rebuilt from scratch is treated as a different note type on import (tested: a second note type appeared and every note conflicted). So the engine keeps one **persistent build collection** (`.study-engine/anki/build.anki2`, backed up before every build, last 10 kept): note types are created once and never modified; notes are added or updated in place by GUID; the whole collection is exported without scheduling or deck options.
+- Verified with the 26.9.4 importer: first import adds notes; after an edit only that note updates; scheduling (interval, reps), card ID and suspension survive; the same file again changes nothing; a note deleted in Anki comes back on the next import; decks use the `Default` preset.
+- If the build collection is lost, the next import creates new note types; restore it from `.study-engine/anki/backups/`.
+- Changing a note type's fields or templates is a schema change (Anki then asks for a one-way full sync); do it as a new versioned note type, in a test profile first.

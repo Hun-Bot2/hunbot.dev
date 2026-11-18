@@ -20,6 +20,10 @@ import { normalizeCategory } from '../utils/blog';
 import { getBlogSlugFromId, getBlogUrlFromId } from '../utils/blog-routing';
 import { blogHeroImageSizes, getResponsivePublicImage } from '../utils/responsive-public-images';
 import '../styles/prose.css';
+import '../styles/editorial.css';
+import { resolveCoverMotif } from '../utils/editorial-covers';
+import GeometricCover from '../components/editorial/GeometricCover.astro';
+import ReadingSidebar from '../components/editorial/ReadingSidebar.astro';
 
 type Props = CollectionEntry<'blog'>['data'] & {
 	lang?: UILanguage;
@@ -38,6 +42,9 @@ type Props = CollectionEntry<'blog'>['data'] & {
 const {
 	title,
 	description,
+	editorial,
+	series,
+	seriesOrder,
 	pubDate,
 	updatedDate,
 	heroImage,
@@ -139,7 +146,7 @@ const schema = {
 		<ReadingControls lang={lang} />
 		<main
 			id="main-content"
-			class="article-page"
+			class="article-page editorial-surface"
 			data-post-lang={lang}
 			data-available-langs={(availableLangs ?? [lang]).join(",")}
 		>
@@ -181,6 +188,7 @@ const schema = {
 					)}
 				</header>
 
+				{!heroImage && <figure class="editorial-cover"><GeometricCover motif={resolveCoverMotif(postId ?? '', editorial?.motif)} variant={(seriesOrder ?? 0) % 4} /></figure>}
 				{heroImage && responsiveHeroImage && (
 					<figure class="article-hero page-frame">
 						<picture>
@@ -202,7 +210,7 @@ const schema = {
 					</figure>
 				)}
 
-				<div class="article-canvas page-frame">
+				<div class="article-canvas editorial-grid">
 					<TableOfContents lang={lang} />
 					<div class="article-main">
 						<div class="prose" data-pagefind-body>
@@ -234,6 +242,7 @@ const schema = {
 						<GiscusComments lang={lang} />
 						<FeedbackBox slug={slug} lang={lang} />
 					</div>
+					<ReadingSidebar relatedPosts={editorial?.relatedPosts} references={editorial?.references} selfId={postId} series={series} seriesOrder={seriesOrder} lang={lang} />
 				</div>
 			</article>
 		</main>

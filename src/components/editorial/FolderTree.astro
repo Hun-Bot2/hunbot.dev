@@ -1,0 +1,33 @@
+---
+export interface TreeNode { name: string; note?: string; children?: TreeNode[]; }
+interface Props { nodes: TreeNode[]; label?: string; nested?: boolean; }
+const { nodes, label = '디렉터리 구조', nested = false } = Astro.props;
+---
+<div class:list={['folder-tree', { 'tree-root': !nested }]}>
+	{!nested && <p class="tree-label">{label}</p>}
+	<ul>
+		{nodes.map(node => <li>
+			{node.children ? <details open>
+				<summary><svg viewBox="0 0 20 16" aria-hidden="true"><path d="M1 3V1h7l2 2h9v12H1Z" /></svg><code>{node.name}</code>{node.note && <span class="tree-note">{node.note}</span>}</summary>
+				<Astro.self nodes={node.children} nested />
+			</details> : <div class="tree-file"><svg viewBox="0 0 16 20" aria-hidden="true"><path d="M1 1h9l5 5v13H1ZM10 1v5h5M4 10h7M4 14h7" /></svg><code>{node.name}</code>{node.note && <span class="tree-note">{node.note}</span>}</div>}
+		</li>)}
+	</ul>
+</div>
+<style>
+.tree-root { margin-block:2rem; border:1px solid var(--rule); background:var(--paper-light); padding:1.25rem; overflow-x:auto; }
+.tree-label { margin:0 0 1rem; font:500 .75rem/1.5 var(--font-sans); color:var(--secondary); }
+.folder-tree ul { list-style:none; margin:0; padding:0; }
+.folder-tree li { margin:0; padding:0; }
+li :global(.folder-tree:not(.tree-root)) { margin-left:.65rem; padding-left:1.3rem; border-left:1px solid var(--rule); }
+summary,.tree-file { display:flex; align-items:center; gap:.65rem; min-height:2.5rem; min-width:0; }
+summary { cursor:pointer; list-style:none; }
+summary::-webkit-details-marker { display:none; }
+summary::before { content:'›'; width:.5rem; font-family:var(--font-mono); transform:rotate(90deg); }
+details:not([open])>summary::before { transform:none; }
+.tree-file { padding-left:1.15rem; }
+svg { width:1.05rem; height:1.05rem; flex-shrink:0; fill:none; stroke:currentColor; stroke-width:1.2; color:var(--accent); }
+code { font:400 .8rem/1.7 var(--font-mono); background:none !important; padding:0 !important; white-space:normal; overflow-wrap:anywhere; min-width:0; }
+.tree-note { font:400 .75rem/1.5 var(--font-sans); color:var(--secondary); padding-right:.5rem; }
+summary:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+</style>

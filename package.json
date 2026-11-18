@@ -7,6 +7,8 @@
   },
   "scripts": {
     "dev": "astro dev",
+    "post:new": "node scripts/new-post.mjs",
+    "post:audit": "node scripts/audit-blog-editorial.mjs",
     "test": "node --test test/*.test.mjs",
     "build": "npm run build:astro && npm run search:index",
     "build:astro": "astro build",

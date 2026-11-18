@@ -1,0 +1,29 @@
+---
+import { readDraftSources } from './draft-sources';
+import '../styles/tokens.css';
+import '../styles/global.css';
+const posts = readDraftSources().filter(({ data }) => data.draft || !data.title);
+---
+<html lang="ko">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="robots" content="noindex, nofollow" />
+		<title>작성 중인 글</title>
+	</head>
+	<body>
+		<main>
+			<h1>작성 중인 글</h1>
+			<p><a href="/__drafts/editorial/">Astra · 글 디자인 시안 →</a></p>
+			<p>frontmatter 없는 Markdown/MDX도 여기서 미리 볼 수 있습니다. 공개하려면 frontmatter를 완성하고 draft를 해제하세요.</p>
+			<ul>{posts.sort((a, b) => a.id.localeCompare(b.id)).map(post => (
+				<li><a href={`/__drafts/${post.id}/`}>{post.title}</a> <small>{post.id}</small></li>
+			))}</ul>
+		</main>
+	</body>
+</html>
+<style>
+	main { max-width: 960px; margin: 2rem auto; padding: 0 1rem; }
+	li { margin: .75rem 0; }
+	small { opacity: .65; }
+</style>

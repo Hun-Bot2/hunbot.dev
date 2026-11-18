@@ -15,6 +15,14 @@ Expected project shape:
 
 Do not recommend or implement migration to Next.js, Remix, a CMS, Supabase, or a full-stack architecture unless a later task explicitly asks for it.
 
+### Blog writing tasks
+
+For a new user-requested blog draft, use `npm run post:new -- <ko|jp|en> <folder/slug>`.
+For changes to an existing article, edit its current file. See [writing](docs/content/writing/README.md)
+for preview and publishing, and [components](docs/content/writing/components.md) for the MDX tags.
+When changing covers or series, run `npm run post:audit`. When changing blog metadata or
+rendering, run `npm run blog:validate` and the build. Keep publication a separate editorial decision.
+
 ## 2. Non-Negotiable Constraints
 
 - Do not change the framework, deployment adapter, package manager, or deployment architecture without explicit instruction.

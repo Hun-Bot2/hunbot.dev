@@ -1,0 +1,36 @@
+---
+title: "Async"
+---
+
+## Promise
+
+Promise 사용법:
+
+```js
+const p = new Promise((resolve, reject) => {
+  setTimeout(() => resolve('done'), 100);
+});
+```
+
+- resolve: 성공 값을 넘기며 이행 상태로 바꾼다
+- reject: 실패 이유를 넘기며 거부 상태로 바꾼다
+
+## async/await
+
+async/await의 코드:
+
+```js
+async function load() {
+  const data = await fetchData();
+  return data;
+}
+```
+
+- await: Promise가 끝날 때까지 함수 실행을 멈춘다
+
+## 측정
+
+| 지표 | 값 |
+| --- | --- |
+| Recall@8 | 0.71 |
+| MRR | 0.55 |

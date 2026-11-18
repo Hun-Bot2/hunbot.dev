@@ -1,0 +1,38 @@
+# Deck mapping for study notes (decision D15). Decks are broad areas you review separately;
+# subjects become tags (subject::<folder>), so they never need their own decks.
+# Resolution: the note's `anki.deck` > the first matching folder under study/ > files > default.
+# Folder and file names match case-insensitively; '-', '_' and spaces are ignored.
+default: Study::Inbox
+
+folders:
+  # CS
+  linux: Study::CS
+  threejs: Study::CS
+  # AI
+  RAG: Study::AI
+  Training: Study::AI
+  NLP: Study::AI
+  RL: Study::AI
+  LLM: Study::AI
+  # Math (statistics included)
+  Math: Study::Math
+  Statistics: Study::Math
+  Statistic: Study::Math
+  LinearAlgebra: Study::Math
+  Calculus: Study::Math
+  Probability: Study::Math
+  # EE
+  EE: Study::EE
+  # HCI
+  HCI: Study::HCI
+  # Neuroscience
+  NeuroScience: Study::Neuroscience
+
+files:
+  # notes directly under study/
+  rag01.mdx: Study::AI
+  ai01.md: Study::AI
+  NLP_LoRA.mdx: Study::AI
+  NLP_SFT.mdx: Study::AI
+  Week10-RL.mdx: Study::AI
+  long-conversation.mdx: Study::AI

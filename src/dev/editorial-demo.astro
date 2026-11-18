@@ -1,0 +1,43 @@
+---
+import Content from './editorial-demo.mdx';
+import GeometricCover from '../components/editorial/GeometricCover.astro';
+import ReadingSidebar from '../components/editorial/ReadingSidebar.astro';
+import '../styles/tokens.css';
+import '../styles/global.css';
+import '../styles/prose.css';
+import '../styles/editorial.css';
+const links = [{
+ title: 'Rethinking skills and prompts for GPT-6 Astra',
+ url: 'https://developers.openai.com/blog/rethinking-skills-and-prompts-for-gpt-6-astra',
+ relation: 'Astra 글에서 참고한 원문 · OpenAI',
+ description: 'Skill과 지침을 다시 검토하는 배경을 읽을 수 있습니다.',
+}];
+---
+<html lang="ko">
+<head>
+ <meta charset="utf-8" /><meta name="viewport" content="width=device-width" />
+ <meta name="robots" content="noindex, nofollow" />
+ <title>Astra · 글 디자인 시안</title>
+ <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" />
+</head>
+<body>
+<main class="editorial-surface demo-page">
+ <header class="article-header">
+  <p class="demo-nav"><a href="/__drafts/">← 작성 중인 글</a> · 글 디자인 시안</p>
+  <h1 class="article-title">필요한 만큼의 지침,<br />펼쳐지는 생각</h1>
+  <p class="article-lead">Astra 글을 바탕으로 살펴보는 표지와 본문의 구성</p>
+  <a class="original-link" href="/__drafts/ko/study/astra/">작성 중인 Astra 원문 보기 →</a>
+ </header>
+ <figure class="editorial-cover"><GeometricCover motif="disclosure" /></figure>
+ <div class="editorial-grid">
+  <div class="article-main"><article class="prose"><Content /></article></div>
+  <ReadingSidebar relatedPosts={['devlog/status_arc/statusarc_develop_01']} references={links} />
+ </div>
+</main>
+</body>
+</html>
+<style>
+.demo-page { padding-block:2rem 5rem; }
+.demo-nav,.original-link { font:400 .75rem/1.7 var(--font-sans); color:var(--secondary); }
+.demo-nav { margin-bottom:2rem; }
+</style>

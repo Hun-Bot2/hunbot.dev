@@ -69,10 +69,12 @@ function readCollection(root, base) {
 
 	return walk(directory)
 		.filter((filePath) => CONTENT_EXTENSIONS.has(extname(filePath)))
-		.map((filePath) => {
+		.flatMap((filePath) => {
 			const label = relative(root, filePath);
 			const source = readFileSync(filePath, 'utf8');
-			const match = source.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+			// Match the production blog loader. Files without metadata are local drafts.
+			if (base === 'src/content/blog' && !/^\uFEFF?---\r?\n/.test(source)) return [];
+			const match = source.match(/^\uFEFF?---\r?\n([\s\S]*?)\r?\n---/);
 			if (!match) throw new Error(`${label} is missing frontmatter.`);
 
 			let data;

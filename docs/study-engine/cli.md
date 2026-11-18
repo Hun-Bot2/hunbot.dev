@@ -45,7 +45,7 @@ D7. Optional. `build` exports every valid card whether or not `review` was run.
 
 D4, D6. No LLM calls.
 
-- Writes every `current`, `valid`, not-`broken` card to `cards.json`, runs genanki, and writes `.study-engine/exports/study-<date>.apkg`.
+- Writes every `current`, `valid`, not-`broken` card to `cards.json`, runs `apkg/build_apkg.py` (official `anki` package, persistent build collection, D16), and writes `.study-engine/exports/study-<date>.apkg`.
 - Without `--import`: prints the path and the `open` command. With `--import`: opens it in Anki, or uses AnkiConnect `importPackage` on loopback when available.
 - Summary by track: total, new, updated, tagged `removed`. "File created" and "imported" are reported separately, because the engine cannot confirm an import done by hand.
 

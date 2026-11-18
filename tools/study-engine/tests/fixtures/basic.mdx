@@ -1,0 +1,46 @@
+---
+title: "Gradient Descent"
+description: "Synthetic fixture."
+pubDate: "2026-11-10"
+anki:
+  enabled: true
+  send: true
+---
+import Term from '@/components/Term.astro';
+
+손실 함수를 줄이는 방법을 정리한다.
+
+## 용어 정리
+
+- **학습률:** 한 번에 파라미터를 얼마나 움직일지 정하는 값입니다.
+- **Gradient**: 손실 함수의 기울기 벡터입니다.
+- 일반 항목입니다.
+
+## 공식
+
+갱신 규칙의 식:
+
+$$
+\theta \leftarrow \theta - \eta \nabla L(\theta)
+$$
+
+## 왜 학습률이 너무 크면 발산하는가?
+
+학습률이 크면 최솟값을 지나쳐 반대편으로 튑니다. 그 결과 손실이 오히려 커집니다.
+그래서 학습률 스케줄을 씁니다.
+
+```python
+# **fake:** 코드 안의 가짜 정의
+lr = 0.1
+```
+
+> - **인용 안:** 무시되어야 하는 정의
+
+{/* anki id="gd-direction"
+Q: Gradient Descent는 어떤 방향으로 이동하나요?
+A: 손실 함수의 음의 기울기 방향입니다.
+*/}
+
+{/* card-break */}
+
+<Term term="모멘텀">이전 갱신 방향을 일부 유지하는 기법</Term>은 진동을 줄입니다.
