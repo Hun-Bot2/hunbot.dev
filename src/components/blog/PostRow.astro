@@ -3,13 +3,11 @@
 // quiet metadata (category, and the series when there is one).
 // The whole row is the link; the post's filter data attributes sit on the <li>.
 // Row styles: src/styles/entry-list.css.
-import GeometricCover from '../editorial/GeometricCover.astro';
-import { resolveCoverMotif } from '../../utils/editorial-covers';
+import PostThumb from './PostThumb.astro';
 import type { CollectionEntry } from 'astro:content';
 import { getBlogUrlFromId } from '../../utils/blog-routing';
 import { normalizeCategory } from '../../utils/blog';
 import { formatPostDate } from '../../utils/display';
-import { getResponsivePublicImage } from '../../utils/responsive-public-images';
 
 interface Props {
 	post: CollectionEntry<'blog'>;
@@ -23,7 +21,6 @@ const { post, categoryLabels, seriesNames } = Astro.props;
 const category = normalizeCategory(post.data.category);
 const series = post.data.series?.trim() ?? '';
 const shownSeries = seriesNames.has(series) ? series : '';
-const hero = post.data.heroImage ? getResponsivePublicImage(post.data.heroImage) : null;
 ---
 
 <li
@@ -33,12 +30,7 @@ const hero = post.data.heroImage ? getResponsivePublicImage(post.data.heroImage)
 	data-post-series={series}
 >
 	<a class="entry entry--post" href={getBlogUrlFromId(post.id)}>
-		<span class="entry-thumb" aria-hidden="true">
-			{hero ? <picture>
-				{hero.webpSrcSet && <source type="image/webp" srcset={hero.webpSrcSet} sizes="84px" />}
-				<img src={hero.src} alt="" loading="lazy" decoding="async" width={hero.width} height={hero.height} sizes="84px" />
-			</picture> : <GeometricCover motif={resolveCoverMotif(post.id, post.data.editorial?.motif)} variant={(post.data.seriesOrder ?? 0) % 4} compact />}
-		</span>
+		<PostThumb post={post} sizes="84px" class="entry-thumb" />
 		{/* The year is the section heading above, so the row carries month.day only. */}
 		<time class="entry-lead" datetime={post.data.pubDate.toISOString()}>{formatPostDate(post.data.pubDate).slice(5)}</time>
 		<span class="entry-body">

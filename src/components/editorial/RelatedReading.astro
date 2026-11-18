@@ -3,7 +3,7 @@ import type { CoverMotif } from '../../utils/editorial-covers';
 import ReadingGraph from './ReadingGraph.astro';
 export interface ReadingLink {
  title: string; url: string; description: string; relation: string;
- image?: string; motif?: CoverMotif;
+ image?: string; motif?: CoverMotif; variant?: number;
 }
 interface Props { links: ReadingLink[]; lang?: string; }
 const { links, lang = 'ko' } = Astro.props;
