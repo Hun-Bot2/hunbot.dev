@@ -15,7 +15,7 @@ const points = links.map((_,i) => ({ x:24+i*56, y:kind === 'internal' ? 30+(i%2)
   </svg>
   {links.map((link,i) => <button type="button" class="graph-node" data-reading-index={i} style={`left:${points[i].x}px;top:${points[i].y}px`} aria-label={link.title} aria-pressed={i === 0 ? 'true' : 'false'} aria-controls={`${id}-${i}`}>
    <span class="node-art" aria-hidden="true">
-    {link.image ? <img src={link.image} alt="" loading="lazy" /> : link.motif ? <GeometricCover motif={link.motif} compact /> : <span class="node-fallback">{kind === 'reference' ? String(i+1).padStart(2,'0') : link.title.slice(0,1)}</span>}
+    {link.image ? <img src={link.image} alt="" loading="lazy" /> : link.motif ? <GeometricCover motif={link.motif} variant={link.variant} compact /> : <span class="node-fallback">{kind === 'reference' ? String(i+1).padStart(2,'0') : link.title.slice(0,1)}</span>}
    </span>
   </button>)}
  </div>

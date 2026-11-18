@@ -4,8 +4,6 @@ import '../styles/tokens.css';
 import '../styles/global.css';
 import '../styles/prose.css';
 import '../styles/editorial.css';
-import { resolveCoverMotif } from '../utils/editorial-covers';
-import GeometricCover from '../components/editorial/GeometricCover.astro';
 import ReadingSidebar from '../components/editorial/ReadingSidebar.astro';
 
 // This entry point is only injected by astro dev.
@@ -33,9 +31,7 @@ const usableSeries = series === 'series 이름' || series === 'series name' ? un
 				<h1 class="article-title">{post.title}</h1>
 				<p class="article-lead">{post.data.description}</p>
 			</header>
-			<figure class="editorial-cover">
-				{heroImage ? <img src={heroImage} alt={post.title} /> : <GeometricCover motif={resolveCoverMotif(post.id, editorial?.motif)} variant={(seriesOrder ?? 0) % 4} />}
-			</figure>
+			{heroImage && <figure class="editorial-cover"><img src={heroImage} alt={post.title} /></figure>}
 			<div class="editorial-grid">
 				<div class="article-main"><article class="prose"><Content /></article></div>
 				<ReadingSidebar relatedPosts={editorial?.relatedPosts} references={editorial?.references} selfId={post.id} series={usableSeries} seriesOrder={seriesOrder} lang={lang} />

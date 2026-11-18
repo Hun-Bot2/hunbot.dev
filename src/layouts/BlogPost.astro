@@ -21,8 +21,6 @@ import { getBlogSlugFromId, getBlogUrlFromId } from '../utils/blog-routing';
 import { blogHeroImageSizes, getResponsivePublicImage } from '../utils/responsive-public-images';
 import '../styles/prose.css';
 import '../styles/editorial.css';
-import { resolveCoverMotif } from '../utils/editorial-covers';
-import GeometricCover from '../components/editorial/GeometricCover.astro';
 import ReadingSidebar from '../components/editorial/ReadingSidebar.astro';
 
 type Props = CollectionEntry<'blog'>['data'] & {
@@ -188,7 +186,6 @@ const schema = {
 					)}
 				</header>
 
-				{!heroImage && <figure class="editorial-cover"><GeometricCover motif={resolveCoverMotif(postId ?? '', editorial?.motif)} variant={(seriesOrder ?? 0) % 4} /></figure>}
 				{heroImage && responsiveHeroImage && (
 					<figure class="article-hero page-frame">
 						<picture>

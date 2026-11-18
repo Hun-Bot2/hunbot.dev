@@ -28,7 +28,7 @@
 series: '블로그 개발일지'
 seriesOrder: 15
 editorial:
-  motif: disclosure
+  motif: astra
   relatedPosts: [devlog/status_arc/statusarc_develop_01]
   references:
     - title: 문서 제목
@@ -37,7 +37,7 @@ editorial:
       description: 이 자료를 참고한 이유
 ```
 
-세 필드 `motif`, `relatedPosts`, `references`는 선택 사항이다. `relatedPosts`는 같은 언어의 공개 블로그 글 slug이며 언어 접두사를 빼고 적는다. 둘 다 세 항목까지 지정할 수 있다. 참고 자료는 HTTP(S) 링크를 사용하며 `image`에 자체 `/images/` 자산을 지정할 수 있다.
+세 필드 `motif`, `relatedPosts`, `references`는 선택 사항이다. `motif`는 목록과 이어 읽기 썸네일을 정한다. `relatedPosts`는 같은 언어의 공개 블로그 글 slug이며 언어 접두사를 빼고 적는다. 둘 다 세 항목까지 지정할 수 있다. 참고 자료는 HTTP(S) 링크를 사용하며 `image`에 자체 `/images/` 자산을 지정할 수 있다.
 
 | 모티프 | 의미 |
 | --- | --- |
@@ -47,6 +47,7 @@ editorial:
 | `layers` | 계층, 스택, 축적 |
 | `intersect` | 여러 입력이나 개념의 교차 |
 | `pulse` | 신호, 음성, 측정 변화 |
-| `abstract` | 작성 중 공통 표지 |
+| `abstract` | 원과 색면을 조합한 추상 썸네일 |
+| `astra` | 중심 별, 위성, 궤도를 담은 우주 썸네일 |
 
 내부 읽기에서는 시리즈 이웃과 관련 글을 합쳐 최대 세 개를 표시한다. 노드 선택으로 아래 카드가 바뀌며, JavaScript 없이도 링크를 읽을 수 있다.

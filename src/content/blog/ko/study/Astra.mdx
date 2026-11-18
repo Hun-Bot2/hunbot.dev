@@ -1,12 +1,14 @@
 ---
 draft: false
-title: 'Rethinking skills and prompts for GPT-6 Astra'
+title: 'Rethinking skills and prompts for GPT-6 Astra — 1편'
 description: 'OpenAI 공식 블로그 : GPT-6 Astra에 대한 기존 스킬과 프롬프트의 재고'
 pubDate: '2026-11-17'
 tags: ['coding-agent', 'agent-skills', 'prompt-engineering']
 category: '공부'
+series: Astra
+seriesOrder: 1
 editorial:
-  motif: disclosure
+  motif: astra
   relatedPosts: [devlog/status_arc/statusarc_develop_01]
   references:
     - title: 'Rethinking skills and prompts for GPT-6 Astra'
@@ -122,10 +124,6 @@ Codex에서는 `$skill-creator`를 사용해 Skill 생성을 지원받을 수 �
 Skill을 읽으면 그 내용이 모델의 Context Window를 차지한다. 불필요한 문서를 읽게 되면 토큰을 소비할 뿐 아니라 현재 작업과 관계없는 지침이 판단에 영향을 미칠 수 있다고 한다.
 
 OpenAI는 여러 워크플로를 포함하는 Skill의 최상위 문서를 최소한의 라우터로 사용하고, 필요한 세부 문서와 스크립트만 선택적으로 읽는 방식을 권장한다.
-
-<WideFigure caption="하나의 지침을 필요한 문서로 나누어 펼친 구성. 표지와 같은 도형과 색으로 단계적 공개를 표현했다.">
-  <GeometricCover motif="disclosure" stage="parts" />
-</WideFigure>
 
 ### 3.1. 개인 프로젝트를 이용한 예시
 

@@ -1,4 +1,5 @@
 ---
+import GeometricCover from '../editorial/GeometricCover.astro';
 import type { CollectionEntry } from 'astro:content';
 import { getResponsivePublicImage } from '../../utils/responsive-public-images';
 
@@ -10,12 +11,14 @@ interface Props {
 }
 
 const { post, sizes = '126px', class: className } = Astro.props;
-// Same rule as the original site: the post's heroImage, else the shared default.
-const hero = getResponsivePublicImage(post.data.heroImage ?? '/images/blank.png');
+const motif = post.data.editorial?.motif;
+const hero = post.data.heroImage || !motif
+	? getResponsivePublicImage(post.data.heroImage || '/images/blank.png')
+	: null;
 ---
 
-<div class:list={['post-thumb', className]} aria-hidden="true">
-	<picture>
+<div class={className ?? 'post-thumb'} aria-hidden="true">
+	{hero ? <picture>
 		{hero.webpSrcSet && <source type="image/webp" srcset={hero.webpSrcSet} sizes={sizes} />}
 		<img
 			src={hero.src}
@@ -26,5 +29,15 @@ const hero = getResponsivePublicImage(post.data.heroImage ?? '/images/blank.png'
 			height={hero.height}
 			sizes={sizes}
 		/>
-	</picture>
+	</picture> : <GeometricCover motif={motif} variant={post.data.seriesOrder} compact />}
 </div>
+
+<style>
+	:global(.post-thumb > .geometric-cover),
+	:global(.entry-thumb > .geometric-cover),
+	:global(.post-thumb > .geometric-cover > svg),
+	:global(.entry-thumb > .geometric-cover > svg) {
+		width: 100%;
+		height: 100%;
+	}
+</style>
