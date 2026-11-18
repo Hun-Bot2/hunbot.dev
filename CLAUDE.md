@@ -552,3 +552,12 @@ docs/
     ├── ui-conventions.md    UI/accessibility rules and card patterns
     └── ui-ux-plan.md        Blog listing audit (F1-F9) + phased redesign plan
 ```
+
+### Editorial articles (2026-11-18)
+
+`src/components/editorial/` contains authored SVG covers, `WideFigure`, `Compare`,
+`FolderTree` (native details), and static-position `RelatedReading`. Optional
+`BlogPost.astro` uses the layout for all blog articles. `blog.editorial` provides optional authored metadata. The shared rules are in
+`src/styles/editorial.css`. Local design demonstration: `/__drafts/editorial/`
+(dev-only injected route, separate from the authored Astra draft).
+Usage: `docs/content/writing/README.md`. Decisions: `docs/decisions/blog-authoring.md`.

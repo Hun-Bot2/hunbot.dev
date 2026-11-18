@@ -1,0 +1,12 @@
+---
+import type { CoverMotif } from '../../utils/editorial-covers';
+import ReadingGraph from './ReadingGraph.astro';
+export interface ReadingLink {
+ title: string; url: string; description: string; relation: string;
+ image?: string; motif?: CoverMotif;
+}
+interface Props { links: ReadingLink[]; lang?: string; }
+const { links, lang = 'ko' } = Astro.props;
+const heading = lang === 'en' ? 'Connected reading' : lang === 'jp' ? '関連する記事' : '이어 읽기';
+---
+<ReadingGraph links={links} heading={heading} kind="internal" />

@@ -1,5 +1,7 @@
 # Content Review Workflow
 
+For actual drafting and preview, start with the [blog writing guide](writing/README.md).
+
 This repository is the public, reviewed publishing surface for `hun-bot.dev`.
 
 The owner can draft, translate, and experiment locally, but public content should enter `src/content` only when it is ready to build and be reviewed.
@@ -51,7 +53,7 @@ The current owner workflow intentionally keeps MDX review separate. Framework, r
 
 A post with `draft: false` (or no `draft` field) still will not publish if its frontmatter still looks like an unedited template. `getAllPosts()` in `src/utils/blog.ts` excludes a post when any of the following hold:
 
-- `description` is one of the known placeholder strings (`설명 입력`, `Enter description`, `説明を入力`), or is shorter than 10 characters
+- `description` is one of the known placeholder strings (`설명 입력`, `Enter description`, `説明を入力`),
 - `tags` contains `tag1`, `tag2`, or `tag`
 - `category` is exactly `category`
 - `series` is exactly `series 이름` or `series name`
@@ -128,3 +130,21 @@ This repository does not install pre-commit hooks. The workflow remains manual b
 - Translation review dates are not represented in frontmatter yet.
 - The inventory script is read-only and does not judge writing quality.
 - The public repository is not a private candidate store.
+
+## Local drafts without frontmatter
+
+Use Node 24 (`nvm use`) and `npm run dev`, then open `/__drafts/`.
+The list includes `draft: true` posts and `.md`/`.mdx` files without frontmatter
+under `src/content/blog/{ko,jp,en}/`. Preview URLs use the content ID, for example
+`/__drafts/ko/study/astra/`. The preview updates when the file is saved.
+
+Metadata-free files get a filename title and are treated as drafts in memory;
+source files are never rewritten. The placeholder date is not a publication date.
+Existing frontmatter remains strictly validated, so partially filled frontmatter
+still needs its required fields. MDX bodies must have valid MDX syntax to render.
+
+Preview routes exist only in `astro dev`. Production collection loading excludes
+files without a frontmatter opening delimiter before registering their MDX imports;
+normal draft filtering and publishing validation remain unchanged. To publish,
+complete `title`, `description`, and `pubDate`, review the content and remove
+`draft: true`. `npm run blog:validate` reports metadata-free drafts separately and validates any declared frontmatter.

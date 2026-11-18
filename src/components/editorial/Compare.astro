@@ -1,0 +1,19 @@
+---
+interface Props { title?: string; labelA: string; labelB: string; }
+const { title = '두 가지 방식 비교', labelA, labelB } = Astro.props;
+---
+<section class="editorial-compare" aria-label={title}>
+	<div class="comparison-option option-a"><p class="comparison-label"><span aria-hidden="true">A</span>{labelA}</p><slot name="a" /></div>
+	<div class="comparison-option option-b"><p class="comparison-label"><span aria-hidden="true">B</span>{labelB}</p><slot name="b" /></div>
+</section>
+<style>
+.editorial-compare { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; margin-block:2rem; }
+.comparison-option { padding:1.5rem; border-top:3px solid var(--comparison-edge); background:var(--comparison-bg); color:var(--ink); min-width:0; }
+.option-a { --comparison-bg:color-mix(in srgb,var(--paper) 88%,#b97648); --comparison-edge:#98643e; }
+.option-b { --comparison-bg:color-mix(in srgb,var(--paper) 88%,#478280); --comparison-edge:#477c74; }
+.comparison-label { display:flex; align-items:center; gap:.7rem; font:500 .85rem/1.5 var(--font-sans); margin:0 0 1rem; }
+.comparison-label span { display:grid; place-items:center; width:1.7rem; height:1.7rem; border:1px solid var(--comparison-edge); font-family:var(--font-mono); flex-shrink:0; }
+.comparison-option :global(p:last-child) { margin-bottom:0; }
+.comparison-option :global(p) { font-size:.95rem; line-height:1.9; }
+@media(max-width:640px) { .editorial-compare { grid-template-columns:1fr; } }
+</style>

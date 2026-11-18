@@ -1,3 +1,4 @@
+import { normalizeSeriesName } from './artifacts/series';
 import { getCollection, type CollectionEntry } from 'astro:content';
 import { getBlogLanguageFromId, getBlogSlugFromId, getBlogUrlFromPost } from './blog-routing';
 import { selectPublishedPosts } from './blog-publishing.ts';
@@ -140,7 +141,7 @@ export function getMultiPostSeries(posts: BlogPost[]): { name: string; count: nu
 
 export function getSeriesPosts(posts: BlogPost[], lang: UILanguage, seriesName: string): BlogPost[] {
   return sortPostsBySeries(
-    filterPostsByLanguage(posts, lang).filter((post) => post.data.series === seriesName),
+    filterPostsByLanguage(posts, lang).filter(post => normalizeSeriesName(post.data.series ?? '') === normalizeSeriesName(seriesName)),
   );
 }
 

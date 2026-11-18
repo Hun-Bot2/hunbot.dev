@@ -1,0 +1,90 @@
+---
+import { randomUUID } from 'node:crypto';
+import type { CoverMotif } from '../../utils/editorial-covers';
+interface Props { motif?: CoverMotif; stage?: 'whole' | 'parts'; compact?: boolean; variant?: number; }
+const { motif = 'disclosure', stage = 'whole', compact = false, variant = 0 } = Astro.props;
+const phase = Number.isFinite(variant) ? Math.abs(Math.trunc(variant)) % 4 : 0;
+const grainId = `cover-grain-${randomUUID()}`;
+const gridId = `cover-grid-${randomUUID()}`;
+const labels: Record<CoverMotif, string> = {
+	disclosure: '하나의 지침이 여러 문서로 펼쳐지는 구성',
+	research: '격자 위에 겹쳐진 메모',
+	reasoning: '이어지는 고리',
+	layers: '서로 다른 높이로 쌓인 층',
+	intersect: '두 영역이 교차하는 구성',
+	pulse: '격자 위의 파형',
+	abstract: '격자 위에 놓인 원과 색면',
+};
+
+---
+<div class:list={['geometric-cover', `motif-${motif}`]}>
+<svg preserveAspectRatio="xMidYMid slice" viewBox="0 0 1120 480" role="img" aria-label={labels[motif]}>
+	<defs>
+		<pattern id={gridId} width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="currentColor" stroke-opacity=".16" stroke-width="1" /></pattern>
+		{!compact && <filter id={grainId} x="0" y="0" width="100%" height="100%">
+			<feTurbulence type="fractalNoise" baseFrequency=".7" numOctaves="3" stitchTiles="stitch" />
+			<feColorMatrix type="saturate" values="0" />
+		</filter>}
+	</defs>
+	<rect width="1120" height="480" fill="var(--cover-paper)" />
+	<rect width="1120" height="480" fill={`url(#${gridId})`} />
+	{motif === 'disclosure' && <>
+		<rect x="0" y="0" width="400" height="480" fill="var(--cover-green)" />
+		{stage === 'whole' ? <>
+			<circle cx="400" cy="240" r="174" fill="var(--cover-blue)" />
+			<path d="M400 66a174 174 0 0 1 0 348Z" fill="var(--cover-paper)" />
+			<path d="M400 240h174a174 174 0 0 1-174 174Z" fill="var(--cover-orange)" />
+			<path d="M400 66v348M226 240h348" stroke="var(--cover-ink)" stroke-opacity=".5" />
+			<circle cx="400" cy="240" r="24" fill="var(--cover-ink)" />
+			<path d="M650 240h92m-12-12 12 12-12 12" fill="none" stroke="var(--cover-ink)" stroke-width="2" />
+			<rect x="810" y="104" width="172" height="88" fill="var(--cover-blue)" />
+			<rect x="846" y="212" width="172" height="88" fill="var(--cover-orange)" />
+			<rect x="810" y="320" width="172" height="56" fill="var(--cover-green)" />
+		</> : <>
+			<path d="M72 240a150 150 0 0 1 300 0Z" fill="var(--cover-blue)" />
+			<path d="M72 268h300a150 150 0 0 1-300 0Z" fill="var(--cover-paper)" />
+			<path d="M490 84a152 152 0 0 1 152 152H490Z" fill="var(--cover-orange)" />
+			<path d="M702 236a152 152 0 0 1 152-152v152Z" fill="var(--cover-blue)" />
+			<path d="M596 288h152a152 152 0 0 1-152 152Z" fill="var(--cover-green)" />
+			<circle cx="970" cy="240" r="30" fill="var(--cover-ink)" />
+			<path d="M900 240h-38M970 170v-38M970 310v38" stroke="var(--cover-ink)" stroke-width="2" />
+		</>}
+	</>}
+	{motif === 'research' && <>
+		<rect x="160" y="100" width="280" height="260" transform="rotate(-8 300 230)" fill="var(--cover-green)" />
+		<rect x="650" y="110" width="290" height="270" transform="rotate(7 795 245)" fill="var(--cover-blue)" />
+		<rect x="400" y="66" width="280" height="310" fill="var(--cover-orange)" />
+		<path d="M440 260c20-180 50-140 70-30s60 100 96-80M710 190h160m-160 36h120m-120 36h140" stroke="var(--cover-ink)" stroke-width="3" fill="none" />
+		<circle cx="265" cy="200" r="48" fill="none" stroke="var(--cover-paper)" stroke-width="2" />
+	</>}
+	{motif === 'reasoning' && <>
+		<rect x="560" width="560" height="240" fill="var(--cover-orange)" />
+		<rect x="0" y="240" width="560" height="240" fill="var(--cover-green)" />
+		{[230, 450, 670, 890].map((x, i) => <rect x={x-118} y={(i + phase) % 2 ? 176 : 124} width="236" height="184" rx="92" fill="none" stroke={i % 2 ? 'var(--cover-blue)' : 'var(--cover-ink)'} stroke-width="18" />)}
+	</>}
+	{motif === 'layers' && [0, 1, 2, 3].map((index) =>
+		<rect x={170+index*194} y={342-index*65} width="210" height="60" fill={['var(--cover-green)','var(--cover-blue)','var(--cover-orange)','var(--cover-ink)'][(index+phase)%4]} />
+	)}
+	{motif === 'intersect' && <>
+		<circle cx={430+phase*17} cy="240" r="177" fill="var(--cover-blue)" />
+		<rect x="487" y="86" width="365" height="308" fill="var(--cover-orange)" fill-opacity=".78" />
+		<circle cx="560" cy="240" r="68" fill="var(--cover-green)" />
+	</>}
+	{motif === 'pulse' && <>
+		<rect x="170" y="114" width="780" height="252" fill="var(--cover-blue)" fill-opacity=".38" />
+		<path d="M170 250H330L400 166 479 336 552 180 620 266 688 217 758 250H950" fill="none" stroke="var(--cover-ink)" stroke-width="9" />
+		<circle cx="552" cy="180" r="22" fill="var(--cover-orange)" />
+	</>}
+	{motif === 'abstract' && <>
+		<rect x="217" y="96" width="687" height="288" fill="var(--cover-green)" />
+		<circle cx="560" cy="240" r="153" fill="var(--cover-orange)" />
+		<path d="M560 87v306" stroke="var(--cover-ink)" stroke-width="6" />
+	</>}
+	{!compact && <rect width="1120" height="480" filter={`url(#${grainId})`} opacity=".08" style="mix-blend-mode:multiply" />}
+</svg>
+</div>
+<style>
+.geometric-cover { --cover-paper:#e8e4d8; --cover-green:#47775d; --cover-blue:#8cb6ce; --cover-orange:#df9b6b; --cover-ink:#243c38; color:var(--cover-ink); overflow:hidden; }
+svg { display:block; width:100%; height:auto; }
+:global(html.dark) .geometric-cover { --cover-paper:#383e36; --cover-green:#628772; --cover-blue:#88acc0; --cover-orange:#d69c78; --cover-ink:#182e2b; }
+</style>

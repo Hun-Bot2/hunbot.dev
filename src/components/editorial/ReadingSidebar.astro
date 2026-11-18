@@ -1,0 +1,28 @@
+---
+import { getBlogSlugFromId } from '../../utils/blog-routing';
+import { getAllPosts, getSeriesPosts } from '../../utils/blog';
+import { resolveEditorialReading } from '../../utils/editorial-reading';
+import RelatedReading from './RelatedReading.astro';
+import ReferenceLinks from './ReferenceLinks.astro';
+import type { UILanguage } from '../../i18n/ui';
+import type { ReadingLink } from './RelatedReading.astro';
+interface Props { relatedPosts?: string[]; references?: ReadingLink[]; lang?: UILanguage; selfId?: string; series?: string; seriesOrder?: number; }
+const { relatedPosts = [], references = [], lang = 'ko', selfId, series, seriesOrder } = Astro.props;
+const posts = relatedPosts.length || series ? await getAllPosts() : [];
+const siblings = series ? getSeriesPosts(posts, lang, series) : [];
+const index = siblings.findIndex(post => post.id === selfId);
+const afterDraft = siblings.findIndex(post => (post.data.seriesOrder ?? Infinity) > (seriesOrder ?? Infinity));
+const neighbors = index >= 0 ? [siblings[index - 1], siblings[index + 1]] :
+ afterDraft < 0 ? [siblings.at(-1)] : [siblings[afterDraft - 1], siblings[afterDraft]];
+const neighborSlugs = neighbors.flatMap(post => post ? [getBlogSlugFromId(post.id)] : []);
+const links = resolveEditorialReading([...neighborSlugs, ...relatedPosts], posts, lang, selfId);
+---
+{(links.length > 0 || references.length > 0) && <aside class="reading-sidebar" aria-label={lang === 'ko' ? '관련 글과 참고 링크' : 'Reading and references'}>
+ <RelatedReading links={links} lang={lang} />
+ <ReferenceLinks links={references} lang={lang} />
+</aside>}
+<style>
+aside { position:static; align-self:start; padding-top:0; }
+aside>:global(*+*) { margin-top:1.25rem; }
+@media(max-width:1100px) { aside { border-top:1px solid var(--rule); margin-top:2rem; } }
+</style>

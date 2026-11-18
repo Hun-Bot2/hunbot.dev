@@ -28,10 +28,10 @@
 
 .article-title {
 	margin: 0 0 1rem;
-	font: 400 clamp(2rem, 1.4rem + 2.6vw, 3rem) / 1.2 var(--font-serif);
+	font: 400 clamp(1.75rem, 1.2rem + 1.8vw, 2.5rem) / 1.3 var(--font-serif);
 	letter-spacing: -0.015em;
-	overflow-wrap: anywhere;
-	text-wrap: balance;
+	overflow-wrap: break-word;
+	text-wrap: wrap;
 }
 
 /* CJK glyphs need more line height than the Latin display setting. */
@@ -46,8 +46,8 @@ html:lang(ko) .article-title {
 }
 
 .article-lead {
-	max-width: 40ch;
-	margin: 0 0 1.25rem;
+	max-width: 100%;
+	margin: 0 0 .75rem;
 	font: 400 clamp(1.0625rem, 0.95rem + 0.6vw, 1.3rem) / 1.6 var(--font-serif);
 	color: var(--secondary);
 }
@@ -59,7 +59,7 @@ html:lang(ko) .article-lead {
 /* CJK characters are about twice as wide as the "0" that ch measures. */
 html:lang(ko) .article-lead,
 html:lang(jp) .article-lead {
-	max-width: 30em;
+	max-width: 100%;
 }
 
 .article-meta {
@@ -264,19 +264,19 @@ html:lang(en) .prose {
 
 .prose h1,
 .prose h2 {
-	margin: 64px 0 16px;
+	margin: 40px 0 12px;
 	font: 400 clamp(1.75rem, 3.2vw, 2.125rem) / 1.2 var(--font-serif);
 	letter-spacing: -0.02em;
 }
 
 .prose h3 {
-	margin: 44px 0 12px;
+	margin: 28px 0 10px;
 	font: 400 1.4375rem / 1.3 var(--font-serif);
 	letter-spacing: -0.01em;
 }
 
 .prose :where(h4, h5, h6) {
-	margin: 32px 0 8px;
+	margin: 24px 0 8px;
 	font: 600 1.125rem / 1.4 var(--font-sans);
 	letter-spacing: 0;
 }
@@ -334,16 +334,20 @@ html:lang(ko) .prose :where(h1, h2, h3, h4, h5, h6) {
 }
 
 .prose hr {
-	margin: 3em 0;
+	margin: 1.75em 0;
 }
 
-/* Links: dotted underline, ↗ on external links. */
+.prose hr + :is(h1, h2, h3) {
+	margin-top: 24px;
+}
+
+/* Links remain identifiable by colour and underline, including at rest. */
 .prose a:not(.toc-link, .presentation-action) {
-	color: inherit;
-	text-decoration: underline dotted;
+	color: var(--link);
+	text-decoration: underline;
 	text-decoration-thickness: 1px;
 	text-underline-offset: 0.3em;
-	text-decoration-color: var(--rule-strong);
+	text-decoration-color: color-mix(in srgb, currentColor 50%, transparent);
 }
 
 .prose a:not(.toc-link, .presentation-action):hover {

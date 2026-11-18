@@ -1,4 +1,6 @@
+import { coverMotifs } from './utils/editorial-covers';
 import { glob } from 'astro/loaders';
+import { blogLoader } from './loaders/blog';
 import { defineCollection, z } from 'astro:content';
 
 import { isLibrarySectionSlug } from './data/librarySections';
@@ -90,7 +92,7 @@ const reviewMeta = z.object({
 
 const blog = defineCollection({
 	// Load Markdown and MDX files in the `src/content/blog/` directory.
-	loader: glob({ base: './src/content/blog', pattern: '**/*.{md,mdx}' }),
+	loader: blogLoader(),
 	// Type-check frontmatter using a schema
 	schema: z.object({
 		title: z.string(),
@@ -104,6 +106,18 @@ const blog = defineCollection({
 		series: z.string().optional(),
 		seriesOrder: z.coerce.number().optional(),
 		draft: z.boolean().optional().default(false),
+		// Optional editorial presentation; absent means the existing article layout.
+		editorial: z.object({
+			motif: z.enum(coverMotifs).optional(),
+			relatedPosts: z.array(z.string().regex(/^[a-z0-9][a-z0-9_\-/]*[a-z0-9]$/)).max(3).default([]),
+			references: z.array(z.object({
+				title: z.string().min(1),
+				url: httpUrl,
+				image: z.string().regex(/^\/images\//, 'Use an authored public /images/ asset.').optional(),
+				description: z.string().min(1),
+				relation: z.string().min(1),
+			})).max(3).default([]),
+		}).optional(),
 		// Research hub linking (docs/decisions/site-structure.md#Linking-reviews-and-posts-to-paper-cards):
 		// `papers` entry `id`s this post is about. Declared here, on the
 		// later artifact; a paper card never lists the posts about it.
