@@ -1,6 +1,6 @@
 # Roadmap
 
-Status: Phase 0 tooling implemented 2026-11-10; the run waits for completed sample notes (D12) ([tools/study-engine/README.md](../../tools/study-engine/README.md)); the Gemini run, labelling and decision are pending. Each phase needs the previous phase's result. Decisions D1–D13 are in [decisions.md](decisions.md).
+Status: Phase 0 tooling implemented 2026-11-10; the formal evaluation waits for completed sample notes (D14) ([tools/study-engine/README.md](../../tools/study-engine/README.md)); D14 records a three-note Gemini run. Formal comparison, labelling and decision are pending. Each phase needs the previous phase's result. Decisions D1–D16 are in [decisions.md](decisions.md).
 
 | Phase | Builds | Main skill learned |
 | --- | --- | --- |
@@ -28,7 +28,7 @@ Implementation was split by difficulty:
 | Tier | Scope | Status |
 | --- | --- | --- |
 | 1 | Engine-only `.env`, note loading (frontmatter, MDX/Markdown AST, sections, numbered units, `card-break`), layer 1–2 rules, heading baseline | Done, offline |
-| 2 | Numbered sent copy, prompt v1, Gemini response schema, REST adapter with bounded retry, output validation (types, slots, unit IDs, same section, heading) | Done; not yet called |
+| 2 | Numbered sent copy, prompt v1, Gemini response schema, REST adapter with bounded retry, output validation (types, slots, unit IDs, same section, heading) | Done; initial three-note call recorded in D14 |
 | 3 | CLI (`rules`, `preview`, `llm --confirm <digest>`, `sheet`, `score`), response cache, usage log, blind labelling sheet, A/B metrics | Done |
 
 First offline run (7 candidate notes, before D11 limited sources to `study/`): rules produced cards for 5; two free-form technical notes produced none (no definition lists or question headings). `study/rag01.mdx` fails to parse as MDX, so the blog cannot build it either. In `study/ai01.md`, bold-label summary bullets (`**생성 모델:** …`) match the definition rule but are not definitions — a known rule false positive to measure in labelling.

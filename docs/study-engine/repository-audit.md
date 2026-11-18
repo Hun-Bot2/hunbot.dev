@@ -68,7 +68,7 @@ These compile checks ran on Node 26, not Node 24, and are not a full Astro build
 ## Related work in the repo
 
 - No `study_engine_initial_setup.md` exists.
-- Unmerged branch `feat/study-archive-migration` (checked out in a separate local worktree): migrates study notes (14 content files), adds `src/components/study/{Statement,MathBlock,ModelExplorer}.astro` and many `public/images/STUDY/**` images (origin unchecked). A future practice page must not collide with `src/components/study/`; merge order is open.
+- Unmerged branch `feat/study-archive-migration` (checked out in a separate local worktree): records 57 study notes and 3 draft notebook chapters in its migration log, adds `src/components/study/{Statement,MathBlock,ModelExplorer}.astro` and many `public/images/STUDY/**` images (origin unchecked). A future practice page must not collide with `src/components/study/`; merge order is open.
 
 ## Open items
 

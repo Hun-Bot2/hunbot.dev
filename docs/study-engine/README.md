@@ -1,6 +1,6 @@
 # Study Engine
 
-Status: **Phase 0 tooling implemented (`tools/study-engine/`), LLM run and labelling pending** · last updated 2026-11-10
+Status: **Phase 0 tooling implemented (`tools/study-engine/`), initial LLM run recorded, full evaluation and labelling pending** · last updated 2026-11-10
 
 The blog is where I write. Study Engine turns what I wrote into practice. Anki is where I keep it.
 
@@ -24,7 +24,7 @@ GUI, SaaS, payments, multi-user, OCR, PDF/slide ingestion, a custom spaced-repet
 
 | Document | Contents |
 | --- | --- |
-| [decisions.md](decisions.md) | Current decisions (D1–D13) with the reason for each |
+| [decisions.md](decisions.md) | Current decisions (D1–D16) with the reason for each |
 | [architecture.md](architecture.md) | Pipeline, modules, card states, `.apkg` import, providers, the blog practice page |
 | [contracts.md](contracts.md) | Note frontmatter, extraction layers, card types and tracks, payload numbering, LLM output schema, IDs, storage, Anki note types |
 | [cli.md](cli.md) | `scan`, `generate`, `review`, `build`, `usage` |
@@ -41,7 +41,7 @@ GUI, SaaS, payments, multi-user, OCR, PDF/slide ingestion, a custom spaced-repet
 ```text
 hun-bot-blog/
 ├── docs/study-engine/        # these documents (public)
-├── tools/study-engine/       # future engine code (not created yet)
+├── tools/study-engine/       # local Phase 0 implementation
 ├── .local/study-engine/      # private working notes, Git-ignored
 └── .study-engine/            # future DB, caches, logs, exports, Git-ignored
 ```
@@ -50,4 +50,4 @@ The engine reads `src/content/blog/**` read-only. It never edits notes and never
 
 ## First step
 
-Phase 0 in [roadmap.md](roadmap.md): a Gemini baseline plus a small hand-labelled eval set, comparing rules-only with rules+LLM on five real notes. Nothing else is built before that result.
+Phase 0 in [roadmap.md](roadmap.md): a Gemini baseline plus a small hand-labelled eval set, comparing rules-only with rules+LLM on five real notes. Complete that evaluation before treating the baseline as validated. Anki export implementation and verification are recorded separately in D16.
